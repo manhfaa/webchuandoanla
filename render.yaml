@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: leafiq-backend
+    name: webchuandoanla-backend
     runtime: python
     plan: free
     rootDir: backend
@@ -22,7 +22,7 @@ services:
       - key: CORS_ALLOWED_ORIGIN_REGEXES
         value: ^https://.*\.vercel\.app$
       - key: CSRF_TRUSTED_ORIGINS
-        value: https://leafiq-backend.onrender.com,https://*.vercel.app
+        value: https://webchuandoanla-backend.onrender.com,https://*.vercel.app
       - key: SECRET_KEY
         generateValue: true
       - key: SUPABASE_DB_URL
