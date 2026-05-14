@@ -52,7 +52,8 @@ DEBUG=False
 ALLOWED_HOSTS=.onrender.com
 FRONTEND_ORIGIN=https://your-vercel-project.vercel.app
 CORS_ALLOWED_ORIGINS=https://your-vercel-project.vercel.app
-CSRF_TRUSTED_ORIGINS=https://leafiq-backend.onrender.com,https://your-vercel-project.vercel.app
+CORS_ALLOWED_ORIGIN_REGEXES=^https://.*\.vercel\.app$
+CSRF_TRUSTED_ORIGINS=https://leafiq-backend.onrender.com,https://*.vercel.app
 SECRET_KEY=<generate a strong secret>
 SUPABASE_DB_URL=<your Supabase Postgres connection string>
 ```
@@ -94,7 +95,8 @@ After Vercel gives the real frontend URL, update these Render backend variables:
 ```env
 FRONTEND_ORIGIN=https://your-real-project.vercel.app
 CORS_ALLOWED_ORIGINS=https://your-real-project.vercel.app
-CSRF_TRUSTED_ORIGINS=https://leafiq-backend.onrender.com,https://your-real-project.vercel.app
+CORS_ALLOWED_ORIGIN_REGEXES=^https://.*\.vercel\.app$
+CSRF_TRUSTED_ORIGINS=https://leafiq-backend.onrender.com,https://*.vercel.app
 ```
 
 Redeploy or restart the Render backend.

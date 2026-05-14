@@ -114,6 +114,12 @@ if cors_origins_raw:
 else:
     CORS_ALLOWED_ORIGINS = [frontend_origin]
 
+cors_origin_regexes_raw = os.getenv("CORS_ALLOWED_ORIGIN_REGEXES", "").strip()
+if cors_origin_regexes_raw:
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        regex.strip() for regex in cors_origin_regexes_raw.split(",") if regex.strip()
+    ]
+
 csrf_trusted_raw = os.getenv("CSRF_TRUSTED_ORIGINS", "").strip()
 if csrf_trusted_raw:
     CSRF_TRUSTED_ORIGINS = [o.strip() for o in csrf_trusted_raw.split(",") if o.strip()]
