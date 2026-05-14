@@ -59,7 +59,6 @@ export function PricingCard({
           : "border-white/75 bg-white/90 text-ink",
         plan.highlight &&
           !dark &&
-          !isCurrent &&
           "bg-gradient-to-br from-[#0f221a] via-[#153524] to-[#10231c] text-white",
         isPlusCurrent && "border-2 border-leaf-500 shadow-glow",
         isCurrent && plan.id !== "plus" && "border border-leaf-500/60 ring-1 ring-leaf-500/30",
