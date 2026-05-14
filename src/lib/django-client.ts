@@ -1,0 +1,97 @@
+import type { PlanTier, UserProfile } from "@/types";
+
+export type DjangoLoginResponse = {
+  access: string;
+  refresh: string;
+};
+
+export type DjangoRegisterRequest = {
+  email: string;
+  password: string;
+};
+
+type DjangoMeResponse = {
+  id: number;
+  username: string;
+  email: string;
+  full_name: string;
+  phone: string;
+  avatar_url: string;
+  current_plan: PlanTier;
+};
+
+function mapMeToUserProfile(me: DjangoMeResponse): UserProfile {
+  return {
+    name: me.full_name?.trim() || "Người dùng Agromind AI",
+    email: me.email,
+    avatar: me.avatar_url || "/avatars/user-demo.svg",
+    currentPlan: me.current_plan ?? "free",
+  };
+}
+
+async function djangoFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const normalizedPath = path.replace(/^\//, "").replace(/\/+$/, "");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  let res: Response;
+  try {
+    res = await fetch(`/api/django/${normalizedPath}`, {
+      ...init,
+      headers: {
+        "content-type": "application/json",
+        ...(init?.headers ?? {}),
+      },
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Kết nối backend quá lâu. Vui lòng kiểm tra server Django.");
+    }
+    throw new Error("Không thể kết nối backend Django. Vui lòng mở backend trước khi đăng nhập.");
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  if (!res.ok) {
+    let message = `HTTP ${res.status}`;
+    try {
+      const data = (await res.json()) as any;
+      if (typeof data?.detail === "string") {
+        message = data.detail;
+      } else if (typeof data?.email?.[0] === "string") {
+        message = data.email[0];
+      } else if (typeof data?.password?.[0] === "string") {
+        message = data.password[0];
+      }
+    } catch {
+      // ignore
+    }
+    throw new Error(message);
+  }
+
+  return (await res.json()) as T;
+}
+
+export async function djangoLogin(payload: { email: string; password: string }) {
+  return djangoFetch<DjangoLoginResponse>("/api/auth/login/", {
+    method: "POST",
+    body: JSON.stringify({ email: payload.email, password: payload.password }),
+  });
+}
+
+export async function djangoRegister(payload: DjangoRegisterRequest) {
+  return djangoFetch<{ id: number; email: string }>("/api/auth/register/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function djangoMe(accessToken: string) {
+  const me = await djangoFetch<DjangoMeResponse>("/api/users/me/", {
+    method: "GET",
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+    },
+  });
+  return mapMeToUserProfile(me);
+}
