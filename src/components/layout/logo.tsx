@@ -20,11 +20,11 @@ export function Logo({
       className={cn("inline-flex min-w-0 items-center gap-3", compact && "lg:gap-2", className)}
     >
       <img
-        src="https://combined-aquamarine-0zsvtottyw.edgeone.app/agromind_app_icon_animated.gif"
+        src="/logos/agromind_app_icon_animated_128.gif"
         alt="Agromind AI logo"
         width={44}
         height={44}
-        className="shrink-0 rounded-2xl"
+        className="h-11 w-11 shrink-0 rounded-2xl object-cover"
       />
       <span className={cn("flex min-w-0 flex-col", compact && "lg:sr-only")}>
         <span

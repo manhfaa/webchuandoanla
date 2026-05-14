@@ -7,6 +7,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: `${brand.name} | AI xác thực ảnh lá cây`,
   description: brand.description,
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({
