@@ -145,3 +145,5 @@ SIMPLE_JWT = {
 # Render/Proxy friendly defaults
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
+
+CNN_MODEL_PATH = os.getenv("CNN_MODEL_PATH", "").strip()

@@ -91,6 +91,9 @@ export interface DiagnosisRecord {
   symptomSummary: string;
   causes: string[];
   recommendations: RecommendationBlock[];
+  cnnConfidence?: number;
+  cnnPayload?: Record<string, unknown>;
+  modelVersion?: string;
 }
 
 export interface ChatMessage {

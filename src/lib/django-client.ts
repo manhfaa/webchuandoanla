@@ -10,6 +10,20 @@ export type DjangoRegisterRequest = {
   password: string;
 };
 
+export type DjangoCnnPrediction = {
+  class_name: string;
+  plant_name: string;
+  disease_name: string;
+  confidence: number;
+};
+
+export type DjangoCnnResponse = DjangoCnnPrediction & {
+  top_predictions: DjangoCnnPrediction[];
+  model_version: string;
+  model_accuracy?: number;
+  image_size: number;
+};
+
 type DjangoMeResponse = {
   id: number;
   username: string;
@@ -94,4 +108,16 @@ export async function djangoMe(accessToken: string) {
     },
   });
   return mapMeToUserProfile(me);
+}
+
+export async function djangoClassifyLeafImage(payload: { imageDataUrl: string; accessToken: string }) {
+  return djangoFetch<DjangoCnnResponse>("/api/diagnoses/cnn/", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${payload.accessToken}`,
+    },
+    body: JSON.stringify({
+      image_data_url: payload.imageDataUrl,
+    }),
+  });
 }

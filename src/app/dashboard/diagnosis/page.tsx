@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { mockDiagnoses } from "@/data/mock/diagnoses";
+import { djangoClassifyLeafImage, type DjangoCnnResponse } from "@/lib/django-client";
 import { createPreviewDataUrl, detectLeafInImage, type LeafDetectionResult } from "@/lib/leaf-detector";
 import { formatConfidence } from "@/lib/utils";
 import {
@@ -93,8 +94,43 @@ function buildGeneratedRecord({
   };
 }
 
+function applyCnnResult(record: DiagnosisRecord, cnn: DjangoCnnResponse): DiagnosisRecord {
+  const topItems = cnn.top_predictions.slice(0, 3).map((item) => {
+    return `${item.plant_name || "Cây"} - ${item.disease_name}: ${formatConfidence(item.confidence)}`;
+  });
+
+  return {
+    ...record,
+    plant: cnn.plant_name || record.plant,
+    disease: cnn.disease_name || cnn.class_name || record.disease,
+    confidence: cnn.confidence,
+    severity: cnn.disease_name?.toLowerCase().includes("healthy") ? "Khỏe" : "CNN",
+    classificationReady: true,
+    note: `CNN đã phân loại ảnh với độ tin cậy ${formatConfidence(cnn.confidence)}.`,
+    symptomSummary:
+      cnn.disease_name?.toLowerCase().includes("healthy")
+        ? "CNN nhận định ảnh lá hiện tại thuộc nhóm khỏe mạnh. Bạn vẫn nên tiếp tục theo dõi nếu cây có dấu hiệu bất thường ngoài thực địa."
+        : `CNN nhận định ảnh có khả năng thuộc nhóm ${cnn.disease_name || cnn.class_name}. Kết quả này nên được dùng như gợi ý hỗ trợ, không thay thế đánh giá thực địa.`,
+    causes: [
+      `Nhãn CNN: ${cnn.class_name}.`,
+      `Độ tin cậy CNN: ${formatConfidence(cnn.confidence)}.`,
+      `Model: ${cnn.model_version}.`,
+    ],
+    recommendations: [
+      {
+        title: "Kết quả CNN",
+        items: topItems.length ? topItems : ["CNN đã trả về một nhãn phân loại chính cho ảnh này."],
+      },
+      ...record.recommendations,
+    ],
+    cnnConfidence: cnn.confidence,
+    cnnPayload: cnn as unknown as Record<string, unknown>,
+    modelVersion: cnn.model_version,
+  };
+}
+
 export default function DashboardDiagnosisPage() {
-  const { user } = useSessionStore();
+  const { user, accessToken } = useSessionStore();
   const { addGeneratedRecord } = useDiagnosisStore();
   const [status, setStatus] = useState<DiagnosisStatus>("idle");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -349,12 +385,24 @@ export default function DashboardDiagnosisPage() {
         return;
       }
 
-      const generatedRecord = buildGeneratedRecord({
+      let generatedRecord = buildGeneratedRecord({
         template,
         previewUrl: activePreview,
         detection,
         inputMethod: activeMethod,
       });
+
+      if (accessToken && activePreview.startsWith("data:")) {
+        try {
+          const cnn = await djangoClassifyLeafImage({
+            imageDataUrl: activePreview,
+            accessToken,
+          });
+          generatedRecord = applyCnnResult(generatedRecord, cnn);
+        } catch {
+          // Keep the browser-side leaf validation result if backend CNN is unavailable.
+        }
+      }
 
       setSelectedRecord(generatedRecord);
       addGeneratedRecord(generatedRecord);
