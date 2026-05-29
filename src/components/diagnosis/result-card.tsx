@@ -8,6 +8,25 @@ import { Card } from "@/components/ui/card";
 import { DiagnosisRecord } from "@/types";
 import { formatConfidence } from "@/lib/utils";
 
+function getCnnConfidenceTone(item: string) {
+  const match = item.match(/(\d+(?:[.,]\d+)?)%/);
+  const confidence = match ? Number(match[1].replace(",", ".")) / 100 : 0;
+
+  if (confidence >= 0.5) {
+    return {
+      label: "Tin cậy",
+      className: "border-emerald-200 bg-emerald-50 text-emerald-800",
+      badgeClassName: "bg-emerald-100 text-emerald-800",
+    };
+  }
+
+  return {
+    label: "Cảnh báo",
+    className: "border-red-200 bg-red-50 text-red-800",
+    badgeClassName: "bg-red-100 text-red-800",
+  };
+}
+
 export function DiagnosisResultCard({
   record,
   locked,
@@ -82,9 +101,28 @@ export function DiagnosisResultCard({
                   <div key={section.title}>
                     <p className="font-medium text-ink">{section.title}</p>
                     <ul className="mt-2 space-y-2 text-sm leading-7 text-slate-600">
-                      {section.items.slice(0, locked ? 1 : section.items.length).map((item) => (
-                        <li key={item}>- {item}</li>
-                      ))}
+                      {section.items.slice(0, locked ? 1 : section.items.length).map((item) => {
+                        const isCnnResult = section.title.includes("CNN");
+                        const tone = isCnnResult ? getCnnConfidenceTone(item) : null;
+
+                        return (
+                          <li
+                            key={item}
+                            className={
+                              tone
+                                ? `flex items-start justify-between gap-3 rounded-2xl border px-3 py-3 ${tone.className}`
+                                : undefined
+                            }
+                          >
+                            <span>{tone ? item : `- ${item}`}</span>
+                            {tone ? (
+                              <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${tone.badgeClassName}`}>
+                                {tone.label}
+                              </span>
+                            ) : null}
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 ))}

@@ -51,6 +51,25 @@ function applyCnnResult(record: DiagnosisRecord, cnn: DjangoCnnResponse): Diagno
   };
 }
 
+function getCnnConfidenceTone(item: string) {
+  const match = item.match(/(\d+(?:[.,]\d+)?)%/);
+  const confidence = match ? Number(match[1].replace(",", ".")) / 100 : 0;
+
+  if (confidence >= 0.5) {
+    return {
+      label: "Tin cậy",
+      className: "border-emerald-300/45 bg-emerald-500/12 text-emerald-50",
+      badgeClassName: "bg-emerald-400/20 text-emerald-100 ring-1 ring-emerald-300/40",
+    };
+  }
+
+  return {
+    label: "Cảnh báo",
+    className: "border-red-300/45 bg-red-500/12 text-red-50",
+    badgeClassName: "bg-red-400/20 text-red-100 ring-1 ring-red-300/40",
+  };
+}
+
 export default function ResultDetailPage() {
   const params = useParams<{ id: string }>();
   const { records, saveRecord, savedRecordIds, addGeneratedRecord } = useDiagnosisStore();
@@ -230,14 +249,28 @@ export default function ResultDetailPage() {
             >
               <h3 className="font-display text-3xl font-semibold">{section.title}</h3>
               <div className="mt-5 space-y-3">
-                {section.items.map((item) => (
-                  <div
-                    key={item}
-                    className="rounded-[24px] border border-white/10 bg-white/5 px-4 py-4 text-sm leading-7 text-emerald-50/75"
-                  >
-                    {item}
-                  </div>
-                ))}
+                {section.items.map((item) => {
+                  const isCnnResult = section.title.includes("CNN");
+                  const tone = isCnnResult ? getCnnConfidenceTone(item) : null;
+
+                  return (
+                    <div
+                      key={item}
+                      className={
+                        tone
+                          ? `flex items-start justify-between gap-3 rounded-[24px] border px-4 py-4 text-sm leading-7 ${tone.className}`
+                          : "rounded-[24px] border border-white/10 bg-white/5 px-4 py-4 text-sm leading-7 text-emerald-50/75"
+                      }
+                    >
+                      <span>{item}</span>
+                      {tone ? (
+                        <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${tone.badgeClassName}`}>
+                          {tone.label}
+                        </span>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </div>
             </Card>
           ))}
