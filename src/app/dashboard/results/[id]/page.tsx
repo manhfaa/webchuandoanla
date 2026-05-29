@@ -17,7 +17,7 @@ import { useSessionStore } from "@/store/session-store";
 import type { DiagnosisRecord } from "@/types";
 
 function applyCnnResult(record: DiagnosisRecord, cnn: DjangoCnnResponse): DiagnosisRecord {
-  const topItems = cnn.top_predictions.slice(0, 3).map((item) => {
+  const topItems = cnn.top_predictions.slice(0, 5).map((item) => {
     return `${item.plant_name || "Cây"} - ${item.disease_name}: ${formatConfidence(item.confidence)}`;
   });
 

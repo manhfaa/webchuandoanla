@@ -35,13 +35,17 @@ class DiagnosisCnnAPIView(APIView):
     def post(self, request):
         image_data_url = request.data.get("image_data_url")
         image_file = request.FILES.get("image")
+        try:
+            top_k = int(request.data.get("top_k", 5))
+        except (TypeError, ValueError):
+            return Response({"detail": "top_k must be a number."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             if remote_cnn_enabled():
-                result = classify_remote(image_data_url=image_data_url, image_file=image_file)
+                result = classify_remote(image_data_url=image_data_url, image_file=image_file, top_k=top_k)
             else:
                 image = image_from_payload(image_data_url=image_data_url, image_file=image_file)
-                result = classify_image(image)
+                result = classify_image(image, top_k=top_k)
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         except (CnnModelUnavailable, RemoteCnnUnavailable) as exc:

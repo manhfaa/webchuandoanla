@@ -126,6 +126,7 @@ export async function djangoClassifyLeafImage(payload: { imageDataUrl: string; a
     headers,
     body: JSON.stringify({
       image_data_url: payload.imageDataUrl,
+      top_k: 5,
     }),
     timeoutMs: 120000,
   });
