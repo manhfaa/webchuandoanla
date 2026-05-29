@@ -11,5 +11,6 @@ backend/.pip-cache
 backend/db.sqlite3
 backend/**/__pycache__
 backend/.env
+hf_space/best_model.pth
 
 .vercel

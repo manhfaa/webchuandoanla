@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from .models import Diagnosis
 from .serializers import DiagnosisSerializer
 from .services.cnn_classifier import CnnModelUnavailable, classify_image, image_from_payload
+from .services.cnn_remote import RemoteCnnUnavailable, classify_remote, remote_cnn_enabled
 
 
 class DiagnosisListCreateAPIView(generics.ListCreateAPIView):
@@ -36,11 +37,14 @@ class DiagnosisCnnAPIView(APIView):
         image_file = request.FILES.get("image")
 
         try:
-            image = image_from_payload(image_data_url=image_data_url, image_file=image_file)
-            result = classify_image(image)
+            if remote_cnn_enabled():
+                result = classify_remote(image_data_url=image_data_url, image_file=image_file)
+            else:
+                image = image_from_payload(image_data_url=image_data_url, image_file=image_file)
+                result = classify_image(image)
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-        except CnnModelUnavailable as exc:
+        except (CnnModelUnavailable, RemoteCnnUnavailable) as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except Exception:
             return Response(

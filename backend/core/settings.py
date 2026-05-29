@@ -147,3 +147,5 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 
 CNN_MODEL_PATH = os.getenv("CNN_MODEL_PATH", "").strip()
+CNN_API_URL = os.getenv("CNN_API_URL", "").strip()
+CNN_API_TOKEN = os.getenv("CNN_API_TOKEN", "").strip()
