@@ -392,7 +392,7 @@ export default function DashboardDiagnosisPage() {
         inputMethod: activeMethod,
       });
 
-      if (accessToken && activePreview.startsWith("data:")) {
+      if (activePreview.startsWith("data:")) {
         try {
           const cnn = await djangoClassifyLeafImage({
             imageDataUrl: activePreview,

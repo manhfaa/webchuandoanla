@@ -29,7 +29,7 @@ class DiagnosisDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class DiagnosisCnnAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def post(self, request):

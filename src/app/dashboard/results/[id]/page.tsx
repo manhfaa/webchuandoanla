@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { Bookmark, Leaf, RefreshCcw } from "lucide-react";
 
@@ -10,12 +10,52 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { mockDiagnoses } from "@/data/mock/diagnoses";
+import { djangoClassifyLeafImage, type DjangoCnnResponse } from "@/lib/django-client";
 import { formatConfidence, formatDate } from "@/lib/utils";
 import { useDiagnosisStore } from "@/store/diagnosis-store";
+import { useSessionStore } from "@/store/session-store";
+import type { DiagnosisRecord } from "@/types";
+
+function applyCnnResult(record: DiagnosisRecord, cnn: DjangoCnnResponse): DiagnosisRecord {
+  const topItems = cnn.top_predictions.slice(0, 3).map((item) => {
+    return `${item.plant_name || "Cây"} - ${item.disease_name}: ${formatConfidence(item.confidence)}`;
+  });
+
+  return {
+    ...record,
+    plant: cnn.plant_name || record.plant,
+    disease: cnn.disease_name || cnn.class_name || record.disease,
+    confidence: cnn.confidence,
+    severity: cnn.disease_name?.toLowerCase().includes("healthy") ? "Khỏe" : "CNN",
+    classificationReady: true,
+    note: `CNN đã phân loại ảnh với độ tin cậy ${formatConfidence(cnn.confidence)}.`,
+    symptomSummary:
+      cnn.disease_name?.toLowerCase().includes("healthy")
+        ? "CNN nhận định ảnh lá hiện tại thuộc nhóm khỏe mạnh. Bạn vẫn nên tiếp tục theo dõi nếu cây có dấu hiệu bất thường ngoài thực địa."
+        : `CNN nhận định ảnh có khả năng thuộc nhóm ${cnn.disease_name || cnn.class_name}. Kết quả này nên được dùng như gợi ý hỗ trợ, không thay thế đánh giá thực địa.`,
+    causes: [
+      `Nhãn CNN: ${cnn.class_name}.`,
+      `Độ tin cậy CNN: ${formatConfidence(cnn.confidence)}.`,
+      `Model: ${cnn.model_version}.`,
+    ],
+    recommendations: [
+      {
+        title: "Kết quả CNN",
+        items: topItems.length ? topItems : ["CNN đã trả về một nhãn phân loại chính cho ảnh này."],
+      },
+      ...record.recommendations,
+    ],
+    cnnConfidence: cnn.confidence,
+    cnnPayload: cnn as unknown as Record<string, unknown>,
+    modelVersion: cnn.model_version,
+  };
+}
 
 export default function ResultDetailPage() {
   const params = useParams<{ id: string }>();
-  const { records, saveRecord, savedRecordIds } = useDiagnosisStore();
+  const { records, saveRecord, savedRecordIds, addGeneratedRecord } = useDiagnosisStore();
+  const { accessToken } = useSessionStore();
+  const [cnnRefreshState, setCnnRefreshState] = useState<"idle" | "loading" | "error">("idle");
 
   const record = useMemo(
     () =>
@@ -24,6 +64,37 @@ export default function ResultDetailPage() {
       null,
     [params.id, records],
   );
+
+  useEffect(() => {
+    if (
+      !record ||
+      record.classificationReady ||
+      !record.image.startsWith("data:")
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    setCnnRefreshState("loading");
+
+    void djangoClassifyLeafImage({
+      imageDataUrl: record.image,
+      accessToken,
+    })
+      .then((cnn) => {
+        if (cancelled) return;
+        addGeneratedRecord(applyCnnResult(record, cnn));
+        setCnnRefreshState("idle");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setCnnRefreshState("error");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, addGeneratedRecord, record]);
 
   if (!record) {
     return (
@@ -42,6 +113,15 @@ export default function ResultDetailPage() {
   }
 
   const classificationReady = Boolean(record.classificationReady);
+  const cnnStatusLabel = classificationReady
+    ? record.cnnConfidence !== undefined
+      ? formatConfidence(record.cnnConfidence)
+      : "Đã sẵn sàng"
+    : cnnRefreshState === "loading"
+      ? "Đang chạy"
+      : cnnRefreshState === "error"
+        ? "Chưa chạy được"
+        : "Chưa có";
   const sourceLabel =
     record.inputMethod === "capture"
       ? "Ảnh chụp"
@@ -90,10 +170,10 @@ export default function ResultDetailPage() {
               </div>
               <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-emerald-100/60">
-                  Trạng thái CNN
+                  {classificationReady ? "Độ tin cậy CNN" : "Trạng thái CNN"}
                 </p>
                 <p className="mt-3 font-display text-2xl font-semibold">
-                  {classificationReady ? "Đã sẵn sàng" : "Sẽ bổ sung sau"}
+                  {cnnStatusLabel}
                 </p>
               </div>
             </div>

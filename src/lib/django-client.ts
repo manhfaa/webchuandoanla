@@ -43,17 +43,22 @@ function mapMeToUserProfile(me: DjangoMeResponse): UserProfile {
   };
 }
 
-async function djangoFetch<T>(path: string, init?: RequestInit): Promise<T> {
+type DjangoFetchInit = RequestInit & {
+  timeoutMs?: number;
+};
+
+async function djangoFetch<T>(path: string, init?: DjangoFetchInit): Promise<T> {
   const normalizedPath = path.replace(/^\//, "").replace(/\/+$/, "");
+  const { timeoutMs = 30000, ...fetchInit } = init ?? {};
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   let res: Response;
   try {
     res = await fetch(`/api/django/${normalizedPath}`, {
-      ...init,
+      ...fetchInit,
       headers: {
         "content-type": "application/json",
-        ...(init?.headers ?? {}),
+        ...(fetchInit.headers ?? {}),
       },
       signal: controller.signal,
     });
@@ -110,14 +115,18 @@ export async function djangoMe(accessToken: string) {
   return mapMeToUserProfile(me);
 }
 
-export async function djangoClassifyLeafImage(payload: { imageDataUrl: string; accessToken: string }) {
+export async function djangoClassifyLeafImage(payload: { imageDataUrl: string; accessToken?: string | null }) {
+  const headers: Record<string, string> = {};
+  if (payload.accessToken) {
+    headers.authorization = `Bearer ${payload.accessToken}`;
+  }
+
   return djangoFetch<DjangoCnnResponse>("/api/diagnoses/cnn/", {
     method: "POST",
-    headers: {
-      authorization: `Bearer ${payload.accessToken}`,
-    },
+    headers,
     body: JSON.stringify({
       image_data_url: payload.imageDataUrl,
     }),
+    timeoutMs: 120000,
   });
 }
