@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import torch
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 from PIL import Image
 from torch import nn
@@ -161,14 +161,20 @@ def health() -> dict[str, Any]:
 
 
 @app.post("/predict")
-async def predict(payload: PredictRequest | None = None, image: UploadFile | None = File(default=None)):
-    if image is not None:
-        content = await image.read()
-        pil_image = Image.open(BytesIO(content)).convert("RGB")
-        top_k = payload.top_k if payload else 5
+async def predict(request: Request):
+    content_type = request.headers.get("content-type", "").lower()
+
+    if content_type.startswith("multipart/form-data"):
+        form = await request.form()
+        image = form.get("image")
+        if not isinstance(image, UploadFile) and not hasattr(image, "read"):
+            raise HTTPException(status_code=400, detail="Missing image.")
+        top_k = int(form.get("top_k", 5))
+        pil_image = Image.open(BytesIO(await image.read())).convert("RGB")
         return classify_image(pil_image, top_k=top_k)
 
-    if payload and payload.image_data_url:
+    payload = PredictRequest.model_validate(await request.json())
+    if payload.image_data_url:
         pil_image = Image.open(BytesIO(decode_data_url(payload.image_data_url))).convert("RGB")
         return classify_image(pil_image, top_k=payload.top_k)
 

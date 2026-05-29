@@ -2,7 +2,7 @@
 title: Agromind CNN API
 emoji: 🌿
 colorFrom: green
-colorTo: cyan
+colorTo: blue
 sdk: docker
 pinned: false
 ---
