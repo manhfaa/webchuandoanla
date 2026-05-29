@@ -37,6 +37,9 @@ async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> })
 
   const resHeaders = new Headers(res.headers);
   resHeaders.delete("set-cookie"); // keep auth purely token-based in frontend
+  resHeaders.delete("content-encoding");
+  resHeaders.delete("content-length");
+  resHeaders.delete("transfer-encoding");
 
   return new NextResponse(res.body, {
     status: res.status,
