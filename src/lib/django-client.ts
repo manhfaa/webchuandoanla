@@ -77,6 +77,8 @@ async function djangoFetch<T>(path: string, init?: DjangoFetchInit): Promise<T> 
       const data = (await res.json()) as any;
       if (typeof data?.detail === "string") {
         message = data.detail;
+      } else if (typeof data?.non_field_errors?.[0] === "string") {
+        message = data.non_field_errors[0];
       } else if (typeof data?.email?.[0] === "string") {
         message = data.email[0];
       } else if (typeof data?.password?.[0] === "string") {
