@@ -17,31 +17,31 @@ const statusMeta: Record<
   }
 > = {
   pending: {
-    label: "Sap toi",
+    label: "Sắp tới",
     icon: CircleDashed,
     nodeClass: "bg-white text-slate-400 ring-1 ring-slate-200",
     lineClass: "bg-slate-200",
   },
   current: {
-    label: "Dang thuc hien",
+    label: "Đang thực hiện",
     icon: Clock3,
     nodeClass: "bg-emerald-600 text-white shadow-float",
     lineClass: "bg-emerald-300",
   },
   completed: {
-    label: "Da hoan thanh",
+    label: "Đã hoàn thành",
     icon: CheckCircle2,
     nodeClass: "bg-brand-600 text-white",
     lineClass: "bg-brand-500",
   },
   skipped: {
-    label: "Bo qua",
+    label: "Bỏ qua",
     icon: PauseCircle,
     nodeClass: "bg-slate-300 text-slate-700",
     lineClass: "bg-slate-300",
   },
   delayed: {
-    label: "Bi doi lich",
+    label: "Bị đổi lịch",
     icon: TriangleAlert,
     nodeClass: "bg-amber-500 text-white",
     lineClass: "bg-[linear-gradient(to_bottom,#f59e0b_50%,transparent_50%)] bg-[length:100%_12px]",
@@ -112,7 +112,7 @@ export function CropPlanTimeline({
                     <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">{step.description}</p>
                   </div>
                   <div className="rounded-2xl bg-emerald-50/80 px-4 py-3 text-right">
-                    <p className="text-xs uppercase tracking-[0.18em] text-emerald-700/65">Thoi gian</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-emerald-700/65">Thời gian</p>
                     <p className="mt-1 text-sm font-medium text-slate-900">
                       {new Date(step.suggested_start_time).toLocaleString("vi-VN")}
                     </p>
@@ -121,30 +121,30 @@ export function CropPlanTimeline({
 
                 <div className="mt-5 grid gap-3 md:grid-cols-3">
                   <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm text-slate-700">
-                    <p className="text-xs uppercase tracking-[0.18em] text-emerald-700/65">Thoi luong</p>
-                    <p className="mt-2 font-medium text-slate-900">{step.estimated_duration_minutes} phut</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-emerald-700/65">Thời lượng</p>
+                    <p className="mt-2 font-medium text-slate-900">{step.estimated_duration_minutes} phút</p>
                   </div>
                   <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm text-slate-700">
-                    <p className="text-xs uppercase tracking-[0.18em] text-emerald-700/65">Nuoc tuoi</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-emerald-700/65">Nước tưới</p>
                     <p className="mt-2 font-medium text-slate-900">
-                      {step.water_amount ? `${step.water_amount.value} ${step.water_amount.unit}` : "Theo doi am dat"}
+                      {step.water_amount ? `${step.water_amount.value} ${step.water_amount.unit}` : "Theo dõi ẩm đất"}
                     </p>
                   </div>
                   <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm text-slate-700">
-                    <p className="text-xs uppercase tracking-[0.18em] text-emerald-700/65">Nang</p>
-                    <p className="mt-2 font-medium text-slate-900">{step.sunlight_requirement_text || "Theo dieu kien thuc te"}</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-emerald-700/65">Nắng</p>
+                    <p className="mt-2 font-medium text-slate-900">{step.sunlight_requirement_text || "Theo điều kiện thực tế"}</p>
                   </div>
                 </div>
 
                 <div className="mt-5 flex flex-wrap gap-3">
                   <Button variant="secondary" onClick={() => onSelect(step)}>
-                    Xem chi tiet
+                    Xem chi tiết
                   </Button>
                   {step.status !== "completed" ? (
-                    <Button onClick={() => onComplete(step.id)}>Hoan thanh</Button>
+                    <Button onClick={() => onComplete(step.id)}>Hoàn thành</Button>
                   ) : (
                     <span className="rounded-full bg-emerald-100 px-4 py-3 text-sm font-medium text-emerald-800">
-                      Buoc nay da xong
+                      Bước này đã xong
                     </span>
                   )}
                 </div>
@@ -156,4 +156,3 @@ export function CropPlanTimeline({
     </div>
   );
 }
-

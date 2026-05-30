@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useCallback, useMemo, useState } from "react";
 import { MessageCircleMore, ShieldCheck } from "lucide-react";
 
 import { ChatComposer } from "@/components/chat/chat-composer";
@@ -19,6 +19,7 @@ import {
 import { ChatApiResponse, ChatMessage, ChatMode, ChatWorkspace, QuickPrompt } from "@/types";
 import { useDiagnosisStore } from "@/store/diagnosis-store";
 import { useSessionStore } from "@/store/session-store";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 
 function getWorkspaceSubtitle(workspace: ChatWorkspace) {
   if (workspace === "assistant") {
@@ -60,6 +61,15 @@ export default function DashboardChatPage() {
       [mode]: value,
     }));
   }
+
+  const handleVoiceTranscript = useCallback(
+    (value: string) => {
+      setComposer(activeMode, value);
+    },
+    [activeMode],
+  );
+
+  const voice = useVoiceInput({ onTranscript: handleVoiceTranscript });
 
   async function sendMessage(mode: ChatMode, content: string) {
     if (!content.trim()) return;
@@ -170,6 +180,15 @@ export default function DashboardChatPage() {
               }}
               placeholder="Ví dụ: Tôi nên chụp thêm những góc nào của lá cây để lần phân tích sau rõ hơn?"
               helperText="Chat này dùng mô hình LLM thông thường để trò chuyện và gợi ý."
+              onVoiceClick={() => {
+                if (voice.listening) {
+                  voice.stop();
+                } else {
+                  voice.start();
+                }
+              }}
+              voiceListening={voice.listening}
+              voiceSupported={voice.supported}
             />
             <p className="px-2 text-xs text-amber-200">(AI có thể mắc lỗi vui lòng kiểm tra lại)</p>
           </div>
@@ -231,6 +250,15 @@ export default function DashboardChatPage() {
               }}
               placeholder="Ví dụ: Với lá vừa xác thực, tôi nên theo dõi thêm những dấu hiệu nào ngoài ruộng?"
               helperText="Kênh chuyên gia tập trung vào lời khuyên thực tế, dễ áp dụng."
+              onVoiceClick={() => {
+                if (voice.listening) {
+                  voice.stop();
+                } else {
+                  voice.start();
+                }
+              }}
+              voiceListening={voice.listening}
+              voiceSupported={voice.supported}
             />
           </div>
 

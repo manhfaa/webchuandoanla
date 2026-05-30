@@ -102,7 +102,7 @@ class VerifyTransferAPIView(APIView):
                 {
                     "status": "pending",
                     "is_paid": False,
-                    "message": f"So tien khong khop. Vui long chuyen dung {expected_amount} VND.",
+                    "message": f"Số tiền không khớp. Vui lòng chuyển đúng {expected_amount} VND.",
                     "contact": {
                         "name": data["contact_name"],
                         "email": data["contact_email"],

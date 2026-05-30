@@ -78,11 +78,11 @@ def derive_metrics(daily_series: list[dict]) -> dict:
         "high_humidity_days": len([row for row in daily_series[:30] if row["rh2m"] >= 85]),
         "heavy_rain_days": len([row for row in daily_series[:30] if row["precipitation"] >= 15]),
         "dry_window_score": max(10, 100 - int(sum(first_14_rain))) if first_14_rain else 50,
-        "seasonality_label": "mua mua"
+        "seasonality_label": "mùa mưa"
         if sum(first_14_rain) >= 70
-        else "chuyen mua"
+        else "chuyển mùa"
         if sum(first_14_rain) >= 35
-        else "mua kho",
+        else "mùa khô",
     }
 
 
@@ -119,4 +119,3 @@ def fetch_nasa_power(lat: float, lon: float, start_date: date, end_date: date) -
             "daily_series": fallback_series,
             "derived_metrics": derive_metrics(fallback_series),
         }
-

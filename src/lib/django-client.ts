@@ -1,4 +1,4 @@
-import type { PlanTier, UserProfile } from "@/types";
+import type { ActionPlan, PlanTier, UserProfile } from "@/types";
 
 export type DjangoLoginResponse = {
   access: string;
@@ -22,6 +22,7 @@ export type DjangoCnnResponse = DjangoCnnPrediction & {
   model_version: string;
   model_accuracy?: number;
   image_size: number;
+  action_plan?: ActionPlan;
 };
 
 type DjangoMeResponse = {

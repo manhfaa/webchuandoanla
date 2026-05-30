@@ -4,9 +4,13 @@ import Link from "next/link";
 import { Menu, Rocket, UserCircle2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
+import { LanguageToggle } from "@/components/layout/language-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useOnlineStatus } from "@/hooks/use-online-status";
+import { t } from "@/lib/i18n";
 import { getPlanLabel } from "@/lib/utils";
+import { useLanguageStore } from "@/store/language-store";
 import { useSessionStore } from "@/store/session-store";
 
 const titleMap: Record<string, { title: string; description: string }> = {
@@ -17,6 +21,18 @@ const titleMap: Record<string, { title: string; description: string }> = {
   "/dashboard/diagnosis": {
     title: "Kiểm tra ảnh lá cây",
     description: "Tải ảnh hoặc chụp ảnh để hệ thống xác minh đây có phải lá cây hay không.",
+  },
+  "/dashboard/weather-alerts": {
+    title: "Thời tiết & sâu bệnh",
+    description: "Theo dõi dự báo, cảnh báo sâu bệnh và gợi ý thao tác theo vị trí canh tác.",
+  },
+  "/dashboard/farms": {
+    title: "Lô vườn & QR truy xuất",
+    description: "Quản lý lô vườn, nhật ký chăm sóc và trang công khai cho mã QR truy xuất.",
+  },
+  "/dashboard/input-library": {
+    title: "Thư viện vật tư",
+    description: "Tra cứu thuốc bảo vệ thực vật, phân bón và triệu chứng thiếu dinh dưỡng.",
   },
   "/dashboard/chat": {
     title: "Chat tư vấn",
@@ -40,6 +56,49 @@ const titleMap: Record<string, { title: string; description: string }> = {
   },
 };
 
+const titleMapEn: Record<string, { title: string; description: string }> = {
+  "/dashboard": {
+    title: "Dashboard overview",
+    description: "Recent activity, diagnosis history and the current subscription plan.",
+  },
+  "/dashboard/diagnosis": {
+    title: "Leaf image check",
+    description: "Upload or capture a leaf image for validation and CNN diagnosis.",
+  },
+  "/dashboard/weather-alerts": {
+    title: "Weather & pest alerts",
+    description: "Track forecast, pest warnings and field actions by cultivation location.",
+  },
+  "/dashboard/farms": {
+    title: "Farms, logs & QR",
+    description: "Manage plots, cultivation logs and public QR traceability pages.",
+  },
+  "/dashboard/input-library": {
+    title: "Input library",
+    description: "Search pesticides, fertilizers and nutrition deficiency symptoms.",
+  },
+  "/dashboard/chat": {
+    title: "Advisory chat",
+    description: "Chat with AI or use the expert agriculture channel for deeper support.",
+  },
+  "/dashboard/history": {
+    title: "Image check history",
+    description: "Review saved leaf image checks over time.",
+  },
+  "/dashboard/pricing": {
+    title: "Plans",
+    description: "Compare plans and choose the experience that fits your needs.",
+  },
+  "/dashboard/profile": {
+    title: "User profile",
+    description: "Manage account details and the plan you are using.",
+  },
+  "/dashboard/crop-plans": {
+    title: "Crop plans",
+    description: "Track crop care plans by location, weather and execution progress.",
+  },
+};
+
 const checkoutMeta = {
   title: "Thanh toán nâng cấp gói",
   description: "Điền thông tin và xác nhận để hệ thống đối soát giao dịch.",
@@ -55,22 +114,38 @@ export function DashboardTopbar({
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useSessionStore();
+  const { language } = useLanguageStore();
+  const online = useOnlineStatus();
+  const activeTitleMap = language === "en" ? titleMapEn : titleMap;
+  const localizedCheckoutMeta =
+    language === "en"
+      ? {
+          title: "Plan upgrade checkout",
+          description: "Enter details and confirm so the system can reconcile the transaction.",
+        }
+      : checkoutMeta;
 
   const pageMeta =
     pathname.startsWith("/dashboard/pricing/checkout")
-      ? checkoutMeta
-      : (titleMap[pathname] ??
+      ? localizedCheckoutMeta
+      : (activeTitleMap[pathname] ??
         (pathname.startsWith("/dashboard/results")
           ? {
-              title: "Kết quả kiểm tra ảnh",
-              description: "Xem lại ảnh đã kiểm tra và các gợi ý tiếp theo.",
+              title: language === "en" ? "Image check result" : "Kết quả kiểm tra ảnh",
+              description:
+                language === "en"
+                  ? "Review the checked image and recommended next steps."
+                  : "Xem lại ảnh đã kiểm tra và các gợi ý tiếp theo.",
             }
           : pathname.startsWith("/dashboard/crop-plans/")
             ? {
-                title: "Chi tiết kế hoạch trồng cây",
-                description: "Mở từng bước cần làm, xem lịch và cập nhật tiến độ chăm cây.",
+                title: language === "en" ? "Crop plan details" : "Chi tiết kế hoạch trồng cây",
+                description:
+                  language === "en"
+                    ? "Open each step, review the schedule and update crop care progress."
+                    : "Mở từng bước cần làm, xem lịch và cập nhật tiến độ chăm cây.",
               }
-            : titleMap["/dashboard"]));
+            : activeTitleMap["/dashboard"]));
 
   return (
     <header className="workspace-header sticky top-0 z-50 flex min-h-[72px] shrink-0 border-b border-border-dark bg-app backdrop-blur-md">
@@ -88,7 +163,7 @@ export function DashboardTopbar({
           </Button>
 
           <div className="min-w-0 flex-1">
-            <p className="text-overline text-muted-on-dark">Agromind AI workspace</p>
+            <p className="text-overline text-muted-on-dark">Không gian làm việc Agromind AI</p>
             <h1
               className="mt-0.5 truncate text-xl font-semibold tracking-tight text-on-dark-strong sm:text-h3"
               aria-describedby="dashboard-page-desc"
@@ -102,6 +177,10 @@ export function DashboardTopbar({
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-end lg:ml-auto">
+          <LanguageToggle />
+          <Badge variant={online ? "success" : "warning"}>
+            {t(language, online ? "status.online" : "status.offline")}
+          </Badge>
           <Badge variant="dark" className="no-underline">
             Gói {getPlanLabel(user?.currentPlan ?? "free")}
           </Badge>

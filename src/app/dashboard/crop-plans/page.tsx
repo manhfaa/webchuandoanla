@@ -51,7 +51,7 @@ export default function CropPlansPage() {
       <Card className="rounded-lg border-emerald-100/70 bg-gradient-to-br from-white via-[#f5fceb] to-emerald-50 p-6 sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-overline text-leaf-700">Crop planner</p>
+            <p className="text-overline text-leaf-700">Kế hoạch canh tác</p>
             <h1 className="mt-2 text-h2 text-ink-900 sm:text-h1">Kế hoạch trồng cây của bạn</h1>
             <p className="mt-3 max-w-3xl text-body text-ink-500 sm:text-body-lg">
               Xem các vụ đang chạy, việc cần làm hôm nay và mở nhanh timeline chăm cây theo địa điểm.

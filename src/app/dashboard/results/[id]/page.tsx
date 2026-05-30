@@ -4,14 +4,17 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { Bookmark, Leaf, RefreshCcw } from "lucide-react";
+import { Bookmark, Leaf, RefreshCcw, Volume2 } from "lucide-react";
 
+import { ActionRecommendations } from "@/components/diagnosis/action-recommendations";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { mockDiagnoses } from "@/data/mock/diagnoses";
 import { djangoClassifyLeafImage, type DjangoCnnResponse } from "@/lib/django-client";
+import { fetchInputLibrary, type AgriculturalInput } from "@/lib/farmops-client";
 import { formatConfidence, formatDate } from "@/lib/utils";
+import { useTextToSpeech } from "@/hooks/use-text-to-speech";
 import { useDiagnosisStore } from "@/store/diagnosis-store";
 import { useSessionStore } from "@/store/session-store";
 import type { DiagnosisRecord } from "@/types";
@@ -47,6 +50,7 @@ function applyCnnResult(record: DiagnosisRecord, cnn: DjangoCnnResponse): Diagno
     ],
     cnnConfidence: cnn.confidence,
     cnnPayload: cnn as unknown as Record<string, unknown>,
+    actionPlan: cnn.action_plan,
     modelVersion: cnn.model_version,
   };
 }
@@ -55,7 +59,7 @@ function getCnnConfidenceTone(item: string) {
   const match = item.match(/(\d+(?:[.,]\d+)?)%/);
   const confidence = match ? Number(match[1].replace(",", ".")) / 100 : 0;
 
-  if (confidence >= 0.5) {
+  if (confidence >= 0.7) {
     return {
       label: "Tin cậy",
       className: "border-emerald-300/45 bg-emerald-500/12 text-emerald-50",
@@ -70,11 +74,20 @@ function getCnnConfidenceTone(item: string) {
   };
 }
 
+function inputCategoryLabel(category: string) {
+  if (category === "pesticide") return "Thuốc BVTV";
+  if (category === "fertilizer") return "Phân bón";
+  if (category === "nutrition") return "Dinh dưỡng";
+  return category;
+}
+
 export default function ResultDetailPage() {
   const params = useParams<{ id: string }>();
   const { records, saveRecord, savedRecordIds, addGeneratedRecord } = useDiagnosisStore();
   const { accessToken } = useSessionStore();
   const [cnnRefreshState, setCnnRefreshState] = useState<"idle" | "loading" | "error">("idle");
+  const [relatedInputs, setRelatedInputs] = useState<AgriculturalInput[]>([]);
+  const tts = useTextToSpeech("vi-VN");
 
   const record = useMemo(
     () =>
@@ -115,6 +128,13 @@ export default function ResultDetailPage() {
     };
   }, [accessToken, addGeneratedRecord, record]);
 
+  useEffect(() => {
+    if (!record?.classificationReady) return;
+    void fetchInputLibrary({ crop: record.plant, disease: record.disease })
+      .then((items) => setRelatedInputs(items.slice(0, 3)))
+      .catch(() => setRelatedInputs([]));
+  }, [record]);
+
   if (!record) {
     return (
       <Card className="rounded-[34px] border-white/10 bg-white/5 py-20 text-center text-white">
@@ -132,6 +152,7 @@ export default function ResultDetailPage() {
   }
 
   const classificationReady = Boolean(record.classificationReady);
+  const cnnConfidenceLow = typeof record.cnnConfidence === "number" && record.cnnConfidence < 0.7;
   const cnnStatusLabel = classificationReady
     ? record.cnnConfidence !== undefined
       ? formatConfidence(record.cnnConfidence)
@@ -187,15 +208,29 @@ export default function ResultDetailPage() {
                   {formatConfidence(record.leafConfidence ?? record.confidence)}
                 </p>
               </div>
-              <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+              <div
+                className={`rounded-[24px] border p-4 ${
+                  classificationReady
+                    ? cnnConfidenceLow
+                      ? "border-red-300/45 bg-red-500/12"
+                      : "border-emerald-300/45 bg-emerald-500/12"
+                    : "border-white/10 bg-white/5"
+                }`}
+              >
                 <p className="text-xs uppercase tracking-[0.2em] text-emerald-100/60">
                   {classificationReady ? "Độ tin cậy CNN" : "Trạng thái CNN"}
                 </p>
-                <p className="mt-3 font-display text-2xl font-semibold">
+                <p className={`mt-3 font-display text-2xl font-semibold ${cnnConfidenceLow ? "text-red-100" : "text-lime-200"}`}>
                   {cnnStatusLabel}
                 </p>
               </div>
             </div>
+
+            {cnnConfidenceLow ? (
+              <div className="mt-5 rounded-[24px] border border-red-300/45 bg-red-500/12 px-4 py-4 text-sm leading-7 text-red-50">
+                Cảnh báo: độ tin cậy CNN dưới 70%, nên chụp lại ảnh rõ hơn hoặc hỏi chuyên gia trước khi xử lý ngoài vườn.
+              </div>
+            ) : null}
 
             {record.leafCheckNote ? (
               <div className="mt-5 rounded-[24px] border border-white/10 bg-white/5 px-4 py-4 text-sm leading-7 text-emerald-50/75">
@@ -208,6 +243,23 @@ export default function ResultDetailPage() {
                 <Bookmark size={16} />
                 Lưu kết quả
               </Button>
+              <Button
+                variant="secondary"
+                disabled={!tts.supported}
+                onClick={() => {
+                  const actionText = record.actionPlan
+                    ? [
+                        `Mức rủi ro ${record.actionPlan.risk_level}.`,
+                        ...(record.actionPlan.immediate_actions ?? []),
+                        ...(record.actionPlan.follow_up_actions ?? []),
+                      ].join(" ")
+                    : "";
+                  tts.speak(`${record.plant}. ${record.disease}. ${record.note}. ${actionText}`);
+                }}
+              >
+                <Volume2 size={16} />
+                {tts.speaking ? "Đang đọc" : "Đọc kết quả"}
+              </Button>
               <Link href="/dashboard/diagnosis" className={buttonVariants({ variant: "secondary" })}>
                 <RefreshCcw size={16} />
                 Xác thực ảnh khác
@@ -216,6 +268,8 @@ export default function ResultDetailPage() {
           </div>
         </div>
       </Card>
+
+      <ActionRecommendations plan={record.actionPlan} />
 
       <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <Card className="rounded-[34px] border-white/10 bg-white/5 text-white">
@@ -276,6 +330,26 @@ export default function ResultDetailPage() {
           ))}
         </div>
       </div>
+
+      {relatedInputs.length ? (
+        <Card className="rounded-[34px] border-white/10 bg-white/5 text-white">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-100/60">
+            Gợi ý từ thư viện vật tư
+          </p>
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            {relatedInputs.map((item) => (
+              <div key={item.id} className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+                <p className="text-sm font-semibold text-white">{item.name}</p>
+                <p className="mt-2 text-xs uppercase tracking-[0.18em] text-emerald-100/60">
+                  {inputCategoryLabel(item.category)}
+                </p>
+                <p className="mt-3 text-sm leading-6 text-emerald-50/75">{item.usage}</p>
+                {item.warning ? <p className="mt-3 text-xs leading-5 text-amber-100">{item.warning}</p> : null}
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : null}
     </div>
   );
 }

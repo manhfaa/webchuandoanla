@@ -10,31 +10,31 @@ const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/
 function buildSystemPrompt(mode: ChatMode) {
   if (mode === "expert") {
     return [
-      "Ban la chuyen gia nong nghiep cua Agromind AI.",
-      "Tra loi bang tieng Viet, thuc te, ngan gon, de ap dung ngoai ruong vuon.",
-      "Khong khang dinh chan doan benh cuoi cung neu chua co du lieu phan loai ro rang.",
-      "Uu tien huong dan quan sat, ghi chu, chup bo sung va buoc xu ly an toan.",
+      "Bạn là chuyên gia nông nghiệp của Agromind AI.",
+      "Trả lời bằng tiếng Việt, thực tế, ngắn gọn, dễ áp dụng ngoài ruộng vườn.",
+      "Không khẳng định chẩn đoán bệnh cuối cùng nếu chưa có dữ liệu phân loại rõ ràng.",
+      "Ưu tiên hướng dẫn quan sát, ghi chú, chụp bổ sung và bước xử lý an toàn.",
     ].join(" ");
   }
 
   return [
-    "Ban la tro ly AI cua Agromind AI cho nguoi trong cay.",
-    "Tra loi bang tieng Viet, than thien nhung khong lan man.",
-    "Ho tro hoi dap, tom tat tinh huong, huong dan chup anh la va goi y buoc tiep theo.",
-    "Khong bia ket qua CNN/YOLO hoac ket luan benh neu du lieu chua co.",
+    "Bạn là trợ lý AI của Agromind AI cho người trồng cây.",
+    "Trả lời bằng tiếng Việt, thân thiện nhưng không lan man.",
+    "Hỗ trợ hỏi đáp, tóm tắt tình huống, hướng dẫn chụp ảnh lá và gợi ý bước tiếp theo.",
+    "Không bịa kết quả CNN/YOLO hoặc kết luận bệnh nếu dữ liệu chưa có.",
   ].join(" ");
 }
 
 function buildDiagnosisContext(latestDiagnosis?: DiagnosisRecord | null) {
-  if (!latestDiagnosis) return "Chua co ca chan doan gan nhat trong phien.";
+  if (!latestDiagnosis) return "Chưa có ca chẩn đoán gần nhất trong phiên.";
 
   return [
-    `Cay: ${latestDiagnosis.plant}`,
-    `Ket qua hien tai: ${latestDiagnosis.disease}`,
-    `Do tin cay: ${Math.round(latestDiagnosis.confidence * 100)}%`,
-    `YOLO xac thuc la: ${latestDiagnosis.yoloVerified ? "co" : "chua ro"}`,
-    `Ghi chu: ${latestDiagnosis.note}`,
-    `Trieu chung: ${latestDiagnosis.symptomSummary}`,
+    `Cây: ${latestDiagnosis.plant}`,
+    `Kết quả hiện tại: ${latestDiagnosis.disease}`,
+    `Độ tin cậy: ${Math.round(latestDiagnosis.confidence * 100)}%`,
+    `YOLO xác thực lá: ${latestDiagnosis.yoloVerified ? "có" : "chưa rõ"}`,
+    `Ghi chú: ${latestDiagnosis.note}`,
+    `Triệu chứng: ${latestDiagnosis.symptomSummary}`,
   ].join("\n");
 }
 
@@ -50,10 +50,10 @@ function buildGeminiPrompt({
   return [
     buildSystemPrompt(mode),
     "",
-    "Boi canh tu ung dung:",
+    "Bối cảnh từ ứng dụng:",
     buildDiagnosisContext(latestDiagnosis),
     "",
-    "Cau hoi nguoi dung:",
+    "Câu hỏi người dùng:",
     query,
   ].join("\n");
 }
@@ -129,14 +129,14 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Body JSON khong hop le." }, { status: 400 });
+    return NextResponse.json({ error: "Body JSON không hợp lệ." }, { status: 400 });
   }
 
   const query = body.query?.trim();
   const mode: ChatMode = body.mode === "expert" ? "expert" : "assistant";
 
   if (!query) {
-    return NextResponse.json({ error: "Vui long gui truong query." }, { status: 400 });
+    return NextResponse.json({ error: "Vui lòng gửi trường query." }, { status: 400 });
   }
 
   const latestDiagnosis = body.latestDiagnosis ?? null;

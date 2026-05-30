@@ -12,10 +12,10 @@ const DynamicMap = dynamic(
 );
 
 const quickLocations = [
-  { label: "Thu Duc, TP.HCM", lat: 10.8421, lon: 106.8286 },
-  { label: "Da Lat, Lam Dong", lat: 11.9404, lon: 108.4583 },
-  { label: "Can Tho", lat: 10.0452, lon: 105.7469 },
-  { label: "Da Nang", lat: 16.0544, lon: 108.2022 },
+  { label: "Thủ Đức, TP.HCM", lat: 10.8421, lon: 106.8286 },
+  { label: "Đà Lạt, Lâm Đồng", lat: 11.9404, lon: 108.4583 },
+  { label: "Cần Thơ", lat: 10.0452, lon: 105.7469 },
+  { label: "Đà Nẵng", lat: 16.0544, lon: 108.2022 },
 ];
 
 export function LocationMapPicker({
@@ -43,7 +43,7 @@ export function LocationMapPicker({
             <span className="rounded-full bg-emerald-100 p-2 text-emerald-700">
               <MapPin size={16} />
             </span>
-            Cham hoac keo ghim de chon dung noi ban se trong cay.
+            Chạm hoặc kéo ghim để chọn đúng nơi bạn sẽ trồng cây.
           </div>
         </div>
         <div className="h-[360px] p-3">
@@ -54,27 +54,27 @@ export function LocationMapPicker({
       <div className="space-y-5">
         <Card className="rounded-[30px] border-emerald-100/70 bg-white/90">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700/70">
-            Vi tri trong
+            Vị trí trồng
           </p>
           <div className="mt-4 space-y-4">
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Ten khu trong</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">Tên khu trồng</span>
               <input
                 value={name}
                 onChange={(event) => onNameChange(event.target.value)}
                 className="w-full rounded-2xl border border-emerald-100 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-300"
-                placeholder="Vi du: Vuon sau nha"
+                placeholder="Ví dụ: Vườn sau nhà"
               />
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Mo ta dia chi</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">Mô tả địa chỉ</span>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                 <input
                   value={address}
                   onChange={(event) => onAddressChange(event.target.value)}
                   className="w-full rounded-2xl border border-emerald-100 bg-white py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-emerald-300"
-                  placeholder="Vi du: Phuong Linh Trung, Thu Duc"
+                  placeholder="Ví dụ: Phường Linh Trung, Thủ Đức"
                 />
               </div>
             </label>
@@ -97,8 +97,8 @@ export function LocationMapPicker({
               <Sparkles size={16} />
             </span>
             <div>
-              <p className="font-medium text-slate-900">Chon nhanh khu vuc goi y</p>
-              <p className="text-sm text-slate-600">Ban co the chon nhanh roi keo lai ghim neu can.</p>
+              <p className="font-medium text-slate-900">Chọn nhanh khu vực gợi ý</p>
+              <p className="text-sm text-slate-600">Bạn có thể chọn nhanh rồi kéo lại ghim nếu cần.</p>
             </div>
           </div>
           <div className="mt-4 grid gap-3">
@@ -125,4 +125,3 @@ export function LocationMapPicker({
     </div>
   );
 }
-

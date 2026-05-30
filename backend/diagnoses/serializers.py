@@ -27,6 +27,7 @@ class DiagnosisSerializer(serializers.ModelSerializer):
             "field_location",
             "note",
             "recommendations",
+            "action_plan",
             "rag_summary",
             "rag_payload",
             "saved_by_user",

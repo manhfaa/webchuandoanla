@@ -73,6 +73,19 @@ export interface RecommendationBlock {
   items: string[];
 }
 
+export interface ActionPlan {
+  risk_level: "unknown" | "low" | "medium" | "high" | string;
+  immediate_actions: string[];
+  follow_up_actions: string[];
+  expert_required: boolean;
+  recheck_after_days: number;
+  should_retake_photo?: boolean;
+  safety_notes: string[];
+  disclaimer: string;
+  warning?: string;
+  severity?: string;
+}
+
 export interface DiagnosisRecord {
   id: string;
   plant: PlantType;
@@ -91,6 +104,7 @@ export interface DiagnosisRecord {
   symptomSummary: string;
   causes: string[];
   recommendations: RecommendationBlock[];
+  actionPlan?: ActionPlan;
   cnnConfidence?: number;
   cnnPayload?: Record<string, unknown>;
   modelVersion?: string;

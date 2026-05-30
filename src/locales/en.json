@@ -1,0 +1,15 @@
+{
+  "nav.overview": "Overview",
+  "nav.diagnosis": "Leaf check",
+  "nav.weather": "Weather & pests",
+  "nav.farms": "Farms & plots",
+  "nav.library": "Input library",
+  "nav.cropPlans": "Crop plans",
+  "nav.chat": "Advisory chat",
+  "nav.history": "History",
+  "nav.pricing": "Plans",
+  "nav.profile": "Profile",
+  "language.toggle": "VI",
+  "status.online": "Online",
+  "status.offline": "Offline"
+}

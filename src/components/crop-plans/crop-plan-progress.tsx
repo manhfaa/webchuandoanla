@@ -4,11 +4,11 @@ import type { CropPlan, CropPlanStepStatus, ReminderItem } from "@/types";
 import { Card } from "@/components/ui/card";
 
 const statusLabels: Record<CropPlanStepStatus, string> = {
-  pending: "Sap toi",
-  current: "Dang lam",
-  completed: "Da xong",
-  skipped: "Bo qua",
-  delayed: "Bi doi lich",
+  pending: "Sắp tới",
+  current: "Đang làm",
+  completed: "Đã xong",
+  skipped: "Bỏ qua",
+  delayed: "Bị đổi lịch",
 };
 
 export function CropPlanProgress({
@@ -26,27 +26,27 @@ export function CropPlanProgress({
 
   const metrics = [
     {
-      label: "Tien do tong",
+      label: "Tiến độ tổng",
       value: `${progress}%`,
-      note: `${completed}/${plan.steps.length} buoc da hoan thanh`,
+      note: `${completed}/${plan.steps.length} bước đã hoàn thành`,
       icon: Sprout,
     },
     {
-      label: "Buoc hien tai",
-      value: current ? `${current.step_number}. ${current.short_label || current.title}` : "Chua co",
-      note: current ? statusLabels[current.status] : "Dang cho tao ke hoach",
+      label: "Bước hiện tại",
+      value: current ? `${current.step_number}. ${current.short_label || current.title}` : "Chưa có",
+      note: current ? statusLabels[current.status] : "Đang chờ tạo kế hoạch",
       icon: ListTodo,
     },
     {
-      label: "Nhac viec lien quan",
+      label: "Nhắc việc liên quan",
       value: `${todayCount}`,
-      note: "Thong bao dang cho xu ly",
+      note: "Thông báo đang chờ xử lý",
       icon: CalendarClock,
     },
     {
-      label: "Can xem lai",
+      label: "Cần xem lại",
       value: `${delayed}`,
-      note: delayed ? "Co buoc dang bi doi lich" : "Chua co buoc bi doi",
+      note: delayed ? "Có bước đang bị đổi lịch" : "Chưa có bước bị đổi",
       icon: CircleAlert,
     },
   ];
@@ -80,4 +80,3 @@ export function CropPlanProgress({
     </div>
   );
 }
-

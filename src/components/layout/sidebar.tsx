@@ -3,30 +3,38 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BookOpen,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  CloudSun,
   CreditCard,
   LayoutDashboard,
   MessageSquareText,
   ScanSearch,
   ShieldCheck,
   Sparkles,
+  Sprout,
   UserRound,
 } from "lucide-react";
 import { useState } from "react";
 
 import { Logo } from "@/components/layout/logo";
+import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { useLanguageStore } from "@/store/language-store";
 
 const navItems = [
-  { label: "Tổng quan", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Xác thực ảnh", href: "/dashboard/diagnosis", icon: ScanSearch },
-  { label: "Kế hoạch trồng cây", href: "/dashboard/crop-plans", icon: CalendarDays },
-  { label: "Chat tư vấn", href: "/dashboard/chat", icon: MessageSquareText },
-  { label: "Lịch sử", href: "/dashboard/history", icon: ShieldCheck },
-  { label: "Gói dịch vụ", href: "/dashboard/pricing", icon: CreditCard },
-  { label: "Hồ sơ", href: "/dashboard/profile", icon: UserRound },
+  { labelKey: "nav.overview", href: "/dashboard", icon: LayoutDashboard },
+  { labelKey: "nav.diagnosis", href: "/dashboard/diagnosis", icon: ScanSearch },
+  { labelKey: "nav.weather", href: "/dashboard/weather-alerts", icon: CloudSun },
+  { labelKey: "nav.farms", href: "/dashboard/farms", icon: Sprout },
+  { labelKey: "nav.library", href: "/dashboard/input-library", icon: BookOpen },
+  { labelKey: "nav.cropPlans", href: "/dashboard/crop-plans", icon: CalendarDays },
+  { labelKey: "nav.chat", href: "/dashboard/chat", icon: MessageSquareText },
+  { labelKey: "nav.history", href: "/dashboard/history", icon: ShieldCheck },
+  { labelKey: "nav.pricing", href: "/dashboard/pricing", icon: CreditCard },
+  { labelKey: "nav.profile", href: "/dashboard/profile", icon: UserRound },
 ];
 
 export function Sidebar({
@@ -38,6 +46,7 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const { language } = useLanguageStore();
   const widthClass = collapsed ? "lg:w-[72px]" : "lg:w-[240px]";
 
   return (
@@ -86,6 +95,7 @@ export function Sidebar({
         <nav className="mt-6 flex-1 space-y-1 overflow-y-auto" aria-label="Điều hướng chính">
           {navItems.map((item) => {
             const Icon = item.icon;
+            const label = t(language, item.labelKey);
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
 
             return (
@@ -93,7 +103,7 @@ export function Sidebar({
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                title={collapsed ? item.label : undefined}
+                title={collapsed ? label : undefined}
                 className={cn(
                   "flex items-center gap-3 rounded-md px-3 py-2.5 text-body font-medium transition duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500/40",
                   active
@@ -103,7 +113,7 @@ export function Sidebar({
                 )}
               >
                 <Icon strokeWidth={1.75} className="h-[18px] w-[18px] shrink-0" aria-hidden />
-                <span className={cn("truncate", collapsed && "lg:sr-only")}>{item.label}</span>
+                <span className={cn("truncate", collapsed && "lg:sr-only")}>{label}</span>
               </Link>
             );
           })}

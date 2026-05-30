@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 
 from .models import Diagnosis
 from .serializers import DiagnosisSerializer
+from .services.action_plan import build_action_plan
 from .services.cnn_classifier import CnnModelUnavailable, classify_image, image_from_payload
 from .services.cnn_remote import RemoteCnnUnavailable, classify_remote, remote_cnn_enabled
 
@@ -56,4 +57,11 @@ class DiagnosisCnnAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+        result["action_plan"] = build_action_plan(
+            crop_name=result.get("plant_name", ""),
+            disease_name=result.get("disease_name", ""),
+            confidence=float(result.get("confidence") or 0),
+            validation_result=True,
+            severity=result.get("severity", ""),
+        )
         return Response(result)

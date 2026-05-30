@@ -8,7 +8,7 @@ def seed_service_plans(apps, schema_editor):
         {
             "slug": "free",
             "name": "Free",
-            "description": "Xac thuc anh la bang YOLO va luu lich su co ban.",
+            "description": "Xác thực ảnh lá bằng YOLO và lưu lịch sử cơ bản.",
             "price_monthly": 0,
             "currency": "VND",
             "yolo_enabled": True,
@@ -21,7 +21,7 @@ def seed_service_plans(apps, schema_editor):
         {
             "slug": "pro",
             "name": "Pro",
-            "description": "Mo rong luu tru va san sang cho CNN khi duoc bat.",
+            "description": "Mở rộng lưu trữ và sẵn sàng cho CNN khi được bật.",
             "price_monthly": 199000,
             "currency": "VND",
             "yolo_enabled": True,
@@ -34,7 +34,7 @@ def seed_service_plans(apps, schema_editor):
         {
             "slug": "plus",
             "name": "Plus",
-            "description": "Mo khoa Light RAG, chat chuyen gia va luu tru day du.",
+            "description": "Mở khóa Light RAG, chat chuyên gia và lưu trữ đầy đủ.",
             "price_monthly": 399000,
             "currency": "VND",
             "yolo_enabled": True,

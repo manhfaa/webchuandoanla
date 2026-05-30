@@ -44,7 +44,7 @@ export default function CropPlanDetailPage() {
         requestedStep || (data.steps.find((item) => item.status === "current")?.id ?? data.steps[0]?.id ?? null),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Khong tai duoc chi tiet ke hoach.");
+      setError(err instanceof Error ? err.message : "Không tải được chi tiết kế hoạch.");
     } finally {
       setLoading(false);
     }
@@ -113,7 +113,7 @@ export default function CropPlanDetailPage() {
   if (error || !plan) {
     return (
       <Card className="rounded-[30px] border-rose-100 bg-rose-50/80 text-sm leading-7 text-rose-700">
-        {error ?? "Khong tim thay ke hoach."}
+        {error ?? "Không tìm thấy kế hoạch."}
       </Card>
     );
   }
@@ -133,15 +133,15 @@ export default function CropPlanDetailPage() {
           </div>
           <div className="flex flex-wrap gap-3">
             <span className="rounded-full bg-white px-4 py-3 text-sm font-semibold text-emerald-800 shadow-soft">
-              Phu hop {plan.suitability_score}/100
+              Phù hợp {plan.suitability_score}/100
             </span>
             <Button variant="secondary" onClick={handleRefreshWeather} loading={refreshing}>
               <RefreshCcw size={16} />
-              Cap nhat thoi tiet
+              Cập nhật thời tiết
             </Button>
             <Button onClick={handleRegenerate} loading={refreshing}>
               <Sprout size={16} />
-              Tao lai lich
+              Tạo lại lịch
             </Button>
           </div>
         </div>
@@ -153,10 +153,10 @@ export default function CropPlanDetailPage() {
         <div className="space-y-6">
           <Card className="rounded-[30px] border-emerald-100/70 bg-white/90">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700/65">
-              Timeline cham soc
+              Dòng thời gian chăm sóc
             </p>
             <h2 className="mt-3 font-display text-3xl font-semibold text-slate-950">
-              Từng buoc theo doi tu luc bat dau den khi thu hoach
+              Từng bước theo dõi từ lúc bắt đầu đến khi thu hoạch
             </h2>
             <div className="mt-6">
               <CropPlanTimeline

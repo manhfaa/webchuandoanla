@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Camera } from "lucide-react";
 import { toast } from "sonner";
 
+import { LanguageToggle } from "@/components/layout/language-toggle";
 import { PricingCard } from "@/components/pricing/pricing-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -100,6 +101,7 @@ export default function DashboardProfilePage() {
             >
               Lưu thay đổi
             </Button>
+            <LanguageToggle />
           </div>
         </Card>
       </div>

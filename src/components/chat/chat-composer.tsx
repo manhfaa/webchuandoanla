@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { SendHorizonal } from "lucide-react";
+import { Mic, SendHorizonal } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 
@@ -13,6 +13,9 @@ export function ChatComposer({
   placeholder,
   disabled,
   helperText,
+  onVoiceClick,
+  voiceListening,
+  voiceSupported = false,
 }: {
   label: string;
   value: string;
@@ -21,6 +24,9 @@ export function ChatComposer({
   placeholder: string;
   disabled?: boolean;
   helperText?: string;
+  onVoiceClick?: () => void;
+  voiceListening?: boolean;
+  voiceSupported?: boolean;
 }) {
   return (
     <Card className="rounded-[30px] border-white/10 bg-white/5 text-white">
@@ -35,14 +41,27 @@ export function ChatComposer({
         />
         <div className="flex items-center justify-between gap-4">
           {helperText ? <p className="text-xs text-emerald-50/60">{helperText}</p> : <div />}
-          <button
-            type="submit"
-            disabled={disabled}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-white px-5 text-sm font-medium text-ink transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <SendHorizonal size={16} />
-            Gửi câu hỏi
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            {voiceSupported ? (
+              <button
+                type="button"
+                onClick={onVoiceClick}
+                aria-pressed={voiceListening}
+                title="Nhập bằng giọng nói"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-200/50"
+              >
+                <Mic size={16} />
+              </button>
+            ) : null}
+            <button
+              type="submit"
+              disabled={disabled}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-white px-5 text-sm font-medium text-ink transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <SendHorizonal size={16} />
+              Gửi câu hỏi
+            </button>
+          </div>
         </div>
       </form>
     </Card>

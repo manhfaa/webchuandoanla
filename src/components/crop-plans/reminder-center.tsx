@@ -16,10 +16,10 @@ export function ReminderCenter({
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700/65">
-            Nhac viec
+            Nhắc việc
           </p>
           <h3 className="mt-3 font-display text-2xl font-semibold text-slate-950">
-            Lich thong bao cua ke hoach
+            Lịch thông báo của kế hoạch
           </h3>
         </div>
         <span className="rounded-full bg-emerald-100 p-3 text-emerald-700">
@@ -44,11 +44,11 @@ export function ReminderCenter({
               </div>
               {!reminder.read ? (
                 <Button size="sm" variant="secondary" onClick={() => onMarkRead(reminder.id)}>
-                  Da xem
+                  Đã xem
                 </Button>
               ) : (
                 <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800">
-                  Da doc
+                  Đã đọc
                 </span>
               )}
             </div>
@@ -56,11 +56,10 @@ export function ReminderCenter({
         ))}
         {!reminders.length ? (
           <div className="rounded-[24px] border border-dashed border-emerald-200 bg-emerald-50/50 p-5 text-sm leading-7 text-slate-600">
-            Chua co thong bao nao cho ke hoach nay.
+            Chưa có thông báo nào cho kế hoạch này.
           </div>
         ) : null}
       </div>
     </Card>
   );
 }
-

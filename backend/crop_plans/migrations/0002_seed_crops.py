@@ -7,9 +7,9 @@ def seed_crops(apps, schema_editor):
     crops = [
         {
             "slug": "tomato",
-            "name": "Ca chua",
+            "name": "Cà chua",
             "category": "vegetable",
-            "description": "Loai cay phu hop cho nguoi moi bat dau, co the trong chau hoac trong dat.",
+            "description": "Loại cây phù hợp cho người mới bắt đầu, có thể trồng chậu hoặc trồng đất.",
             "default_planting_modes": ["pot", "ground"],
             "climate_profile": {
                 "optimal_temp_c": [22, 30],
@@ -25,17 +25,17 @@ def seed_crops(apps, schema_editor):
                 "harvest_days": [60, 90],
             },
             "care_rules": {
-                "watering": "1-2 lan/ngay tuy do am dat",
-                "fertilizing": "Tu ngay 20 den ngay 35, lap moi 5 ngay",
-                "sunlight": "6-8 gio nang/ngay",
+                "watering": "1-2 lần/ngày tùy độ ẩm đất",
+                "fertilizing": "Từ ngày 20 đến ngày 35, lặp mỗi 5 ngày",
+                "sunlight": "6-8 giờ nắng/ngày",
             },
             "is_beginner_friendly": True,
         },
         {
             "slug": "bell-pepper",
-            "name": "Ot chuong",
+            "name": "Ớt chuông",
             "category": "vegetable",
-            "description": "Can nang on dinh, hop cho nguoi da co it kinh nghiem cham cay an qua.",
+            "description": "Cần nắng ổn định, hợp cho người đã có ít kinh nghiệm chăm cây ăn quả.",
             "default_planting_modes": ["pot", "ground"],
             "climate_profile": {
                 "optimal_temp_c": [21, 29],
@@ -44,14 +44,14 @@ def seed_crops(apps, schema_editor):
                 "sunlight_hours_min": 6,
             },
             "growth_profile": {"harvest_days": [70, 100]},
-            "care_rules": {"watering": "giu am deu", "sunlight": "6-8 gio nang/ngay"},
+            "care_rules": {"watering": "giữ ẩm đều", "sunlight": "6-8 giờ nắng/ngày"},
             "is_beginner_friendly": True,
         },
         {
             "slug": "strawberry",
-            "name": "Dau tay",
+            "name": "Dâu tây",
             "category": "fruit",
-            "description": "Can noi thoang, do am de kiem soat va uu tien khu vuc mat hon.",
+            "description": "Cần nơi thoáng, độ ẩm dễ kiểm soát và ưu tiên khu vực mát hơn.",
             "default_planting_modes": ["pot", "ground"],
             "climate_profile": {
                 "optimal_temp_c": [16, 26],
@@ -60,7 +60,7 @@ def seed_crops(apps, schema_editor):
                 "sunlight_hours_min": 5,
             },
             "growth_profile": {"harvest_days": [75, 110]},
-            "care_rules": {"watering": "tuoi nhe, tranh dong nuoc", "sunlight": "5-6 gio nang"},
+            "care_rules": {"watering": "tưới nhẹ, tránh đọng nước", "sunlight": "5-6 giờ nắng"},
             "is_beginner_friendly": False,
         },
     ]
@@ -82,4 +82,3 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(seed_crops, reverse_seed_crops),
     ]
-

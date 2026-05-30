@@ -28,7 +28,7 @@ export function CropPlanStepPanel({
     return (
       <Card className="rounded-[30px] border-emerald-100/70 bg-white/90">
         <p className="text-sm leading-7 text-slate-600">
-          Chon mot buoc trong timeline de xem huong dan chi tiet, ghi chu va cap nhat tien do.
+          Chọn một bước trong timeline để xem hướng dẫn chi tiết, ghi chú và cập nhật tiến độ.
         </p>
       </Card>
     );
@@ -39,7 +39,7 @@ export function CropPlanStepPanel({
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700/65">
-            Buoc {step.step_number}
+            Bước {step.step_number}
           </p>
           <h3 className="mt-3 font-display text-2xl font-semibold text-slate-950">{step.title}</h3>
           <p className="mt-2 text-sm leading-7 text-slate-600">{step.description}</p>
@@ -53,19 +53,19 @@ export function CropPlanStepPanel({
         <div className="rounded-[24px] border border-emerald-100 bg-emerald-50/70 p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
             <Clock3 size={16} className="text-emerald-700" />
-            Lam vao luc nao
+            Làm vào lúc nào
           </div>
           <p className="mt-2 text-sm leading-7 text-slate-600">
-            Bat dau: {new Date(step.suggested_start_time).toLocaleString("vi-VN")}
+            Bắt đầu: {new Date(step.suggested_start_time).toLocaleString("vi-VN")}
             <br />
-            Ket thuc: {new Date(step.suggested_end_time).toLocaleString("vi-VN")}
+            Kết thúc: {new Date(step.suggested_end_time).toLocaleString("vi-VN")}
           </p>
         </div>
 
         <div className="rounded-[24px] border border-emerald-100 bg-white p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
             <MoveRight size={16} className="text-emerald-700" />
-            Vi sao buoc nay quan trong
+            Vì sao bước này quan trọng
           </div>
           <p className="mt-2 text-sm leading-7 text-slate-600">{step.why_this_step_matters}</p>
         </div>
@@ -73,7 +73,7 @@ export function CropPlanStepPanel({
         <div className="rounded-[24px] border border-emerald-100 bg-white p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
             <FileText size={16} className="text-emerald-700" />
-            Can chuan bi
+            Cần chuẩn bị
           </div>
           <ul className="mt-3 space-y-2 text-sm leading-7 text-slate-600">
             {step.tools_needed.map((tool) => (
@@ -85,7 +85,7 @@ export function CropPlanStepPanel({
         <div className="rounded-[24px] border border-emerald-100 bg-white p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
             <CheckCircle2 size={16} className="text-emerald-700" />
-            Dau hieu lam dung
+            Dấu hiệu làm đúng
           </div>
           <p className="mt-2 text-sm leading-7 text-slate-600">{step.completion_condition}</p>
         </div>
@@ -93,7 +93,7 @@ export function CropPlanStepPanel({
         <div className="rounded-[24px] border border-amber-100 bg-amber-50/70 p-4">
           <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
             <TriangleAlert size={16} className="text-amber-700" />
-            Luu y rui ro
+            Lưu ý rủi ro
           </div>
           <ul className="mt-3 space-y-2 text-sm leading-7 text-slate-600">
             {step.risk_notes.map((risk) => (
@@ -106,25 +106,24 @@ export function CropPlanStepPanel({
       <div className="mt-6 rounded-[24px] border border-emerald-100 bg-white p-4">
         <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
           <NotebookText size={16} className="text-emerald-700" />
-          Ghi chu cua ban
+          Ghi chú của bạn
         </div>
         <textarea
           value={note}
           onChange={(event) => setNote(event.target.value)}
           className="mt-3 min-h-[120px] w-full rounded-2xl border border-emerald-100 px-4 py-3 text-sm leading-7 text-slate-700 outline-none focus:border-emerald-300"
-          placeholder="Ghi lai tinh trang cay, so luong da lam, dieu can nho..."
+          placeholder="Ghi lại tình trạng cây, số lượng đã làm, điều cần nhớ..."
         />
         <div className="mt-4 flex flex-wrap gap-3">
           <Button variant="secondary" onClick={() => onSaveNote(step.id, note)}>
-            Luu ghi chu
+            Lưu ghi chú
           </Button>
-          <Button variant="secondary" onClick={() => onDelay(step.id, 1, "Doi 1 ngay de canh thoi tiet tot hon")}>
-            Doi 1 ngay
+          <Button variant="secondary" onClick={() => onDelay(step.id, 1, "Dời 1 ngày để canh thời tiết tốt hơn")}>
+            Dời 1 ngày
           </Button>
-          <Button onClick={() => onComplete(step.id, note)}>Danh dau hoan thanh</Button>
+          <Button onClick={() => onComplete(step.id, note)}>Đánh dấu hoàn thành</Button>
         </div>
       </div>
     </Card>
   );
 }
-

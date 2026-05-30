@@ -12,7 +12,7 @@ function getCnnConfidenceTone(item: string) {
   const match = item.match(/(\d+(?:[.,]\d+)?)%/);
   const confidence = match ? Number(match[1].replace(",", ".")) / 100 : 0;
 
-  if (confidence >= 0.5) {
+  if (confidence >= 0.7) {
     return {
       label: "Tin cậy",
       className: "border-emerald-200 bg-emerald-50 text-emerald-800",

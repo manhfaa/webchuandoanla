@@ -48,7 +48,7 @@ const options = [
     description: "Xem thử toàn bộ quy trình bằng ảnh minh họa có sẵn.",
     hint: "Xem nhanh",
     tone: "from-lime-100 via-emerald-50 to-white",
-    badge: "Demo",
+    badge: "Dùng thử",
     icon: FileImage,
   },
 ] as const;
@@ -150,7 +150,7 @@ export function UploadPanel({
           </div>
         </div>
 
-        <div className="mt-7 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-7 grid gap-4 md:grid-cols-2">
           {options.map((option) => {
             const Icon = option.icon;
             const cameraFallback =
@@ -162,7 +162,7 @@ export function UploadPanel({
                 type="button"
                 disabled={busy}
                 onClick={() => handleOptionClick(option.key)}
-                className="group relative overflow-hidden rounded-[30px] border border-emerald-100 bg-white/85 p-5 text-left shadow-soft transition duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-float disabled:cursor-not-allowed disabled:opacity-70"
+                className="group relative overflow-hidden rounded-[26px] border border-emerald-100 bg-white/90 p-5 text-left shadow-soft transition duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-float disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <div
                   className={`pointer-events-none absolute inset-x-5 top-5 h-16 rounded-[22px] bg-gradient-to-r ${option.tone} opacity-95`}
@@ -178,16 +178,16 @@ export function UploadPanel({
                   </span>
                 </div>
 
-                <h4 className="relative mt-16 font-display text-[1.9rem] font-semibold leading-tight text-ink sm:text-[2.1rem] xl:text-[1.75rem]">
+                <h4 className="relative mt-10 font-display text-2xl font-semibold leading-tight text-ink sm:text-[1.7rem]">
                   {option.title}
                 </h4>
 
-                <p className="relative mt-3 max-w-[24rem] text-sm leading-7 text-slate-600">
+                <p className="relative mt-3 text-sm leading-7 text-slate-600">
                   {option.description}
                 </p>
 
                 <div className="relative mt-5 flex items-center justify-between gap-3 border-t border-emerald-100 pt-4">
-                  <span className="text-xs font-medium uppercase tracking-[0.18em] text-emerald-700/80">
+                  <span className="text-xs font-medium uppercase tracking-[0.08em] text-emerald-700/80">
                     {cameraFallback}
                   </span>
                   <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-800">
@@ -211,11 +211,11 @@ export function UploadPanel({
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button variant="dark" loading={busy} onClick={onStart}>
+            <Button loading={busy} onClick={onStart}>
               <PlayCircle size={18} />
               Bắt đầu kiểm tra
             </Button>
-            <Button variant="secondary" onClick={onUseSample}>
+            <Button variant="secondaryOnLight" onClick={onUseSample}>
               Dùng ảnh mẫu
             </Button>
           </div>

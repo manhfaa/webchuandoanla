@@ -3,6 +3,7 @@ node_modules
 out
 dist
 .vercel
+.env*.local
 .tmp
 moduleyolola
 *.log
@@ -11,6 +12,8 @@ backend/.pip-cache
 backend/db.sqlite3
 backend/**/__pycache__
 backend/.env
+.pydeps
+.pydeps-local
 hf_space/best_model.pth
 
 .vercel

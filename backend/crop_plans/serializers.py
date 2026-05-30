@@ -166,7 +166,7 @@ class CreateCropPlanSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         if not attrs.get("location_id") and (attrs.get("lat") is None or attrs.get("lon") is None):
-            raise serializers.ValidationError("Can cung cap location_id hoac lat/lon.")
+            raise serializers.ValidationError("Cần cung cấp location_id hoặc lat/lon.")
         return attrs
 
 
@@ -185,4 +185,3 @@ class StepNoteSerializer(serializers.Serializer):
 
 class ReminderReadSerializer(serializers.Serializer):
     read = serializers.BooleanField(default=True)
-

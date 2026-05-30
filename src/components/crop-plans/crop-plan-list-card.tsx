@@ -45,24 +45,24 @@ export function CropPlanListCard({ plan }: { plan: CropPlan }) {
           <div className="rounded-2xl border border-emerald-100 bg-white/85 px-4 py-3">
             <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-emerald-700/65">
               <MapPin size={14} />
-              Vi tri
+              Vị trí
             </div>
             <p className="mt-2 text-sm font-medium text-slate-900">{plan.location.name}</p>
           </div>
           <div className="rounded-2xl border border-emerald-100 bg-white/85 px-4 py-3">
             <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-emerald-700/65">
               <CalendarDays size={14} />
-              Bat dau de xuat
+              Bắt đầu đề xuất
             </div>
             <p className="mt-2 text-sm font-medium text-slate-900">{plan.recommended_start_date ?? plan.planned_start_date}</p>
           </div>
           <div className="rounded-2xl border border-emerald-100 bg-white/85 px-4 py-3">
             <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-emerald-700/65">
               <Sprout size={14} />
-              Buoc tiep theo
+              Bước tiếp theo
             </div>
             <p className="mt-2 text-sm font-medium text-slate-900">
-              {nextStep ? `${nextStep.step_number}. ${nextStep.title}` : "Dang cap nhat"}
+              {nextStep ? `${nextStep.step_number}. ${nextStep.title}` : "Đang cập nhật"}
             </p>
           </div>
         </div>
@@ -70,4 +70,3 @@ export function CropPlanListCard({ plan }: { plan: CropPlan }) {
     </Link>
   );
 }
-

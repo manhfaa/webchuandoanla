@@ -15,7 +15,7 @@ export const overviewStats = [
     id: "success-rate",
     label: "Tỷ lệ chẩn đoán thành công",
     value: "97.2%",
-    helper: "Mock metric mô phỏng mức độ ổn định của pipeline AI",
+    helper: "Chỉ số mô phỏng mức độ ổn định của pipeline AI",
   },
   {
     id: "time-saved",

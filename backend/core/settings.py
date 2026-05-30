@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "diagnoses",
     "engagement",
     "crop_plans",
+    "farmops",
 ]
 
 MIDDLEWARE = [
@@ -105,7 +106,8 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://127.0.0.1:3000")
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://127.0.0.1:3000")
+frontend_origin = FRONTEND_ORIGIN
 
 # Allow comma-separated origins for staging/prod
 cors_origins_raw = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()

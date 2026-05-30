@@ -44,6 +44,7 @@ class Diagnosis(models.Model):
     field_location = models.CharField(max_length=150, blank=True, default="")
     note = models.TextField(blank=True, default="")
     recommendations = models.JSONField(default=list, blank=True)
+    action_plan = models.JSONField(default=dict, blank=True)
     rag_summary = models.TextField(blank=True, default="")
     rag_payload = models.JSONField(default=dict, blank=True)
     saved_by_user = models.BooleanField(default=True)

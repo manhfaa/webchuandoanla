@@ -77,7 +77,7 @@ class CropPlanListCreateAPIView(generics.ListCreateAPIView):
             return generics.get_object_or_404(CropLocation.objects.filter(user=self.request.user), pk=location_id)
         return CropLocation.objects.create(
             user=self.request.user,
-            name=validated_data.get("location_name") or "Khu trong moi",
+            name=validated_data.get("location_name") or "Khu trồng mới",
             lat=validated_data["lat"],
             lon=validated_data["lon"],
             address_text=validated_data.get("address_text", ""),
@@ -98,7 +98,7 @@ class CropPlanPreviewAPIView(APIView):
         else:
             location = CropLocation(
                 user=request.user,
-                name=validated.get("location_name") or "Khu trong tam",
+                name=validated.get("location_name") or "Khu trồng tạm",
                 lat=validated["lat"],
                 lon=validated["lon"],
                 address_text=validated.get("address_text", ""),
@@ -232,4 +232,3 @@ class ReminderReadAPIView(APIView):
         reminder.status = Reminder.Status.READ if reminder.read else reminder.status
         reminder.save(update_fields=["read", "status", "updated_at"])
         return response.Response({"status": "ok"})
-

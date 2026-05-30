@@ -29,12 +29,12 @@ class PlanContext:
 
 
 PHASE_LABELS = {
-    "preparation": "Chuan bi",
-    "sowing": "Gieo trong",
-    "early_care": "Cham soc ban dau",
-    "maintenance": "Cham soc dinh ky",
-    "monitoring": "Theo doi",
-    "harvest": "Thu hoach",
+    "preparation": "Chuẩn bị",
+    "sowing": "Gieo trồng",
+    "early_care": "Chăm sóc ban đầu",
+    "maintenance": "Chăm sóc định kỳ",
+    "monitoring": "Theo dõi",
+    "harvest": "Thu hoạch",
 }
 
 
@@ -64,25 +64,25 @@ def evaluate_suitability(crop: Crop, metrics: dict, planting_mode: str, experien
 
     if avg_temp < optimal_temp[0]:
         score -= 18
-        warnings.append("Nhiet do hien tai hoi thap, nen lui lich gieo de cay de nay mam hon.")
+        warnings.append("Nhiệt độ hiện tại hơi thấp, nên lùi lịch gieo để cây dễ nảy mầm hơn.")
     elif avg_temp > optimal_temp[1] + 3:
         score -= 12
-        warnings.append("Nhiet do cao, can che nang giai doan dau va theo doi mat nuoc.")
+        warnings.append("Nhiệt độ cao, cần che nắng giai đoạn đầu và theo dõi mặt nước.")
 
     if humidity > humidity_range[1]:
         score -= 12
-        warnings.append("Do am cao, can thong thoang va tang kiem tra nam benh.")
+        warnings.append("Độ ẩm cao, cần thông thoáng và tăng kiểm tra nấm bệnh.")
 
     if rain_14d > climate.get("rain_14d_high_mm", 80):
         score -= 15
-        warnings.append("Mua nhieu trong 2 tuan toi, nen giam tuoi va uu tien dat thoat nuoc.")
+        warnings.append("Mưa nhiều trong 2 tuần tới, nên giảm tưới và ưu tiên đất thoát nước.")
 
     if sun_hours < sunlight_hours:
         score -= 10
-        warnings.append("Luong nang du kien chua cao, nen uu tien vi tri nhan nang buoi sang.")
+        warnings.append("Lượng nắng dự kiến chưa cao, nên ưu tiên vị trí nhận nắng buổi sáng.")
 
     if planting_mode == "pot":
-        warnings.append("Trong chau can kiem tra lo thoat nuoc va do am dat thuong xuyen hon trong dat.")
+        warnings.append("Trồng chậu cần kiểm tra lỗ thoát nước và độ ẩm đất thường xuyên hơn trồng đất.")
     if experience_level == "beginner":
         score -= 3
 
@@ -106,249 +106,249 @@ def evaluate_suitability(crop: Crop, metrics: dict, planting_mode: str, experien
         "warnings": warnings[:4],
         "recommended_start_shift_days": start_shift_days,
         "reasoning_summary": (
-            f"Khu vuc nay co nhiet do trung binh {avg_temp}°C, do am {humidity}% va tong mua 14 ngay "
-            f"{rain_14d} mm. He thong danh gia muc phu hop o muc "
-            f"{'tot' if level == CropPlan.SuitabilityLevel.SUITABLE else 'can can nhac'}."
+            f"Khu vực này có nhiệt độ trung bình {avg_temp}°C, độ ẩm {humidity}% và tổng mưa 14 ngày "
+            f"{rain_14d} mm. Hệ thống đánh giá mức phù hợp ở mức "
+            f"{'tốt' if level == CropPlan.SuitabilityLevel.SUITABLE else 'cần cân nhắc'}."
         ),
     }
 
 
 def _water_amount(planting_mode: str, plant_count: int) -> tuple[Decimal, str]:
     if planting_mode == "pot":
-        return Decimal("600"), "ml/chau/lan"
+        return Decimal("600"), "ml/chậu/lần"
     if plant_count >= 20:
-        return Decimal("1.5"), "lit/cay/lan"
-    return Decimal("1.2"), "lit/cay/lan"
+        return Decimal("1.5"), "lít/cây/lần"
+    return Decimal("1.2"), "lít/cây/lần"
 
 
 def build_step_templates(context: PlanContext, metrics: dict) -> list[dict]:
     rain_14d = metrics.get("rain_sum_14d", 0)
     humid = metrics.get("humidity_avg_14d", 0)
     water_value, water_unit = _water_amount(context.planting_mode, context.plant_count)
-    planting_distance = "50-60 cm giua cac cay" if context.planting_mode == "ground" else "moi chau 1 cay"
+    planting_distance = "50-60 cm giữa các cây" if context.planting_mode == "ground" else "mỗi chậu 1 cây"
     plan_scale_note = (
-        "Tach thanh checklist theo tung khu chau de de kiem soat tien do."
+        "Tách thành checklist theo từng khu chậu để dễ kiểm soát tiến độ."
         if context.plant_count >= 15 or (context.area_value and context.area_value >= 20)
-        else "Lam theo tung cay hoac tung cum nho."
+        else "Làm theo từng cây hoặc từng cụm nhỏ."
     )
 
     return [
         {
             "phase_key": "preparation",
-            "title": "Chuan bi gia the va dung cu trong",
-            "short_label": "Chuan bi dat",
+            "title": "Chuẩn bị giá thể và dụng cụ trồng",
+            "short_label": "Chuẩn bị đất",
             "description": (
-                "Tron dat sach voi phan huu co hoai muc va vat lieu giup thoat nuoc. "
-                f"Neu trong dat, lam toi mat dat va giu khoang cach {planting_distance}. "
-                "Neu trong chau, su dung chau 20-30 lit co it nhat 4 lo thoat nuoc."
+                "Trộn đất sạch với phân hữu cơ hoai mục và vật liệu giúp thoát nước. "
+                f"Nếu trồng đất, làm tơi mặt đất và giữ khoảng cách {planting_distance}. "
+                "Nếu trồng chậu, sử dụng chậu 20-30 lít có ít nhất 4 lỗ thoát nước."
             ),
-            "why_this_step_matters": "Nen trong thong thoang giup re phat trien nhanh, giam ung va han che nam.",
-            "prerequisites": ["Kiem tra vi tri trong co nhan du nang buoi sang."],
-            "tools_needed": ["Chau hoac luong trong", "Dat sach", "Phan huu co", "Xeng tay", "Gang tay"],
+            "why_this_step_matters": "Nền trồng thông thoáng giúp rễ phát triển nhanh, giảm úng và hạn chế nấm.",
+            "prerequisites": ["Kiểm tra vị trí trồng có nhận đủ nắng buổi sáng."],
+            "tools_needed": ["Chậu hoặc luống trồng", "Đất sạch", "Phân hữu cơ", "Xẻng tay", "Găng tay"],
             "estimated_duration_minutes": 60,
             "start_offset_days": -1,
             "start_time": [7, 0],
             "duration_minutes": 60,
             "repeat_rule": None,
-            "completion_condition": "Dat toi, khong dong nuoc sau khi tuoi thu 1 ca nuoc nhe.",
-            "risk_notes": ["Neu dat nen chat, cay de bi vang la va cham lon."],
+            "completion_condition": "Đất tơi, không đọng nước sau khi tưới thử 1 ca nước nhẹ.",
+            "risk_notes": ["Nếu đất nén chặt, cây dễ bị vàng lá và chậm lớn."],
             "weather_dependency": {"avoid_if": ["heavy_rain"]},
             "water_amount": None,
-            "fertilizer_amount": {"value": 1.5, "unit": "kg phan huu co/10 lit dat"} if context.planting_mode == "pot" else {"value": 2.0, "unit": "kg phan huu co/m2"},
-            "sunlight_requirement": "Vi tri co 6-8 gio nang/ngay",
+            "fertilizer_amount": {"value": 1.5, "unit": "kg phân hữu cơ/10 lít đất"} if context.planting_mode == "pot" else {"value": 2.0, "unit": "kg phân hữu cơ/m2"},
+            "sunlight_requirement": "Vị trí có 6-8 giờ nắng/ngày",
             "reminder_offsets_minutes": [30],
         },
         {
             "phase_key": "sowing",
-            "title": "Xu ly hat giong truoc khi gieo",
-            "short_label": "Xu ly hat",
-            "description": "Ngam hat trong nuoc am 2-4 gio, sau do de rao. Loai bo hat noi tren mat nuoc neu co.",
-            "why_this_step_matters": "Hat hut du am deu hon va tang ty le nay mam.",
-            "prerequisites": ["Da chuan bi gia the."],
-            "tools_needed": ["Hat giong", "Ly nuoc am", "Khay hoac khan sach"],
+            "title": "Xử lý hạt giống trước khi gieo",
+            "short_label": "Xử lý hạt",
+            "description": "Ngâm hạt trong nước ấm 2-4 giờ, sau đó để ráo. Loại bỏ hạt nổi trên mặt nước nếu có.",
+            "why_this_step_matters": "Hạt hút đủ ẩm đều hơn và tăng tỷ lệ nảy mầm.",
+            "prerequisites": ["Đã chuẩn bị giá thể."],
+            "tools_needed": ["Hạt giống", "Ly nước ấm", "Khay hoặc khăn sạch"],
             "estimated_duration_minutes": 25,
             "start_offset_days": 0,
             "start_time": [6, 30],
             "duration_minutes": 25,
             "repeat_rule": None,
-            "completion_condition": "Hat no deu, khong ngam qua lau den muc mem vo.",
-            "risk_notes": ["Ngam qua lau co the lam hat bi ung, kho nay mam."],
+            "completion_condition": "Hạt nở đều, không ngâm quá lâu đến mức mềm vỏ.",
+            "risk_notes": ["Ngâm quá lâu có thể làm hạt bị úng, khó nảy mầm."],
             "weather_dependency": {},
             "water_amount": None,
             "fertilizer_amount": None,
-            "sunlight_requirement": "Chua can phoi nang",
+            "sunlight_requirement": "Chưa cần phơi nắng",
             "reminder_offsets_minutes": [20],
         },
         {
             "phase_key": "sowing",
-            "title": "Gieo hat va phu lop dat mong",
-            "short_label": "Gieo hat",
-            "description": "Moi lo gieo 1-2 hat, dat sau 0.5-1 cm, phu dat mong va tuoi phun suong nhe.",
-            "why_this_step_matters": "Do sau gieo va do am phu hop giup hat nay mam nhanh va dong deu.",
-            "prerequisites": ["Da xu ly hat hoac chuan bi hat giong."],
-            "tools_needed": ["Khay gieo hoac chau", "Binh phun suong", "Nhom ghi ngay gieo"],
+            "title": "Gieo hạt và phủ lớp đất mỏng",
+            "short_label": "Gieo hạt",
+            "description": "Mỗi lỗ gieo 1-2 hạt, đặt sâu 0.5-1 cm, phủ đất mỏng và tưới phun sương nhẹ.",
+            "why_this_step_matters": "Độ sâu gieo và độ ẩm phù hợp giúp hạt nảy mầm nhanh và đồng đều.",
+            "prerequisites": ["Đã xử lý hạt hoặc chuẩn bị hạt giống."],
+            "tools_needed": ["Khay gieo hoặc chậu", "Bình phun sương", "Nhãn ghi ngày gieo"],
             "estimated_duration_minutes": 35,
             "start_offset_days": 0,
             "start_time": [7, 15],
             "duration_minutes": 35,
             "repeat_rule": None,
-            "completion_condition": "Mat dat am deu, hat duoc phu dat mong va ghi ngay gieo.",
-            "risk_notes": ["Khong nen an hat qua sau vi se kho doi mam."],
+            "completion_condition": "Mặt đất ẩm đều, hạt được phủ đất mỏng và ghi ngày gieo.",
+            "risk_notes": ["Không nên ấn hạt quá sâu vì sẽ khó đội mầm."],
             "weather_dependency": {"avoid_if": ["storm"]},
             "water_amount": {"value": 150, "unit": "ml/khay gieo"},
             "fertilizer_amount": None,
-            "sunlight_requirement": "Anh sang tan xa, tranh nang gat ngay lap tuc",
+            "sunlight_requirement": "Ánh sáng tán xạ, tránh nắng gắt ngay lập tức",
             "reminder_offsets_minutes": [20],
         },
         {
             "phase_key": "early_care",
-            "title": "Kiem tra nay mam va bo sung cay du phong",
-            "short_label": "Kiem tra nay mam",
-            "description": "Sau gieo 5-7 ngay, kiem tra cac lo gieo da doi mam chua. Neu lo nao khong len, co the gieo bu ngay.",
-            "why_this_step_matters": "Phat hien som lo gieo hong de bo sung kip, giu mat do cay deu.",
-            "prerequisites": ["Da hoan thanh gieo hat."],
-            "tools_needed": ["So ghi chu", "Binh phun suong"],
+            "title": "Kiểm tra nảy mầm và bổ sung cây dự phòng",
+            "short_label": "Kiểm tra nảy mầm",
+            "description": "Sau gieo 5-7 ngày, kiểm tra các lỗ gieo đã đội mầm chưa. Nếu lỗ nào không lên, có thể gieo bù ngay.",
+            "why_this_step_matters": "Phát hiện sớm lỗ gieo hỏng để bổ sung kịp, giữ mật độ cây đều.",
+            "prerequisites": ["Đã hoàn thành gieo hạt."],
+            "tools_needed": ["Sổ ghi chú", "Bình phun sương"],
             "estimated_duration_minutes": 15,
             "start_offset_days": 7,
             "start_time": [7, 0],
             "duration_minutes": 15,
             "repeat_rule": {"freq": "daily", "count": 3, "times_of_day": ["07:00"]},
-            "completion_condition": "Da ghi nhan ty le nay mam va quyet dinh co bo sung hay khong.",
-            "risk_notes": ["Do am qua cao de phat sinh nam o giai doan nay mam."],
+            "completion_condition": "Đã ghi nhận tỷ lệ nảy mầm và quyết định có bổ sung hay không.",
+            "risk_notes": ["Độ ẩm quá cao dễ phát sinh nấm ở giai đoạn nảy mầm."],
             "weather_dependency": {},
-            "water_amount": {"value": 120, "unit": "ml/khay/lan"},
+            "water_amount": {"value": 120, "unit": "ml/khay/lần"},
             "fertilizer_amount": None,
-            "sunlight_requirement": "Tang dan anh sang moi ngay",
+            "sunlight_requirement": "Tăng dần ánh sáng mỗi ngày",
             "reminder_offsets_minutes": [30],
         },
         {
             "phase_key": "early_care",
-            "title": "Tap cho cay con lam quen voi nang",
-            "short_label": "Tap nang",
-            "description": "Khi cay co 2-3 la that, dua cay ra nang sang 2-3 gio/ngay, sau do tang dan len 4-6 gio.",
-            "why_this_step_matters": "Cay con can thich nghi tu tu de tranh soc nhiet va chay la.",
-            "prerequisites": ["Cay con da len deu."],
-            "tools_needed": ["Khay hoac chau cay", "Luoi che nang neu can"],
+            "title": "Tập cho cây con làm quen với nắng",
+            "short_label": "Tập nắng",
+            "description": "Khi cây có 2-3 lá thật, đưa cây ra nắng sáng 2-3 giờ/ngày, sau đó tăng dần lên 4-6 giờ.",
+            "why_this_step_matters": "Cây con cần thích nghi từ từ để tránh sốc nhiệt và cháy lá.",
+            "prerequisites": ["Cây con đã lên đều."],
+            "tools_needed": ["Khay hoặc chậu cây", "Lưới che nắng nếu cần"],
             "estimated_duration_minutes": 20,
             "start_offset_days": 12,
             "start_time": [7, 30],
             "duration_minutes": 20,
             "repeat_rule": {"freq": "daily", "count": 3, "times_of_day": ["07:30"]},
-            "completion_condition": "La dung, xanh va khong heo sau khi dua ra nang sang.",
-            "risk_notes": ["Neu la non bi quap, giam thoi gian phoi nang vao ngay hom sau."],
+            "completion_condition": "Lá đứng, xanh và không héo sau khi đưa ra nắng sáng.",
+            "risk_notes": ["Nếu lá non bị quặp, giảm thời gian phơi nắng vào ngày hôm sau."],
             "weather_dependency": {"avoid_if": ["extreme_heat"]},
             "water_amount": None,
             "fertilizer_amount": None,
-            "sunlight_requirement": "Tang dan tu 2 gio len 6 gio nang sang",
+            "sunlight_requirement": "Tăng dần từ 2 giờ lên 6 giờ nắng sáng",
             "reminder_offsets_minutes": [25],
         },
         {
             "phase_key": "maintenance",
-            "title": "Tuoi nuoc dinh ky",
-            "short_label": "Tuoi nuoc",
+            "title": "Tưới nước định kỳ",
+            "short_label": "Tưới nước",
             "description": (
-                "Tuoi vao 6h sang va 17h chieu. Kiem tra do am dat truoc khi tuoi; "
-                f"neu dat con am do mua gan day ({rain_14d} mm/14 ngay) thi giam hoac bo cu tuoi chieu. "
+                "Tưới vào 6h sáng và 17h chiều. Kiểm tra độ ẩm đất trước khi tưới; "
+                f"nếu đất còn ẩm do mưa gần đây ({rain_14d} mm/14 ngày) thì giảm hoặc bỏ cữ tưới chiều. "
                 f"{plan_scale_note}"
             ),
-            "why_this_step_matters": "Ca chua can do am on dinh de phat trien than la va nuoi qua.",
-            "prerequisites": ["Da gieo trong va cay bat dau phat trien."],
-            "tools_needed": ["Binh tuoi hoac he thong tuoi nhe", "Do am dat cam tay"],
+            "why_this_step_matters": "Cà chua cần độ ẩm ổn định để phát triển thân lá và nuôi quả.",
+            "prerequisites": ["Đã gieo trồng và cây bắt đầu phát triển."],
+            "tools_needed": ["Bình tưới hoặc hệ thống tưới nhẹ", "Độ ẩm đất cầm tay"],
             "estimated_duration_minutes": 12 if context.plant_count <= 10 else 25,
             "start_offset_days": 1,
             "start_time": [6, 0],
             "duration_minutes": 10,
             "repeat_rule": {"freq": "daily", "until_offset_days": 75, "times_of_day": ["06:00", "17:00"]},
-            "completion_condition": "Dat am deu o lop re, khong dong nuoc duoi chau hay mat luong.",
-            "risk_notes": ["Neu mua nhieu thi bo cu tuoi chieu.", "Neu dat da am, khong nen tuoi them."],
+            "completion_condition": "Đất ẩm đều ở lớp rễ, không đọng nước dưới chậu hay mặt luống.",
+            "risk_notes": ["Nếu mưa nhiều thì bỏ cữ tưới chiều.", "Nếu đất đã ẩm, không nên tưới thêm."],
             "weather_dependency": {"skip_if": ["rain_today_mm > 8"]},
             "water_amount": {"value": float(water_value), "unit": water_unit},
             "fertilizer_amount": None,
-            "sunlight_requirement": "Duy tri 6-8 gio nang/ngay",
+            "sunlight_requirement": "Duy trì 6-8 giờ nắng/ngày",
             "reminder_offsets_minutes": [15],
         },
         {
             "phase_key": "maintenance",
-            "title": "Bon phan nhe theo chu ky",
-            "short_label": "Bon phan",
-            "description": "Bat dau bon nhe tu ngay 20 den ngay 35 sau gieo, lap lai moi 5 ngay. Bon cach goc 5-7 cm.",
-            "why_this_step_matters": "Bon dung luc giup cay ra than la khoe va san sang ra hoa.",
-            "prerequisites": ["Cay da on dinh sau giai doan cay con."],
-            "tools_needed": ["Phan huu co hoac NPK loang", "Muong do", "Gang tay"],
+            "title": "Bón phân nhẹ theo chu kỳ",
+            "short_label": "Bón phân",
+            "description": "Bắt đầu bón nhẹ từ ngày 20 đến ngày 35 sau gieo, lặp lại mỗi 5 ngày. Bón cách gốc 5-7 cm.",
+            "why_this_step_matters": "Bón đúng lúc giúp cây ra thân lá khỏe và sẵn sàng ra hoa.",
+            "prerequisites": ["Cây đã ổn định sau giai đoạn cây con."],
+            "tools_needed": ["Phân hữu cơ hoặc NPK loãng", "Muỗng đo", "Găng tay"],
             "estimated_duration_minutes": 20,
             "start_offset_days": 20,
             "start_time": [6, 30],
             "duration_minutes": 20,
             "repeat_rule": {"freq": "every_n_days", "interval_days": 5, "until_offset_days": 35, "times_of_day": ["06:30"]},
-            "completion_condition": "Da bon dung lieu, khong de phan cham truc tiep vao than cay.",
-            "risk_notes": ["Khong bon luc dat dang qua uot hoac ngay nang gat giua trua."],
+            "completion_condition": "Đã bón đúng liều, không để phân chạm trực tiếp vào thân cây.",
+            "risk_notes": ["Không bón lúc đất đang quá ướt hoặc ngày nắng gắt giữa trưa."],
             "weather_dependency": {"avoid_if": ["heavy_rain", "storm"]},
             "water_amount": None,
-            "fertilizer_amount": {"value": 15 if context.planting_mode == "pot" else 25, "unit": "g/cay/lan"},
-            "sunlight_requirement": "Bon vao sang som, tranh nong cao",
+            "fertilizer_amount": {"value": 15 if context.planting_mode == "pot" else 25, "unit": "g/cây/lần"},
+            "sunlight_requirement": "Bón vào sáng sớm, tránh nóng cao",
             "reminder_offsets_minutes": [60],
         },
         {
             "phase_key": "maintenance",
-            "title": "Cam coc va buong than",
-            "short_label": "Cam coc",
-            "description": "Khi cay cao 25-35 cm, cam coc sat mep chau hoac canh goc, buong than bang day mem.",
-            "why_this_step_matters": "Cam coc giup cay dung thang, thong thoang va de cham soc.",
-            "prerequisites": ["Cay da lon va than chinh ro."],
-            "tools_needed": ["Coc tre hoac coc nhua", "Day buong mem", "Keo"],
+            "title": "Cắm cọc và buộc thân",
+            "short_label": "Cắm cọc",
+            "description": "Khi cây cao 25-35 cm, cắm cọc sát mép chậu hoặc cạnh gốc, buộc thân bằng dây mềm.",
+            "why_this_step_matters": "Cắm cọc giúp cây đứng thẳng, thông thoáng và dễ chăm sóc.",
+            "prerequisites": ["Cây đã lớn và thân chính rõ."],
+            "tools_needed": ["Cọc tre hoặc cọc nhựa", "Dây buộc mềm", "Kéo"],
             "estimated_duration_minutes": 30,
             "start_offset_days": 24,
             "start_time": [7, 15],
             "duration_minutes": 30,
             "repeat_rule": None,
-            "completion_condition": "Than dung, duoc buong nhe va khong bi cong gay.",
-            "risk_notes": ["Tranh dam coc qua sat re."],
+            "completion_condition": "Thân đứng, được buộc nhẹ và không bị cong gãy.",
+            "risk_notes": ["Tránh đâm cọc quá sát rễ."],
             "weather_dependency": {},
             "water_amount": None,
             "fertilizer_amount": None,
-            "sunlight_requirement": "Tiep tuc duy tri nang sang tot",
+            "sunlight_requirement": "Tiếp tục duy trì nắng sáng tốt",
             "reminder_offsets_minutes": [30],
         },
         {
             "phase_key": "monitoring",
-            "title": "Kiem tra sau benh va la bat thuong",
-            "short_label": "Kiem tra sau benh",
-            "description": f"Moi 2 ngay kiem tra la, than non va cho giao giua cac canh. Do am dang o {humid}%, can uu tien tim dau hieu nam.",
-            "why_this_step_matters": "Phat hien som giup xu ly nhe hon va tranh lan sang nhieu cay.",
-            "prerequisites": ["Cay da vao giai doan phat trien than la."],
-            "tools_needed": ["Gang tay", "So ghi chu", "Dien thoai chup anh neu can"],
+            "title": "Kiểm tra sâu bệnh và lá bất thường",
+            "short_label": "Kiểm tra sâu bệnh",
+            "description": f"Mỗi 2 ngày kiểm tra lá, thân non và chỗ giao giữa các cành. Độ ẩm đang ở {humid}%, cần ưu tiên tìm dấu hiệu nấm.",
+            "why_this_step_matters": "Phát hiện sớm giúp xử lý nhẹ hơn và tránh lan sang nhiều cây.",
+            "prerequisites": ["Cây đã vào giai đoạn phát triển thân lá."],
+            "tools_needed": ["Găng tay", "Sổ ghi chú", "Điện thoại chụp ảnh nếu cần"],
             "estimated_duration_minutes": 15,
             "start_offset_days": 18,
             "start_time": [7, 0],
             "duration_minutes": 15,
             "repeat_rule": {"freq": "every_n_days", "interval_days": 2, "until_offset_days": 80, "times_of_day": ["07:00"]},
-            "completion_condition": "Da ghi nhan la, than, hoa/qua co binh thuong hay khong.",
-            "risk_notes": ["Sau mua can kiem tra ky hon vi moi truong am de phat sinh nam."],
+            "completion_condition": "Đã ghi nhận lá, thân, hoa/quả có bình thường hay không.",
+            "risk_notes": ["Sau mưa cần kiểm tra kỹ hơn vì môi trường ẩm dễ phát sinh nấm."],
             "weather_dependency": {},
             "water_amount": None,
             "fertilizer_amount": None,
-            "sunlight_requirement": "Kiem tra buoi sang de de nhin mat duoi la",
+            "sunlight_requirement": "Kiểm tra buổi sáng để dễ nhìn mặt dưới lá",
             "reminder_offsets_minutes": [20],
         },
         {
             "phase_key": "harvest",
-            "title": "Theo doi cua so thu hoach",
-            "short_label": "Theo doi thu hoach",
-            "description": "Tu ngay 60 tro di, kiem tra qua moi 2 ngay. Thu hoach khi qua len mau deu, vo cang va kich co on dinh.",
-            "why_this_step_matters": "Thu dung luc giup chat luong qua tot hon va duy tri dot qua tiep theo.",
-            "prerequisites": ["Cay da ra hoa, dau qua va nuoi qua."],
-            "tools_needed": ["Keo cat qua", "Roi dung nhe", "Khay dung qua"],
+            "title": "Theo dõi cửa sổ thu hoạch",
+            "short_label": "Theo dõi thu hoạch",
+            "description": "Từ ngày 60 trở đi, kiểm tra quả mỗi 2 ngày. Thu hoạch khi quả lên màu đều, vỏ căng và kích cỡ ổn định.",
+            "why_this_step_matters": "Thu đúng lúc giúp chất lượng quả tốt hơn và duy trì đợt quả tiếp theo.",
+            "prerequisites": ["Cây đã ra hoa, đậu quả và nuôi quả."],
+            "tools_needed": ["Kéo cắt quả", "Rổ đựng nhẹ", "Khay đựng quả"],
             "estimated_duration_minutes": 20,
             "start_offset_days": 60,
             "start_time": [6, 30],
             "duration_minutes": 20,
             "repeat_rule": {"freq": "every_n_days", "interval_days": 2, "until_offset_days": 90, "times_of_day": ["06:30"]},
-            "completion_condition": "Da kiem tra va thu cac qua dat do chin mong muon.",
-            "risk_notes": ["Khong nen de qua qua chin tren cay neu mua am keo dai."],
+            "completion_condition": "Đã kiểm tra và thu các quả đạt độ chín mong muốn.",
+            "risk_notes": ["Không nên để quả quá chín trên cây nếu mưa ẩm kéo dài."],
             "weather_dependency": {"avoid_if": ["storm"]},
             "water_amount": None,
             "fertilizer_amount": None,
-            "sunlight_requirement": "Thu vao sang som de qua mat va de bao quan",
+            "sunlight_requirement": "Thu vào sáng sớm để quả mát và dễ bảo quản",
             "reminder_offsets_minutes": [30],
         },
     ]
@@ -436,8 +436,8 @@ def generate_plan_payload(context: PlanContext) -> dict:
         "suitability": suitability,
         "recommended_start_date": recommended_start,
         "summary": (
-            f"Ke hoach {context.crop.name.lower()} cho {context.plant_count} cay tai {context.location.name}. "
-            f"He thong de xuat bat dau vao {recommended_start.strftime('%d/%m/%Y')} va uu tien theo doi mua, do am."
+            f"Kế hoạch {context.crop.name.lower()} cho {context.plant_count} cây tại {context.location.name}. "
+            f"Hệ thống đề xuất bắt đầu vào {recommended_start.strftime('%d/%m/%Y')} và ưu tiên theo dõi mưa, độ ẩm."
         ),
         "steps": steps,
     }
@@ -445,13 +445,13 @@ def generate_plan_payload(context: PlanContext) -> dict:
 
 def _map_reminder_type(step_title: str) -> str:
     title = step_title.lower()
-    if "tuoi" in title:
+    if "tưới" in title or "tuoi" in title:
         return "watering"
-    if "phan" in title:
+    if "phân" in title or "phan" in title:
         return "fertilizing"
-    if "thu hoach" in title:
+    if "thu hoạch" in title or "thu hoach" in title:
         return "harvest_window"
-    if "sau benh" in title:
+    if "sâu bệnh" in title or "sau benh" in title:
         return "pest_monitoring"
     return "step_due"
 
@@ -488,7 +488,7 @@ def create_plan_from_payload(user, context: PlanContext) -> CropPlan:
             crop=context.crop,
             location=context.location,
             weather_snapshot=weather_snapshot,
-            title=f"Ke hoach trong {context.crop.name} - {context.location.name}",
+            title=f"Kế hoạch trồng {context.crop.name} - {context.location.name}",
             planting_mode=context.planting_mode,
             area_value=context.area_value,
             area_unit=context.area_unit,
@@ -547,8 +547,8 @@ def create_plan_from_payload(user, context: PlanContext) -> CropPlan:
                         user=user,
                         crop_plan=plan,
                         step=step,
-                        title=f"Nhac viec: {step.title}",
-                        body=f"Den luc thuc hien buoc '{step.title.lower()}' cho ke hoach {plan.crop.name.lower()}.",
+                        title=f"Nhắc việc: {step.title}",
+                        body=f"Đến lúc thực hiện bước '{step.title.lower()}' cho kế hoạch {plan.crop.name.lower()}.",
                         deep_link=f"/dashboard/crop-plans/{plan.id}?step={step.id}",
                         trigger_time=trigger,
                         fallback_trigger_time=trigger + timedelta(hours=3),
@@ -575,10 +575,10 @@ def refresh_plan_weather(plan: CropPlan) -> dict:
     status = plan.status
 
     if derived.get("rain_sum_14d", 0) > 90:
-        warnings.append("Du bao mua nhieu, can giam tuoi va kiem tra thoat nuoc.")
+        warnings.append("Dự báo mưa nhiều, cần giảm tưới và kiểm tra thoát nước.")
         status = CropPlan.Status.NEEDS_REVIEW
     if derived.get("humidity_avg_14d", 0) > 82:
-        warnings.append("Do am cao, can tang tan suat kiem tra nam benh.")
+        warnings.append("Độ ẩm cao, cần tăng tần suất kiểm tra nấm bệnh.")
         status = CropPlan.Status.NEEDS_REVIEW
 
     plan.status = status
@@ -624,7 +624,7 @@ def delay_step(step: CropPlanStep, delay_days: int, reason: str = "") -> CropPla
     step.suggested_start_time += delta
     step.suggested_end_time += delta
     step.status = CropPlanStep.Status.DELAYED
-    step.delay_reason = reason or f"Doi lich {delay_days} ngay"
+    step.delay_reason = reason or f"Dời lịch {delay_days} ngày"
     step.reminder_times = [(datetime.fromisoformat(item) + delta).isoformat() for item in step.reminder_times]
     step.save(update_fields=["suggested_start_time", "suggested_end_time", "status", "delay_reason", "reminder_times", "updated_at"])
 
@@ -639,6 +639,6 @@ def delay_step(step: CropPlanStep, delay_days: int, reason: str = "") -> CropPla
         crop_plan=step.crop_plan,
         step=step,
         action="delayed",
-        note=reason or f"Doi lich {delay_days} ngay",
+        note=reason or f"Dời lịch {delay_days} ngày",
     )
     return step

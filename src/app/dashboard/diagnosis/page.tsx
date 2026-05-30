@@ -15,8 +15,12 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { mockDiagnoses } from "@/data/mock/diagnoses";
 import { djangoClassifyLeafImage, type DjangoCnnResponse } from "@/lib/django-client";
+import { compressImage } from "@/lib/image-compression";
 import { createPreviewDataUrl, detectLeafInImage, type LeafDetectionResult } from "@/lib/leaf-detector";
+import { addOfflineDiagnosis, clearOfflineDiagnosis, getOfflineQueue } from "@/lib/offline-queue";
 import { formatConfidence } from "@/lib/utils";
+import { useOnlineStatus } from "@/hooks/use-online-status";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 import {
   CameraPreviewState,
   DiagnosisInputMethod,
@@ -125,6 +129,7 @@ function applyCnnResult(record: DiagnosisRecord, cnn: DjangoCnnResponse): Diagno
     ],
     cnnConfidence: cnn.confidence,
     cnnPayload: cnn as unknown as Record<string, unknown>,
+    actionPlan: cnn.action_plan,
     modelVersion: cnn.model_version,
   };
 }
@@ -144,8 +149,13 @@ export default function DashboardDiagnosisPage() {
   const [cameraState, setCameraState] = useState<CameraPreviewState>("idle");
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [cameraFacingMode, setCameraFacingMode] = useState<"environment" | "user">("environment");
+  const [offlineCount, setOfflineCount] = useState(0);
+  const [voiceNote, setVoiceNote] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const syncingOfflineRef = useRef(false);
+  const online = useOnlineStatus();
+  const voice = useVoiceInput({ onTranscript: (value) => setVoiceNote(value) });
 
   const currentPlan = user?.currentPlan ?? "free";
   const busy = status === "uploading" || status === "scanning";
@@ -164,6 +174,51 @@ export default function DashboardDiagnosisPage() {
       streamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, []);
+
+  useEffect(() => {
+    const refresh = () => {
+      setOfflineCount(getOfflineQueue().filter((item) => item.status === "pending").length);
+    };
+    refresh();
+    window.addEventListener("agromind-offline-queue", refresh);
+    window.addEventListener("online", refresh);
+    return () => {
+      window.removeEventListener("agromind-offline-queue", refresh);
+      window.removeEventListener("online", refresh);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!online || syncingOfflineRef.current) return;
+
+    const pending = getOfflineQueue().filter((item) => item.status === "pending");
+    if (!pending.length) return;
+
+    syncingOfflineRef.current = true;
+    void (async () => {
+      for (const item of pending) {
+        try {
+          const detection = await detectLeafInImage(item.imageDataUrl);
+          const cnn = await djangoClassifyLeafImage({
+            imageDataUrl: item.imageDataUrl,
+            accessToken,
+          });
+          const baseRecord = buildGeneratedRecord({
+            template: mockDiagnoses[0],
+            previewUrl: item.imageDataUrl,
+            detection,
+            inputMethod: "upload",
+          });
+          addGeneratedRecord(applyCnnResult(baseRecord, cnn));
+          clearOfflineDiagnosis(item.id);
+        } catch {
+          break;
+        }
+      }
+      setOfflineCount(getOfflineQueue().filter((item) => item.status === "pending").length);
+      syncingOfflineRef.current = false;
+    })();
+  }, [accessToken, addGeneratedRecord, online]);
 
   function stopCameraStream(nextState: CameraPreviewState = "idle") {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -329,7 +384,8 @@ export default function DashboardDiagnosisPage() {
   async function applySelectedFile(file: File, method: DiagnosisInputMethod) {
     try {
       stopCameraStream();
-      const nextUrl = await createPreviewDataUrl(file);
+      const compressedFile = await compressImage(file);
+      const nextUrl = await createPreviewDataUrl(compressedFile);
       setPreviewUrl(nextUrl);
       setInputMethod(method);
       setSelectedTemplateId(null);
@@ -394,6 +450,10 @@ export default function DashboardDiagnosisPage() {
 
       if (activePreview.startsWith("data:")) {
         try {
+          if (!online) {
+            addOfflineDiagnosis(activePreview);
+            throw new Error("offline");
+          }
           const cnn = await djangoClassifyLeafImage({
             imageDataUrl: activePreview,
             accessToken,
@@ -456,6 +516,21 @@ export default function DashboardDiagnosisPage() {
 
       <div className="flex flex-wrap items-center gap-3">
         <Badge variant="brand">Gói hiện tại: {currentPlan.toUpperCase()}</Badge>
+        <Badge variant={online ? "success" : "warning"}>{online ? "Đang online" : "Mất mạng"}</Badge>
+        {offlineCount ? <Badge variant="warning">{offlineCount} ảnh đang chờ gửi lại</Badge> : null}
+        <Button
+          variant="secondary"
+          onClick={() => {
+            if (voice.listening) {
+              voice.stop();
+            } else {
+              voice.start();
+            }
+          }}
+          disabled={!voice.supported}
+        >
+          {voice.listening ? "Dừng ghi âm" : "Nói ghi chú"}
+        </Button>
         <Button
           variant="secondary"
           onClick={() => {
@@ -485,6 +560,27 @@ export default function DashboardDiagnosisPage() {
           </Link>
         ) : null}
       </div>
+
+      <Card className="rounded-[30px] border-white/10 bg-white/5 text-white">
+        <div className="grid gap-4 md:grid-cols-[1fr_1.1fr]">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-100/60">
+              Hướng dẫn chụp ảnh rõ nét
+            </p>
+            <div className="mt-3 grid gap-2 text-sm leading-6 text-emerald-50/75 sm:grid-cols-2">
+              <span>- Chụp gần lá, đủ sáng.</span>
+              <span>- Giữ máy chắc, không rung.</span>
+              <span>- Để lá chiếm phần lớn khung hình.</span>
+              <span>- Chụp thêm mặt dưới lá nếu có đốm.</span>
+            </div>
+          </div>
+          <div className="rounded-[22px] border border-white/10 bg-white/5 p-4 text-sm leading-6 text-emerald-50/75">
+            {voice.supported
+              ? voiceNote || voice.transcript || "Bấm micro để ghi chú bằng giọng nói tiếng Việt."
+              : "Trình duyệt này chưa hỗ trợ nhập giọng nói. Bạn vẫn có thể nhập câu hỏi trong Chat AI."}
+          </div>
+        </div>
+      </Card>
 
       {leafAnalysis ? (
         <Card className="rounded-[30px] border-emerald-100 bg-white/90">
