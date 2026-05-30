@@ -1,247 +1,252 @@
-# UI-UXdetectleaf
+# Agromind AI - webchuandoanla
 
-Leafiq là website chẩn đoán lá cây và quản lý quy trình chăm sóc cây trồng. Project hiện gồm:
+Agromind AI là ứng dụng chẩn đoán ảnh lá cây và hỗ trợ canh tác. Repo này chứa cả frontend Next.js và backend Django để người clone về có thể chạy local, phát triển tiếp và deploy.
 
-- Frontend: `Next.js App Router + TypeScript + Tailwind CSS`
-- Backend: `Django + Django REST Framework + JWT Auth`
-- Database: `PostgreSQL / Supabase Postgres`
-
-Repo này đang chứa cả frontend và backend trong cùng một source tree để tiện phát triển local và deploy.
+Repo GitHub: https://github.com/manhfaa/webchuandoanla
 
 ## Tính năng hiện có
 
-### Public website
+- Chẩn đoán ảnh lá: upload ảnh, chụp bằng camera, dùng ảnh mẫu, nén ảnh trước upload.
+- YOLO xác thực ảnh lá và CNN trả top 5 kết quả bệnh/cây.
+- Cảnh báo độ tin cậy CNN bằng màu xanh/đỏ, cảnh báo khi confidence dưới 70%.
+- Khuyến nghị hành động sau chẩn đoán: mức rủi ro, việc cần làm ngay, theo dõi 3-7 ngày, khi nào hỏi chuyên gia, có nên chụp lại ảnh, lưu ý an toàn.
+- Chat AI qua Gemini nếu có `GEMINI_API_KEY`, fallback local nếu chưa cấu hình.
+- Giọng nói: nút micro hỏi bằng tiếng Việt và đọc kết quả chẩn đoán.
+- Hỗ trợ mạng yếu: trạng thái online/offline, lưu tạm và gửi lại khi có mạng.
+- Thời tiết và cảnh báo sâu bệnh theo tỉnh/huyện/xã/vị trí canh tác.
+- Dự báo 3 ngày, 7 ngày, độ ẩm, nhiệt độ, mưa, gió và gợi ý tưới/bón/phun hôm nay.
+- Kế hoạch canh tác theo cây trồng, vị trí, thời tiết và tiến độ thực hiện.
+- Lô vườn/ruộng, nhật ký tưới nước, bón phân, phun thuốc, kiểm tra sâu bệnh.
+- Liên kết kết quả chẩn đoán với lô vườn.
+- QR truy xuất nguồn gốc và trang công khai cho QR.
+- Thư viện vật tư: thuốc BVTV, phân bón, dinh dưỡng cây trồng, triệu chứng thiếu dinh dưỡng.
+- Search/filter theo cây, bệnh, hoạt chất, loại vật tư.
+- Gợi ý vật tư liên quan trong trang kết quả chẩn đoán.
+- Song ngữ Việt/Anh, lưu lựa chọn ngôn ngữ bằng localStorage.
+- Đăng nhập/đăng ký thật bằng backend Django JWT.
 
-- Landing page giới thiệu sản phẩm
-- Trang đăng nhập
-- Trang đăng ký
-- Giao diện thương hiệu Leafiq
+## Công nghệ
 
-### Dashboard người dùng
+- Frontend: Next.js App Router, TypeScript, Tailwind CSS, Zustand.
+- Backend: Django, Django REST Framework, Simple JWT.
+- Database: SQLite local mặc định hoặc PostgreSQL/Supabase qua `SUPABASE_DB_URL`.
+- CNN: chạy local bằng `best_model.pth` hoặc gọi Hugging Face Space qua `CNN_API_URL`.
+- Deploy free: Vercel cho frontend, Render cho backend, Hugging Face Space cho CNN FastAPI.
 
-- Tổng quan dashboard
-- Kiểm tra ảnh lá cây
-- Kết quả kiểm tra ảnh
-- Lịch sử kiểm tra ảnh
-- Chat tư vấn
-- Gói dịch vụ
-- Hồ sơ người dùng
-- Kế hoạch trồng cây theo địa điểm
-
-### Backend API
-
-- Đăng ký / đăng nhập bằng email + mật khẩu
-- JWT authentication
-- Hồ sơ người dùng
-- Cài đặt người dùng
-- Lưu lịch sử chẩn đoán
-- Quản lý gói dịch vụ và dữ liệu engagement
-- API kế hoạch trồng cây
-
-## Cấu trúc thư mục
+## Cấu trúc chính
 
 ```text
 .
-├─ src/                        Frontend Next.js
-│  ├─ app/                     Routes App Router
-│  ├─ components/              UI components và feature components
-│  ├─ constants/               Text, navigation, brand constants
-│  ├─ data/mock/               Mock data
-│  ├─ lib/                     Helpers, API clients, detector logic
-│  ├─ store/                   Zustand stores
-│  └─ types/                   Shared TypeScript types
-├─ public/                     Ảnh minh họa, avatars, SVG assets
-├─ backend/                    Django backend
-│  ├─ core/                    settings, urls, asgi, wsgi
-│  ├─ users/                   Auth, profile, settings
-│  ├─ diagnoses/               Diagnosis models + APIs
-│  ├─ engagement/              Plans, subscriptions, chat, consultations
-│  ├─ crop_plans/              Crop planning feature
-│  ├─ sql/                     PostgreSQL schema tham chiếu
-│  ├─ requirements.txt         Python dependencies
-│  └─ .env.example             Env mẫu cho backend
-├─ render.yaml                 Cấu hình deploy Render
-├─ package.json                Frontend scripts và dependencies
+├─ src/                         Frontend Next.js
+│  ├─ app/                      Routes App Router
+│  ├─ components/               UI và feature components
+│  ├─ hooks/                    Voice, online status
+│  ├─ lib/                      API clients, i18n, offline queue, compression
+│  ├─ locales/                  Bản dịch Việt/Anh
+│  ├─ store/                    Zustand stores
+│  └─ types/                    TypeScript types
+├─ backend/                     Django backend
+│  ├─ core/                     Settings, urls, asgi, wsgi
+│  ├─ users/                    Auth, profile, settings
+│  ├─ diagnoses/                Diagnosis, CNN, action plan
+│  ├─ engagement/               Plans, chat, expert consultation
+│  ├─ crop_plans/               Kế hoạch canh tác, thời tiết, nhắc việc
+│  ├─ farmops/                  Lô vườn, nhật ký, QR, thư viện vật tư
+│  └─ requirements.txt
+├─ hf_space/                    FastAPI Space cho CNN
+├─ scripts/deploy_hf_space.py   Script deploy Hugging Face Space
+├─ DEPLOY_FREE.md               Ghi chú deploy miễn phí
+├─ render.yaml                  Cấu hình Render backend
+├─ vercel.json                  Cấu hình Vercel frontend
+├─ best_model.pth               CNN checkpoint local
 └─ README.md
 ```
 
 ## Yêu cầu môi trường
 
-### Frontend
-
 - Node.js `20+`
 - npm `10+`
-
-### Backend
-
 - Python `3.13.x`
-- pip mới
-- PostgreSQL hoặc Supabase Postgres
+- pip
+- Git
 
-## Chạy local
+PostgreSQL/Supabase là tùy chọn. Nếu không có `SUPABASE_DB_URL`, backend dùng SQLite local.
 
-### 1. Clone repo
-
-```bash
-git clone https://github.com/phamducmanhhj-design/UI-UXdetectleaf.git
-cd UI-UXdetectleaf
-```
-
-### 2. Cài frontend
+## Clone và cài đặt
 
 ```bash
+git clone https://github.com/manhfaa/webchuandoanla.git
+cd webchuandoanla
 npm install
 ```
 
-### 3. Cài backend
+Cài backend trên Windows PowerShell:
 
-```bash
+```powershell
 cd backend
 python -m venv .venv
-.venv\Scripts\activate
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 cd ..
 ```
 
-## Cấu hình backend
-
-Tạo file `.env` trong thư mục `backend/` từ mẫu:
+Cài backend trên macOS/Linux:
 
 ```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cd ..
+```
+
+## Cấu hình môi trường
+
+Tạo env frontend:
+
+```powershell
+copy .env.example .env.local
+```
+
+Tạo env backend:
+
+```powershell
 copy backend\.env.example backend\.env
 ```
 
 Các biến quan trọng:
 
 ```env
+# Frontend
+DJANGO_BASE_URL=http://127.0.0.1:8000
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash
+
+# Backend
 SECRET_KEY=change-me
 DEBUG=True
 ALLOWED_HOSTS=127.0.0.1,localhost
 SUPABASE_DB_URL=
+CNN_MODEL_PATH=
+CNN_API_URL=
+CNN_API_TOKEN=
 FRONTEND_ORIGIN=http://127.0.0.1:3000
 CORS_ALLOWED_ORIGINS=
 CSRF_TRUSTED_ORIGINS=
 ```
 
-### Giải thích nhanh
+Không commit `.env`, `.env.local`, token Gemini hoặc Hugging Face thật.
 
-- `SUPABASE_DB_URL`: connection string PostgreSQL của Supabase
-- `FRONTEND_ORIGIN`: URL frontend local
-- `CORS_ALLOWED_ORIGINS`: danh sách origin frontend nếu chạy nhiều môi trường
-- `CSRF_TRUSTED_ORIGINS`: origin backend/frontend trusted khi deploy
+## Database
 
-Nếu chưa có Supabase, backend sẽ fallback sang SQLite local theo settings hiện tại.
+Chạy migration:
 
-## Chạy database migration
-
-```bash
+```powershell
 cd backend
-python manage.py migrate
+.\.venv\Scripts\python.exe manage.py migrate
 cd ..
 ```
 
-## Khởi động local
-
-### Cách 1: Development mode
-
-Mở 2 terminal riêng.
-
-Terminal 1, frontend:
+Nếu dùng macOS/Linux:
 
 ```bash
+cd backend
+.venv/bin/python manage.py migrate
+cd ..
+```
+
+## Chạy local
+
+Mở 2 terminal.
+
+Terminal backend:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
+```
+
+Terminal frontend:
+
+```powershell
 npm run dev
 ```
 
-Terminal 2, backend:
+URL local:
 
-```bash
-cd backend
-python manage.py runserver 127.0.0.1:8000
-```
+- Frontend: http://127.0.0.1:3000
+- Trang chẩn đoán: http://127.0.0.1:3000/dashboard/diagnosis
+- Backend admin: http://127.0.0.1:8000/admin/login/
 
-Frontend:
+## Tài khoản demo
 
-- `http://localhost:3000`
-
-Backend:
-
-- `http://127.0.0.1:8000`
-
-Lưu ý:
-
-- Nên mở frontend bằng `http://localhost:3000`
-- Không nên mở bằng `127.0.0.1:3000` khi đang dùng `next dev` nếu trình duyệt giữ cache HMR cũ
-
-### Cách 2: Production-like local
-
-```bash
-npm run build
-npm run start
-```
-
-Backend vẫn chạy riêng:
-
-```bash
-cd backend
-python manage.py runserver 127.0.0.1:8000
-```
-
-## Tài khoản test
-
-Tài khoản test hiện dùng trong giao diện:
+Giao diện có tài khoản gợi ý:
 
 ```text
-Email: demo@leafiq.vn
+Email: demo@agromindai.vn
 Password: Demo@12345
 ```
 
-Nếu cần tạo lại user test:
+Nếu tài khoản chưa có trong database local, đăng ký tài khoản mới tại `/register` hoặc tạo bằng Django admin/shell.
 
-```bash
-cd backend
-python manage.py shell
+## CNN model
+
+Backend ưu tiên theo thứ tự:
+
+1. Gọi remote CNN FastAPI nếu có `CNN_API_URL`.
+2. Chạy local checkpoint nếu có `CNN_MODEL_PATH` hoặc file `best_model.pth` ở root repo.
+
+File `best_model.pth` đang nằm trong repo để dev local có thể tiếp tục ngay. Nếu muốn deploy nhẹ hơn, đưa model lên Hugging Face Space và set:
+
+```env
+CNN_API_URL=https://username-agromind-cnn-api.hf.space
+CNN_API_TOKEN=
 ```
 
-Rồi tạo user bằng Django ORM hoặc qua API register.
+Deploy Hugging Face Space:
 
-## Frontend scripts
+```powershell
+$env:HF_TOKEN="your_huggingface_token"
+python scripts\deploy_hf_space.py
+```
 
-```bash
-npm run dev
+## Gemini chat
+
+Chat AI dùng Gemini qua biến:
+
+```env
+GEMINI_API_KEY=your_key
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+Nếu không có key, app vẫn dùng fallback local để trả lời cơ bản.
+
+## Kiểm tra trước khi commit
+
+Frontend:
+
+```powershell
 npm run build
-npm run start
-npm run lint
 ```
 
-## Backend dependencies
+Backend:
 
-Các package backend chính:
-
-- `Django==5.1.1`
-- `djangorestframework==3.15.2`
-- `djangorestframework-simplejwt==5.3.1`
-- `psycopg[binary]==3.2.3`
-- `dj-database-url==2.2.0`
-- `python-dotenv==1.0.1`
-- `django-cors-headers==4.4.0`
-- `gunicorn==22.0.0`
-- `whitenoise==6.7.0`
+```powershell
+backend\.venv\Scripts\python.exe backend\manage.py makemigrations --check --dry-run
+backend\.venv\Scripts\python.exe backend\manage.py check
+backend\.venv\Scripts\python.exe backend\manage.py migrate --noinput
+```
 
 ## API chính
 
-### Auth
+Auth:
 
 - `POST /api/auth/register/`
 - `POST /api/auth/login/`
-
-### User
-
 - `GET /api/users/me/`
-- `PATCH /api/users/me/`
-- `GET /api/users/settings/`
-- `PATCH /api/users/settings/`
 
-### Diagnoses
+Diagnoses:
 
 - `GET /api/diagnoses/`
 - `POST /api/diagnoses/`
@@ -249,19 +254,7 @@ Các package backend chính:
 - `PATCH /api/diagnoses/{id}/`
 - `DELETE /api/diagnoses/{id}/`
 
-### Engagement
-
-- `GET /api/engagement/plans/`
-- `GET /api/engagement/subscriptions/`
-- `POST /api/engagement/subscriptions/`
-- `GET /api/engagement/conversations/`
-- `POST /api/engagement/conversations/`
-- `GET /api/engagement/messages/`
-- `POST /api/engagement/messages/`
-- `GET /api/engagement/expert-consultations/`
-- `POST /api/engagement/expert-consultations/`
-
-### Crop plans
+Crop plans:
 
 - `GET /api/crop-plans/crops/`
 - `GET /api/crop-plans/locations/`
@@ -269,83 +262,62 @@ Các package backend chính:
 - `POST /api/crop-plans/preview/`
 - `GET /api/crop-plans/plans/`
 - `POST /api/crop-plans/plans/`
-- `GET /api/crop-plans/plans/{id}/`
-- `PATCH /api/crop-plans/plans/{id}/`
-- `POST /api/crop-plans/plans/{id}/regenerate/`
 - `POST /api/crop-plans/steps/{id}/complete/`
 - `POST /api/crop-plans/steps/{id}/delay/`
-- `POST /api/crop-plans/steps/{id}/notes/`
 - `GET /api/crop-plans/reminders/`
-- `PATCH /api/crop-plans/reminders/{id}/read/`
-- `POST /api/crop-plans/plans/{id}/weather-refresh/`
 
-## Deploy
+Farmops:
 
-Repo đã có sẵn `render.yaml` cho Render.
+- `GET /api/farmops/locations/`
+- `POST /api/farmops/locations/`
+- `GET /api/farmops/plots/`
+- `POST /api/farmops/plots/`
+- `GET /api/farmops/cultivation-logs/`
+- `POST /api/farmops/cultivation-logs/`
+- `GET /api/farmops/traceability/`
+- `POST /api/farmops/traceability/`
+- `GET /api/farmops/traceability/public/{token}/`
+- `GET /api/farmops/weather-alerts/`
+- `GET /api/farmops/input-library/`
+- `GET /api/farmops/nutrition-symptoms/`
 
-### Frontend Render
+Engagement:
 
-- runtime: `node`
-- build: `npm ci --include=dev && npm run build`
-- start: `npx next start -H 0.0.0.0 -p $PORT`
+- `GET /api/engagement/plans/`
+- `GET /api/engagement/subscriptions/`
+- `POST /api/engagement/verify-transfer/`
+- `GET /api/engagement/conversations/`
+- `POST /api/engagement/messages/`
+- `GET /api/engagement/expert-consultations/`
 
-### Backend Render
+## Deploy miễn phí
 
-- runtime: `python`
-- rootDir: `backend`
-- build:
+Tài liệu nhanh nằm ở `DEPLOY_FREE.md`.
 
-```bash
-pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput
+Gợi ý cấu hình:
+
+- Frontend: Vercel, build `npm run build`.
+- Backend: Render free, dùng `render.yaml`.
+- Database: Supabase Postgres hoặc SQLite cho local.
+- CNN: Hugging Face Space free.
+- Gemini: set `GEMINI_API_KEY` trong Vercel env.
+
+Backend Render cần các biến chính:
+
+```env
+DEBUG=False
+ALLOWED_HOSTS=.onrender.com
+FRONTEND_ORIGIN=https://your-vercel-project.vercel.app
+CORS_ALLOWED_ORIGINS=https://your-vercel-project.vercel.app
+CSRF_TRUSTED_ORIGINS=https://your-backend.onrender.com,https://*.vercel.app
+SUPABASE_DB_URL=postgresql://...
+CNN_API_URL=https://username-agromind-cnn-api.hf.space
 ```
 
-- start:
+## Ghi chú phát triển
 
-```bash
-gunicorn core.wsgi:application --bind 0.0.0.0:$PORT
-```
-
-### Biến môi trường cần có khi deploy
-
-Frontend:
-
-- `NEXT_PUBLIC_API_BASE_URL`
-
-Backend:
-
-- `PYTHON_VERSION`
-- `DEBUG=False`
-- `ALLOWED_HOSTS`
-- `FRONTEND_ORIGIN`
-- `CORS_ALLOWED_ORIGINS`
-- `CSRF_TRUSTED_ORIGINS`
-- `SECRET_KEY`
-- `SUPABASE_DB_URL`
-
-## File quan trọng nên kiểm tra khi phát triển
-
-- `src/app/login/page.tsx`
-- `src/components/layout/dashboard-shell.tsx`
-- `src/components/layout/dashboard-topbar.tsx`
-- `src/lib/django-client.ts`
-- `src/store/session-store.ts`
-- `backend/core/settings.py`
-- `backend/core/urls.py`
-
-## Ghi chú kỹ thuật
-
-- Frontend hiện vừa dùng mock data, vừa gọi backend thật cho auth và một số flow dữ liệu
-- Dashboard và login đã được chỉnh để chạy ổn định hơn giữa local dev và production build
-- Có file schema PostgreSQL tham chiếu tại `backend/sql/postgresql_schema.sql`
-- Có thể cần dọn thêm text lỗi mã hóa ở một số màn chưa được chuẩn hóa hoàn toàn
-
-## Tình trạng hiện tại
-
-Project đã có thể:
-
-- chạy local frontend
-- chạy local backend
-- đăng ký / đăng nhập
-- mở dashboard
-- lưu dữ liệu người dùng theo backend Django
-- push source code lên GitHub
+- Không đưa secret thật vào GitHub.
+- Không commit `node_modules`, `.next`, `backend/.venv`, database SQLite local.
+- Khi thêm model lớn mới, ưu tiên Hugging Face Space hoặc Git LFS.
+- Nếu đổi schema backend, tạo migration và chạy `migrate`.
+- Nếu thêm text giao diện, giữ tiếng Việt có dấu và cập nhật i18n khi cần.
