@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { CloudRain, MapPin, RefreshCcw, ShieldAlert, Sprout, ThermometerSun, Wind } from "lucide-react";
 
@@ -107,6 +108,7 @@ export default function WeatherAlertsPage() {
   const { accessToken } = useSessionStore();
   const { language } = useLanguageStore();
   const text = copy[language];
+  const loginUrl = "/login?next=/dashboard/weather-alerts";
 
   const [locations, setLocations] = useState<FarmLocation[]>([]);
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
@@ -238,7 +240,21 @@ export default function WeatherAlertsPage() {
             </div>
           ) : null}
 
-          {!accessToken ? <p className="mt-4 text-body-sm text-berry-500">{text.login}</p> : null}
+          {!accessToken ? (
+            <div className="mt-4 rounded-md border border-berry-500/30 bg-berry-500/10 p-4">
+              <p className="text-body-sm text-berry-300">
+                {language === "en"
+                  ? "Sign in to the dashboard with your Django backend account to save locations and load alerts. Django admin login does not create a dashboard JWT session."
+                  : "Hãy đăng nhập dashboard bằng tài khoản backend Django để lưu vị trí và lấy cảnh báo. Đăng nhập Django admin riêng không tạo phiên JWT cho dashboard."}
+              </p>
+              <Link
+                href={loginUrl}
+                className="mt-3 inline-flex h-10 items-center justify-center rounded-md bg-leaf-500 px-5 text-body font-medium text-white transition hover:bg-leaf-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500/40"
+              >
+                {language === "en" ? "Sign in" : "Đăng nhập dashboard"}
+              </Link>
+            </div>
+          ) : null}
           {error ? <p className="mt-4 text-body-sm text-berry-500">{error}</p> : null}
         </Card>
 
