@@ -134,14 +134,14 @@ export default function CropPlansPage() {
       ) : null}
 
       {reminders.length ? (
-        <Card className="rounded-lg border-sun-400/40 bg-sun-100/40">
+        <Card className="rounded-lg border-sun-400/45 bg-sun-400/10">
           <div className="flex items-start gap-3">
-            <span className="rounded-full bg-white p-3 text-sun-600 shadow-sm">
+            <span className="rounded-full bg-sun-400/15 p-3 text-sun-300 ring-1 ring-sun-300/30">
               <TriangleAlert strokeWidth={1.75} className="h-5 w-5" aria-hidden />
             </span>
             <div>
-              <h3 className="text-h3 text-ink-900">Cần làm trong hôm nay</h3>
-              <p className="mt-2 text-body text-ink-700">
+              <h3 className="text-h3 text-on-dark-strong">Cần làm trong hôm nay</h3>
+              <p className="mt-2 text-body leading-relaxed text-muted-on-dark">
                 {reminders[0].title}: {reminders[0].body}
               </p>
             </div>
