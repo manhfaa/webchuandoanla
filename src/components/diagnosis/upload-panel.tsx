@@ -2,7 +2,7 @@
 
 import type { ChangeEvent } from "react";
 import { useRef } from "react";
-import { ArrowRight, Camera, CheckCircle2, FileImage, PlayCircle, Sparkles, Upload } from "lucide-react";
+import { ArrowRight, Camera, CheckCircle2, PlayCircle, Sparkles, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -19,8 +19,8 @@ const statusLabelMap: Record<DiagnosisStatus, string> = {
 
 const tips = [
   "Ưu tiên một chiếc lá rõ, đủ sáng và không bị che khuất.",
-  "Nên để lá chiếm phần lớn khung hình để hệ thống nhận biết dễ hơn.",
-  "Sau khi ảnh hợp lệ, bạn có thể lưu kết quả và tiếp tục hỏi AI hoặc chuyên gia.",
+  "Để lá chiếm phần lớn khung hình để hệ thống nhận biết ổn định hơn.",
+  "Sau khi ảnh hợp lệ, hệ thống sẽ lưu kết quả vào backend cho tài khoản của bạn.",
 ];
 
 const options = [
@@ -42,15 +42,6 @@ const options = [
     badge: "Chụp mới",
     icon: Camera,
   },
-  {
-    key: "sample",
-    title: "Dùng ảnh mẫu",
-    description: "Xem thử toàn bộ quy trình bằng ảnh minh họa có sẵn.",
-    hint: "Xem nhanh",
-    tone: "from-lime-100 via-emerald-50 to-white",
-    badge: "Dùng thử",
-    icon: FileImage,
-  },
 ] as const;
 
 export function UploadPanel({
@@ -59,7 +50,6 @@ export function UploadPanel({
   cameraSupported,
   onFileSelected,
   onOpenCamera,
-  onUseSample,
   onStart,
 }: {
   status: DiagnosisStatus;
@@ -67,16 +57,12 @@ export function UploadPanel({
   cameraSupported: boolean;
   onFileSelected: (file: File, method: DiagnosisInputMethod) => void;
   onOpenCamera: () => void;
-  onUseSample: () => void;
   onStart: () => void;
 }) {
   const uploadRef = useRef<HTMLInputElement | null>(null);
   const captureRef = useRef<HTMLInputElement | null>(null);
 
-  function handleFileChange(
-    event: ChangeEvent<HTMLInputElement>,
-    method: DiagnosisInputMethod,
-  ) {
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>, method: DiagnosisInputMethod) {
     const file = event.target.files?.[0];
     if (file) onFileSelected(file, method);
     event.target.value = "";
@@ -88,39 +74,29 @@ export function UploadPanel({
       return;
     }
 
-    if (optionKey === "capture") {
-      if (cameraSupported) {
-        onOpenCamera();
-        return;
-      }
-
-      captureRef.current?.click();
+    if (cameraSupported) {
+      onOpenCamera();
       return;
     }
 
-    onUseSample();
+    captureRef.current?.click();
   }
 
   return (
     <Card className="relative overflow-hidden rounded-[36px] border-emerald-100/80 p-0 shadow-panel">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(111,214,156,0.18),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(217,247,164,0.26),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.96),rgba(246,251,246,0.92))]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-white/60 to-transparent" />
-
       <div className="relative p-6 sm:p-7">
         <div className="grid gap-5 2xl:grid-cols-[minmax(0,1.2fr)_320px] 2xl:items-start">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/85 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700 shadow-soft">
               <Sparkles size={14} />
-              Bước 1 · Chọn ảnh
+              Bước 1 · Chọn ảnh thật
             </div>
-
             <h3 className="mt-4 max-w-3xl font-display text-3xl font-semibold leading-tight text-ink sm:text-[2.25rem]">
               Tải ảnh hoặc chụp ảnh lá thật rõ để hệ thống kiểm tra
             </h3>
-
             <p className="mt-4 max-w-3xl text-sm leading-8 text-slate-600 sm:text-[15px]">
-              Agromind AI sẽ kiểm tra xem ảnh bạn gửi lên có đúng là lá cây hay không. Nếu ảnh phù hợp,
-              bạn có thể lưu lại kết quả và tiếp tục hỏi AI hoặc chuyên gia.
+              Ảnh hợp lệ sẽ được xác thực, phân loại CNN nếu backend sẵn sàng, rồi lưu vào lịch sử Django của tài khoản.
             </p>
           </div>
 
@@ -129,7 +105,6 @@ export function UploadPanel({
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-100 to-lime-100 text-emerald-800">
                 <Sparkles size={20} />
               </div>
-
               <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800">
                 {statusLabelMap[status]}
               </div>
@@ -138,7 +113,6 @@ export function UploadPanel({
             <p className="mt-4 text-sm font-semibold text-slate-900">
               Một ảnh rõ ngay từ đầu sẽ cho kết quả kiểm tra ổn định hơn.
             </p>
-
             <div className="mt-4 space-y-3">
               {tips.map((tip) => (
                 <div key={tip} className="flex items-start gap-3 rounded-2xl bg-emerald-50/70 px-4 py-3">
@@ -153,8 +127,7 @@ export function UploadPanel({
         <div className="mt-7 grid gap-4 md:grid-cols-2">
           {options.map((option) => {
             const Icon = option.icon;
-            const cameraFallback =
-              option.key === "capture" && !cameraSupported ? "Thiết bị / camera" : option.hint;
+            const cameraFallback = option.key === "capture" && !cameraSupported ? "Thiết bị / camera" : option.hint;
 
             return (
               <button
@@ -164,11 +137,7 @@ export function UploadPanel({
                 onClick={() => handleOptionClick(option.key)}
                 className="group relative overflow-hidden rounded-[26px] border border-emerald-100 bg-white/90 p-5 text-left shadow-soft transition duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-float disabled:cursor-not-allowed disabled:opacity-70"
               >
-                <div
-                  className={`pointer-events-none absolute inset-x-5 top-5 h-16 rounded-[22px] bg-gradient-to-r ${option.tone} opacity-95`}
-                />
-                <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-white/70 blur-2xl" />
-
+                <div className={`pointer-events-none absolute inset-x-5 top-5 h-16 rounded-[22px] bg-gradient-to-r ${option.tone} opacity-95`} />
                 <div className="relative flex items-center justify-between gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/90 text-emerald-700 ring-1 ring-emerald-100">
                     <Icon size={20} />
@@ -177,15 +146,10 @@ export function UploadPanel({
                     {option.badge}
                   </span>
                 </div>
-
                 <h4 className="relative mt-10 font-display text-2xl font-semibold leading-tight text-ink sm:text-[1.7rem]">
                   {option.title}
                 </h4>
-
-                <p className="relative mt-3 text-sm leading-7 text-slate-600">
-                  {option.description}
-                </p>
-
+                <p className="relative mt-3 text-sm leading-7 text-slate-600">{option.description}</p>
                 <div className="relative mt-5 flex items-center justify-between gap-3 border-t border-emerald-100 pt-4">
                   <span className="text-xs font-medium uppercase tracking-[0.08em] text-emerald-700/80">
                     {cameraFallback}
@@ -206,38 +170,18 @@ export function UploadPanel({
               Sẵn sàng kiểm tra ảnh
             </p>
             <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
-              Khi đã có ảnh, bấm bắt đầu để hệ thống kiểm tra xem ảnh đó có đúng là lá cây hay không.
+              Khi đã có ảnh, bấm bắt đầu để xác thực lá và lưu bản ghi thật vào backend.
             </p>
           </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Button loading={busy} onClick={onStart}>
-              <PlayCircle size={18} />
-              Bắt đầu kiểm tra
-            </Button>
-            <Button variant="secondaryOnLight" onClick={onUseSample}>
-              Dùng ảnh mẫu
-            </Button>
-          </div>
+          <Button loading={busy} onClick={onStart}>
+            <PlayCircle size={18} />
+            Bắt đầu kiểm tra
+          </Button>
         </div>
       </div>
 
-      <input
-        ref={uploadRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(event) => handleFileChange(event, "upload")}
-      />
-
-      <input
-        ref={captureRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(event) => handleFileChange(event, "capture")}
-      />
+      <input ref={uploadRef} type="file" accept="image/*" className="hidden" onChange={(event) => handleFileChange(event, "upload")} />
+      <input ref={captureRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(event) => handleFileChange(event, "capture")} />
     </Card>
   );
 }

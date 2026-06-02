@@ -1,18 +1,48 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarRange, Filter } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { fetchDiagnosisRecords } from "@/lib/diagnoses-client";
 import { formatConfidence, formatDate } from "@/lib/utils";
 import { useDiagnosisStore } from "@/store/diagnosis-store";
+import { useSessionStore } from "@/store/session-store";
 
 export default function DashboardHistoryPage() {
-  const { records, savedRecordIds } = useDiagnosisStore();
+  const { accessToken } = useSessionStore();
+  const { records, savedRecordIds, setRecords } = useDiagnosisStore();
   const [plantFilter, setPlantFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!accessToken) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    void fetchDiagnosisRecords(accessToken)
+      .then((items) => {
+        if (cancelled) return;
+        setRecords(items);
+        setError(null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Không tải được lịch sử chẩn đoán.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, setRecords]);
 
   const plantOptions = useMemo(
     () => ["all", ...new Set(records.map((item) => item.plant))],
@@ -74,6 +104,16 @@ export default function DashboardHistoryPage() {
       </Card>
 
       <div className="grid gap-4">
+        {loading ? (
+          <Card className="rounded-[32px] border-white/10 bg-white/5 py-14 text-center text-white">
+            Đang tải lịch sử từ backend...
+          </Card>
+        ) : null}
+        {error ? (
+          <Card className="rounded-[32px] border-rose-300/30 bg-rose-500/10 py-6 text-center text-rose-100">
+            {error}
+          </Card>
+        ) : null}
         {filtered.map((item) => (
           <Link key={item.id} href={`/dashboard/results/${item.id}`} className="no-underline block">
             <Card className="rounded-[32px] border-white/10 bg-white/5 text-white transition hover:-translate-y-1 hover:bg-white/10">
@@ -116,7 +156,7 @@ export default function DashboardHistoryPage() {
                       Trạng thái CNN
                     </p>
                     <p className="mt-3 font-display text-2xl font-semibold">
-                      {item.classificationReady ? "Đã sẵn sàng" : "Sẽ bổ sung sau"}
+                      {item.classificationReady ? "Đã sẵn sàng" : "Chưa có CNN"}
                     </p>
                   </div>
                 </div>
@@ -126,7 +166,7 @@ export default function DashboardHistoryPage() {
         ))}
       </div>
 
-      {filtered.length === 0 ? (
+      {!loading && filtered.length === 0 ? (
         <Card className="rounded-[32px] border-white/10 bg-white/5 py-14 text-center text-white">
           Không có bản ghi nào khớp bộ lọc hiện tại.
         </Card>

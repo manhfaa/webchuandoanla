@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, ShieldCheck } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
@@ -13,26 +12,17 @@ import { brand } from "@/constants/brand";
 import { useSessionStore } from "@/store/session-store";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const { login, loginLocalFallback, isAuthenticated, status, error, clearError } =
-    useSessionStore();
-
-  const [email, setEmail] = useState("demo@agromindai.vn");
-  const [password, setPassword] = useState("Demo@12345");
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    if (typeof window !== "undefined") {
-      window.location.replace("/dashboard");
-      return;
-    }
-    router.replace("/dashboard");
-  }, [isAuthenticated, router]);
-
+  const { login, isAuthenticated, status, error, clearError } = useSessionStore();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [nextPath, setNextPath] = useState("/dashboard");
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!isAuthenticated) return;
+    window.location.replace(nextPath);
+  }, [isAuthenticated, nextPath]);
+
+  useEffect(() => {
     const candidate = new URLSearchParams(window.location.search).get("next");
     if (candidate && candidate.startsWith("/dashboard")) {
       setNextPath(candidate);
@@ -43,48 +33,24 @@ export default function LoginPage() {
     event.preventDefault();
     try {
       await login({ email, password });
-      if (typeof window !== "undefined") {
-        window.location.assign(nextPath);
-        return;
-      }
-      router.push(nextPath);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "";
-      const shouldFallback =
-        message.includes("Không thể kết nối backend") ||
-        message.includes("quá lâu") ||
-        message.includes("Failed to fetch");
-
-      if (shouldFallback) {
-        loginLocalFallback({ email });
-        if (typeof window !== "undefined") {
-          window.location.assign(nextPath);
-          return;
-        }
-        router.push(nextPath);
-      }
+      window.location.assign(nextPath);
+    } catch {
+      // The store exposes the backend error for the alert below.
     }
   }
 
   return (
     <main id="main-content" className="min-h-screen bg-ink-50 px-4 py-8 sm:px-6 lg:px-10">
       <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-5xl gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-stretch">
-        <Card
-          variant="dark"
-          padding="lg"
-          className="relative overflow-hidden border-border-dark bg-app text-on-dark"
-        >
+        <Card variant="dark" padding="lg" className="relative overflow-hidden border-border-dark bg-app text-on-dark">
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.35]"
             style={{
-              backgroundImage: `radial-gradient(circle, rgba(232,241,235,0.14) 1px, transparent 1px)`,
+              backgroundImage: "radial-gradient(circle, rgba(232,241,235,0.14) 1px, transparent 1px)",
               backgroundSize: "20px 20px",
             }}
           />
-          <div
-            className="pointer-events-none absolute inset-0 bg-hero-radial opacity-90"
-            aria-hidden
-          />
+          <div className="pointer-events-none absolute inset-0 bg-hero-radial opacity-90" aria-hidden />
           <div className="relative flex h-full flex-col justify-between gap-10">
             <div className="flex items-center justify-between gap-4">
               <Logo dark />
@@ -100,29 +66,22 @@ export default function LoginPage() {
               <p className="text-overline text-muted-on-dark">Đăng nhập</p>
               <h1 className="mt-3 text-display text-on-dark">Chào mừng trở lại Agromind AI</h1>
               <p className="mt-4 max-w-md text-body-lg text-muted-on-dark">
-                {brand.slogan} Chỉ cần email và mật khẩu để vào workspace, lưu lịch sử và dùng chat
-                LightRAG.
+                {brand.slogan} Đăng nhập bằng tài khoản Django để đồng bộ lịch sử, hồ sơ và dữ liệu chẩn đoán.
               </p>
             </div>
 
             <ul className="space-y-3 text-body-sm text-muted-on-dark">
               <li className="flex gap-2">
-                <span className="text-leaf-300" aria-hidden>
-                  ·
-                </span>
-                Đăng nhập thật bằng JWT từ backend Django.
+                <span className="text-leaf-300" aria-hidden>·</span>
+                Xác thực thật bằng JWT từ backend Django.
               </li>
               <li className="flex gap-2">
-                <span className="text-leaf-300" aria-hidden>
-                  ·
-                </span>
+                <span className="text-leaf-300" aria-hidden>·</span>
                 Mỗi chẩn đoán được gắn với tài khoản của bạn.
               </li>
               <li className="flex gap-2">
-                <span className="text-leaf-300" aria-hidden>
-                  ·
-                </span>
-                Tương thích sẵn với PostgreSQL và Supabase.
+                <span className="text-leaf-300" aria-hidden>·</span>
+                Dashboard yêu cầu phiên đăng nhập hợp lệ.
               </li>
             </ul>
           </div>
@@ -146,30 +105,27 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 value={email}
-                onChange={(e) => {
+                onChange={(event) => {
                   clearError();
-                  setEmail(e.target.value);
+                  setEmail(event.target.value);
                 }}
-                placeholder="vd: demo@agromindai.vn"
+                placeholder="vd: user@example.com"
               />
               <Input
                 label="Mật khẩu"
                 type="password"
                 autoComplete="current-password"
                 value={password}
-                onChange={(e) => {
+                onChange={(event) => {
                   clearError();
-                  setPassword(e.target.value);
+                  setPassword(event.target.value);
                 }}
                 placeholder="Nhập mật khẩu"
               />
             </div>
 
             {error ? (
-              <div
-                role="alert"
-                className="mt-5 rounded-md border border-amber-200/80 bg-amber-50 px-4 py-3 text-body text-amber-950"
-              >
+              <div role="alert" className="mt-5 rounded-md border border-amber-200/80 bg-amber-50 px-4 py-3 text-body text-amber-950">
                 {error}
               </div>
             ) : null}
@@ -186,23 +142,11 @@ export default function LoginPage() {
               >
                 Tạo tài khoản
               </Link>
-
-              <Link
-                href="/dashboard"
-                className="inline-flex h-12 items-center justify-center rounded-md border border-ink-100 px-5 text-body font-medium text-ink-700 transition hover:bg-ink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500/40"
-              >
-                Mở dashboard demo
-              </Link>
             </div>
           </form>
 
           <p className="mt-6 text-caption text-ink-500">
-            Tài khoản thử: <span className="text-ink-700">demo@agromindai.vn</span> /{" "}
-            <span className="text-ink-700">Demo@12345</span>
-            <span className="mt-2 block text-ink-500">
-              Nếu bấm đăng nhập mà không vào được, hãy kiểm tra backend Django tại{" "}
-              <span className="font-medium text-ink-700">http://127.0.0.1:8000</span>.
-            </span>
+            Nếu quên mật khẩu, liên hệ quản trị viên để đặt lại trên Django admin.
           </p>
         </Card>
       </div>

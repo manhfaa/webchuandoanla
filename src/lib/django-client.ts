@@ -119,6 +119,20 @@ export async function djangoMe(accessToken: string) {
   return mapMeToUserProfile(me);
 }
 
+export async function djangoUpdateMe(
+  accessToken: string,
+  payload: { full_name?: string; email?: string; avatar_url?: string },
+) {
+  const me = await djangoFetch<DjangoMeResponse>("/api/users/me/", {
+    method: "PATCH",
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  return mapMeToUserProfile(me);
+}
+
 export async function djangoClassifyLeafImage(payload: { imageDataUrl: string; accessToken?: string | null }) {
   const headers: Record<string, string> = {};
   if (payload.accessToken) {

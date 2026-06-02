@@ -13,8 +13,8 @@ import { UpgradeModal } from "@/components/pricing/upgrade-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { mockDiagnoses } from "@/data/mock/diagnoses";
 import { djangoClassifyLeafImage, type DjangoCnnResponse } from "@/lib/django-client";
+import { createDiagnosisRecord } from "@/lib/diagnoses-client";
 import { compressImage } from "@/lib/image-compression";
 import { createPreviewDataUrl, detectLeafInImage, type LeafDetectionResult } from "@/lib/leaf-detector";
 import { addOfflineDiagnosis, clearOfflineDiagnosis, getOfflineQueue } from "@/lib/offline-queue";
@@ -42,29 +42,24 @@ function delay(ms: number) {
 }
 
 function buildGeneratedRecord({
-  template,
   previewUrl,
   detection,
   inputMethod,
 }: {
-  template: DiagnosisRecord;
   previewUrl: string;
   detection: LeafDetectionResult;
   inputMethod: DiagnosisInputMethod;
 }): DiagnosisRecord {
   return {
     id: `user-${Date.now()}`,
-    plant: inputMethod === "sample" ? template.plant : "Chưa xác định loại cây",
+    plant: "Chưa xác định loại cây",
     disease: "Ảnh lá đã được xác nhận",
     confidence: detection.confidence,
     severity: "Đã kiểm tra",
     classificationReady: false,
     image: previewUrl,
     createdAt: new Date().toISOString(),
-    note:
-      inputMethod === "sample"
-        ? `Hệ thống đã xác nhận ${inputMethodLabelMap[inputMethod]} là ảnh lá hợp lệ.`
-        : `Hệ thống đã xác nhận ${inputMethodLabelMap[inputMethod]} là ảnh lá hợp lệ.`,
+    note: `Hệ thống đã xác nhận ${inputMethodLabelMap[inputMethod]} là ảnh lá hợp lệ.`,
     yoloVerified: true,
     leafConfidence: detection.confidence,
     leafCheckNote: detection.reason,
@@ -141,7 +136,6 @@ export default function DashboardDiagnosisPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<DiagnosisRecord | null>(null);
   const [leafAnalysis, setLeafAnalysis] = useState<LeafDetectionResult | null>(null);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [inputMethod, setInputMethod] = useState<DiagnosisInputMethod | null>(null);
   const [runCount, setRunCount] = useState(0);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -204,12 +198,12 @@ export default function DashboardDiagnosisPage() {
             accessToken,
           });
           const baseRecord = buildGeneratedRecord({
-            template: mockDiagnoses[0],
             previewUrl: item.imageDataUrl,
             detection,
             inputMethod: "upload",
           });
-          addGeneratedRecord(applyCnnResult(baseRecord, cnn));
+          const savedRecord = await createDiagnosisRecord(accessToken, applyCnnResult(baseRecord, cnn));
+          addGeneratedRecord(savedRecord);
           clearOfflineDiagnosis(item.id);
         } catch {
           break;
@@ -388,7 +382,6 @@ export default function DashboardDiagnosisPage() {
       const nextUrl = await createPreviewDataUrl(compressedFile);
       setPreviewUrl(nextUrl);
       setInputMethod(method);
-      setSelectedTemplateId(null);
       setSelectedRecord(null);
       setLeafAnalysis(null);
       setStatus("idle");
@@ -401,28 +394,22 @@ export default function DashboardDiagnosisPage() {
     }
   }
 
-  function loadSampleRecord() {
-    stopCameraStream();
-    const template = mockDiagnoses[runCount % mockDiagnoses.length];
-    setPreviewUrl(template.image);
-    setInputMethod("sample");
-    setSelectedTemplateId(template.id);
-    setSelectedRecord(null);
-    setLeafAnalysis(null);
-    setStatus("idle");
-  }
-
   async function handleStartDiagnosis() {
-    const fallbackTemplate = mockDiagnoses[runCount % mockDiagnoses.length];
-    const activePreview = previewUrl ?? fallbackTemplate.image;
-    const activeMethod = inputMethod ?? "sample";
-    const template = mockDiagnoses.find((item) => item.id === selectedTemplateId) ?? fallbackTemplate;
-
-    if (!previewUrl) {
-      setPreviewUrl(fallbackTemplate.image);
-      setInputMethod("sample");
-      setSelectedTemplateId(fallbackTemplate.id);
+    if (!previewUrl || !inputMethod) {
+      setLeafAnalysis({
+        isLeaf: false,
+        confidence: 0,
+        greenRatio: 0,
+        plantLikeRatio: 0,
+        averageSaturation: 0,
+        reason: "Bạn cần tải ảnh hoặc chụp ảnh lá thật trước khi bắt đầu kiểm tra.",
+      });
+      setStatus("invalid-image");
+      return;
     }
+
+    const activePreview = previewUrl;
+    const activeMethod = inputMethod;
 
     setStatus("uploading");
     setSelectedRecord(null);
@@ -442,7 +429,6 @@ export default function DashboardDiagnosisPage() {
       }
 
       let generatedRecord = buildGeneratedRecord({
-        template,
         previewUrl: activePreview,
         detection,
         inputMethod: activeMethod,
@@ -464,8 +450,9 @@ export default function DashboardDiagnosisPage() {
         }
       }
 
-      setSelectedRecord(generatedRecord);
-      addGeneratedRecord(generatedRecord);
+      const savedRecord = await createDiagnosisRecord(accessToken, generatedRecord);
+      setSelectedRecord(savedRecord);
+      addGeneratedRecord(savedRecord);
       setStatus("success");
       setRunCount((value) => value + 1);
     } catch {
@@ -492,7 +479,6 @@ export default function DashboardDiagnosisPage() {
           onOpenCamera={() => {
             void openCamera();
           }}
-          onUseSample={loadSampleRecord}
           onStart={() => {
             void handleStartDiagnosis();
           }}
@@ -530,20 +516,6 @@ export default function DashboardDiagnosisPage() {
           disabled={!voice.supported}
         >
           {voice.listening ? "Dừng ghi âm" : "Nói ghi chú"}
-        </Button>
-        <Button
-          variant="secondary"
-          onClick={() => {
-            stopCameraStream();
-            setPreviewUrl("/illustrations/non-leaf-sample.svg");
-            setInputMethod("sample");
-            setSelectedTemplateId(null);
-            setSelectedRecord(null);
-            setLeafAnalysis(null);
-            setStatus("idle");
-          }}
-        >
-          Dùng ảnh không phải lá
         </Button>
         {selectedRecord && status === "success" ? (
           <Link

@@ -10,6 +10,7 @@ class DiagnosisSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "image_url",
+            "image_data_url",
             "image_path",
             "original_file_name",
             "input_method",

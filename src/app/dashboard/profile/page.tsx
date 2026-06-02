@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { Camera } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { LanguageToggle } from "@/components/layout/language-toggle";
@@ -14,11 +14,17 @@ import { pricingPlans } from "@/data/mock/plans";
 import { useSessionStore } from "@/store/session-store";
 
 export default function DashboardProfilePage() {
-  const { user, updateProfileLocal, setPlan } = useSessionStore();
+  const router = useRouter();
+  const { user, status, updateProfile } = useSessionStore();
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatar ?? "");
+
+  useEffect(() => {
+    setName(user?.name ?? "");
+    setEmail(user?.email ?? "");
+    setAvatarUrl(user?.avatar ?? "");
+  }, [user]);
 
   const currentPlan = useMemo(
     () => pricingPlans.find((plan) => plan.id === user?.currentPlan),
@@ -26,62 +32,33 @@ export default function DashboardProfilePage() {
   );
 
   const displayName = user?.name ?? "Người dùng Agromind AI";
-  const avatarSrc = avatarPreview ?? user?.avatar ?? "/avatars/user-demo.svg";
+  const avatarSrc = avatarUrl || user?.avatar || "/avatars/user-demo.svg";
+
+  async function handleSaveProfile() {
+    try {
+      await updateProfile({ name, email, avatar: avatarUrl });
+      toast.success("Đã lưu hồ sơ lên backend.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Không thể lưu hồ sơ.");
+    }
+  }
 
   return (
     <div className="space-y-6">
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <Card variant="dark" padding="lg" className="border-border-dark bg-app-surface text-on-dark">
           <div className="flex items-start gap-4">
-            <div className="group relative shrink-0">
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="sr-only"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  const url = URL.createObjectURL(file);
-                  setAvatarPreview(url);
-                  toast.message("Ảnh xem trước", {
-                    description: "Đồng bộ avatar lên máy chủ sẽ có trong bản cập nhật sau.",
-                  });
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="relative h-20 w-20 overflow-hidden rounded-full border-2 border-border-dark ring-2 ring-leaf-500/20 transition hover:ring-leaf-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf-400"
-                aria-label="Thay đổi ảnh đại diện"
-              >
-                {avatarPreview ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarPreview} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <Image
-                    src={avatarSrc}
-                    alt={displayName}
-                    width={160}
-                    height={160}
-                    className="h-full w-full object-cover"
-                  />
-                )}
-                <span className="absolute inset-0 flex flex-col items-center justify-center bg-ink-900/50 opacity-0 transition group-hover:opacity-100">
-                  <Camera strokeWidth={1.75} className="h-6 w-6 text-on-dark" aria-hidden />
-                  <span className="mt-1 text-caption font-medium text-on-dark">Thay đổi</span>
-                </span>
-              </button>
+            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 border-border-dark ring-2 ring-leaf-500/20">
+              <Image src={avatarSrc} alt={displayName} width={160} height={160} className="h-full w-full object-cover" />
             </div>
             <div>
               <p className="text-overline text-muted-on-dark">Hồ sơ người dùng</p>
               <h2 className="mt-2 text-h2 text-on-dark-strong">{displayName}</h2>
               <p className="mt-2 text-body-sm text-muted-on-dark">{user?.email}</p>
               <div className="mt-5 rounded-lg border border-border-dark bg-app-surface-2 px-4 py-3 text-body-sm leading-relaxed text-muted-on-dark">
-                Gói hiện tại:{" "}
-                <span className="font-semibold text-leaf-300">{currentPlan?.name ?? "Free"}</span>
+                Gói hiện tại: <span className="font-semibold text-leaf-300">{currentPlan?.name ?? "Seed"}</span>
                 <br />
-                Bạn có thể cập nhật tên hiển thị và email tại đây.
+                Hồ sơ được lưu trực tiếp vào Django backend.
               </div>
             </div>
           </div>
@@ -89,16 +66,20 @@ export default function DashboardProfilePage() {
 
         <Card variant="light" padding="lg" className="shadow-sm">
           <div className="grid gap-5 md:grid-cols-2">
-            <Input label="Tên người dùng" value={name} onChange={(e) => setName(e.target.value)} />
-            <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input label="Tên người dùng" value={name} onChange={(event) => setName(event.target.value)} />
+            <Input label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+            <div className="md:col-span-2">
+              <Input
+                label="Avatar URL"
+                type="url"
+                value={avatarUrl}
+                onChange={(event) => setAvatarUrl(event.target.value)}
+                placeholder="https://..."
+              />
+            </div>
           </div>
-          <div className="mt-5 flex gap-3">
-            <Button
-              onClick={() => {
-                updateProfileLocal({ name, email });
-                toast.success("Đã lưu thông tin hồ sơ.");
-              }}
-            >
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Button onClick={handleSaveProfile} loading={status === "loading"}>
               Lưu thay đổi
             </Button>
             <LanguageToggle />
@@ -110,9 +91,9 @@ export default function DashboardProfilePage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-overline text-muted-on-dark">Gói dịch vụ</p>
-            <h3 className="mt-2 text-h2 text-on-dark-strong">Chọn gói phù hợp với bạn</h3>
+            <h3 className="mt-2 text-h2 text-on-dark-strong">Quản lý gói qua thanh toán backend</h3>
             <p className="mt-2 max-w-2xl text-body-sm leading-relaxed text-muted-on-dark">
-              Mỗi gói phù hợp với một mức sử dụng khác nhau. Bạn có thể nâng cấp hoặc hạ cấp bất cứ lúc nào.
+              Chọn gói sẽ đưa bạn sang checkout. Gói chỉ đổi sau khi backend xác nhận thanh toán.
             </p>
           </div>
         </div>
@@ -124,8 +105,12 @@ export default function DashboardProfilePage() {
               plan={plan}
               currentPlan={user?.currentPlan}
               onSelect={(planId) => {
-                setPlan(planId);
-                toast.success("Đã cập nhật gói", { description: `Gói hiện tại: ${planId}` });
+                if (planId === user?.currentPlan) return;
+                if (planId === "seed") {
+                  router.push("/dashboard/pricing");
+                  return;
+                }
+                router.push(`/dashboard/pricing/checkout/${planId}`);
               }}
             />
           ))}

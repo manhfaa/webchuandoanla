@@ -10,8 +10,8 @@ import { ActionRecommendations } from "@/components/diagnosis/action-recommendat
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { mockDiagnoses } from "@/data/mock/diagnoses";
 import { djangoClassifyLeafImage, type DjangoCnnResponse } from "@/lib/django-client";
+import { diagnosisPayloadFromRecord, fetchDiagnosisRecord, updateDiagnosisRecord } from "@/lib/diagnoses-client";
 import { fetchInputLibrary, type AgriculturalInput } from "@/lib/farmops-client";
 import { formatConfidence, formatDate } from "@/lib/utils";
 import { useTextToSpeech } from "@/hooks/use-text-to-speech";
@@ -87,15 +87,33 @@ export default function ResultDetailPage() {
   const { accessToken } = useSessionStore();
   const [cnnRefreshState, setCnnRefreshState] = useState<"idle" | "loading" | "error">("idle");
   const [relatedInputs, setRelatedInputs] = useState<AgriculturalInput[]>([]);
+  const [remoteRecord, setRemoteRecord] = useState<DiagnosisRecord | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const tts = useTextToSpeech("vi-VN");
 
   const record = useMemo(
-    () =>
-      records.find((item) => item.id === params.id) ??
-      mockDiagnoses.find((item) => item.id === params.id) ??
-      null,
-    [params.id, records],
+    () => records.find((item) => item.id === params.id) ?? remoteRecord,
+    [params.id, records, remoteRecord],
   );
+
+  useEffect(() => {
+    if (!accessToken || records.some((item) => item.id === params.id)) return;
+    let cancelled = false;
+    void fetchDiagnosisRecord(accessToken, params.id)
+      .then((item) => {
+        if (cancelled) return;
+        setRemoteRecord(item);
+        addGeneratedRecord(item);
+        setLoadError(null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setLoadError(err instanceof Error ? err.message : "Không tải được bản ghi chẩn đoán.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, addGeneratedRecord, params.id, records]);
 
   useEffect(() => {
     if (
@@ -112,10 +130,16 @@ export default function ResultDetailPage() {
     void djangoClassifyLeafImage({
       imageDataUrl: record.image,
       accessToken,
-    })
+      })
       .then((cnn) => {
         if (cancelled) return;
-        addGeneratedRecord(applyCnnResult(record, cnn));
+        const nextRecord = applyCnnResult(record, cnn);
+        addGeneratedRecord(nextRecord);
+        if (accessToken) {
+          void updateDiagnosisRecord(accessToken, nextRecord.id, diagnosisPayloadFromRecord(nextRecord))
+            .then((saved) => addGeneratedRecord(saved))
+            .catch(() => undefined);
+        }
         setCnnRefreshState("idle");
       })
       .catch(() => {
@@ -140,7 +164,7 @@ export default function ResultDetailPage() {
       <Card className="rounded-[34px] border-white/10 bg-white/5 py-20 text-center text-white">
         <h2 className="font-display text-3xl font-semibold">Không tìm thấy kết quả xác thực</h2>
         <p className="mt-4 text-sm leading-7 text-emerald-50/75">
-          Bản ghi bạn đang tìm có thể chưa được tạo trong phiên demo hiện tại.
+          {loadError ?? "Bản ghi này không tồn tại hoặc không thuộc tài khoản hiện tại."}
         </p>
         <div className="mt-6">
           <Link href="/dashboard/history" className={buttonVariants({ variant: "secondary" })}>
@@ -239,7 +263,16 @@ export default function ResultDetailPage() {
             ) : null}
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <Button onClick={() => saveRecord(record.id)}>
+              <Button
+                onClick={() => {
+                  saveRecord(record.id);
+                  if (accessToken) {
+                    void updateDiagnosisRecord(accessToken, record.id, { saved_by_user: true })
+                      .then((saved) => addGeneratedRecord(saved))
+                      .catch(() => undefined);
+                  }
+                }}
+              >
                 <Bookmark size={16} />
                 Lưu kết quả
               </Button>

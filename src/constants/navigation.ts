@@ -14,7 +14,7 @@ export const dashboardNavItems = [
   { label: "Lô vườn", href: "/dashboard/farms" },
   { label: "Thư viện vật tư", href: "/dashboard/input-library" },
   { label: "Kế hoạch trồng cây", href: "/dashboard/crop-plans" },
-  { label: "Kết quả", href: "/dashboard/results/demo-corn-blight" },
+  { label: "Kết quả", href: "/dashboard/history" },
   { label: "Chat tư vấn", href: "/dashboard/chat" },
   { label: "Lịch sử", href: "/dashboard/history" },
   { label: "Gói dịch vụ", href: "/dashboard/pricing" },

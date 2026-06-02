@@ -3,9 +3,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import type { PlanTier, UserProfile } from "@/types";
-import { djangoLogin, djangoMe, djangoRegister } from "@/lib/django-client";
+import { djangoLogin, djangoMe, djangoRegister, djangoUpdateMe } from "@/lib/django-client";
 import { normalizePlan } from "@/lib/plans";
+import type { PlanTier, UserProfile } from "@/types";
 
 type AuthStatus = "idle" | "loading" | "authenticated" | "error";
 
@@ -23,10 +23,9 @@ interface SessionState {
   register: (payload: { email: string; password: string }) => Promise<void>;
   logout: () => void;
   clearError: () => void;
-  loginLocalFallback: (payload?: { email?: string }) => void;
 
   setPlan: (plan: PlanTier) => void;
-  updateProfileLocal: (payload: { name: string; email: string }) => void;
+  updateProfile: (payload: { name: string; email: string; avatar?: string }) => Promise<void>;
 }
 
 export const useSessionStore = create<SessionState>()(
@@ -42,30 +41,20 @@ export const useSessionStore = create<SessionState>()(
 
       hydrate: async () => {
         const accessToken = get().accessToken;
-        const cachedUser = get().user;
-        if (cachedUser) {
+        if (!accessToken) {
           set({
-            user: cachedUser,
-            isAuthenticated: true,
-            initialized: true,
-            status: "authenticated",
-            error: null,
-          });
-        } else {
-          set({
-            initialized: true,
+            user: null,
             isAuthenticated: false,
+            initialized: true,
             status: "idle",
             error: null,
+            refreshToken: null,
           });
-        }
-
-        if (!accessToken) {
           return;
         }
 
         try {
-          set({ status: cachedUser ? "authenticated" : "loading", error: null });
+          set({ status: "loading", error: null });
           const user = await djangoMe(accessToken);
           set({
             user,
@@ -75,18 +64,6 @@ export const useSessionStore = create<SessionState>()(
             error: null,
           });
         } catch (err) {
-          if (cachedUser) {
-            set({
-              user: cachedUser,
-              isAuthenticated: true,
-              initialized: true,
-              status: "authenticated",
-              error: null,
-              accessToken: null,
-              refreshToken: null,
-            });
-            return;
-          }
           set({
             user: null,
             accessToken: null,
@@ -94,8 +71,7 @@ export const useSessionStore = create<SessionState>()(
             isAuthenticated: false,
             initialized: true,
             status: "error",
-            error:
-              err instanceof Error ? err.message : "Không thể xác thực phiên đăng nhập.",
+            error: err instanceof Error ? err.message : "Không thể xác thực phiên đăng nhập.",
           });
         }
       },
@@ -112,9 +88,13 @@ export const useSessionStore = create<SessionState>()(
             isAuthenticated: true,
             initialized: true,
             status: "authenticated",
+            error: null,
           });
         } catch (err) {
           set({
+            user: null,
+            accessToken: null,
+            refreshToken: null,
             status: "error",
             error: err instanceof Error ? err.message : "Đăng nhập thất bại.",
             isAuthenticated: false,
@@ -136,9 +116,13 @@ export const useSessionStore = create<SessionState>()(
             isAuthenticated: true,
             initialized: true,
             status: "authenticated",
+            error: null,
           });
         } catch (err) {
           set({
+            user: null,
+            accessToken: null,
+            refreshToken: null,
             status: "error",
             error: err instanceof Error ? err.message : "Đăng ký thất bại.",
             isAuthenticated: false,
@@ -160,55 +144,39 @@ export const useSessionStore = create<SessionState>()(
 
       clearError: () => set({ error: null, status: "idle" }),
 
-      loginLocalFallback: ({ email } = {}) =>
-        set({
-          user: {
-            name: "Người dùng Agromind AI",
-            email: email?.trim() || "demo@agromindai.vn",
-            avatar: "/avatars/user-demo.svg",
-            currentPlan: "seed",
-          },
-          isAuthenticated: true,
-          initialized: true,
-          status: "authenticated",
-          error: null,
-          accessToken: null,
-          refreshToken: null,
-        }),
-
       setPlan: (plan) =>
         set((state) => ({
-          user: state.user
-            ? {
-                ...state.user,
-                currentPlan: plan,
-              }
-            : {
-                name: "Người dùng Agromind AI",
-                email: "demo@agromindai.vn",
-                avatar: "/avatars/user-demo.svg",
-                currentPlan: plan,
-              },
-          isAuthenticated: true,
-          initialized: true,
-          status: "authenticated",
+          user: state.user ? { ...state.user, currentPlan: normalizePlan(plan) } : null,
+          isAuthenticated: Boolean(state.user && state.accessToken),
+          status: state.user ? "authenticated" : state.status,
           error: null,
         })),
 
-      updateProfileLocal: ({ name, email }) =>
-        set((state) => ({
-          user: state.user
-            ? {
-                ...state.user,
-                name,
-                email,
-              }
-            : null,
-        })),
+      updateProfile: async ({ name, email, avatar }) => {
+        const accessToken = get().accessToken;
+        if (!accessToken) {
+          throw new Error("Bạn cần đăng nhập lại để cập nhật hồ sơ.");
+        }
+        set({ status: "loading", error: null });
+        try {
+          const user = await djangoUpdateMe(accessToken, {
+            full_name: name,
+            email,
+            ...(avatar ? { avatar_url: avatar } : {}),
+          });
+          set({ user, status: "authenticated", isAuthenticated: true, error: null });
+        } catch (err) {
+          set({
+            status: "error",
+            error: err instanceof Error ? err.message : "Không thể cập nhật hồ sơ.",
+          });
+          throw err;
+        }
+      },
     }),
     {
       name: "leafiq-session",
-      version: 3,
+      version: 4,
       partialize: (state) => ({
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
@@ -225,8 +193,8 @@ export const useSessionStore = create<SessionState>()(
           : null;
         return {
           ...state,
-          user,
-          isAuthenticated: Boolean(user || state.isAuthenticated),
+          user: state.accessToken ? user : null,
+          isAuthenticated: Boolean(state.accessToken && user),
         };
       },
     },

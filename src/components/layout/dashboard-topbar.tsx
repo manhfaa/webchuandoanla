@@ -200,7 +200,7 @@ export function DashboardTopbar({
               <p className="truncate text-body-sm font-semibold text-on-dark-strong">
                 {user?.name ?? "Người dùng Agromind AI"}
               </p>
-              <p className="truncate text-caption text-muted-on-dark">{user?.email ?? "demo@agromindai.vn"}</p>
+              <p className="truncate text-caption text-muted-on-dark">{user?.email ?? "Chưa đăng nhập"}</p>
             </div>
             <button
               type="button"

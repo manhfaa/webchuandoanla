@@ -24,7 +24,7 @@ export type CameraPreviewState = "idle" | "starting" | "live" | "error" | "unsup
 
 export type SeverityLevel = "Nhẹ" | "Trung bình" | "Cao" | string;
 export type DiagnosisInputMethod = "upload" | "capture" | "sample";
-export type DiagnosisRecordOrigin = "mock" | "user";
+export type DiagnosisRecordOrigin = "user";
 
 export interface FeatureItem {
   id: string;
@@ -109,6 +109,7 @@ export interface DiagnosisRecord {
   cnnConfidence?: number;
   cnnPayload?: Record<string, unknown>;
   modelVersion?: string;
+  savedByUser?: boolean;
 }
 
 export interface ChatMessage {

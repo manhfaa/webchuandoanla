@@ -11,9 +11,7 @@ import { UpgradeModal } from "@/components/pricing/upgrade-modal";
 import { Card } from "@/components/ui/card";
 import { Tabs } from "@/components/ui/tabs";
 import {
-  assistantMessages,
   assistantQuickPrompts,
-  expertMessages,
   expertQuickPrompts,
 } from "@/data/mock/chat";
 import { ChatApiResponse, ChatMessage, ChatMode, ChatWorkspace, QuickPrompt } from "@/types";
@@ -23,7 +21,7 @@ import { useVoiceInput } from "@/hooks/use-voice-input";
 
 function getWorkspaceSubtitle(workspace: ChatWorkspace) {
   if (workspace === "assistant") {
-    return "Chat AI hoạt động như một trợ lý LLM thông thường theo phong cách ChatGPT, giúp bạn hỏi đáp, tóm tắt tình huống và gợi ý bước tiếp theo.";
+    return "Chat AI gọi API Gemini khi đã cấu hình khóa, kèm bối cảnh chẩn đoán gần nhất để hỏi đáp, tóm tắt tình huống và gợi ý bước tiếp theo.";
   }
 
   return "Chat chuyên gia nông nghiệp dành cho người dùng cần trao đổi sâu hơn về cách theo dõi lá cây, ghi nhận hiện trường và hướng xử lý thực tế.";
@@ -41,8 +39,8 @@ export default function DashboardChatPage() {
   const [typingMode, setTypingMode] = useState<ChatMode | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [messagesByMode, setMessagesByMode] = useState<Record<ChatMode, ChatMessage[]>>({
-    assistant: assistantMessages,
-    expert: expertMessages,
+    assistant: [],
+    expert: [],
   });
 
   const currentPlan = String(user?.currentPlan ?? "seed");
@@ -180,7 +178,7 @@ export default function DashboardChatPage() {
                 void sendMessage("assistant", composerByMode.assistant);
               }}
               placeholder="Ví dụ: Tôi nên chụp thêm những góc nào của lá cây để lần phân tích sau rõ hơn?"
-              helperText="Chat này dùng mô hình LLM thông thường để trò chuyện và gợi ý."
+              helperText="Chat gọi API backend của ứng dụng; nếu Gemini tạm lỗi, hệ thống trả lời an toàn theo bối cảnh hiện có."
               onVoiceClick={() => {
                 if (voice.listening) {
                   voice.stop();
@@ -203,10 +201,9 @@ export default function DashboardChatPage() {
                   <MessageCircleMore size={18} className="text-lime-200" />
                 </div>
                 <div>
-                  <h3 className="font-display text-2xl font-semibold">AI trò chuyện như ChatGPT</h3>
+                  <h3 className="font-display text-2xl font-semibold">AI tư vấn theo bối cảnh chẩn đoán</h3>
                   <p className="mt-2 text-sm leading-7 text-emerald-50/75">
-                    Luồng này không dùng RAG. Hệ thống chỉ mô phỏng một trợ lý LLM thông thường để
-                    giúp bạn trao đổi tự nhiên, tóm tắt tình huống và gợi ý các bước tiếp theo.
+                    Luồng này gửi câu hỏi và ca chẩn đoán gần nhất tới API chat. Khi Gemini sẵn sàng, phản hồi đến từ mô hình đã cấu hình; khi API ngoài lỗi, hệ thống dùng phản hồi an toàn để tránh bịa kết quả chẩn đoán.
                   </p>
                 </div>
               </div>

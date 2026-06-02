@@ -17,7 +17,7 @@ export function UpgradeModal({
   onClose: () => void;
 }) {
   const router = useRouter();
-  const { user, setPlan } = useSessionStore();
+  const { user } = useSessionStore();
 
   return (
     <Modal
@@ -40,7 +40,7 @@ export function UpgradeModal({
             currentPlan={user?.currentPlan}
             onSelect={(planId) => {
               if (planId === "seed") {
-                setPlan(planId);
+                router.push("/dashboard/pricing");
                 onClose();
                 return;
               }

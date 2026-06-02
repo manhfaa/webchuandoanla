@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import json
 from datetime import date, timedelta
 from typing import Any
+from urllib.parse import urlencode
+from urllib.request import urlopen
 
 
 DISCLAIMER = "Thông tin chỉ mang tính tham khảo, không thay thế tư vấn của chuyên gia nông nghiệp."
@@ -17,15 +20,91 @@ def _risk_from_conditions(crop: str, humidity: int, rain_probability: int, tempe
     return "low"
 
 
-def build_weather(location: Any, crop: str = "") -> dict[str, Any]:
+def _weather_summary(code: int) -> str:
+    if code in {0, 1}:
+        return "Trời quang, nắng nhẹ"
+    if code in {2, 3}:
+        return "Có mây thay đổi"
+    if code in {45, 48}:
+        return "Có sương mù"
+    if code in {51, 53, 55, 61, 63, 65, 80, 81, 82}:
+        return "Có mưa, cần theo dõi độ ẩm"
+    if code in {95, 96, 99}:
+        return "Có nguy cơ dông"
+    return "Thời tiết thay đổi"
+
+
+def _fetch_open_meteo(location: Any) -> dict[str, Any] | None:
+    lat = getattr(location, "latitude", None)
+    lon = getattr(location, "longitude", None)
+    if lat is None or lon is None:
+        return None
+
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "current": "temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation,weather_code",
+        "hourly": "relative_humidity_2m",
+        "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max",
+        "forecast_days": 7,
+        "timezone": "auto",
+    }
+    url = f"https://api.open-meteo.com/v1/forecast?{urlencode(params)}"
+
+    try:
+        with urlopen(url, timeout=15) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except Exception:
+        return None
+
+    daily_payload = payload.get("daily") or {}
+    dates = daily_payload.get("time") or []
+    humidity_values = (payload.get("hourly") or {}).get("relative_humidity_2m") or []
+    current = payload.get("current") or {}
+    current_humidity = int(current.get("relative_humidity_2m") or 70)
+    rows = []
+
+    for index, day in enumerate(dates[:7]):
+        humidity_slice = humidity_values[index * 24 : (index + 1) * 24]
+        humidity = round(sum(humidity_slice) / len(humidity_slice)) if humidity_slice else current_humidity
+        temp_max = float((daily_payload.get("temperature_2m_max") or [0])[index] or 0)
+        temp_min = float((daily_payload.get("temperature_2m_min") or [0])[index] or 0)
+        rain_probability = int((daily_payload.get("precipitation_probability_max") or [0])[index] or 0)
+        wind = float((daily_payload.get("wind_speed_10m_max") or [0])[index] or 0)
+        weather_code = int((daily_payload.get("weather_code") or [0])[index] or 0)
+        rows.append(
+            {
+                "date": day,
+                "temperature_c": round((temp_max + temp_min) / 2),
+                "humidity_percent": humidity,
+                "rain_probability_percent": rain_probability,
+                "wind_kmh": round(wind),
+                "summary": _weather_summary(weather_code),
+            }
+        )
+
+    if not rows:
+        return None
+
+    return {
+        "source": "open_meteo",
+        "is_mock": False,
+        "current": rows[0],
+        "forecast_3d": rows[:3],
+        "forecast_7d": rows,
+    }
+
+
+def _build_rule_weather(location: Any, crop: str = "") -> dict[str, Any]:
     today = date.today()
     province = getattr(location, "province", "") or getattr(location, "address_text", "") or "khu vực canh tác"
     crop_name = crop or getattr(location, "crop_type", "") or "cây trồng"
 
     base_temp = 31
-    if "lâm đồng" in province.lower() or "da lat" in province.lower() or "đà lạt" in province.lower():
+    province_norm = province.lower()
+    if "lâm đồng" in province_norm or "da lat" in province_norm or "đà lạt" in province_norm:
         base_temp = 24
-    if "hà nội" in province.lower() or "ha noi" in province.lower():
+    if "hà nội" in province_norm or "ha noi" in province_norm:
         base_temp = 29
 
     daily = []
@@ -44,7 +123,20 @@ def build_weather(location: Any, crop: str = "") -> dict[str, Any]:
             }
         )
 
-    current = daily[0]
+    return {
+        "source": "rule_estimate",
+        "is_mock": False,
+        "location_name": getattr(location, "name", "Vị trí canh tác"),
+        "crop": crop_name,
+        "current": daily[0],
+        "forecast_3d": daily[:3],
+        "forecast_7d": daily,
+        "warnings": ["Chưa có tọa độ hoặc API thời tiết tạm lỗi, đang dùng ước tính nội bộ."],
+        "message": "Dữ liệu thời tiết đang dùng ước tính nội bộ. Hãy lưu latitude/longitude để dùng Open-Meteo.",
+    }
+
+
+def _weather_warnings(current: dict[str, Any], daily: list[dict[str, Any]]) -> list[str]:
     warnings = []
     if current["rain_probability_percent"] >= 60:
         warnings.append("Khả năng mưa cao, hạn chế phun thuốc ngoài trời hôm nay.")
@@ -54,23 +146,25 @@ def build_weather(location: Any, crop: str = "") -> dict[str, Any]:
         warnings.append("Độ ẩm cao, cần theo dõi nguy cơ nấm bệnh.")
     if any(day["rain_probability_percent"] >= 75 for day in daily[:3]):
         warnings.append("Có ngày mưa lớn trong 3 ngày tới, kiểm tra rãnh thoát nước để giảm nguy cơ ngập úng.")
-    if current["rain_probability_percent"] <= 20 and current["temperature_c"] >= 33:
-        warnings.append("Dấu hiệu khô hạn, ưu tiên giữ ẩm đất và che phủ gốc khi cần.")
-    if current["temperature_c"] <= 15:
-        warnings.append("Nhiệt độ thấp, cần che chắn cây non và hạn chế tưới muộn.")
     if not warnings:
         warnings.append("Chưa có cảnh báo thời tiết nghiêm trọng trong hôm nay.")
+    return warnings
 
+
+def build_weather(location: Any, crop: str = "") -> dict[str, Any]:
+    crop_name = crop or getattr(location, "crop_type", "") or "cây trồng"
+    weather = _fetch_open_meteo(location)
+    if weather is None:
+        return _build_rule_weather(location, crop)
+
+    daily = weather["forecast_7d"]
+    current = weather["current"]
     return {
-        "source": "mock_weather",
-        "is_mock": True,
+        **weather,
         "location_name": getattr(location, "name", "Vị trí canh tác"),
         "crop": crop_name,
-        "current": current,
-        "forecast_3d": daily[:3],
-        "forecast_7d": daily,
-        "warnings": warnings,
-        "message": "Dữ liệu thời tiết đang được mô phỏng.",
+        "warnings": _weather_warnings(current, daily),
+        "message": "Dữ liệu thời tiết lấy từ Open-Meteo theo tọa độ vị trí canh tác.",
     }
 
 
@@ -115,8 +209,8 @@ def build_pest_alerts(location: Any, crop: str = "", weather: dict[str, Any] | N
         "crop": crop_name,
         "risk_level": risk_level,
         "alerts": alerts,
-        "source": "mock_pest_rules",
-        "is_mock": True,
+        "source": "weather_rule_engine",
+        "is_mock": False,
     }
 
 

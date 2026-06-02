@@ -29,6 +29,11 @@ export function RecentDiagnosisPanel() {
       </div>
 
       <ul className="mt-4 space-y-2">
+        {!items.length ? (
+          <li className="rounded-md border border-border-dark bg-app-surface-2 p-4 text-body-sm leading-7 text-muted-on-dark">
+            Chưa có bản ghi chẩn đoán nào. Hãy tải ảnh thật ở mục Xác thực ảnh để tạo lịch sử đầu tiên.
+          </li>
+        ) : null}
         {items.map((item) => (
           <li key={item.id}>
             <Link

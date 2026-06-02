@@ -54,7 +54,7 @@ export function Footer() {
         </div>
 
         <div className="mt-10 border-t border-white/10 pt-4 text-sm text-emerald-50/60">
-          Agromind AI 2026. Giao diện demo frontend cho nền tảng xác thực ảnh lá cây và tư vấn nông nghiệp bằng AI.
+          Agromind AI 2026. Nền tảng xác thực ảnh lá cây và tư vấn nông nghiệp bằng AI.
         </div>
       </div>
     </footer>
