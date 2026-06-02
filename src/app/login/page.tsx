@@ -101,6 +101,7 @@ export default function LoginPage() {
           <form className="mt-8" onSubmit={handleSubmit}>
             <div className="space-y-4">
               <Input
+                tone="light"
                 label="Email"
                 type="email"
                 autoComplete="email"
@@ -112,6 +113,7 @@ export default function LoginPage() {
                 placeholder="vd: user@example.com"
               />
               <Input
+                tone="light"
                 label="Mật khẩu"
                 type="password"
                 autoComplete="current-password"

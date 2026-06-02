@@ -44,6 +44,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               "text-[15px]",
               isLight ? "text-ink-950" : "text-[--text-default]",
               isLight ? "placeholder:text-ink-400" : "placeholder:text-[--text-hint]",
+              isLight
+                ? "[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_#ffffff] [&:-webkit-autofill]:[-webkit-text-fill-color:#0C1410]"
+                : "[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_var(--bg-surface)] [&:-webkit-autofill]:[-webkit-text-fill-color:var(--text-default)]",
               "outline-none transition-all duration-[--d-fast]",
               "focus:border-leaf-500 focus:shadow-[--shadow-focus]",
               "disabled:cursor-not-allowed disabled:opacity-50",

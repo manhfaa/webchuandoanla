@@ -66,6 +66,7 @@ export default function RegisterPage() {
 
           <div className="relative mt-8 space-y-4">
             <Input
+              tone="light"
               label="Email"
               type="email"
               autoComplete="email"
@@ -78,6 +79,7 @@ export default function RegisterPage() {
               placeholder="vd: nongdan@agromindai.vn"
             />
             <Input
+              tone="light"
               label="Mật khẩu"
               type="password"
               autoComplete="new-password"
@@ -90,6 +92,7 @@ export default function RegisterPage() {
               placeholder="Tối thiểu 8 ký tự"
             />
             <Input
+              tone="light"
               label="Xác nhận mật khẩu"
               type="password"
               autoComplete="new-password"
