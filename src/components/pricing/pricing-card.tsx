@@ -20,16 +20,16 @@ function rankOf(id: string): number {
 
 export function PricingCard({
   plan,
-  currentPlan = "seed",
+  currentPlan = "free",
   onSelect,
   dark = false,
 }: {
   plan: PricingPlan;
-  currentPlan?: PlanTier;
+  currentPlan?: string;
   onSelect?: (planId: PricingPlan["id"]) => void;
   dark?: boolean;
 }) {
-  const current = currentPlan ?? "seed";
+  const current = String(currentPlan ?? "free");
   const isCurrent = current === plan.id;
   const curRank = rankOf(current);
   const pRank = rankOf(plan.id);

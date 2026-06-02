@@ -39,7 +39,7 @@ export function UpgradeModal({
             dark
             currentPlan={user?.currentPlan}
             onSelect={(planId) => {
-              if (planId === "seed") {
+              if (planId === "free") {
                 setPlan(planId);
                 onClose();
                 return;

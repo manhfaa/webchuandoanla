@@ -157,9 +157,9 @@ export default function DashboardDiagnosisPage() {
   const online = useOnlineStatus();
   const voice = useVoiceInput({ onTranscript: (value) => setVoiceNote(value) });
 
-  const currentPlan = user?.currentPlan ?? "seed";
+  const currentPlan = String(user?.currentPlan ?? "free");
   const busy = status === "uploading" || status === "scanning";
-  const chatLocked = currentPlan === "seed";
+  const chatLocked = currentPlan === "free";
 
   useEffect(() => {
     setCameraSupported(

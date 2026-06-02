@@ -25,7 +25,7 @@ export default function DashboardOverviewPage() {
 
       <QuickAccessPanel />
 
-      <UpgradeBanner currentPlan={user?.currentPlan ?? "seed"} onOpenUpgrade={() => setOpen(true)} />
+      <UpgradeBanner currentPlan={String(user?.currentPlan ?? "free")} onOpenUpgrade={() => setOpen(true)} />
 
       <UpgradeModal open={open} onClose={() => setOpen(false)} />
     </div>
