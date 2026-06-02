@@ -1,4 +1,4 @@
-export type PlanTier = "free" | "pro" | "plus";
+export type PlanTier = "seed" | "grow" | "bloom" | "elite";
 
 export type PlantType = string;
 
@@ -60,6 +60,7 @@ export interface WorkflowStep {
 export interface PricingPlan {
   id: PlanTier;
   name: string;
+  icon: string;
   price: string;
   description: string;
   cta: string;

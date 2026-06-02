@@ -192,7 +192,7 @@ export default function WeatherAlertsPage() {
       </Card>
 
       <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-        <Card variant="light" padding="lg" className="shadow-sm">
+        <Card variant="dark" padding="lg" className="border-border-dark">
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="grid gap-4 md:grid-cols-2">
               <Input label={text.locationName} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />

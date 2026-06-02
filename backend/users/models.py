@@ -10,14 +10,16 @@ class User(AbstractUser):
     farm_name = models.CharField(max_length=150, blank=True)
     location = models.CharField(max_length=150, blank=True)
     current_plan = models.CharField(
-        max_length=20,
-        default="free",
+        max_length=10,
+        default="seed",
         choices=(
-            ("free", "Free"),
-            ("pro", "Pro"),
-            ("plus", "Plus"),
+            ("seed", "Seed"),
+            ("grow", "Grow"),
+            ("bloom", "Bloom"),
+            ("elite", "Elite"),
         ),
     )
+    plan_expires_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:

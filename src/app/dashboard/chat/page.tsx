@@ -45,8 +45,8 @@ export default function DashboardChatPage() {
     expert: expertMessages,
   });
 
-  const currentPlan = String(user?.currentPlan ?? "free");
-  const plusUnlocked = currentPlan === "plus";
+  const currentPlan = String(user?.currentPlan ?? "seed");
+  const expertUnlocked = currentPlan === "bloom" || currentPlan === "elite";
   const latestDiagnosis = useMemo(
     () => records.find((item) => item.id === latestRecordId) ?? records[0] ?? null,
     [latestRecordId, records],
@@ -237,7 +237,7 @@ export default function DashboardChatPage() {
             </Card>
           </div>
         </div>
-      ) : plusUnlocked ? (
+      ) : expertUnlocked ? (
         <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
           <div className="space-y-4">
             <ChatWindow messages={messagesByMode.expert} typing={typingMode === "expert"} />

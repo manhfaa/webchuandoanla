@@ -1,68 +1,81 @@
 /**
- * Agromind AI design tokens — single source for Tailwind theme extensions.
+ * Agromind AI design tokens — single source for all colors, radii, motion.
+ * Components dùng trực tiếp var(--token) hoặc Tailwind arbitrary [--token].
  */
 :root {
-  /* Brand greens */
-  --leaf-50: #f0faf4;
-  --leaf-100: #dcf5e4;
-  --leaf-200: #b8e9c8;
-  --leaf-300: #8dd8a6;
-  --leaf-400: #5bc282;
-  --leaf-500: #2fa664;
-  --leaf-600: #1f8a50;
-  --leaf-700: #166b3e;
-  --leaf-800: #0f4d2c;
-  --leaf-900: #0a3320;
-  --leaf-950: #051a10;
+  /* ── Leaf green ramp ── */
+  --leaf-50:  #F0FAF4;
+  --leaf-100: #DCF5E4;
+  --leaf-200: #B8E9C8;
+  --leaf-300: #8DD8A6;
+  --leaf-400: #5BC282;
+  --leaf-500: #2FA664;
+  --leaf-600: #1F8A50;
+  --leaf-700: #166B3E;
+  --leaf-800: #0F4D2C;
+  --leaf-900: #0A3320;
+  --leaf-950: #051A10;
 
-  /* Warm accents */
-  --earth-100: #faf1e4;
-  --earth-300: #e8c988;
-  --earth-500: #c49850;
-  --sun-100: #fff4d6;
-  --sun-400: #ffcf52;
-  --sun-600: #d9a218;
-  --berry-300: #f2a4a4;
-  --berry-500: #d85656;
+  /* ── Accent ── */
+  --sun-100:   #FFF4D6;
+  --sun-400:   #FFCF52;
+  --sun-600:   #D9A218;
+  --earth-100: #FAF1E4;
+  --earth-300: #E8C988;
+  --earth-500: #C49850;
+  --berry-300: #F2A4A4;
+  --berry-500: #D85656;
 
-  /* Neutrals */
-  --ink-50: #f7f9f8;
-  --ink-100: #ecefee;
-  --ink-300: #b6bfba;
-  --ink-500: #6b7670;
-  --ink-700: #2f3833;
-  --ink-900: #0c1410;
+  /* ── Neutrals ── */
+  --ink-50:  #F7F9F8;
+  --ink-100: #ECEFEE;
+  --ink-300: #B6BFBA;
+  --ink-500: #6B7670;
+  --ink-700: #2F3833;
+  --ink-900: #0C1410;
 
-  /* Semantic */
-  --bg-app: var(--leaf-950);
-  --bg-surface: #0e2419;
+  /* ── Surfaces (dark app) ── */
+  --bg-app:       #051A10;
+  --bg-surface:   #0E2419;
   --bg-surface-2: #143020;
-  --bg-light: #ffffff;
-  --text-strong: #f0f5f1;
-  --text-on-dark: #e8f1eb;
-  --text-default: #e8f1eb;
-  --text-muted-on-dark: #93a89a;
-  --border-dark: rgba(255, 255, 255, 0.06);
-  --border-light: #e5eae7;
-  --success: var(--leaf-500);
-  --warning: var(--sun-600);
-  --error: var(--berry-500);
+  --bg-light:     #FFFFFF;
 
-  /* Elevation */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.16);
-  --shadow-glow: 0 0 0 4px rgba(47, 166, 100, 0.2);
+  /* ── Text on dark ── */
+  --text-strong:  #F0F5F1;
+  --text-default: #E8F1EB;
+  --text-muted:   #93A89A;
+  --text-hint:    #607060;
 
-  /* Radii */
-  --r-sm: 8px;
-  --r-md: 12px;
-  --r-lg: 16px;
-  --r-xl: 20px;
+  /* ── Legacy aliases (backward compat) ── */
+  --text-on-dark:        var(--text-default);
+  --text-on-dark-strong: var(--text-strong);
+  --text-muted-on-dark:  var(--text-muted);
+
+  /* ── Borders ── */
+  --border:         rgba(255, 255, 255, 0.06);
+  --border-medium:  rgba(255, 255, 255, 0.12);
+  --border-primary: rgba(47, 166, 100, 0.4);
+  --border-light:   #E5EAE7;
+
+  /* ── Legacy border aliases ── */
+  --border-dark: var(--border);
+
+  /* ── Radii ── */
+  --r-sm:   6px;
+  --r-md:   10px;
+  --r-lg:   16px;
+  --r-xl:   20px;
   --r-pill: 9999px;
 
-  /* Motion */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  /* ── Elevation ── */
+  --shadow-sm:    0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-md:    0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg:    0 12px 32px rgba(0, 0, 0, 0.16);
+  --shadow-focus: 0 0 0 3px rgba(47, 166, 100, 0.25);
+  --shadow-glow:  var(--shadow-focus);
+
+  /* ── Motion ── */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --d-fast: 120ms;
   --d-base: 200ms;

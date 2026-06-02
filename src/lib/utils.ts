@@ -18,7 +18,15 @@ export function formatDate(value: string) {
 }
 
 export function getPlanLabel(plan: string) {
-  if (plan === "plus") return "Plus";
-  if (plan === "pro") return "Pro";
-  return "Free";
+  if (plan === "elite") return "Elite";
+  if (plan === "bloom") return "Bloom";
+  if (plan === "grow") return "Grow";
+  return "Seed";
+}
+
+export function getPlanIcon(plan: string) {
+  if (plan === "elite") return "👑";
+  if (plan === "bloom") return "🌳";
+  if (plan === "grow") return "🌿";
+  return "🌱";
 }

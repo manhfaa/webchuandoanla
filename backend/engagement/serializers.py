@@ -88,7 +88,7 @@ class ExpertConsultationSerializer(serializers.ModelSerializer):
 
 
 class VerifyTransferSerializer(serializers.Serializer):
-    plan = serializers.ChoiceField(choices=("pro", "plus"))
+    plan = serializers.ChoiceField(choices=("grow", "bloom", "elite"))
     amount = serializers.IntegerField(min_value=1000)
     payer_name = serializers.CharField(max_length=120)
     bank_name = serializers.CharField(max_length=120)

@@ -1,56 +1,71 @@
 import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
-const cardVariants = cva("border transition duration-150 ease-out", {
-  variants: {
-    variant: {
-      light: "rounded-lg border-border-light bg-white text-ink-900 shadow-sm",
-      dark: "rounded-lg border-border-dark bg-app-surface text-on-dark shadow-sm",
-      darkNested: "rounded-md border-border-dark bg-app-surface-2 text-on-dark shadow-sm",
-    },
-    padding: {
-      none: "p-0",
-      sm: "p-4",
-      md: "p-6",
-      lg: "p-8",
-    },
-    interactive: {
-      true: "hover:-translate-y-px hover:shadow-md",
-      false: "",
-    },
-    glow: {
-      true: "ring-1 ring-leaf-400/25 shadow-md",
-      false: "",
-    },
-  },
-  defaultVariants: {
-    variant: "light",
-    padding: "md",
-    interactive: false,
-    glow: false,
-  },
-});
+type CardVariant = "default" | "light" | "dark" | "darkNested";
+type CardPadding = "none" | "sm" | "md" | "lg";
 
-export interface CardProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof cardVariants> {}
+const variantClass: Record<CardVariant, string> = {
+  default:    "bg-[--bg-surface] border-[--border]",
+  dark:       "bg-[--bg-surface] border-[--border]",
+  darkNested: "bg-[--bg-surface-2] border-[--border]",
+  light:      "bg-white border-[--border-light] text-[--ink-900]",
+};
+
+const paddingClass: Record<CardPadding, string> = {
+  none: "p-0",
+  sm:   "p-4",
+  md:   "p-5",
+  lg:   "p-6",
+};
+
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: CardVariant;
+  padding?: CardPadding;
+  interactive?: boolean;
+  glow?: boolean;
+}
 
 export function Card({
+  variant = "default",
+  padding = "md",
+  interactive = false,
+  glow = false,
   className,
-  variant,
-  padding,
-  interactive,
-  glow,
+  children,
   ...props
 }: CardProps) {
   return (
     <div
-      className={cn(cardVariants({ variant, padding, interactive, glow, className }))}
+      className={cn(
+        "rounded-[--r-lg] border transition duration-150 ease-out",
+        variantClass[variant],
+        paddingClass[padding],
+        interactive && "hover:-translate-y-px hover:shadow-md cursor-pointer",
+        glow && "ring-1 ring-leaf-400/25 shadow-md",
+        className,
+      )}
       {...props}
-    />
+    >
+      {children}
+    </div>
   );
 }
 
-export { cardVariants };
+/* Nested / secondary card — always bg-surface-2 */
+export function CardNested({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "rounded-[--r-md] border border-[--border] p-4",
+        "bg-[--bg-surface-2]",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}
+
+export const cardVariants = variantClass;

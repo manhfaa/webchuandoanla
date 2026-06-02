@@ -4,15 +4,16 @@ import Link from "next/link";
 import { Crown, Sparkles } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import type { PlanTier } from "@/types";
 
 export function UpgradeBanner({
   currentPlan,
   onOpenUpgrade,
 }: {
-  currentPlan: string;
+  currentPlan: PlanTier;
   onOpenUpgrade: () => void;
 }) {
-  if (currentPlan !== "free") {
+  if (currentPlan !== "seed") {
     return null;
   }
 

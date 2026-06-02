@@ -83,8 +83,9 @@ class ExpertConsultationDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 class VerifyTransferAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     PLAN_AMOUNTS = {
-        "pro": 299000,
-        "plus": 699000,
+        "grow": 9000,
+        "bloom": 39000,
+        "elite": 99000,
     }
 
     def post(self, request):

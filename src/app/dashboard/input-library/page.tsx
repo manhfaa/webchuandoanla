@@ -154,22 +154,22 @@ export default function InputLibraryPage() {
         <p className="mt-3 max-w-3xl text-body-sm leading-relaxed text-muted-on-dark">{text.intro}</p>
       </Card>
 
-      <Card variant="light" padding="lg" className="shadow-sm">
+      <Card variant="dark" padding="lg" className="border-border-dark">
         <form className="grid gap-4 xl:grid-cols-[1fr_0.8fr_0.8fr_0.7fr_auto]" onSubmit={handleSubmit}>
           <Input label={text.search} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Mancozeb, đốm lá, kali..." />
           <Input label={text.crop} value={crop} onChange={(e) => setCrop(e.target.value)} placeholder="Cà chua, táo, lúa..." />
           <Input label={text.disease} value={disease} onChange={(e) => setDisease(e.target.value)} placeholder="Đốm lá, cháy lá..." />
           <label className="space-y-1.5">
-            <span className="text-body-sm font-medium text-ink-700">{text.category}</span>
+            <span className="text-body-sm font-medium text-muted-on-dark">{text.category}</span>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="h-11 w-full rounded-[10px] border border-ink-300/40 bg-white px-3.5 text-body text-ink-900 shadow-sm outline-none transition focus:border-leaf-500 focus:ring-2 focus:ring-leaf-500/30"
+              className="h-11 w-full rounded-[10px] border border-border-dark bg-app-surface-2 px-3.5 text-body text-on-dark outline-none transition focus:border-leaf-500 focus:ring-2 focus:ring-leaf-500/30"
             >
-              <option value="">{text.all}</option>
-              <option value="pesticide">{text.pesticide}</option>
-              <option value="fertilizer">{text.fertilizer}</option>
-              <option value="nutrition">{text.nutrition}</option>
+              <option value="" className="bg-app-surface-2">{text.all}</option>
+              <option value="pesticide" className="bg-app-surface-2">{text.pesticide}</option>
+              <option value="fertilizer" className="bg-app-surface-2">{text.fertilizer}</option>
+              <option value="nutrition" className="bg-app-surface-2">{text.nutrition}</option>
             </select>
           </label>
           <div className="flex items-end">
@@ -179,7 +179,11 @@ export default function InputLibraryPage() {
             </Button>
           </div>
         </form>
-        {error ? <p className="mt-4 text-body-sm text-berry-500">{error}</p> : null}
+        {error ? (
+          <p className="mt-4 text-body-sm text-berry-500">
+            Không tìm thấy vật tư phù hợp. Thử từ khoá khác hoặc kiểm tra kết nối.
+          </p>
+        ) : null}
       </Card>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_0.75fr]">
@@ -187,9 +191,14 @@ export default function InputLibraryPage() {
           {items.map((item) => (
             <InputCard key={item.id} item={item} language={language} />
           ))}
-          {!items.length && !loading ? (
+          {!items.length && !loading && !error ? (
             <Card variant="light" padding="lg" className="shadow-sm">
               <p className="text-body-sm text-ink-500">Chưa có vật tư phù hợp với bộ lọc hiện tại.</p>
+            </Card>
+          ) : null}
+          {!items.length && !loading && error ? (
+            <Card variant="light" padding="lg" className="shadow-sm">
+              <p className="text-body-sm text-ink-500">Không tìm thấy vật tư phù hợp. Thử từ khoá khác.</p>
             </Card>
           ) : null}
         </div>

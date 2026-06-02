@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "users",
     "diagnoses",
     "engagement",
+    "payments",
     "crop_plans",
     "farmops",
 ]
@@ -151,3 +152,9 @@ USE_X_FORWARDED_HOST = True
 CNN_MODEL_PATH = os.getenv("CNN_MODEL_PATH", "").strip()
 CNN_API_URL = os.getenv("CNN_API_URL", "").strip()
 CNN_API_TOKEN = os.getenv("CNN_API_TOKEN", "").strip()
+
+# SePay payment gateway
+SEPAY_API_KEY = os.getenv("SEPAY_API_KEY", "")
+SEPAY_BANK_CODE = os.getenv("SEPAY_BANK_CODE", "BIDV")
+SEPAY_ACCOUNT_NUMBER = os.getenv("SEPAY_ACCOUNT_NUMBER", "8807986170")
+SEPAY_ACCOUNT_NAME = os.getenv("SEPAY_ACCOUNT_NAME", "PHAM DUC MANH")

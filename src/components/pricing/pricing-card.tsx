@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils";
 import type { PlanTier, PricingPlan } from "@/types";
 
 const PLAN_RANK: Record<PlanTier, number> = {
-  free: 0,
-  pro: 1,
-  plus: 2,
+  seed: 0,
+  grow: 1,
+  bloom: 2,
+  elite: 3,
 };
 
 function rankOf(id: string): number {
@@ -20,22 +21,22 @@ function rankOf(id: string): number {
 
 export function PricingCard({
   plan,
-  currentPlan = "free",
+  currentPlan = "seed",
   onSelect,
   dark = false,
 }: {
   plan: PricingPlan;
-  currentPlan?: string;
+  currentPlan?: PlanTier;
   onSelect?: (planId: PricingPlan["id"]) => void;
   dark?: boolean;
 }) {
-  const current = String(currentPlan ?? "free");
+  const current = currentPlan ?? "seed";
   const isCurrent = current === plan.id;
   const curRank = rankOf(current);
   const pRank = rankOf(plan.id);
 
   const isEmphasized = Boolean(plan.highlight || dark);
-  const isPlusCurrent = isCurrent && plan.id === "plus";
+  const isTopCurrent = isCurrent && plan.id === "elite";
 
   let actionLabel = plan.cta;
   let actionVariant: "primary" | "secondary" | "outline" | "ghostOnDark" = plan.highlight
@@ -45,7 +46,13 @@ export function PricingCard({
       : "primary";
 
   if (!isCurrent && curRank > pRank) {
-    actionLabel = plan.id === "free" ? "Hạ cấp về Free" : "Hạ cấp về Pro";
+    const downgradeLabels: Record<PlanTier, string> = {
+      seed: "Hạ cấp về Seed",
+      grow: "Hạ cấp về Grow",
+      bloom: "Hạ cấp về Bloom",
+      elite: "Hạ cấp về Elite",
+    };
+    actionLabel = downgradeLabels[plan.id] ?? "Hạ cấp";
     actionVariant = dark ? "outline" : "secondary";
   }
 
@@ -60,8 +67,8 @@ export function PricingCard({
         plan.highlight &&
           !dark &&
           "bg-gradient-to-br from-[#0f221a] via-[#153524] to-[#10231c] text-white",
-        isPlusCurrent && "border-2 border-leaf-500 shadow-glow",
-        isCurrent && plan.id !== "plus" && "border border-leaf-500/60 ring-1 ring-leaf-500/30",
+        isTopCurrent && "border-2 border-leaf-500 shadow-glow",
+        isCurrent && plan.id !== "elite" && "border border-leaf-500/60 ring-1 ring-leaf-500/30",
       )}
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(232,252,162,0.14),transparent_26%),radial-gradient(circle_at_bottom_left,rgba(120,212,157,0.12),transparent_24%)]" />
@@ -69,18 +76,21 @@ export function PricingCard({
       <div className="relative flex flex-1 flex-col">
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <p
-              className={cn(
-                "text-xs font-semibold uppercase tracking-[0.28em]",
-                plan.highlight
-                  ? "text-lime-200/80"
-                  : dark
-                    ? "text-emerald-100/70"
-                    : "text-brand-700",
-              )}
-            >
-              {plan.name}
-            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-xl">{plan.icon}</span>
+              <p
+                className={cn(
+                  "text-xs font-semibold uppercase tracking-[0.28em]",
+                  plan.highlight
+                    ? "text-lime-200/80"
+                    : dark
+                      ? "text-emerald-100/70"
+                      : "text-brand-700",
+                )}
+              >
+                {plan.name}
+              </p>
+            </div>
 
             {plan.badge && !isCurrent ? (
               <Badge
@@ -148,7 +158,7 @@ export function PricingCard({
             <div
               className={cn(
                 "flex w-full items-center justify-center gap-2 rounded-md border border-leaf-400/50 py-2.5 text-body-sm font-semibold",
-                isPlusCurrent ? "bg-leaf-500/20 text-leaf-100" : "bg-leaf-500/10 text-leaf-200",
+                isTopCurrent ? "bg-leaf-500/20 text-leaf-100" : "bg-leaf-500/10 text-leaf-200",
               )}
             >
               <Check strokeWidth={2.5} className="h-4 w-4 shrink-0" aria-hidden />

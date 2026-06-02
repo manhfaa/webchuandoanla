@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { t } from "@/lib/i18n";
-import { getPlanLabel } from "@/lib/utils";
+import { getPlanIcon, getPlanLabel } from "@/lib/utils";
 import { useLanguageStore } from "@/store/language-store";
 import { useSessionStore } from "@/store/session-store";
 
@@ -148,7 +148,7 @@ export function DashboardTopbar({
             : activeTitleMap["/dashboard"]));
 
   return (
-    <header className="workspace-header sticky top-0 z-50 flex min-h-[72px] shrink-0 border-b border-border-dark bg-app backdrop-blur-md">
+    <header className="workspace-header sticky top-0 z-50 flex min-h-[72px] shrink-0 border-b border-border-dark bg-app backdrop-blur-md lg:h-[72px] lg:overflow-hidden">
       <div className="flex w-full min-w-0 flex-col gap-3 px-4 py-3 sm:px-6 lg:flex lg:h-[72px] lg:flex-row lg:items-center lg:gap-4 lg:py-0 lg:px-8">
         <div className="flex min-w-0 flex-1 items-start gap-3 lg:items-center">
           <Button
@@ -182,7 +182,7 @@ export function DashboardTopbar({
             {t(language, online ? "status.online" : "status.offline")}
           </Badge>
           <Badge variant="dark" className="no-underline">
-            Gói {getPlanLabel(user?.currentPlan ?? "free")}
+            {getPlanIcon(user?.currentPlan ?? "seed")} Gói {getPlanLabel(user?.currentPlan ?? "seed")}
           </Badge>
           <Button variant="secondary" size="sm" onClick={onOpenUpgrade}>
             <Rocket strokeWidth={1.75} className="h-4 w-4" />

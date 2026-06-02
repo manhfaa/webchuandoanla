@@ -85,17 +85,17 @@ function PlotSummary({ plot, active, onSelect }: { plot: FarmPlot; active: boole
       type="button"
       onClick={onSelect}
       className={`w-full rounded-md border p-4 text-left transition ${
-        active ? "border-leaf-500 bg-leaf-50 text-ink-900" : "border-border-light bg-white text-ink-900 hover:bg-ink-50"
+        active ? "border-leaf-500 bg-leaf-800/50 text-on-dark-strong" : "border-border-dark bg-app-surface-2 text-on-dark hover:bg-white/5"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-semibold">{plot.name}</p>
-          <p className="mt-1 text-body-sm text-ink-500">{plot.crop_type} · {plot.growth_stage || "Đang theo dõi"}</p>
+          <p className="mt-1 text-body-sm text-muted-on-dark">{plot.crop_type} · {plot.growth_stage || "Đang theo dõi"}</p>
         </div>
-        <Badge variant="muted">{plot.logs?.length ?? 0} nhật ký</Badge>
+        <Badge variant="locked">{plot.logs?.length ?? 0} nhật ký</Badge>
       </div>
-      <p className="mt-3 text-caption text-ink-500">{plot.address_text || "Chưa ghi vị trí"}</p>
+      <p className="mt-3 text-caption text-muted-on-dark">{plot.address_text || "Chưa ghi vị trí"}</p>
     </button>
   );
 }
@@ -253,8 +253,8 @@ export default function FarmsPage() {
 
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <div className="space-y-6">
-          <Card variant="light" padding="lg" className="shadow-sm">
-            <h3 className="text-h3 text-ink-900">{text.createPlot}</h3>
+          <Card variant="dark" padding="lg" className="border-border-dark">
+            <h3 className="text-h3 text-on-dark-strong">{text.createPlot}</h3>
             <form className="mt-5 space-y-4" onSubmit={handleCreatePlot}>
               <div className="grid gap-4 md:grid-cols-2">
                 <Input label="Tên lô/vườn/ruộng" value={plotForm.name} onChange={(e) => setPlotForm({ ...plotForm, name: e.target.value })} />
@@ -272,14 +272,14 @@ export default function FarmsPage() {
             </form>
           </Card>
 
-          <Card variant="light" padding="lg" className="shadow-sm">
+          <Card variant="dark" padding="lg" className="border-border-dark">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-h3 text-ink-900">Danh sách lô vườn</h3>
+              <h3 className="text-h3 text-on-dark-strong">Danh sách lô vườn</h3>
               {selectedPlot ? (
                 <button
                   type="button"
                   onClick={() => void handleDeleteSelected()}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-red-200 px-2.5 text-caption font-semibold text-red-700 transition hover:bg-red-50"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-berry-500/40 px-2.5 text-caption font-semibold text-berry-300 transition hover:bg-berry-500/10"
                 >
                   <Trash2 strokeWidth={1.75} className="h-3.5 w-3.5" />
                   Xóa
@@ -300,7 +300,7 @@ export default function FarmsPage() {
                   />
                 ))
               ) : (
-                <p className="text-body-sm text-ink-500">{text.noPlot}</p>
+                <p className="text-body-sm text-muted-on-dark">{text.noPlot}</p>
               )}
             </div>
             {!accessToken ? <p className="mt-4 text-body-sm text-berry-500">{text.login}</p> : null}

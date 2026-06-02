@@ -134,6 +134,24 @@
   }
 }
 
+@layer base {
+  a,
+  a:hover,
+  a:visited,
+  a:focus {
+    text-decoration: none;
+  }
+
+  /* Triệt để loại bỏ underline khỏi badge/chip trong link */
+  a .badge, a:hover .badge,
+  a [class*="badge"], a:hover [class*="badge"],
+  a [class*="chip"], a:hover [class*="chip"],
+  a [class*="tag"], a:hover [class*="tag"],
+  a span[class*="rounded-full"], a:hover span[class*="rounded-full"] {
+    text-decoration: none !important;
+  }
+}
+
 @layer components {
   a:where(.no-underline-hover) {
     text-decoration: none;
@@ -141,5 +159,22 @@
   a:where(.no-underline-hover):hover,
   a:where(.no-underline-hover):focus {
     text-decoration: none;
+  }
+
+  .workspace-header {
+    background-color: var(--bg-app);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  main.page-content {
+    padding-top: 24px;
+  }
+
+  main.page-content > *:first-child {
+    margin-top: 0;
+    position: relative;
+    z-index: 1;
   }
 }

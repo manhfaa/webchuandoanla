@@ -165,7 +165,7 @@ export const useSessionStore = create<SessionState>()(
             name: "Người dùng Agromind AI",
             email: email?.trim() || "demo@agromindai.vn",
             avatar: "/avatars/user-demo.svg",
-            currentPlan: "free",
+            currentPlan: "seed",
           },
           isAuthenticated: true,
           initialized: true,

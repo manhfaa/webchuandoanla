@@ -42,24 +42,24 @@ export default function DashboardHistoryPage() {
             </h2>
           </div>
           <label className="block">
-            <span className="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-50/75">
+            <span className="mb-2 flex items-center gap-2 text-body-sm font-medium text-muted-on-dark">
               <Filter size={16} />
               Loại cây
             </span>
             <select
               value={plantFilter}
               onChange={(event) => setPlantFilter(event.target.value)}
-              className="h-12 min-w-[220px] rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white outline-none"
+              className="h-11 min-w-[220px] rounded-[10px] border border-border-dark bg-app-surface-2 px-3.5 text-body text-on-dark outline-none transition focus:border-leaf-500 focus:ring-2 focus:ring-leaf-500/30"
             >
               {plantOptions.map((plant) => (
-                <option key={plant} value={plant} className="text-slate-900">
+                <option key={plant} value={plant} className="bg-app-surface-2 text-on-dark">
                   {plant === "all" ? "Tất cả cây trồng" : plant}
                 </option>
               ))}
             </select>
           </label>
           <label className="block">
-            <span className="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-50/75">
+            <span className="mb-2 flex items-center gap-2 text-body-sm font-medium text-muted-on-dark">
               <CalendarRange size={16} />
               Ngày xác thực
             </span>
@@ -67,7 +67,7 @@ export default function DashboardHistoryPage() {
               type="date"
               value={dateFilter}
               onChange={(event) => setDateFilter(event.target.value)}
-              className="h-12 min-w-[220px] rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white outline-none"
+              className="h-11 min-w-[220px] rounded-[10px] border border-border-dark bg-app-surface-2 px-3.5 text-body text-on-dark outline-none transition focus:border-leaf-500 focus:ring-2 focus:ring-leaf-500/30 [color-scheme:dark]"
             />
           </label>
         </div>

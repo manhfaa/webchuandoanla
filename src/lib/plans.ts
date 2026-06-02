@@ -1,13 +1,12 @@
-import { PricingPlan } from "@/types";
-
-export const pricingPlans: PricingPlan[] = [
-  {
-    id: "seed",
+export const PLANS = {
+  seed: {
+    key: "seed" as const,
     name: "Seed",
     icon: "🌱",
-    price: "Miễn phí",
-    description: "Bắt đầu khám phá — kiểm tra lá cây, lưu lịch sử ngắn, chat AI cơ bản.",
-    cta: "Dùng miễn phí",
+    price: 0,
+    priceLabel: "Miễn phí",
+    tagline: "Bắt đầu khám phá",
+    color: "emerald",
     features: [
       "Kiểm tra ảnh lá cây (5 lần/ngày)",
       "Lưu lịch sử 7 ngày gần nhất",
@@ -15,13 +14,14 @@ export const pricingPlans: PricingPlan[] = [
       "Tải ảnh hoặc chụp trực tiếp",
     ],
   },
-  {
-    id: "grow",
+  grow: {
+    key: "grow" as const,
     name: "Grow",
     icon: "🌿",
-    price: "9.000đ/tháng",
-    description: "Phát triển đều đặn — tần suất cao hơn, lịch sử dài hơn, bắt đầu lập kế hoạch.",
-    cta: "Nâng cấp Grow",
+    price: 9000,
+    priceLabel: "9.000đ/tháng",
+    tagline: "Phát triển đều đặn",
+    color: "green",
     features: [
       "Kiểm tra ảnh lá cây (30 lần/ngày)",
       "Lưu lịch sử 30 ngày",
@@ -29,15 +29,15 @@ export const pricingPlans: PricingPlan[] = [
       "Lập kế hoạch trồng cây (2 kế hoạch)",
     ],
   },
-  {
-    id: "bloom",
+  bloom: {
+    key: "bloom" as const,
     name: "Bloom",
     icon: "🌳",
-    price: "39.000đ/tháng",
-    description: "Nở rộ toàn diện — không giới hạn kiểm tra, chat chuyên gia, ưu tiên xử lý.",
-    cta: "Nâng cấp Bloom",
-    highlight: true,
-    badge: "Phổ biến nhất",
+    price: 39000,
+    priceLabel: "39.000đ/tháng",
+    tagline: "Nở rộ toàn diện",
+    color: "teal",
+    popular: true,
     features: [
       "Kiểm tra ảnh lá không giới hạn",
       "Lưu toàn bộ lịch sử",
@@ -48,13 +48,14 @@ export const pricingPlans: PricingPlan[] = [
       "Hỗ trợ qua email",
     ],
   },
-  {
-    id: "elite",
+  elite: {
+    key: "elite" as const,
     name: "Elite",
     icon: "👑",
-    price: "99.000đ/tháng",
-    description: "Đỉnh cao chuyên nghiệp — xuất PDF, API access, hỗ trợ ưu tiên.",
-    cta: "Nâng cấp Elite",
+    price: 99000,
+    priceLabel: "99.000đ/tháng",
+    tagline: "Đỉnh cao chuyên nghiệp",
+    color: "amber",
     features: [
       "Tất cả tính năng Bloom",
       "Xuất báo cáo PDF",
@@ -63,4 +64,18 @@ export const pricingPlans: PricingPlan[] = [
       "Hỗ trợ ưu tiên qua email + chat",
     ],
   },
-];
+} as const;
+
+export type PlanKey = keyof typeof PLANS;
+
+export const PLAN_PRICES: Record<string, number> = {
+  grow: 9000,
+  bloom: 39000,
+  elite: 99000,
+};
+
+export const PLAN_ORDER: PlanKey[] = ["seed", "grow", "bloom", "elite"];
+
+export function getPlanRank(plan: string): number {
+  return PLAN_ORDER.indexOf(plan as PlanKey);
+}

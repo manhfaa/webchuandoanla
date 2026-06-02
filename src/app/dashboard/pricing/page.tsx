@@ -7,13 +7,23 @@ import { ComparisonTable } from "@/components/pricing/comparison-table";
 import { PricingCard } from "@/components/pricing/pricing-card";
 import { Card } from "@/components/ui/card";
 import { pricingPlans } from "@/data/mock/plans";
+import { PLANS } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/store/session-store";
+import type { PlanTier } from "@/types";
+
+const PLAN_TAGLINES: Record<PlanTier, string> = {
+  seed: "Bắt đầu khám phá, không rào cản.",
+  grow: "Tần suất ổn định cho nhu cầu thường xuyên.",
+  bloom: "Đầy đủ tính năng với chat chuyên gia.",
+  elite: "Đỉnh cao chuyên nghiệp với PDF và API.",
+};
 
 export default function DashboardPricingPage() {
   const router = useRouter();
-  const { user, setPlan } = useSessionStore();
-  const currentPlan = user?.currentPlan ?? "free";
+  const { user } = useSessionStore();
+  const currentPlan = (user?.currentPlan ?? "seed") as PlanTier;
+  const currentPlanInfo = PLANS[currentPlan];
 
   return (
     <div className="space-y-6">
@@ -27,13 +37,13 @@ export default function DashboardPricingPage() {
               Chọn gói phù hợp với tần suất sử dụng của bạn.
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-emerald-50/75">
-              Free phù hợp để dùng thử. Pro dành cho người dùng thường xuyên. Plus phù hợp khi bạn muốn có thêm phần chat hỗ trợ.
+              Seed miễn phí để dùng thử. Grow cho người dùng thường xuyên. Bloom đầy đủ tính năng. Elite cho chuyên gia.
             </p>
           </div>
           <div className="rounded-[30px] border border-white/10 bg-white/5 p-5">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm text-lime-100">
               <Sparkles size={16} />
-              Gói hiện tại: {currentPlan.toUpperCase()}
+              Gói hiện tại: {currentPlanInfo.icon} {currentPlanInfo.name}
             </div>
             <p className="mt-4 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-100/60">
               Value Proposition
@@ -43,7 +53,10 @@ export default function DashboardPricingPage() {
                 <button
                   key={plan.id}
                   type="button"
-                  onClick={() => setPlan(plan.id)}
+                  onClick={() => {
+                    if (plan.id === "seed") return;
+                    router.push(`/dashboard/pricing/checkout/${plan.id}`);
+                  }}
                   className={cn(
                     "w-full rounded-2xl border px-4 py-3 text-left transition",
                     currentPlan === plan.id
@@ -52,7 +65,7 @@ export default function DashboardPricingPage() {
                   )}
                 >
                   <p className="text-sm font-semibold">
-                    {plan.name}: {plan.id === "free" ? "Dùng thử nhanh, không rào cản." : plan.id === "pro" ? "Hiệu suất ổn định cho nhu cầu thường xuyên." : "Đầy đủ tính năng với lớp hỗ trợ chuyên sâu."}
+                    {plan.icon} {plan.name}: {PLAN_TAGLINES[plan.id]}
                   </p>
                   <p className="mt-1 text-xs leading-6 text-emerald-50/75">{plan.description}</p>
                 </button>
@@ -62,7 +75,7 @@ export default function DashboardPricingPage() {
         </div>
       </Card>
 
-      <div className="grid gap-5 xl:grid-cols-2 2xl:grid-cols-3">
+      <div className="grid gap-5 xl:grid-cols-2 2xl:grid-cols-4">
         {pricingPlans.map((plan) => (
           <PricingCard
             key={plan.id}
@@ -70,11 +83,8 @@ export default function DashboardPricingPage() {
             dark
             currentPlan={currentPlan}
             onSelect={(planId) => {
-              if (planId === "free") {
-                setPlan(planId);
-                return;
-              }
-              router.push(`/dashboard/pricing/checkout?plan=${planId}`);
+              if (planId === "seed") return;
+              router.push(`/dashboard/pricing/checkout/${planId}`);
             }}
           />
         ))}

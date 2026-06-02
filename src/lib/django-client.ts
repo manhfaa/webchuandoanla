@@ -40,7 +40,7 @@ function mapMeToUserProfile(me: DjangoMeResponse): UserProfile {
     name: me.full_name?.trim() || "Người dùng Agromind AI",
     email: me.email,
     avatar: me.avatar_url || "/avatars/user-demo.svg",
-    currentPlan: me.current_plan ?? "free",
+    currentPlan: me.current_plan ?? "seed",
   };
 }
 
