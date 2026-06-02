@@ -44,7 +44,7 @@ export function UpgradeModal({
                 onClose();
                 return;
               }
-              router.push(`/dashboard/pricing/checkout?plan=${planId}`);
+              router.push(`/dashboard/pricing/checkout/${planId}`);
               onClose();
             }}
           />

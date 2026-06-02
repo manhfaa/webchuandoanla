@@ -3,15 +3,13 @@
 import Link from "next/link";
 import { Crown, Sparkles } from "lucide-react";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import type { PlanTier } from "@/types";
 
 export function UpgradeBanner({
   currentPlan,
-  onOpenUpgrade,
 }: {
   currentPlan: PlanTier;
-  onOpenUpgrade: () => void;
 }) {
   if (currentPlan !== "seed") {
     return null;
@@ -29,10 +27,13 @@ export function UpgradeBanner({
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <Button variant="secondary" size="sm" onClick={onOpenUpgrade}>
+        <Link
+          href="/dashboard/pricing"
+          className={buttonVariants({ variant: "secondary", size: "sm" })}
+        >
           <Sparkles strokeWidth={1.75} className="h-4 w-4" />
           Nâng cấp
-        </Button>
+        </Link>
         <Link
           href="/dashboard/pricing"
           className={buttonVariants({ variant: "ghostOnDark", size: "sm", className: "hidden sm:inline-flex" })}
