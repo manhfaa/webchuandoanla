@@ -66,10 +66,11 @@ export default function DashboardProfilePage() {
 
         <Card variant="light" padding="lg" className="shadow-sm">
           <div className="grid gap-5 md:grid-cols-2">
-            <Input label="Tên người dùng" value={name} onChange={(event) => setName(event.target.value)} />
-            <Input label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+            <Input tone="light" label="Tên người dùng" value={name} onChange={(event) => setName(event.target.value)} />
+            <Input tone="light" label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
             <div className="md:col-span-2">
               <Input
+                tone="light"
                 label="Avatar URL"
                 type="url"
                 value={avatarUrl}
