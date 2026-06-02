@@ -5,7 +5,7 @@ import { Menu } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
-import { PLANS } from "@/lib/plans";
+import { normalizePlan, PLANS } from "@/lib/plans";
 import { useSessionStore } from "@/store/session-store";
 import type { PlanTier } from "@/types";
 
@@ -24,7 +24,7 @@ function planBadgeVariant(plan: PlanTier) {
 export function WorkspaceHeader({ pageTitle, onOpenMobileNav }: WorkspaceHeaderProps) {
   const router = useRouter();
   const { user, logout } = useSessionStore();
-  const plan = (user?.currentPlan ?? "seed") as PlanTier;
+  const plan = normalizePlan(user?.currentPlan);
   const planInfo = PLANS[plan];
   const initials = user?.name?.[0]?.toUpperCase() ?? "U";
 

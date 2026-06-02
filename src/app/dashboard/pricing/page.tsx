@@ -7,7 +7,7 @@ import { ComparisonTable } from "@/components/pricing/comparison-table";
 import { PricingCard } from "@/components/pricing/pricing-card";
 import { Card } from "@/components/ui/card";
 import { pricingPlans } from "@/data/mock/plans";
-import { PLANS } from "@/lib/plans";
+import { normalizePlan, PLANS } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/store/session-store";
 import type { PlanTier } from "@/types";
@@ -22,7 +22,7 @@ const PLAN_TAGLINES: Record<PlanTier, string> = {
 export default function DashboardPricingPage() {
   const router = useRouter();
   const { user } = useSessionStore();
-  const currentPlan = (user?.currentPlan ?? "seed") as PlanTier;
+  const currentPlan = normalizePlan(user?.currentPlan);
   const currentPlanInfo = PLANS[currentPlan];
 
   return (

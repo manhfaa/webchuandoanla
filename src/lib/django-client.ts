@@ -1,4 +1,5 @@
 import type { ActionPlan, PlanTier, UserProfile } from "@/types";
+import { normalizePlan } from "@/lib/plans";
 
 export type DjangoLoginResponse = {
   access: string;
@@ -40,7 +41,7 @@ function mapMeToUserProfile(me: DjangoMeResponse): UserProfile {
     name: me.full_name?.trim() || "Người dùng Agromind AI",
     email: me.email,
     avatar: me.avatar_url || "/avatars/user-demo.svg",
-    currentPlan: me.current_plan ?? "seed",
+    currentPlan: normalizePlan(me.current_plan),
   };
 }
 

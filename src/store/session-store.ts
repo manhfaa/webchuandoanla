@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware";
 
 import type { PlanTier, UserProfile } from "@/types";
 import { djangoLogin, djangoMe, djangoRegister } from "@/lib/django-client";
+import { normalizePlan } from "@/lib/plans";
 
 type AuthStatus = "idle" | "loading" | "authenticated" | "error";
 
@@ -207,7 +208,7 @@ export const useSessionStore = create<SessionState>()(
     }),
     {
       name: "leafiq-session",
-      version: 2,
+      version: 3,
       partialize: (state) => ({
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
@@ -216,9 +217,16 @@ export const useSessionStore = create<SessionState>()(
       }),
       migrate: (persistedState: unknown) => {
         const state = (persistedState ?? {}) as Partial<SessionState>;
+        const user = state.user
+          ? {
+              ...state.user,
+              currentPlan: normalizePlan(state.user.currentPlan),
+            }
+          : null;
         return {
           ...state,
-          isAuthenticated: Boolean(state.user || state.isAuthenticated),
+          user,
+          isAuthenticated: Boolean(user || state.isAuthenticated),
         };
       },
     },

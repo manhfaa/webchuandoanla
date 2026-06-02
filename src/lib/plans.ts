@@ -76,6 +76,15 @@ export const PLAN_PRICES: Record<string, number> = {
 
 export const PLAN_ORDER: PlanKey[] = ["seed", "grow", "bloom", "elite"];
 
+export function normalizePlan(plan: unknown): PlanKey {
+  if (typeof plan !== "string") return "seed";
+  if (plan in PLANS) return plan as PlanKey;
+  if (plan === "free") return "seed";
+  if (plan === "pro") return "grow";
+  if (plan === "plus") return "bloom";
+  return "seed";
+}
+
 export function getPlanRank(plan: string): number {
-  return PLAN_ORDER.indexOf(plan as PlanKey);
+  return PLAN_ORDER.indexOf(normalizePlan(plan));
 }
