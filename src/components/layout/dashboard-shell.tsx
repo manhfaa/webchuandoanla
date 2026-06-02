@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Toaster } from "sonner";
 
 import { UpgradeModal } from "@/components/pricing/upgrade-modal";
@@ -54,9 +54,10 @@ function getPageTitle(pathname: string, lang: "vi" | "en"): string {
 }
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-  const { initialized, hydrate } = useSessionStore();
+  const { initialized, hydrate, isAuthenticated } = useSessionStore();
   const { language } = useLanguageStore();
   const pathname = usePathname();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -71,9 +72,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     }
   }, [hydrate, mounted]);
 
+  useEffect(() => {
+    if (!mounted || !initialized || isAuthenticated) return;
+    router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+  }, [initialized, isAuthenticated, mounted, pathname, router]);
+
   const pageTitle = getPageTitle(pathname, language);
 
-  if (!mounted || !initialized) {
+  if (!mounted || !initialized || !isAuthenticated) {
     return (
       <div className="dark theme-dashboard min-h-screen bg-dashboard-mesh px-4 py-6 sm:px-6">
         <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
