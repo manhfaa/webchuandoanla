@@ -74,6 +74,8 @@ if supabase_db_url:
         )
     }
 else:
+    if not DEBUG:
+        raise RuntimeError("SUPABASE_DB_URL is required when DEBUG=False. Refusing to use temporary SQLite in production.")
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
