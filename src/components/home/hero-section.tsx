@@ -30,7 +30,7 @@ export function HeroSection() {
               Bắt đầu ngay
               <ArrowRight size={18} />
             </Link>
-            <a href="#tinh-nang" className={buttonVariants({ variant: "secondary", size: "lg" })}>
+            <a href="#tinh-nang" className={buttonVariants({ variant: "secondaryOnLight", size: "lg" })}>
               Xem tính năng
             </a>
           </div>
@@ -41,9 +41,14 @@ export function HeroSection() {
               { label: "Bước 2", value: "Kiểm tra xem có phải lá cây" },
               { label: "Bước 3", value: "Lưu kết quả và hỏi tiếp" },
             ].map((item) => (
-              <Card key={item.label} className="rounded-[24px] p-4">
-                <p className="text-sm text-slate-500">{item.label}</p>
-                <p className="mt-2 font-display text-lg font-semibold text-ink">{item.value}</p>
+              <Card
+                key={item.label}
+                variant="light"
+                className="relative overflow-hidden rounded-[28px] border-emerald-100 bg-gradient-to-br from-white via-emerald-50/80 to-lime-50 p-5 shadow-[0_18px_45px_rgba(15,35,24,0.08)]"
+              >
+                <div className="absolute inset-x-5 top-0 h-1 rounded-b-full bg-gradient-to-r from-leaf-500 to-lime-300" />
+                <p className="text-sm font-semibold text-brand-700">{item.label}</p>
+                <p className="mt-3 font-display text-xl font-semibold leading-snug text-ink-900">{item.value}</p>
               </Card>
             ))}
           </div>
