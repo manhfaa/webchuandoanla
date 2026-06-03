@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { BackendWakeup } from "@/components/system/backend-wakeup";
 import { brand } from "@/constants/brand";
 
 import "./globals.css";
@@ -27,6 +28,7 @@ export default function RootLayout({
         >
           Bỏ qua đến nội dung chính
         </a>
+        <BackendWakeup />
         {children}
       </body>
     </html>
