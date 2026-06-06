@@ -195,7 +195,7 @@ export default function WeatherAlertsPage() {
 
       <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
         <Card variant="dark" padding="lg" className="border-border-dark">
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form className="space-y-4 font-sans" onSubmit={handleSubmit}>
             <div className="grid gap-4 md:grid-cols-2">
               <Input label={text.locationName} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               <Input label={text.crop} value={form.crop_type} onChange={(e) => setForm({ ...form, crop_type: e.target.value })} />
@@ -212,6 +212,7 @@ export default function WeatherAlertsPage() {
               <Button
                 type="button"
                 variant="secondaryOnLight"
+                className="disabled:border-emerald-200 disabled:bg-emerald-50 disabled:text-ink-700 disabled:opacity-100 disabled:[&>svg]:text-ink-500"
                 disabled={!selectedLocation || loading}
                 onClick={() => selectedLocation && void loadAdvisory(selectedLocation)}
               >
