@@ -41,6 +41,11 @@ function delay(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
+function isHealthyCnnDisease(cnn: DjangoCnnResponse) {
+  const disease = `${cnn.disease_name || ""} ${cnn.disease_name_en || ""}`.toLowerCase();
+  return disease.includes("healthy") || disease.includes("khỏe") || disease.includes("khoe");
+}
+
 function buildGeneratedRecord({
   previewUrl,
   detection,
@@ -97,17 +102,18 @@ function applyCnnResult(record: DiagnosisRecord, cnn: DjangoCnnResponse): Diagno
   const topItems = cnn.top_predictions.slice(0, 5).map((item) => {
     return `${item.plant_name || "Cây"} - ${item.disease_name}: ${formatConfidence(item.confidence)}`;
   });
+  const isHealthy = isHealthyCnnDisease(cnn);
 
   return {
     ...record,
     plant: cnn.plant_name || record.plant,
     disease: cnn.disease_name || cnn.class_name || record.disease,
     confidence: cnn.confidence,
-    severity: cnn.disease_name?.toLowerCase().includes("healthy") ? "Khỏe" : "CNN",
+    severity: isHealthy ? "Khỏe" : "CNN",
     classificationReady: true,
     note: `CNN đã phân loại ảnh với độ tin cậy ${formatConfidence(cnn.confidence)}.`,
     symptomSummary:
-      cnn.disease_name?.toLowerCase().includes("healthy")
+      isHealthy
         ? "CNN nhận định ảnh lá hiện tại thuộc nhóm khỏe mạnh. Bạn vẫn nên tiếp tục theo dõi nếu cây có dấu hiệu bất thường ngoài thực địa."
         : `CNN nhận định ảnh có khả năng thuộc nhóm ${cnn.disease_name || cnn.class_name}. Kết quả này nên được dùng như gợi ý hỗ trợ, không thay thế đánh giá thực địa.`,
     causes: [

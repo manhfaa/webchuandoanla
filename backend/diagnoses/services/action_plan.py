@@ -30,7 +30,29 @@ def build_action_plan(
     crop_label = crop_name or "cây trồng"
     is_healthy = "healthy" in disease_norm or "khỏe" in disease_norm
     low_confidence = confidence < 0.7
-    high_risk_terms = ["blight", "rust", "mildew", "rot", "cháy", "gỉ", "thối", "sương mai", "bạc lá"]
+    high_risk_terms = [
+        "blight",
+        "rust",
+        "mildew",
+        "rot",
+        "virus",
+        "mite",
+        "spot",
+        "scab",
+        "scorch",
+        "cháy",
+        "gỉ",
+        "thối",
+        "đốm",
+        "mốc",
+        "phấn trắng",
+        "vàng lá",
+        "xoăn",
+        "nhện",
+        "ghẻ",
+        "sương mai",
+        "bạc lá",
+    ]
 
     if is_healthy:
         risk_level = "low"

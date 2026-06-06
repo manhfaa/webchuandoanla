@@ -15,6 +15,8 @@ export type DjangoCnnPrediction = {
   class_name: string;
   plant_name: string;
   disease_name: string;
+  plant_name_en?: string;
+  disease_name_en?: string;
   confidence: number;
 };
 

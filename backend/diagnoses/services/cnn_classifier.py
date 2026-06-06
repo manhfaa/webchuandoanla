@@ -9,6 +9,8 @@ from typing import Any
 
 from django.conf import settings
 
+from .cnn_labels import split_class_name, translate_result
+
 
 class CnnModelUnavailable(RuntimeError):
     pass
@@ -124,13 +126,6 @@ def image_from_payload(*, image_data_url: str | None = None, image_file=None) ->
     raise ValueError("Missing image file or image_data_url.")
 
 
-def split_class_name(class_name: str) -> tuple[str, str]:
-    if "___" not in class_name:
-        return "", class_name.replace("_", " ")
-    plant, disease = class_name.split("___", 1)
-    return plant.replace("_", " "), disease.replace("_", " ")
-
-
 def classify_image(image: Image.Image, top_k: int = 5) -> dict[str, Any]:
     torch, _, _, _, _ = _deps()
     bundle = _load_bundle()
@@ -159,7 +154,7 @@ def classify_image(image: Image.Image, top_k: int = 5) -> dict[str, Any]:
         )
 
     best = top_predictions[0]
-    return {
+    return translate_result({
         "plant_name": best["plant_name"],
         "disease_name": best["disease_name"],
         "class_name": best["class_name"],
@@ -168,4 +163,4 @@ def classify_image(image: Image.Image, top_k: int = 5) -> dict[str, Any]:
         "model_version": f"convnext_tiny_epoch_{bundle.get('epoch', 'unknown')}",
         "model_accuracy": bundle.get("best_acc"),
         "image_size": bundle["img_size"],
-    }
+    })
