@@ -212,7 +212,7 @@ export default function WeatherAlertsPage() {
               <Button
                 type="button"
                 variant="secondaryOnLight"
-                className="disabled:border-emerald-200 disabled:bg-emerald-50 disabled:text-ink-700 disabled:opacity-100 disabled:[&>svg]:text-ink-500"
+                className="border-[#B8E9C8] bg-[#F0FAF4] !text-[#0C1410] disabled:border-[#B8E9C8] disabled:bg-[#F0FAF4] disabled:!text-[#0C1410] disabled:!opacity-100 disabled:[&>svg]:!text-[#2F3833]"
                 disabled={!selectedLocation || loading}
                 onClick={() => selectedLocation && void loadAdvisory(selectedLocation)}
               >
@@ -231,8 +231,8 @@ export default function WeatherAlertsPage() {
                   onClick={() => setSelectedLocationId(location.id)}
                   className={`rounded-full border px-3 py-1.5 text-body-sm transition ${
                     selectedLocationId === location.id
-                      ? "border-leaf-500 bg-leaf-100 text-leaf-800"
-                      : "border-ink-200 bg-white text-ink-600 hover:bg-ink-50"
+                      ? "border-[#2FA664] bg-[#DCF5E4] text-[#0F4D2C]"
+                      : "border-[#B8E9C8] bg-[#F7F9F8] text-[#2F3833] hover:bg-[#F0FAF4]"
                   }`}
                 >
                   {location.name} · {location.crop_type || "Cây trồng"}
