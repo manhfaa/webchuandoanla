@@ -95,7 +95,6 @@ const defaultForm = {
 
 function sourceLabel(source?: string) {
   if (source === "open_meteo") return "Open-Meteo · dữ liệu thật";
-  if (source === "rule_estimate") return "Ước tính nội bộ · thiếu tọa độ/API lỗi";
   return source || "Chưa có dữ liệu";
 }
 
@@ -189,6 +188,7 @@ export default function WeatherAlertsPage() {
       const data = await fetchFarmAdvisory(accessToken, location.id, location.crop_type || form.crop_type);
       setAdvisory(data);
     } catch (err) {
+      setAdvisory(null);
       setError(err instanceof Error ? err.message : "Không tải được cảnh báo.");
     } finally {
       setLoading(false);
@@ -262,11 +262,7 @@ export default function WeatherAlertsPage() {
       setSelectedLocationId(location.id);
       applyLocationToForm(location);
       await loadAdvisory(location);
-      if (location.latitude != null && location.longitude != null) {
-        setLocationNote("Đã lưu tọa độ. Dự báo sẽ dùng dữ liệu thật từ Open-Meteo.");
-      } else {
-        setLocationNote("Chưa xác định được tọa độ từ địa chỉ, hệ thống sẽ dùng ước tính nội bộ.");
-      }
+      setLocationNote("Đã lưu tọa độ. Dự báo sẽ dùng dữ liệu thật từ Open-Meteo.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không lưu được vị trí.");
     } finally {
@@ -302,7 +298,7 @@ export default function WeatherAlertsPage() {
               <div>
                 <p className="font-semibold text-on-dark-strong">Nguồn vị trí</p>
                 <p className="mt-1 text-body-sm leading-relaxed text-muted-on-dark">
-                  GPS sẽ chính xác nhất. Nếu nhập thủ công, backend sẽ geocode địa chỉ bằng Open-Meteo trước khi lấy thời tiết.
+                  GPS sẽ chính xác nhất. Nếu nhập thủ công, backend sẽ geocode địa chỉ trước rồi chỉ lấy thời tiết thật từ Open-Meteo.
                 </p>
                 <p className="mt-2 text-caption text-leaf-200">
                   Tọa độ form: {coordinateText(form.latitude, form.longitude)}
@@ -396,9 +392,7 @@ export default function WeatherAlertsPage() {
                 </p>
               ) : null}
             </div>
-            {weatherSource === "rule_estimate" ? (
-              <Badge variant="warning">Cần tọa độ</Badge>
-            ) : weatherSource === "open_meteo" ? (
+            {weatherSource === "open_meteo" ? (
               <Badge variant="success">Dữ liệu thật</Badge>
             ) : null}
           </div>

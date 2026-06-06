@@ -134,7 +134,13 @@ async function apiFetch<T>(path: string, accessToken?: string | null, init?: Req
     let message = `HTTP ${res.status}`;
     try {
       const data = await res.json();
-      message = data.detail || message;
+      message =
+        data.detail ||
+        data.error ||
+        data.non_field_errors?.[0] ||
+        data.latitude?.[0] ||
+        data.longitude?.[0] ||
+        message;
     } catch {
       // ignore
     }

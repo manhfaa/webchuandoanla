@@ -25,6 +25,8 @@ class FarmLocationSerializer(serializers.ModelSerializer):
         lat = attrs.get("latitude")
         lon = attrs.get("longitude")
         if lat is not None and lon is not None:
+            if not (-90 <= float(lat) <= 90 and -180 <= float(lon) <= 180):
+                raise serializers.ValidationError("Tọa độ không hợp lệ.")
             return attrs
 
         geocoded = geocode_location_fields(
@@ -42,6 +44,10 @@ class FarmLocationSerializer(serializers.ModelSerializer):
                 "label": geocoded["label"],
             }
             attrs["metadata"] = metadata
+        else:
+            raise serializers.ValidationError(
+                "Không xác định được tọa độ thật từ địa chỉ. Hãy bấm lấy vị trí hiện tại hoặc nhập địa chỉ rõ hơn."
+            )
         return attrs
 
 

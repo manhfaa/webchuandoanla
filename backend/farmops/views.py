@@ -19,7 +19,7 @@ from .serializers import (
     NutritionSymptomSerializer,
     TraceabilityRecordSerializer,
 )
-from .services import build_farm_advisory, build_pest_alerts, build_weather
+from .services import WeatherDataUnavailable, build_farm_advisory, build_pest_alerts, build_weather
 
 
 class FarmLocationListCreateAPIView(generics.ListCreateAPIView):
@@ -54,7 +54,10 @@ class WeatherAPIView(APIView):
         location = self.get_location(request)
         if not location:
             return Response({"detail": "Chưa có vị trí canh tác."}, status=status.HTTP_404_NOT_FOUND)
-        return Response(build_weather(location, request.query_params.get("crop", "")))
+        try:
+            return Response(build_weather(location, request.query_params.get("crop", "")))
+        except WeatherDataUnavailable as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 class PestAlertAPIView(WeatherAPIView):
@@ -62,7 +65,10 @@ class PestAlertAPIView(WeatherAPIView):
         location = self.get_location(request)
         if not location:
             return Response({"detail": "Chưa có vị trí canh tác."}, status=status.HTTP_404_NOT_FOUND)
-        return Response(build_pest_alerts(location, request.query_params.get("crop", "")))
+        try:
+            return Response(build_pest_alerts(location, request.query_params.get("crop", "")))
+        except WeatherDataUnavailable as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 class FarmAdvisoryAPIView(WeatherAPIView):
@@ -70,7 +76,10 @@ class FarmAdvisoryAPIView(WeatherAPIView):
         location = self.get_location(request)
         if not location:
             return Response({"detail": "Chưa có vị trí canh tác."}, status=status.HTTP_404_NOT_FOUND)
-        return Response(build_farm_advisory(location, request.query_params.get("crop", "")))
+        try:
+            return Response(build_farm_advisory(location, request.query_params.get("crop", "")))
+        except WeatherDataUnavailable as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 class FarmPlotListCreateAPIView(generics.ListCreateAPIView):

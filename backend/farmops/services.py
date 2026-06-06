@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import json
-from datetime import date, timedelta
 from typing import Any
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 
 DISCLAIMER = "Thông tin chỉ mang tính tham khảo, không thay thế tư vấn của chuyên gia nông nghiệp."
+
+
+class WeatherDataUnavailable(RuntimeError):
+    pass
 
 
 def _geocode_with_nominatim(query: str) -> dict[str, Any] | None:
@@ -139,11 +142,11 @@ def _weather_summary(code: int) -> str:
     return "Thời tiết thay đổi"
 
 
-def _fetch_open_meteo(location: Any) -> dict[str, Any] | None:
+def _fetch_open_meteo(location: Any) -> dict[str, Any]:
     lat = getattr(location, "latitude", None)
     lon = getattr(location, "longitude", None)
     if lat is None or lon is None:
-        return None
+        raise WeatherDataUnavailable("Vị trí chưa có tọa độ. Hãy lấy GPS hiện tại hoặc nhập địa chỉ rõ hơn để geocode.")
 
     params = {
         "latitude": lat,
@@ -160,7 +163,7 @@ def _fetch_open_meteo(location: Any) -> dict[str, Any] | None:
         with urlopen(url, timeout=15) as response:
             payload = json.loads(response.read().decode("utf-8"))
     except Exception:
-        return None
+        raise WeatherDataUnavailable("Không lấy được dữ liệu thời tiết thật từ Open-Meteo. Vui lòng thử lại sau.")
 
     daily_payload = payload.get("daily") or {}
     dates = daily_payload.get("time") or []
@@ -189,7 +192,7 @@ def _fetch_open_meteo(location: Any) -> dict[str, Any] | None:
         )
 
     if not rows:
-        return None
+        raise WeatherDataUnavailable("Open-Meteo không trả về dự báo cho tọa độ này.")
 
     return {
         "source": "open_meteo",
@@ -199,49 +202,6 @@ def _fetch_open_meteo(location: Any) -> dict[str, Any] | None:
         "current": rows[0],
         "forecast_3d": rows[:3],
         "forecast_7d": rows,
-    }
-
-
-def _build_rule_weather(location: Any, crop: str = "") -> dict[str, Any]:
-    today = date.today()
-    province = getattr(location, "province", "") or getattr(location, "address_text", "") or "khu vực canh tác"
-    crop_name = crop or getattr(location, "crop_type", "") or "cây trồng"
-
-    base_temp = 31
-    province_norm = province.lower()
-    if "lâm đồng" in province_norm or "da lat" in province_norm or "đà lạt" in province_norm:
-        base_temp = 24
-    if "hà nội" in province_norm or "ha noi" in province_norm:
-        base_temp = 29
-
-    daily = []
-    for offset in range(7):
-        rain = 28 + ((offset * 13) % 55)
-        humidity = 66 + ((offset * 5) % 22)
-        temp = base_temp + ((offset % 3) - 1)
-        daily.append(
-            {
-                "date": (today + timedelta(days=offset)).isoformat(),
-                "temperature_c": temp,
-                "humidity_percent": humidity,
-                "rain_probability_percent": rain,
-                "wind_kmh": 8 + offset * 2,
-                "summary": "Có mưa rải rác" if rain >= 55 else "Nắng nhẹ, mây thay đổi",
-            }
-        )
-
-    return {
-        "source": "rule_estimate",
-        "is_mock": False,
-        "latitude": getattr(location, "latitude", None),
-        "longitude": getattr(location, "longitude", None),
-        "location_name": getattr(location, "name", "Vị trí canh tác"),
-        "crop": crop_name,
-        "current": daily[0],
-        "forecast_3d": daily[:3],
-        "forecast_7d": daily,
-        "warnings": ["Chưa có tọa độ hoặc API thời tiết tạm lỗi, đang dùng ước tính nội bộ."],
-        "message": "Dữ liệu thời tiết đang dùng ước tính nội bộ. Hãy lưu latitude/longitude để dùng Open-Meteo.",
     }
 
 
@@ -263,8 +223,6 @@ def _weather_warnings(current: dict[str, Any], daily: list[dict[str, Any]]) -> l
 def build_weather(location: Any, crop: str = "") -> dict[str, Any]:
     crop_name = crop or getattr(location, "crop_type", "") or "cây trồng"
     weather = _fetch_open_meteo(location)
-    if weather is None:
-        return _build_rule_weather(location, crop)
 
     daily = weather["forecast_7d"]
     current = weather["current"]
