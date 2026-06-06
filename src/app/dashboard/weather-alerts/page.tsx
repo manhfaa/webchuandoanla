@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { CloudRain, MapPin, RefreshCcw, ShieldAlert, Sprout, ThermometerSun, Wind } from "lucide-react";
+import {
+  CloudRain,
+  Compass,
+  LocateFixed,
+  MapPin,
+  RefreshCcw,
+  ShieldAlert,
+  Sprout,
+  ThermometerSun,
+  Wind,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,49 +32,53 @@ import { useSessionStore } from "@/store/session-store";
 const copy = {
   vi: {
     eyebrow: "Thời tiết & sâu bệnh",
-    title: "Cảnh báo theo vị trí canh tác",
-    intro: "Chọn tỉnh, huyện, xã và cây trồng để xem dự báo 3 ngày, 7 ngày, rủi ro sâu bệnh và gợi ý thao tác hôm nay.",
+    title: "Cảnh báo theo vị trí thực tế",
+    intro:
+      "Lấy vị trí hiện tại bằng GPS hoặc nhập địa chỉ thủ công. Khi có tọa độ, hệ thống dùng Open-Meteo để lấy dự báo thật 7 ngày và suy luận rủi ro sâu bệnh.",
     locationName: "Tên vị trí",
     province: "Tỉnh / thành phố",
     district: "Huyện / quận",
     ward: "Xã / phường",
-    address: "Ghi chú vị trí",
+    address: "Địa chỉ / ghi chú",
     crop: "Cây trồng",
     submit: "Lưu vị trí & xem cảnh báo",
     refresh: "Tải lại cảnh báo",
-    login: "Cần đăng nhập backend Django để lưu vị trí và lấy cảnh báo.",
+    useCurrent: "Lấy vị trí hiện tại",
     current: "Hiện tại",
     forecast3: "Dự báo 3 ngày",
     forecast7: "Dự báo 7 ngày",
     warnings: "Cảnh báo thời tiết",
     pest: "Cảnh báo sâu bệnh",
-    recommendations: "Có nên tưới, bón phân, phun thuốc hôm nay không",
+    recommendations: "Gợi ý thao tác hôm nay",
     disclaimer: "Lưu ý an toàn",
     noWarnings: "Chưa có cảnh báo thời tiết nghiêm trọng.",
     noAlerts: "Chưa có cảnh báo sâu bệnh nổi bật cho dữ liệu hiện tại.",
+    login: "Cần đăng nhập dashboard bằng tài khoản backend Django để lưu vị trí và lấy cảnh báo.",
   },
   en: {
     eyebrow: "Weather & pests",
-    title: "Field alerts by location",
-    intro: "Select province, district, ward and crop to view 3-day and 7-day forecasts, pest risk and today actions.",
+    title: "Field alerts by real location",
+    intro:
+      "Use browser GPS or enter a manual address. With coordinates, Agromind AI uses Open-Meteo for real 7-day forecasts and pest-risk rules.",
     locationName: "Location name",
     province: "Province",
     district: "District",
     ward: "Ward",
-    address: "Location note",
+    address: "Address / note",
     crop: "Crop",
     submit: "Save location & view alerts",
     refresh: "Refresh alerts",
-    login: "Backend Django login is required to save locations and load alerts.",
+    useCurrent: "Use current location",
     current: "Current",
     forecast3: "3-day forecast",
     forecast7: "7-day forecast",
     warnings: "Weather warnings",
     pest: "Pest alerts",
-    recommendations: "Water, fertilize or spray today?",
+    recommendations: "Today actions",
     disclaimer: "Safety note",
     noWarnings: "No severe weather warning in the current data.",
     noAlerts: "No major pest alert in the current data.",
+    login: "Backend Django login is required to save locations and load alerts.",
   },
 };
 
@@ -75,7 +89,27 @@ const defaultForm = {
   ward: "Hiệp An",
   address_text: "Khu canh tác chính",
   crop_type: "Cà chua",
+  latitude: null as number | null,
+  longitude: null as number | null,
 };
+
+function sourceLabel(source?: string) {
+  if (source === "open_meteo") return "Open-Meteo · dữ liệu thật";
+  if (source === "rule_estimate") return "Ước tính nội bộ · thiếu tọa độ/API lỗi";
+  return source || "Chưa có dữ liệu";
+}
+
+function riskLabel(risk?: string) {
+  if (risk === "high") return "Rủi ro cao";
+  if (risk === "medium") return "Cần theo dõi";
+  if (risk === "low") return "Rủi ro thấp";
+  return "Sẵn sàng";
+}
+
+function coordinateText(lat?: number | null, lon?: number | null) {
+  if (lat == null || lon == null) return "Chưa có tọa độ";
+  return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+}
 
 function WeatherMetric({ icon: Icon, label, value }: { icon: typeof ThermometerSun; label: string; value: string }) {
   return (
@@ -91,10 +125,10 @@ function WeatherMetric({ icon: Icon, label, value }: { icon: typeof ThermometerS
 
 function WeatherDayCard({ day }: { day: WeatherDay }) {
   return (
-    <div className="rounded-md border border-emerald-100/70 bg-white p-4 text-ink-900 shadow-sm">
+    <div className="rounded-md border border-emerald-100/70 bg-white p-4 text-[#0C1410] shadow-sm">
       <p className="text-body-sm font-semibold">{new Date(day.date).toLocaleDateString("vi-VN")}</p>
-      <p className="mt-1 text-caption text-ink-500">{day.summary}</p>
-      <div className="mt-3 grid grid-cols-2 gap-2 text-caption text-ink-700">
+      <p className="mt-1 text-caption text-[#2F3833]">{day.summary}</p>
+      <div className="mt-3 grid grid-cols-2 gap-2 text-caption text-[#2F3833]">
         <span>Nhiệt: {day.temperature_c}°C</span>
         <span>Ẩm: {day.humidity_percent}%</span>
         <span>Mưa: {day.rain_probability_percent}%</span>
@@ -115,18 +149,36 @@ export default function WeatherAlertsPage() {
   const [form, setForm] = useState(defaultForm);
   const [advisory, setAdvisory] = useState<FarmAdvisory | null>(null);
   const [loading, setLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [locationNote, setLocationNote] = useState<string | null>(null);
 
   const selectedLocation = useMemo(
     () => locations.find((location) => location.id === selectedLocationId) ?? locations[0] ?? null,
     [locations, selectedLocationId],
   );
 
+  function applyLocationToForm(location: FarmLocation) {
+    setForm({
+      name: location.name || defaultForm.name,
+      province: location.province || "",
+      district: location.district || "",
+      ward: location.ward || "",
+      address_text: location.address_text || "",
+      crop_type: location.crop_type || defaultForm.crop_type,
+      latitude: location.latitude ?? null,
+      longitude: location.longitude ?? null,
+    });
+  }
+
   async function loadLocations() {
     if (!accessToken) return;
     const data = await fetchFarmLocations(accessToken);
     setLocations(data);
-    if (data[0]) setSelectedLocationId(data[0].id);
+    if (data[0]) {
+      setSelectedLocationId(data[0].id);
+      applyLocationToForm(data[0]);
+    }
   }
 
   async function loadAdvisory(location: FarmLocation) {
@@ -141,6 +193,41 @@ export default function WeatherAlertsPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleUseCurrentLocation() {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setError("Trình duyệt không hỗ trợ lấy vị trí hiện tại.");
+      return;
+    }
+
+    setLocating(true);
+    setError(null);
+    setLocationNote(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const latitude = Number(position.coords.latitude.toFixed(6));
+        const longitude = Number(position.coords.longitude.toFixed(6));
+        setForm((current) => ({
+          ...current,
+          name: current.name || "Vị trí hiện tại",
+          address_text: current.address_text || "Tọa độ GPS hiện tại",
+          latitude,
+          longitude,
+        }));
+        setLocationNote("Đã lấy tọa độ hiện tại. Bấm lưu để dùng Open-Meteo theo vị trí này.");
+        setLocating(false);
+      },
+      (geoError) => {
+        const message =
+          geoError.code === geoError.PERMISSION_DENIED
+            ? "Bạn cần cho phép trình duyệt truy cập vị trí."
+            : "Không lấy được vị trí hiện tại. Bạn có thể nhập địa chỉ thủ công.";
+        setError(message);
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 },
+    );
   }
 
   useEffect(() => {
@@ -164,11 +251,22 @@ export default function WeatherAlertsPage() {
 
     setLoading(true);
     setError(null);
+    setLocationNote(null);
     try {
-      const location = await createFarmLocation(accessToken, form);
+      const location = await createFarmLocation(accessToken, {
+        ...form,
+        latitude: form.latitude ?? undefined,
+        longitude: form.longitude ?? undefined,
+      });
       setLocations((current) => [location, ...current.filter((item) => item.id !== location.id)]);
       setSelectedLocationId(location.id);
+      applyLocationToForm(location);
       await loadAdvisory(location);
+      if (location.latitude != null && location.longitude != null) {
+        setLocationNote("Đã lưu tọa độ. Dự báo sẽ dùng dữ liệu thật từ Open-Meteo.");
+      } else {
+        setLocationNote("Chưa xác định được tọa độ từ địa chỉ, hệ thống sẽ dùng ước tính nội bộ.");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không lưu được vị trí.");
     } finally {
@@ -177,6 +275,7 @@ export default function WeatherAlertsPage() {
   }
 
   const current = advisory?.weather.current;
+  const weatherSource = advisory?.weather.source;
 
   return (
     <div className="space-y-6">
@@ -188,22 +287,47 @@ export default function WeatherAlertsPage() {
             <p className="mt-3 max-w-3xl text-body-sm leading-relaxed text-muted-on-dark">{text.intro}</p>
           </div>
           <Badge variant={advisory?.pest_alerts.risk_level === "high" ? "warning" : "success"}>
-            {advisory?.pest_alerts.risk_level ?? "Sẵn sàng"}
+            {riskLabel(advisory?.pest_alerts.risk_level)}
           </Badge>
         </div>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
+      <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <Card variant="dark" padding="lg" className="border-border-dark">
+          <div className="mb-5 rounded-md border border-border-dark bg-app-surface-2 p-4">
+            <div className="flex items-start gap-3">
+              <div className="rounded-md bg-leaf-500/15 p-2 text-leaf-300">
+                <Compass className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold text-on-dark-strong">Nguồn vị trí</p>
+                <p className="mt-1 text-body-sm leading-relaxed text-muted-on-dark">
+                  GPS sẽ chính xác nhất. Nếu nhập thủ công, backend sẽ geocode địa chỉ bằng Open-Meteo trước khi lấy thời tiết.
+                </p>
+                <p className="mt-2 text-caption text-leaf-200">
+                  Tọa độ form: {coordinateText(form.latitude, form.longitude)}
+                </p>
+              </div>
+            </div>
+          </div>
+
           <form className="space-y-4 font-sans" onSubmit={handleSubmit}>
+            <div className="flex flex-wrap gap-3">
+              <Button type="button" variant="secondary" onClick={handleUseCurrentLocation} disabled={locating || loading}>
+                <LocateFixed strokeWidth={1.75} className="h-4 w-4" />
+                {locating ? "Đang lấy vị trí..." : text.useCurrent}
+              </Button>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
               <Input label={text.locationName} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               <Input label={text.crop} value={form.crop_type} onChange={(e) => setForm({ ...form, crop_type: e.target.value })} />
-              <Input label={text.province} value={form.province} onChange={(e) => setForm({ ...form, province: e.target.value })} />
-              <Input label={text.district} value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })} />
-              <Input label={text.ward} value={form.ward} onChange={(e) => setForm({ ...form, ward: e.target.value })} />
-              <Input label={text.address} value={form.address_text} onChange={(e) => setForm({ ...form, address_text: e.target.value })} />
+              <Input label={text.province} value={form.province} onChange={(e) => setForm({ ...form, province: e.target.value, latitude: null, longitude: null })} />
+              <Input label={text.district} value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value, latitude: null, longitude: null })} />
+              <Input label={text.ward} value={form.ward} onChange={(e) => setForm({ ...form, ward: e.target.value, latitude: null, longitude: null })} />
+              <Input label={text.address} value={form.address_text} onChange={(e) => setForm({ ...form, address_text: e.target.value, latitude: null, longitude: null })} />
             </div>
+
             <div className="flex flex-wrap gap-3">
               <Button type="submit" loading={loading}>
                 <MapPin strokeWidth={1.75} className="h-4 w-4" />
@@ -228,12 +352,16 @@ export default function WeatherAlertsPage() {
                 <button
                   key={location.id}
                   type="button"
-                  onClick={() => setSelectedLocationId(location.id)}
+                  onClick={() => {
+                    setSelectedLocationId(location.id);
+                    applyLocationToForm(location);
+                  }}
                   className={`rounded-full border px-3 py-1.5 text-body-sm transition ${
                     selectedLocationId === location.id
                       ? "border-[#2FA664] bg-[#DCF5E4] text-[#0F4D2C]"
                       : "border-[#B8E9C8] bg-[#F7F9F8] text-[#2F3833] hover:bg-[#F0FAF4]"
                   }`}
+                  title={coordinateText(location.latitude, location.longitude)}
                 >
                   {location.name} · {location.crop_type || "Cây trồng"}
                 </button>
@@ -241,13 +369,12 @@ export default function WeatherAlertsPage() {
             </div>
           ) : null}
 
+          {locationNote ? <p className="mt-4 text-body-sm text-leaf-200">{locationNote}</p> : null}
+          {error ? <p className="mt-4 text-body-sm text-berry-500">{error}</p> : null}
+
           {!accessToken ? (
             <div className="mt-4 rounded-md border border-berry-500/30 bg-berry-500/10 p-4">
-              <p className="text-body-sm text-berry-300">
-                {language === "en"
-                  ? "Sign in to the dashboard with your Django backend account to save locations and load alerts. Django admin login does not create a dashboard JWT session."
-                  : "Hãy đăng nhập dashboard bằng tài khoản backend Django để lưu vị trí và lấy cảnh báo. Đăng nhập Django admin riêng không tạo phiên JWT cho dashboard."}
-              </p>
+              <p className="text-body-sm text-berry-300">{text.login}</p>
               <Link
                 href={loginUrl}
                 className="mt-3 inline-flex h-10 items-center justify-center rounded-md bg-leaf-500 px-5 text-body font-medium text-white transition hover:bg-leaf-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500/40"
@@ -256,14 +383,29 @@ export default function WeatherAlertsPage() {
               </Link>
             </div>
           ) : null}
-          {error ? <p className="mt-4 text-body-sm text-berry-500">{error}</p> : null}
         </Card>
 
         <Card variant="dark" padding="lg" className="border-border-dark bg-app-surface text-on-dark">
-          <p className="text-overline text-muted-on-dark">{text.current}</p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-overline text-muted-on-dark">{text.current}</p>
+              <p className="mt-2 text-caption text-leaf-200">{sourceLabel(weatherSource)}</p>
+              {selectedLocation ? (
+                <p className="mt-1 text-caption text-muted-on-dark">
+                  {selectedLocation.name} · {coordinateText(selectedLocation.latitude, selectedLocation.longitude)}
+                </p>
+              ) : null}
+            </div>
+            {weatherSource === "rule_estimate" ? (
+              <Badge variant="warning">Cần tọa độ</Badge>
+            ) : weatherSource === "open_meteo" ? (
+              <Badge variant="success">Dữ liệu thật</Badge>
+            ) : null}
+          </div>
+
           {current ? (
             <>
-              <h3 className="mt-2 text-h2 text-on-dark-strong">{current.summary}</h3>
+              <h3 className="mt-4 text-h2 text-on-dark-strong">{current.summary}</h3>
               <div className="mt-5 grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
                 <WeatherMetric icon={ThermometerSun} label="Nhiệt độ" value={`${current.temperature_c}°C`} />
                 <WeatherMetric icon={CloudRain} label="Mưa" value={`${current.rain_probability_percent}%`} />
@@ -275,7 +417,9 @@ export default function WeatherAlertsPage() {
               </p>
             </>
           ) : (
-            <p className="mt-3 text-body-sm text-muted-on-dark">Chưa có dữ liệu. Hãy lưu vị trí canh tác trước.</p>
+            <p className="mt-3 text-body-sm text-muted-on-dark">
+              Chưa có dữ liệu. Hãy lấy vị trí hiện tại hoặc nhập địa chỉ rồi bấm lưu.
+            </p>
           )}
         </Card>
       </div>

@@ -9,6 +9,7 @@ export type FarmLocation = {
   longitude?: number | null;
   crop_type: string;
   is_default: boolean;
+  metadata?: Record<string, unknown>;
 };
 
 export type FarmPlot = {
@@ -66,6 +67,10 @@ export type FarmAdvisory = {
   weather: {
     source: string;
     is_mock: boolean;
+    latitude?: number | null;
+    longitude?: number | null;
+    location_name?: string;
+    crop?: string;
     message: string;
     current: WeatherDay;
     forecast_3d: WeatherDay[];

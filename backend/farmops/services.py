@@ -4,10 +4,115 @@ import json
 from datetime import date, timedelta
 from typing import Any
 from urllib.parse import urlencode
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 
 DISCLAIMER = "Thông tin chỉ mang tính tham khảo, không thay thế tư vấn của chuyên gia nông nghiệp."
+
+
+def _geocode_with_nominatim(query: str) -> dict[str, Any] | None:
+    params = {
+        "q": query,
+        "format": "json",
+        "limit": 1,
+        "addressdetails": 1,
+        "accept-language": "vi",
+    }
+    url = f"https://nominatim.openstreetmap.org/search?{urlencode(params)}"
+    request = Request(
+        url,
+        headers={
+            "User-Agent": "AgromindAI/1.0 (https://agromindai.vercel.app)",
+        },
+    )
+
+    try:
+        with urlopen(request, timeout=15) as response:
+            results = json.loads(response.read().decode("utf-8"))
+    except Exception:
+        return None
+
+    if not results:
+        return None
+
+    match = results[0]
+    lat = match.get("lat")
+    lon = match.get("lon")
+    if lat is None or lon is None:
+        return None
+
+    return {
+        "latitude": float(lat),
+        "longitude": float(lon),
+        "label": match.get("display_name") or match.get("name") or query,
+        "source": "nominatim_openstreetmap",
+        "raw": match,
+    }
+
+
+def _geocode_with_open_meteo(query: str) -> dict[str, Any] | None:
+    first_part = query.split(",", 1)[0].strip() or query
+    query = " ".join((query or "").split())
+    if not query:
+        return None
+
+    params = {
+        "name": first_part,
+        "count": 1,
+        "language": "vi",
+        "format": "json",
+    }
+    url = f"https://geocoding-api.open-meteo.com/v1/search?{urlencode(params)}"
+
+    try:
+        with urlopen(url, timeout=12) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except Exception:
+        return None
+
+    results = payload.get("results") or []
+    if not results:
+        return None
+
+    match = results[0]
+    lat = match.get("latitude")
+    lon = match.get("longitude")
+    if lat is None or lon is None:
+        return None
+
+    return {
+        "latitude": float(lat),
+        "longitude": float(lon),
+        "label": ", ".join(
+            str(part)
+            for part in [match.get("name"), match.get("admin1"), match.get("country")]
+            if part
+        ),
+        "source": "open_meteo_geocoding",
+        "raw": match,
+    }
+
+
+def geocode_location_query(query: str) -> dict[str, Any] | None:
+    query = " ".join((query or "").split())
+    if not query:
+        return None
+    return _geocode_with_nominatim(query) or _geocode_with_open_meteo(query)
+
+
+def geocode_location_fields(*, province: str = "", district: str = "", ward: str = "", address_text: str = "") -> dict[str, Any] | None:
+    query_sets = [
+        [address_text, ward, district, province, "Việt Nam"],
+        [ward, district, province, "Việt Nam"],
+        [district, province, "Việt Nam"],
+        [province, "Việt Nam"],
+    ]
+    for parts in query_sets:
+        query = ", ".join(part.strip() for part in parts if part and part.strip())
+        result = geocode_location_query(query)
+        if result:
+            return result
+    return None
 
 
 def _risk_from_conditions(crop: str, humidity: int, rain_probability: int, temperature: int) -> str:
@@ -89,6 +194,8 @@ def _fetch_open_meteo(location: Any) -> dict[str, Any] | None:
     return {
         "source": "open_meteo",
         "is_mock": False,
+        "latitude": lat,
+        "longitude": lon,
         "current": rows[0],
         "forecast_3d": rows[:3],
         "forecast_7d": rows,
@@ -126,6 +233,8 @@ def _build_rule_weather(location: Any, crop: str = "") -> dict[str, Any]:
     return {
         "source": "rule_estimate",
         "is_mock": False,
+        "latitude": getattr(location, "latitude", None),
+        "longitude": getattr(location, "longitude", None),
         "location_name": getattr(location, "name", "Vị trí canh tác"),
         "crop": crop_name,
         "current": daily[0],
@@ -164,7 +273,7 @@ def build_weather(location: Any, crop: str = "") -> dict[str, Any]:
         "location_name": getattr(location, "name", "Vị trí canh tác"),
         "crop": crop_name,
         "warnings": _weather_warnings(current, daily),
-        "message": "Dữ liệu thời tiết lấy từ Open-Meteo theo tọa độ vị trí canh tác.",
+        "message": "Dữ liệu thời tiết thật lấy từ Open-Meteo theo tọa độ vị trí canh tác.",
     }
 
 

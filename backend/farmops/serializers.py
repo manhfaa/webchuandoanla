@@ -11,6 +11,7 @@ from .models import (
     NutritionSymptom,
     TraceabilityRecord,
 )
+from .services import geocode_location_fields
 
 
 class FarmLocationSerializer(serializers.ModelSerializer):
@@ -18,6 +19,30 @@ class FarmLocationSerializer(serializers.ModelSerializer):
         model = FarmLocation
         fields = "__all__"
         read_only_fields = ("id", "user", "created_at", "updated_at")
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        lat = attrs.get("latitude")
+        lon = attrs.get("longitude")
+        if lat is not None and lon is not None:
+            return attrs
+
+        geocoded = geocode_location_fields(
+            province=attrs.get("province", ""),
+            district=attrs.get("district", ""),
+            ward=attrs.get("ward", ""),
+            address_text=attrs.get("address_text", ""),
+        )
+        if geocoded:
+            attrs["latitude"] = geocoded["latitude"]
+            attrs["longitude"] = geocoded["longitude"]
+            metadata = dict(attrs.get("metadata") or {})
+            metadata["geocoding"] = {
+                "source": geocoded["source"],
+                "label": geocoded["label"],
+            }
+            attrs["metadata"] = metadata
+        return attrs
 
 
 class CultivationLogSerializer(serializers.ModelSerializer):
