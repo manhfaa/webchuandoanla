@@ -17,10 +17,10 @@ def main() -> None:
     if not token:
         raise SystemExit("Set HF_TOKEN first.")
 
-    if not MODEL_FILE.exists():
-        raise SystemExit(f"Missing {MODEL_FILE}. Copy best_model.pth into hf_space first.")
     if not YOLO_MODEL_FILE.exists():
         raise SystemExit(f"Missing {YOLO_MODEL_FILE}. Copy moduleyolola/best.pt into hf_space/yolo_leaf.pt first.")
+    if not MODEL_FILE.exists():
+        print(f"Warning: missing {MODEL_FILE}. This is OK only when the target Space already has best_model.pth.")
 
     api = HfApi(token=token)
     username = api.whoami()["name"]
