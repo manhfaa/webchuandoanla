@@ -16,6 +16,7 @@ export function TeamSection() {
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
         {teamMembers.map((member, index) => {
           const isPortraitCrop = ["pham-tuan-minh", "pham-duc-manh", "le-hoang-son"].includes(member.id);
+          const isFaceCrop = member.id === "nguyen-thi-thu-trang";
 
           return (
           <Reveal key={member.id} delay={index * 0.06}>
@@ -29,6 +30,8 @@ export function TeamSection() {
                   className={
                     isPortraitCrop
                       ? "mx-auto h-40 w-full max-w-[140px] origin-top translate-y-1 scale-[2.15] rounded-[22px] object-contain object-top"
+                      : isFaceCrop
+                        ? "mx-auto h-40 w-full max-w-[160px] translate-y-2 scale-[1.18] rounded-[22px] object-contain object-center"
                       : "mx-auto h-40 w-full max-w-[140px] rounded-[22px] object-contain object-bottom"
                   }
                 />

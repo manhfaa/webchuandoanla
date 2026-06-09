@@ -35,7 +35,7 @@ export const teamMembers: TeamMember[] = [
     description: "Tập trung khảo sát vấn đề của người dùng Việt Nam, xác định nhu cầu thật và nhóm đối tượng sử dụng chính.",
     responsibilities: ["Khảo sát nhu cầu", "Phân tích người dùng", "Xác định đối tượng sử dụng"],
     presentationFocus: ["Vấn đề người dùng", "Nhu cầu thật", "Đối tượng sử dụng"],
-    avatar: "/avatars/member-5.svg",
+    avatar: "/avatars/nguyen-thi-thu-trang.png",
   },
   {
     id: "dinh-my-uyen",
