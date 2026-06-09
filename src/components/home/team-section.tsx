@@ -23,22 +23,22 @@ export function TeamSection() {
           return (
           <Reveal key={member.id} delay={index * 0.06}>
             <Card className="h-full rounded-[30px] border-white/70 bg-white/90 p-5 transition duration-300 hover:-translate-y-1 hover:shadow-float">
-              <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-emerald-50 to-lime-50 p-4">
+              <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-emerald-50 to-lime-50 p-3">
                 <Image
                   src={member.avatar}
                   alt={member.name}
-                  width={160}
-                  height={160}
+                  width={240}
+                  height={300}
                   className={
                     isPortraitCrop
-                      ? "mx-auto h-40 w-full max-w-[140px] origin-top translate-y-1 scale-[2.15] rounded-[22px] object-contain object-top"
+                      ? "mx-auto h-56 w-full max-w-[180px] translate-y-6 scale-[1.42] rounded-[22px] object-contain object-top"
                       : isCertificateCrop
-                        ? "mx-auto h-40 w-full max-w-[150px] origin-top -translate-y-1 scale-[1.38] rounded-[22px] object-contain object-top"
+                        ? "mx-auto h-56 w-full max-w-[178px] translate-y-4 scale-[1.18] rounded-[22px] object-contain object-top"
                       : isFaceCrop
-                        ? "mx-auto h-40 w-full max-w-[160px] translate-y-2 scale-[1.18] rounded-[22px] object-contain object-center"
+                        ? "mx-auto h-56 w-full max-w-[210px] translate-y-10 scale-[1.1] rounded-[22px] object-contain object-center"
                         : isWideCrop
-                          ? "mx-auto h-40 w-full max-w-[170px] translate-y-2 scale-[1.28] rounded-[22px] object-contain object-center"
-                      : "mx-auto h-40 w-full max-w-[140px] rounded-[22px] object-contain object-bottom"
+                          ? "mx-auto h-56 w-full max-w-[220px] translate-y-8 scale-[1.12] rounded-[22px] object-contain object-center"
+                      : "mx-auto h-56 w-full max-w-[180px] rounded-[22px] object-contain object-bottom"
                   }
                 />
               </div>
