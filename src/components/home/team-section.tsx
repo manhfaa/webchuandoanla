@@ -33,11 +33,11 @@ export function TeamSection() {
                       isPortraitCrop
                         ? "mx-auto h-40 w-full max-w-[140px] origin-top translate-y-1 scale-[2.15] rounded-[22px] object-contain object-top"
                         : isCertificateCrop
-                          ? "mx-auto h-40 w-full max-w-[150px] origin-top -translate-y-1 scale-[1.38] rounded-[22px] object-contain object-top"
+                          ? "mx-auto h-40 w-full max-w-[155px] origin-top translate-y-1 scale-[1.58] rounded-[22px] object-contain object-top"
                           : isFaceCrop
                             ? "mx-auto h-40 w-full max-w-[160px] translate-y-2 scale-[1.18] rounded-[22px] object-contain object-center"
                             : isWideCrop
-                              ? "mx-auto h-40 w-full max-w-[170px] translate-y-2 scale-[1.28] rounded-[22px] object-contain object-center"
+                              ? "mx-auto h-40 w-full max-w-[185px] translate-y-4 scale-[1.55] rounded-[22px] object-contain object-center"
                               : "mx-auto h-40 w-full max-w-[140px] rounded-[22px] object-contain object-bottom"
                     }
                   />
