@@ -48,6 +48,10 @@ export interface SupportedPlant {
   latinLabel: string;
   insight: string;
   accent: string;
+  image: string;
+  imageAlt: string;
+  imageCredit: string;
+  imageSourceUrl: string;
 }
 
 export interface WorkflowStep {
