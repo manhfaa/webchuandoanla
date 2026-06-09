@@ -17,7 +17,7 @@ export const teamMembers: TeamMember[] = [
     description: "Xây dựng giá trị công nghệ của Agromind AI thông qua mô hình nhận diện bệnh lá và luồng xử lý ảnh bằng CNN.",
     responsibilities: ["AI nhận diện bệnh lá", "Chuyển đổi số", "Giá trị công nghệ"],
     presentationFocus: ["Giải thích AI/CNN", "Luồng xử lý ảnh", "Giá trị công nghệ"],
-    avatar: "/avatars/member-1.svg",
+    avatar: "/avatars/pham-duc-manh.png",
   },
   {
     id: "le-hoang-son",

@@ -15,7 +15,7 @@ export function TeamSection() {
     >
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
         {teamMembers.map((member, index) => {
-          const isPortraitCrop = member.id === "pham-tuan-minh";
+          const isPortraitCrop = ["pham-tuan-minh", "pham-duc-manh"].includes(member.id);
 
           return (
           <Reveal key={member.id} delay={index * 0.06}>
