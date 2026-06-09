@@ -26,7 +26,7 @@ export const teamMembers: TeamMember[] = [
     description: "Phụ trách website, backend và frontend, đảm bảo sản phẩm vận hành mạch lạc từ giao diện đến dữ liệu.",
     responsibilities: ["Website", "Backend", "Frontend"],
     presentationFocus: ["Demo website", "Giải thích vận hành", "Hướng dẫn thao tác sử dụng"],
-    avatar: "/avatars/member-3.svg",
+    avatar: "/avatars/le-hoang-son.png",
   },
   {
     id: "nguyen-thi-thu-trang",
