@@ -10,8 +10,8 @@ export function TeamSection() {
     <SectionShell
       id="thanh-vien"
       eyebrow="Đội ngũ dự án"
-      title="Nhóm xây dựng Agromind AI kết hợp tư duy AI, sản phẩm và hiểu biết nông nghiệp."
-      description="Các card thành viên được trình bày như một đội ngũ thật đang chuẩn bị thương mại hóa giải pháp, giúp tăng niềm tin thương hiệu ngay từ landing page."
+      title="Nhóm xây dựng Agromind AI có phân công rõ ràng từ khảo sát, AI, website đến kiểm thử và truyền thông."
+      description="Mỗi thành viên phụ trách một mảng cụ thể để sản phẩm vừa có giá trị công nghệ, vừa bám sát nhu cầu thật của người dùng Việt Nam."
     >
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
         {teamMembers.map((member, index) => (
@@ -36,6 +36,29 @@ export function TeamSection() {
                 <p className="mt-3 text-sm leading-7 text-slate-600">
                   {member.description}
                 </p>
+                <div className="mt-5">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+                    Nhiệm vụ
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {member.responsibilities.map((item) => (
+                      <span
+                        key={item}
+                        className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-medium text-brand-800"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-5 rounded-[20px] bg-slate-50 p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+                    Nội dung xuất hiện
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                    {member.presentationFocus.join(", ")}
+                  </p>
+                </div>
               </div>
             </Card>
           </Reveal>

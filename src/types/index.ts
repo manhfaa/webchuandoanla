@@ -39,6 +39,8 @@ export interface TeamMember {
   name: string;
   role: string;
   description: string;
+  responsibilities: string[];
+  presentationFocus: string[];
   avatar: string;
 }
 
