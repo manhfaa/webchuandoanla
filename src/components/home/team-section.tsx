@@ -14,7 +14,10 @@ export function TeamSection() {
       description="Mỗi thành viên phụ trách một mảng cụ thể để sản phẩm vừa có giá trị công nghệ, vừa bám sát nhu cầu thật của người dùng Việt Nam."
     >
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
-        {teamMembers.map((member, index) => (
+        {teamMembers.map((member, index) => {
+          const isPortraitCrop = member.id === "pham-tuan-minh";
+
+          return (
           <Reveal key={member.id} delay={index * 0.06}>
             <Card className="h-full rounded-[30px] border-white/70 bg-white/90 p-5 transition duration-300 hover:-translate-y-1 hover:shadow-float">
               <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-emerald-50 to-lime-50 p-4">
@@ -23,7 +26,11 @@ export function TeamSection() {
                   alt={member.name}
                   width={160}
                   height={160}
-                  className="mx-auto h-40 w-full max-w-[140px] rounded-[22px] object-contain object-bottom"
+                  className={
+                    isPortraitCrop
+                      ? "mx-auto h-40 w-full max-w-[140px] origin-top translate-y-1 scale-[2.15] rounded-[22px] object-contain object-top"
+                      : "mx-auto h-40 w-full max-w-[140px] rounded-[22px] object-contain object-bottom"
+                  }
                 />
               </div>
               <div className="mt-5">
@@ -62,7 +69,8 @@ export function TeamSection() {
               </div>
             </Card>
           </Reveal>
-        ))}
+          );
+        })}
       </div>
     </SectionShell>
   );
