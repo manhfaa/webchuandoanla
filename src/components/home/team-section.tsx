@@ -17,6 +17,7 @@ export function TeamSection() {
         {teamMembers.map((member, index) => {
           const isPortraitCrop = ["pham-tuan-minh", "pham-duc-manh", "le-hoang-son"].includes(member.id);
           const isFaceCrop = member.id === "nguyen-thi-thu-trang";
+          const isWideCrop = member.id === "dinh-my-uyen";
 
           return (
           <Reveal key={member.id} delay={index * 0.06}>
@@ -32,6 +33,8 @@ export function TeamSection() {
                       ? "mx-auto h-40 w-full max-w-[140px] origin-top translate-y-1 scale-[2.15] rounded-[22px] object-contain object-top"
                       : isFaceCrop
                         ? "mx-auto h-40 w-full max-w-[160px] translate-y-2 scale-[1.18] rounded-[22px] object-contain object-center"
+                        : isWideCrop
+                          ? "mx-auto h-40 w-full max-w-[170px] translate-y-2 scale-[1.28] rounded-[22px] object-contain object-center"
                       : "mx-auto h-40 w-full max-w-[140px] rounded-[22px] object-contain object-bottom"
                   }
                 />

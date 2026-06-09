@@ -44,6 +44,6 @@ export const teamMembers: TeamMember[] = [
     description: "Kiểm thử sản phẩm từ góc nhìn người dùng, tập trung vào trải nghiệm, độ dễ dùng và các lỗi cần hoàn thiện.",
     responsibilities: ["Kiểm thử", "Trải nghiệm người dùng", "Đánh giá tính dễ dùng"],
     presentationFocus: ["Kiểm thử", "Trải nghiệm người dùng", "Tính dễ dùng"],
-    avatar: "/avatars/member-4.svg",
+    avatar: "/avatars/dinh-my-uyen.png",
   },
 ];
