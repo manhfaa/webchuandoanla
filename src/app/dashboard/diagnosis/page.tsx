@@ -46,6 +46,20 @@ function isHealthyCnnDisease(cnn: DjangoCnnResponse) {
   return disease.includes("healthy") || disease.includes("khỏe") || disease.includes("khoe");
 }
 
+function isBackendLeafReject(error: unknown) {
+  if (!(error instanceof Error)) return false;
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("yolo") ||
+    message.includes("không phát hiện") ||
+    message.includes("khong phat hien") ||
+    message.includes("không phải ảnh lá") ||
+    message.includes("khong phai anh la") ||
+    message.includes("chụp rõ") ||
+    message.includes("chup ro")
+  );
+}
+
 function buildGeneratedRecord({
   previewUrl,
   detection,
@@ -106,6 +120,8 @@ function applyCnnResult(record: DiagnosisRecord, cnn: DjangoCnnResponse): Diagno
 
   return {
     ...record,
+    leafConfidence: cnn.yolo_payload?.confidence ?? record.leafConfidence,
+    leafCheckNote: cnn.yolo_payload?.reason ?? record.leafCheckNote,
     plant: cnn.plant_name || record.plant,
     disease: cnn.disease_name || cnn.class_name || record.disease,
     confidence: cnn.confidence,
@@ -451,7 +467,22 @@ export default function DashboardDiagnosisPage() {
             accessToken,
           });
           generatedRecord = applyCnnResult(generatedRecord, cnn);
-        } catch {
+        } catch (error) {
+          if (isBackendLeafReject(error)) {
+            setLeafAnalysis({
+              isLeaf: false,
+              confidence: 0.12,
+              greenRatio: detection.greenRatio,
+              plantLikeRatio: detection.plantLikeRatio,
+              averageSaturation: detection.averageSaturation,
+              reason:
+                error instanceof Error
+                  ? error.message
+                  : "YOLO không phát hiện được lá cây. Hãy chụp rõ hơn hoặc kiểm tra lại đây có phải ảnh lá hay không.",
+            });
+            setStatus("invalid-image");
+            return;
+          }
           // Keep the browser-side leaf validation result if backend CNN is unavailable.
         }
       }

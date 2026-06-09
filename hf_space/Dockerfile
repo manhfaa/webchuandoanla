@@ -16,6 +16,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 COPY app.py .
 COPY best_model.pth .
+COPY yolo_leaf.pt .
 
 EXPOSE 7860
 

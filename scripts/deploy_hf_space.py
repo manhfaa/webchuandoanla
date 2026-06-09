@@ -9,6 +9,7 @@ from huggingface_hub import HfApi, create_repo, upload_folder
 ROOT = Path(__file__).resolve().parent.parent
 SPACE_DIR = ROOT / "hf_space"
 MODEL_FILE = SPACE_DIR / "best_model.pth"
+YOLO_MODEL_FILE = SPACE_DIR / "yolo_leaf.pt"
 
 
 def main() -> None:
@@ -18,6 +19,8 @@ def main() -> None:
 
     if not MODEL_FILE.exists():
         raise SystemExit(f"Missing {MODEL_FILE}. Copy best_model.pth into hf_space first.")
+    if not YOLO_MODEL_FILE.exists():
+        raise SystemExit(f"Missing {YOLO_MODEL_FILE}. Copy moduleyolola/best.pt into hf_space/yolo_leaf.pt first.")
 
     api = HfApi(token=token)
     username = api.whoami()["name"]
@@ -36,7 +39,7 @@ def main() -> None:
         repo_type="space",
         token=token,
         folder_path=str(SPACE_DIR),
-        commit_message="Deploy Agromind CNN FastAPI Space",
+        commit_message="Deploy Agromind CNN and YOLO leaf gate Space",
     )
 
     space_name = repo_id.split("/", 1)[1]

@@ -26,6 +26,16 @@ export type DjangoCnnResponse = DjangoCnnPrediction & {
   model_accuracy?: number;
   image_size: number;
   action_plan?: ActionPlan;
+  yolo_payload?: {
+    is_leaf?: boolean;
+    confidence?: number;
+    reason?: string;
+    bbox_xyxy?: number[];
+    crop_box_xyxy?: number[];
+    cropped_width?: number;
+    cropped_height?: number;
+    detections?: Array<Record<string, unknown>>;
+  };
 };
 
 type DjangoMeResponse = {
