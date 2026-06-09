@@ -23,7 +23,7 @@ export function TeamSection() {
                   alt={member.name}
                   width={160}
                   height={160}
-                  className="mx-auto aspect-square w-full max-w-[140px] rounded-[22px]"
+                  className="mx-auto h-40 w-full max-w-[140px] rounded-[22px] object-contain object-bottom"
                 />
               </div>
               <div className="mt-5">

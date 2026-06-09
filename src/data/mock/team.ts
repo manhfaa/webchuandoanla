@@ -8,7 +8,7 @@ export const teamMembers: TeamMember[] = [
     description: "Phụ trách truyền thông, kiểm tra độ tin cậy thông tin và theo dõi tác động sau khi sản phẩm được triển khai.",
     responsibilities: ["Media", "Kiểm tra thông tin", "Giám sát sau triển khai"],
     presentationFocus: ["Dẫn chuyện", "Kiểm chứng thông tin", "Truyền thông", "Tác động cộng đồng"],
-    avatar: "/avatars/member-2.svg",
+    avatar: "/avatars/pham-tuan-minh.png",
   },
   {
     id: "pham-duc-manh",
