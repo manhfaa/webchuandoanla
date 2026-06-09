@@ -33,7 +33,7 @@ export function TeamSection() {
                       isPortraitCrop
                         ? "mx-auto h-40 w-full max-w-[140px] origin-top translate-y-1 scale-[2.15] rounded-[22px] object-contain object-top"
                         : isCertificateCrop
-                          ? "mx-auto h-40 w-full max-w-[180px] origin-top translate-y-1 scale-[2.05] rounded-[22px] object-contain object-top"
+                          ? "mx-auto h-40 w-full max-w-[180px] origin-top -translate-y-4 scale-[2.05] rounded-[22px] object-contain object-top"
                           : isFaceCrop
                             ? "mx-auto h-40 w-full max-w-[160px] translate-y-2 scale-[1.18] rounded-[22px] object-contain object-center"
                             : isWideCrop
