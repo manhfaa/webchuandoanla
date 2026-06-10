@@ -22,8 +22,8 @@ function buildAssistantAnswer(query: string, latestDiagnosis?: DiagnosisRecord |
       "Để có ảnh lá dễ phân tích hơn, bạn nên chụp cận cảnh vùng có dấu hiệu bất thường, giữ khung hình đủ sáng và tránh rung.",
       "Hãy chụp thêm ít nhất 2 đến 3 góc khác nhau: toàn lá, mặt trước, mặt sau và cả phần cuống hoặc mép lá nếu có tổn thương.",
       latestDiagnosis
-        ? "Vì ảnh gần nhất đã được YOLO xác thực là lá hợp lệ, bạn có thể dùng ảnh đó làm mốc và chụp bổ sung ở cùng điều kiện ánh sáng để tiện so sánh."
-        : "Khi chưa có ca gần nhất, bạn chỉ cần ưu tiên ảnh rõ nét và có nền ít nhiễu để lần phân tích sau ổn định hơn.",
+        ? "Vì ca được chọn đã được YOLO xác thực là lá hợp lệ, bạn có thể dùng ảnh đó làm mốc và chụp bổ sung ở cùng điều kiện ánh sáng để tiện so sánh."
+        : "Khi chưa có ca chẩn đoán được chọn, bạn chỉ cần ưu tiên ảnh rõ nét và có nền ít nhiễu để lần phân tích sau ổn định hơn.",
     ].join("\n\n");
   }
 
@@ -31,7 +31,7 @@ function buildAssistantAnswer(query: string, latestDiagnosis?: DiagnosisRecord |
     return [
       "Hiện tại hệ thống chat này không tự suy diễn bệnh như một mô hình phân loại. Nó chỉ đóng vai trò trợ lý AI trò chuyện thông thường.",
       hasClassification(latestDiagnosis)
-        ? `Nếu ca gần nhất đã có thêm dữ liệu phân loại cho ${latestDiagnosis?.plant.toLowerCase()}, bạn có thể dùng cuộc trò chuyện này để hỏi tiếp về cách theo dõi, ghi chú và chuẩn bị bước xử lý.`
+        ? `Nếu ca được chọn đã có thêm dữ liệu phân loại cho ${latestDiagnosis?.plant.toLowerCase()}, bạn có thể dùng cuộc trò chuyện này để hỏi tiếp về cách theo dõi, ghi chú và chuẩn bị bước xử lý.`
         : "Vì chưa có CNN, bạn nên xem đây là một kênh hỗ trợ hỏi đáp và chuẩn bị thông tin, không phải kết luận chẩn đoán cuối cùng.",
       "Bạn có thể hỏi tiếp về cách mô tả triệu chứng, chụp bổ sung ảnh hoặc tổng hợp những gì cần ghi nhận ngoài hiện trường.",
     ].join("\n\n");
@@ -50,9 +50,9 @@ function buildAssistantAnswer(query: string, latestDiagnosis?: DiagnosisRecord |
     "Mình có thể hỗ trợ bạn như một trợ lý AI trò chuyện thông thường: làm rõ câu hỏi, tóm tắt tình huống và gợi ý bước tiếp theo.",
     latestDiagnosis
       ? hasClassification(latestDiagnosis)
-        ? `Hiện trong phiên có một ca gần nhất liên quan tới ${latestDiagnosis.plant.toLowerCase()}, nên nếu bạn muốn mình có thể bám vào bối cảnh đó để tư vấn tiếp.`
+        ? `Hiện bạn đang chọn một ca liên quan tới ${latestDiagnosis.plant.toLowerCase()}, nên mình có thể bám vào bối cảnh đó để tư vấn tiếp.`
         : "Hiện trong phiên có ảnh lá đã được YOLO xác thực, nên mình có thể hỗ trợ bạn theo hướng quan sát, ghi chú và chuẩn bị dữ liệu cho bước sau."
-      : "Hiện chưa có ca gần nhất trong phiên, nên mình sẽ trả lời ở mức hướng dẫn chung.",
+      : "Hiện chưa có ca chẩn đoán được chọn, nên mình sẽ trả lời ở mức hướng dẫn chung.",
     "Bạn cứ đặt câu hỏi theo cách tự nhiên như đang chat với ChatGPT, mình sẽ giúp bạn hệ thống lại vấn đề.",
   ].join("\n\n");
 }

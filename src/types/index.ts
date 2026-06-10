@@ -16,6 +16,7 @@ export type DiagnosisStatus =
   | "idle"
   | "uploading"
   | "scanning"
+  | "symptom-review"
   | "success"
   | "invalid-image"
   | "locked";
@@ -145,6 +146,7 @@ export interface ChatApiRequest {
   query: string;
   mode: ChatMode;
   latestDiagnosis?: DiagnosisRecord | null;
+  selectedDiagnosis?: DiagnosisRecord | null;
 }
 
 export interface ChatApiResponse {

@@ -21,10 +21,10 @@ import { useVoiceInput } from "@/hooks/use-voice-input";
 
 function getWorkspaceSubtitle(workspace: ChatWorkspace) {
   if (workspace === "assistant") {
-    return "Chat AI gọi API Gemini khi đã cấu hình khóa, kèm bối cảnh chẩn đoán gần nhất để hỏi đáp, tóm tắt tình huống và gợi ý bước tiếp theo.";
+    return "Chat AI có thể chọn một ca chẩn đoán trong lịch sử để hỏi tiếp về bệnh, triệu chứng, mức độ rủi ro và bước xử lý.";
   }
 
-  return "Chat chuyên gia nông nghiệp dành cho người dùng cần trao đổi sâu hơn về cách theo dõi lá cây, ghi nhận hiện trường và hướng xử lý thực tế.";
+  return "Chat chuyên gia nông nghiệp là kênh hỏi đáp nông nghiệp tổng quát, không phụ thuộc CNN hay lịch sử chẩn đoán.";
 }
 
 export default function DashboardChatPage() {
@@ -32,6 +32,7 @@ export default function DashboardChatPage() {
   const { records, latestRecordId } = useDiagnosisStore();
 
   const [workspace, setWorkspace] = useState<ChatWorkspace>("assistant");
+  const [selectedDiagnosisId, setSelectedDiagnosisId] = useState<string>("");
   const [composerByMode, setComposerByMode] = useState<Record<ChatMode, string>>({
     assistant: "",
     expert: "",
@@ -48,6 +49,10 @@ export default function DashboardChatPage() {
   const latestDiagnosis = useMemo(
     () => records.find((item) => item.id === latestRecordId) ?? records[0] ?? null,
     [latestRecordId, records],
+  );
+  const selectedDiagnosis = useMemo(
+    () => records.find((item) => item.id === selectedDiagnosisId) ?? latestDiagnosis,
+    [latestDiagnosis, records, selectedDiagnosisId],
   );
   const activeMode: ChatMode = workspace === "assistant" ? "assistant" : "expert";
   const subtitle = getWorkspaceSubtitle(workspace);
@@ -88,6 +93,7 @@ export default function DashboardChatPage() {
     setTypingMode(mode);
 
     try {
+      const diagnosisForRequest = mode === "assistant" ? selectedDiagnosis : null;
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -96,7 +102,8 @@ export default function DashboardChatPage() {
         body: JSON.stringify({
           query: content,
           mode,
-          latestDiagnosis,
+          latestDiagnosis: diagnosisForRequest,
+          selectedDiagnosis: diagnosisForRequest,
         }),
       });
 
@@ -193,6 +200,28 @@ export default function DashboardChatPage() {
           </div>
 
           <div className="space-y-6">
+            <Card className="rounded-[30px] border-white/10 bg-white/5 text-white">
+              <h3 className="font-display text-2xl font-semibold">Chọn ca chẩn đoán để hỏi AI</h3>
+              <p className="mt-2 text-sm leading-7 text-emerald-50/75">
+                AI sẽ chỉ bám theo ca được chọn trong lịch sử. Nếu không chọn, hệ thống dùng ca mới nhất.
+              </p>
+              <select
+                value={selectedDiagnosis?.id ?? ""}
+                onChange={(event) => setSelectedDiagnosisId(event.target.value)}
+                className="mt-4 w-full rounded-2xl border border-white/10 bg-emerald-950 px-4 py-3 text-sm text-white outline-none focus:border-emerald-300"
+              >
+                {records.length ? (
+                  records.map((record) => (
+                    <option key={record.id} value={record.id}>
+                      {record.plant} · {record.disease} · {Math.round(record.confidence * 100)}%
+                    </option>
+                  ))
+                ) : (
+                  <option value="">Chưa có ca chẩn đoán trong lịch sử</option>
+                )}
+              </select>
+            </Card>
+
             <QuickPrompts prompts={activePrompts} onSelect={handlePrompt} />
 
             <Card className="rounded-[30px] border-white/10 bg-white/5 text-white">
@@ -212,15 +241,15 @@ export default function DashboardChatPage() {
             <Card className="rounded-[30px] border-white/10 bg-white/5 text-white">
               <h3 className="font-display text-2xl font-semibold">Bối cảnh hiện tại</h3>
               <div className="mt-5 space-y-3 text-sm leading-7 text-emerald-50/75">
-                {latestDiagnosis ? (
+                {selectedDiagnosis ? (
                   <>
                     <p>
-                      Ảnh gần nhất đã được YOLO xác thực là ảnh lá hợp lệ. AI có thể dựa vào bối
-                      cảnh này để trò chuyện tự nhiên hơn.
+                      Ca đang chọn đã được YOLO xác thực là ảnh lá hợp lệ. AI sẽ dùng đúng bối cảnh này để trả lời
+                      các câu hỏi liên quan tới bệnh và bước xử lý.
                     </p>
                     <p>
-                      {latestDiagnosis.classificationReady
-                        ? `Ca gần nhất có thêm dữ liệu phân loại cho ${latestDiagnosis.plant.toLowerCase()}, nên phần tư vấn sẽ cụ thể hơn.`
+                      {selectedDiagnosis.classificationReady
+                        ? `Ca đang chọn có dữ liệu phân loại cho ${selectedDiagnosis.plant.toLowerCase()} với kết quả ${selectedDiagnosis.disease.toLowerCase()}, nên phần tư vấn sẽ cụ thể hơn.`
                         : "Hiện chưa có CNN nên AI sẽ không kết luận bệnh cụ thể, mà chỉ đưa ra hướng quan sát và ghi nhận an toàn."}
                     </p>
                   </>
@@ -246,8 +275,8 @@ export default function DashboardChatPage() {
                 event.preventDefault();
                 void sendMessage("expert", composerByMode.expert);
               }}
-              placeholder="Ví dụ: Với lá vừa xác thực, tôi nên theo dõi thêm những dấu hiệu nào ngoài ruộng?"
-              helperText="Kênh chuyên gia tập trung vào lời khuyên thực tế, dễ áp dụng."
+              placeholder="Ví dụ: Cà chua trồng chậu mùa mưa nên tưới và phòng nấm như thế nào?"
+              helperText="Kênh chuyên gia trả lời vấn đề nông nghiệp tổng quát, không dùng bối cảnh CNN."
               onVoiceClick={() => {
                 if (voice.listening) {
                   voice.stop();
@@ -273,8 +302,8 @@ export default function DashboardChatPage() {
                     Chuyên gia nông nghiệp đồng hành
                   </h3>
                   <p className="mt-2 text-sm leading-7 text-emerald-50/75">
-                    Đây là kênh tư vấn sâu hơn, thiên về theo dõi thực địa, cách ghi chú hiện
-                    trường và những bước nên ưu tiên trước khi xử lý ngoài ruộng vườn.
+                    Đây là kênh tư vấn nông nghiệp tổng quát: đất, nước, phân bón, sâu bệnh, lịch chăm sóc và cách xử
+                    lý ngoài ruộng vườn. Kênh này không phụ thuộc kết quả CNN.
                   </p>
                 </div>
               </div>

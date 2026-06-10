@@ -12,6 +12,7 @@ const statusLabelMap: Record<DiagnosisStatus, string> = {
   idle: "Sẵn sàng nhận ảnh",
   uploading: "Đang chuẩn bị ảnh",
   scanning: "Đang kiểm tra ảnh",
+  "symptom-review": "Chờ bổ sung triệu chứng",
   success: "Ảnh đã được xác nhận",
   "invalid-image": "Ảnh chưa phù hợp",
   locked: "Tính năng đang khóa",
