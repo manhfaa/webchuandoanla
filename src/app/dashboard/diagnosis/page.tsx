@@ -66,6 +66,29 @@ type PendingCnnReview = {
   cnn: DjangoCnnResponse;
 };
 
+type SymptomResearchSource = {
+  id: number;
+  title: string;
+  url: string;
+  snippet?: string;
+};
+
+type SymptomResearchResult = {
+  skipped?: boolean;
+  available?: boolean;
+  compatibilityQuery?: string;
+  isSymptomConsistent?: boolean;
+  bestMatch?: string;
+  compatibilitySummary?: string;
+  confidenceNote?: string;
+  compatibilitySources?: SymptomResearchSource[];
+  treatmentQuery?: string | null;
+  treatmentSummary?: string | null;
+  treatmentSafetyNote?: string | null;
+  treatmentSources?: SymptomResearchSource[];
+  generatedAt?: string;
+};
+
 type DiseaseGuidance = {
   risk: ActionPlan["risk_level"];
   severity: string;
@@ -335,6 +358,46 @@ function buildDiseaseActionPlan(cnn: DjangoCnnResponse): ActionPlan {
   };
 }
 
+function formatResearchSources(sources?: SymptomResearchSource[]) {
+  const usableSources = (sources ?? []).filter((source) => source.url).slice(0, 5);
+  if (!usableSources.length) return ["Chưa có nguồn web đủ rõ để hiển thị."];
+  return usableSources.map((source) => `[${source.id}] ${source.title}: ${source.url}`);
+}
+
+function buildResearchRecommendationBlocks(research?: SymptomResearchResult | null) {
+  if (!research || research.skipped) return [];
+
+  const blocks = [
+    {
+      title: research.isSymptomConsistent
+        ? "Kiểm chứng triệu chứng bằng Tavily"
+        : "Kiểm chứng triệu chứng: cần xem lại",
+      items: [
+        research.compatibilitySummary ||
+          "Đã tìm kiếm nguồn bên ngoài để đối chiếu triệu chứng với kết quả CNN.",
+        research.confidenceNote ||
+          "Nguồn web chỉ dùng để tăng độ tin cậy tham khảo, không thay thế kiểm tra thực địa.",
+        research.compatibilityQuery ? `Câu search: ${research.compatibilityQuery}` : "",
+        ...formatResearchSources(research.compatibilitySources),
+      ].filter(Boolean),
+    },
+  ];
+
+  if (research.isSymptomConsistent && research.treatmentSummary) {
+    blocks.push({
+      title: "Phương pháp xử lý từ nguồn tham khảo",
+      items: [
+        research.treatmentSummary,
+        research.treatmentSafetyNote || "",
+        research.treatmentQuery ? `Câu search xử lý: ${research.treatmentQuery}` : "",
+        ...formatResearchSources(research.treatmentSources),
+      ].filter(Boolean),
+    });
+  }
+
+  return blocks;
+}
+
 function buildGeneratedRecord({
   previewUrl,
   detection,
@@ -387,7 +450,38 @@ function buildGeneratedRecord({
   };
 }
 
-function applyCnnResult(record: DiagnosisRecord, cnn: DjangoCnnResponse, symptoms = ""): DiagnosisRecord {
+async function researchSymptomsWithSources({
+  symptoms,
+  cnn,
+}: {
+  symptoms: string;
+  cnn: DjangoCnnResponse;
+}) {
+  if (!symptoms.trim()) return null;
+
+  const selectedPrediction = selectCnnResult(cnn, symptoms);
+  const response = await fetch("/api/research-symptoms", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      symptoms,
+      selectedPrediction,
+      topPredictions: selectedPrediction.top_predictions.slice(0, 5),
+    }),
+  });
+
+  if (!response.ok) return null;
+  return (await response.json()) as SymptomResearchResult;
+}
+
+function applyCnnResult(
+  record: DiagnosisRecord,
+  cnn: DjangoCnnResponse,
+  symptoms = "",
+  research?: SymptomResearchResult | null,
+): DiagnosisRecord {
   const finalCnn = selectCnnResult(cnn, symptoms);
   const actionPlan = buildDiseaseActionPlan(finalCnn);
   const topItems = finalCnn.top_predictions.slice(0, 5).map((item) => {
@@ -421,13 +515,19 @@ function applyCnnResult(record: DiagnosisRecord, cnn: DjangoCnnResponse, symptom
       symptoms.trim()
         ? "Có đối chiếu triệu chứng người dùng nhập với top 5 kết quả CNN."
         : "Không dùng triệu chứng bổ sung; giữ kết quả CNN cao nhất.",
+      symptoms.trim() && research
+        ? research.isSymptomConsistent
+          ? "Triệu chứng đã được kiểm chứng thêm bằng Tavily và Gemini với nguồn web tham khảo."
+          : "Tavily/Gemini chưa xác nhận rõ triệu chứng phù hợp với kết quả CNN; cần kiểm tra thực địa kỹ hơn."
+        : "",
       `Model: ${finalCnn.model_version}.`,
-    ],
+    ].filter(Boolean),
     recommendations: [
       {
         title: symptoms.trim() ? "Top 5 CNN sau khi đối chiếu triệu chứng" : "Top 5 kết quả CNN",
         items: topItems.length ? topItems : ["CNN đã trả về một nhãn phân loại chính cho ảnh này."],
       },
+      ...buildResearchRecommendationBlocks(research),
       {
         title: `Khuyến nghị hành động cho ${finalCnn.disease_name || finalCnn.class_name}`,
         items: actionPlan.immediate_actions,
@@ -439,6 +539,7 @@ function applyCnnResult(record: DiagnosisRecord, cnn: DjangoCnnResponse, symptom
       ...(finalCnn as unknown as Record<string, unknown>),
       symptom_input: symptoms.trim() || null,
       symptom_reranked: Boolean(symptoms.trim()),
+      tavily_research: research ?? null,
     },
     actionPlan,
     modelVersion: finalCnn.model_version,
@@ -822,7 +923,19 @@ export default function DashboardDiagnosisPage() {
     setStatus("scanning");
 
     try {
-      const finalRecord = applyCnnResult(pendingCnnReview.baseRecord, pendingCnnReview.cnn, symptoms);
+      let research: SymptomResearchResult | null = null;
+      if (symptoms.trim()) {
+        try {
+          research = await researchSymptomsWithSources({
+            symptoms,
+            cnn: pendingCnnReview.cnn,
+          });
+        } catch {
+          research = null;
+        }
+      }
+
+      const finalRecord = applyCnnResult(pendingCnnReview.baseRecord, pendingCnnReview.cnn, symptoms, research);
       const savedRecord = await createDiagnosisRecord(accessToken, finalRecord);
       setSelectedRecord(savedRecord);
       addGeneratedRecord(savedRecord);
@@ -972,7 +1085,8 @@ export default function DashboardDiagnosisPage() {
               </h3>
               <p className="mt-3 text-sm leading-7 text-slate-600">
                 Nếu bạn nhập triệu chứng, Agromind AI sẽ đối chiếu mô tả với 5 kết quả CNN cao nhất rồi chọn kết quả
-                cuối cùng. Nếu không nhập, hệ thống giữ nguyên kết quả CNN có độ tin cậy cao nhất.
+                cuối cùng, sau đó dùng Gemini tạo câu search Tavily để kiểm chứng nguồn ngoài. Nếu không nhập, hệ thống
+                giữ nguyên kết quả CNN có độ tin cậy cao nhất và bỏ qua bước search.
               </p>
 
               <div className="mt-5 rounded-[24px] border border-emerald-100 bg-emerald-50/70 p-4">
@@ -1026,7 +1140,7 @@ export default function DashboardDiagnosisPage() {
                 </Button>
               </div>
               <p className="mt-4 text-xs leading-6 text-slate-500">
-                Triệu chứng chỉ dùng để chọn lại trong top 5 CNN, không tạo bệnh mới ngoài các kết quả mô hình đã trả về.
+                Tavily chỉ được gọi khi có triệu chứng. Kết quả nguồn web được Gemini tóm tắt và lưu kèm trích dẫn trong lịch sử.
               </p>
             </div>
           </div>
