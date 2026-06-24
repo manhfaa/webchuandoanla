@@ -113,6 +113,7 @@ async function callGeminiText(prompt: string, maxOutputTokens = 700) {
           temperature: 0.2,
           topP: 0.9,
           maxOutputTokens,
+          responseMimeType: "application/json",
         },
       }),
       signal: controller.signal,
