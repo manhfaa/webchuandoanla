@@ -3,9 +3,9 @@ import { NextResponse } from "next/server";
 import { buildChatApiResponse } from "@/lib/chat-assistant";
 import { ChatApiRequest, ChatMode, DiagnosisRecord } from "@/types";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL ?? "nvidia/llama-nemotron-rerank-vl-1b-v2:free";
+const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 function buildSystemPrompt(mode: ChatMode) {
   if (mode === "expert") {
@@ -41,7 +41,7 @@ function buildDiagnosisContext(latestDiagnosis?: DiagnosisRecord | null) {
   ].join("\n");
 }
 
-function buildGeminiPrompt({
+function buildUserPrompt({
   query,
   mode,
   latestDiagnosis,
@@ -51,8 +51,6 @@ function buildGeminiPrompt({
   latestDiagnosis?: DiagnosisRecord | null;
 }) {
   return [
-    buildSystemPrompt(mode),
-    "",
     mode === "assistant" ? "Bối cảnh ca chẩn đoán được chọn:" : "Bối cảnh:",
     mode === "assistant"
       ? buildDiagnosisContext(latestDiagnosis)
@@ -63,7 +61,23 @@ function buildGeminiPrompt({
   ].join("\n");
 }
 
-async function callGemini({
+function extractOpenRouterContent(content: unknown) {
+  if (typeof content === "string") return content.trim();
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (part && typeof part === "object" && "text" in part && typeof part.text === "string") return part.text;
+        return "";
+      })
+      .filter(Boolean)
+      .join("\n\n")
+      .trim();
+  }
+  return "";
+}
+
+async function callOpenRouter({
   query,
   mode,
   latestDiagnosis,
@@ -72,34 +86,29 @@ async function callGemini({
   mode: ChatMode;
   latestDiagnosis?: DiagnosisRecord | null;
 }) {
-  if (!GEMINI_API_KEY) return null;
+  if (!OPENROUTER_API_KEY) return null;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
 
   try {
-    const response = await fetch(GEMINI_API_URL, {
+    const response = await fetch(OPENROUTER_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": GEMINI_API_KEY,
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+        "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL ?? "https://agromindai.vercel.app",
+        "X-OpenRouter-Title": "Agromind AI",
       },
       body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                text: buildGeminiPrompt({ query, mode, latestDiagnosis }),
-              },
-            ],
-          },
+        model: OPENROUTER_MODEL,
+        messages: [
+          { role: "system", content: buildSystemPrompt(mode) },
+          { role: "user", content: buildUserPrompt({ query, mode, latestDiagnosis }) },
         ],
-        generationConfig: {
-          temperature: mode === "expert" ? 0.35 : 0.55,
-          topP: 0.9,
-          maxOutputTokens: 700,
-        },
+        temperature: mode === "expert" ? 0.35 : 0.55,
+        top_p: 0.9,
+        max_tokens: 700,
       }),
       signal: controller.signal,
     });
@@ -107,20 +116,10 @@ async function callGemini({
     if (!response.ok) return null;
 
     const data = (await response.json()) as {
-      candidates?: Array<{
-        content?: {
-          parts?: Array<{ text?: string }>;
-        };
-      }>;
+      choices?: Array<{ message?: { content?: unknown } }>;
     };
 
-    const answer = data.candidates?.[0]?.content?.parts
-      ?.map((part) => part.text)
-      .filter(Boolean)
-      .join("\n\n")
-      .trim();
-
-    return answer || null;
+    return extractOpenRouterContent(data.choices?.[0]?.message?.content) || null;
   } catch {
     return null;
   } finally {
@@ -146,12 +145,12 @@ export async function POST(request: Request) {
 
   const selectedDiagnosis = body.selectedDiagnosis ?? body.latestDiagnosis ?? null;
   const diagnosisForPrompt = mode === "assistant" ? selectedDiagnosis : null;
-  const geminiAnswer = await callGemini({ query, mode, latestDiagnosis: diagnosisForPrompt });
+  const openRouterAnswer = await callOpenRouter({ query, mode, latestDiagnosis: diagnosisForPrompt });
 
-  if (geminiAnswer) {
+  if (openRouterAnswer) {
     return NextResponse.json({
       mode,
-      answer: geminiAnswer,
+      answer: openRouterAnswer,
       generatedAt: new Date().toISOString(),
     });
   }

@@ -185,7 +185,7 @@ export default function DashboardChatPage() {
                 void sendMessage("assistant", composerByMode.assistant);
               }}
               placeholder="Ví dụ: Tôi nên chụp thêm những góc nào của lá cây để lần phân tích sau rõ hơn?"
-              helperText="Chat gọi API backend của ứng dụng; nếu Gemini tạm lỗi, hệ thống trả lời an toàn theo bối cảnh hiện có."
+              helperText="Chat gọi API backend của ứng dụng; nếu OpenRouter tạm lỗi, hệ thống trả lời an toàn theo bối cảnh hiện có."
               onVoiceClick={() => {
                 if (voice.listening) {
                   voice.stop();
@@ -232,7 +232,7 @@ export default function DashboardChatPage() {
                 <div>
                   <h3 className="font-display text-2xl font-semibold">AI tư vấn theo bối cảnh chẩn đoán</h3>
                   <p className="mt-2 text-sm leading-7 text-emerald-50/75">
-                    Luồng này gửi câu hỏi và ca chẩn đoán gần nhất tới API chat. Khi Gemini sẵn sàng, phản hồi đến từ mô hình đã cấu hình; khi API ngoài lỗi, hệ thống dùng phản hồi an toàn để tránh bịa kết quả chẩn đoán.
+                    Luồng này gửi câu hỏi và ca chẩn đoán gần nhất tới API chat. Khi OpenRouter sẵn sàng, phản hồi đến từ mô hình đã cấu hình; khi API ngoài lỗi, hệ thống dùng phản hồi an toàn để tránh bịa kết quả chẩn đoán.
                   </p>
                 </div>
               </div>

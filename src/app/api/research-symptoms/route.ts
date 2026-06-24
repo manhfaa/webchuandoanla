@@ -42,9 +42,9 @@ type SearchPromptResult = {
   tavilyQuery: string;
 };
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL ?? "nvidia/llama-nemotron-rerank-vl-1b-v2:free";
+const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
 const TAVILY_API_URL = "https://api.tavily.com/search";
 
@@ -199,7 +199,23 @@ function parseSearchPromptResult(generated: string, step: string): SearchPromptR
   const parsed = tryParseSearchPromptResult(generated);
   if (parsed) return parsed;
 
-  throw new Error(`Gemini chưa trả đúng câu hỏi hiển thị và query Tavily cho bước ${step}.`);
+  throw new Error(`OpenRouter chưa trả đúng câu hỏi hiển thị và query Tavily cho bước ${step}.`);
+}
+
+function extractOpenRouterContent(content: unknown) {
+  if (typeof content === "string") return content.trim();
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (part && typeof part === "object" && "text" in part && typeof part.text === "string") return part.text;
+        return "";
+      })
+      .filter(Boolean)
+      .join("\n")
+      .trim();
+  }
+  return "";
 }
 
 async function repairSearchPromptResult({
@@ -213,7 +229,7 @@ async function repairSearchPromptResult({
 }) {
   const prompt = [
     "Bạn đang sửa output JSON cho Agromind AI.",
-    "Output trước đó của Gemini chưa đúng schema hoặc thiếu key.",
+    "Output trước đó của model OpenRouter chưa đúng schema hoặc thiếu key.",
     "BẮT BUỘC dùng chính ngữ cảnh yêu cầu ban đầu và output trước đó để viết lại đúng 2 trường.",
     "Không markdown, không giải thích, không bọc ```json.",
     "Chỉ trả về JSON object hợp lệ với đúng 2 key: display_question và tavily_query.",
@@ -231,56 +247,45 @@ async function repairSearchPromptResult({
 }
 
 async function callGeminiText(prompt: string, maxOutputTokens = 700, jsonMode = true) {
-  if (!GEMINI_API_KEY) return null;
+  if (!OPENROUTER_API_KEY) return null;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20000);
 
   try {
-    const response = await fetch(GEMINI_API_URL, {
+    const response = await fetch(OPENROUTER_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": GEMINI_API_KEY,
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+        "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL ?? "https://agromindai.vercel.app",
+        "X-OpenRouter-Title": "Agromind AI",
       },
       body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: prompt }],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          topP: 0.9,
-          maxOutputTokens,
-          ...(jsonMode ? { responseMimeType: "application/json" } : {}),
-        },
+        model: OPENROUTER_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.2,
+        top_p: 0.9,
+        max_tokens: maxOutputTokens,
       }),
       signal: controller.signal,
     });
 
     if (!response.ok) {
-      let message = `Gemini API lỗi ${response.status}`;
+      let message = `OpenRouter API lỗi ${response.status}`;
       try {
-        const errorBody = (await response.json()) as { error?: { message?: string; status?: string } };
+        const errorBody = (await response.json()) as { error?: { message?: string; status?: string; code?: string } };
         const detail = cleanText(errorBody.error?.status || errorBody.error?.message);
         if (detail) message += `: ${detail}`;
       } catch {
-        // Keep the HTTP status when Gemini does not return a JSON error body.
+        // Keep the HTTP status when OpenRouter does not return a JSON error body.
       }
       throw new Error(message);
     }
     const data = (await response.json()) as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+      choices?: Array<{ message?: { content?: unknown } }>;
     };
-    return (
-      data.candidates?.[0]?.content?.parts
-        ?.map((part) => part.text)
-        .filter(Boolean)
-        .join("\n")
-        .trim() || null
-    );
+    return extractOpenRouterContent(data.choices?.[0]?.message?.content) || null;
   } catch (error) {
     if (error instanceof Error) throw error;
     return null;
@@ -292,7 +297,7 @@ async function callGeminiText(prompt: string, maxOutputTokens = 700, jsonMode = 
 async function requireGeminiText(prompt: string, maxOutputTokens: number, step: string) {
   const text = await callGeminiText(prompt, maxOutputTokens);
   if (!text) {
-    throw new Error(`Gemini không hoàn tất bước: ${step}.`);
+    throw new Error(`OpenRouter không hoàn tất bước: ${step}.`);
   }
   return text;
 }
@@ -307,7 +312,7 @@ function cleanPlainGeminiText(value: string) {
     const parsed = JSON.parse(text) as unknown;
     if (typeof parsed === "string") return cleanText(parsed);
   } catch {
-    // Plain text is expected for these single-field Gemini calls.
+    // Plain text is expected for these single-field OpenRouter calls.
   }
 
   return text.replace(/^["'`]+|["'`]+$/g, "").trim();
@@ -317,7 +322,7 @@ async function requireGeminiPlainText(prompt: string, maxOutputTokens: number, s
   const text = await callGeminiText(prompt, maxOutputTokens, false);
   const cleaned = text ? cleanPlainGeminiText(text) : "";
   if (!cleaned) {
-    throw new Error(`Gemini không hoàn tất bước: ${step}.`);
+    throw new Error(`OpenRouter không hoàn tất bước: ${step}.`);
   }
   return cleaned;
 }
@@ -550,13 +555,13 @@ async function buildFinalConclusion({
 }) {
   const prompt = [
     "Bạn là Agromind AI.",
-    "BẮT BUỘC: chốt cuối cùng bằng Gemini sau khi pipeline đã chạy đủ:",
-    "1. Gemini viết câu search kiểm chứng triệu chứng.",
+    "BẮT BUỘC: chốt cuối cùng bằng model OpenRouter sau khi pipeline đã chạy đủ:",
+    "1. Model OpenRouter viết câu search kiểm chứng triệu chứng.",
     "2. Tavily search kiểm chứng.",
-    "3. Gemini đọc nguồn Tavily và tổng hợp độ phù hợp.",
-    "4. Gemini viết câu search phương pháp xử lý.",
+    "3. Model OpenRouter đọc nguồn Tavily và tổng hợp độ phù hợp.",
+    "4. Model OpenRouter viết câu search phương pháp xử lý.",
     "5. Tavily search phương pháp xử lý.",
-    "6. Gemini đọc nguồn Tavily và tổng hợp xử lý.",
+    "6. Model OpenRouter đọc nguồn Tavily và tổng hợp xử lý.",
     "Bây giờ hãy chốt kết luận cuối cùng cho người dùng bằng tiếng Việt.",
     "Trả về JSON object hợp lệ, không markdown, không bọc ```json, theo schema:",
     '{"final_conclusion":"...","user_next_step":"..."}',
@@ -595,8 +600,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ skipped: true, reason: "Không có triệu chứng để kiểm chứng." });
   }
 
-  if (!GEMINI_API_KEY) {
-    return NextResponse.json({ error: "Thiếu GEMINI_API_KEY để viết câu search và tổng hợp." }, { status: 503 });
+  if (!OPENROUTER_API_KEY) {
+    return NextResponse.json({ error: "Thiếu OPENROUTER_API_KEY để viết câu search và tổng hợp." }, { status: 503 });
   }
 
   if (!TAVILY_API_KEY) {
@@ -638,13 +643,13 @@ export async function POST(request: Request) {
       skipped: false,
       available: true,
       pipeline: [
-        "gemini_build_compatibility_query",
+        "openrouter_build_compatibility_query",
         "tavily_search_compatibility",
-        "gemini_summarize_compatibility",
-        "gemini_build_treatment_query",
+        "openrouter_summarize_compatibility",
+        "openrouter_build_treatment_query",
         "tavily_search_treatment",
-        "gemini_summarize_treatment",
-        "gemini_final_conclusion",
+        "openrouter_summarize_treatment",
+        "openrouter_final_conclusion",
       ],
       compatibilityQuestion: compatibilitySearchPrompt.displayQuestion,
       compatibilityQuery: compatibilitySearchPrompt.tavilyQuery,
@@ -665,7 +670,7 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Không hoàn tất được pipeline Gemini + Tavily.",
+        error: error instanceof Error ? error.message : "Không hoàn tất được pipeline OpenRouter + Tavily.",
       },
       { status: 502 },
     );
