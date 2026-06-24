@@ -89,6 +89,46 @@ function normalizeGeminiJsonText(value: unknown) {
   return null;
 }
 
+function pickStringField(source: Record<string, unknown> | null, keys: string[]) {
+  for (const key of keys) {
+    const value = cleanText(source?.[key]);
+    if (value) return value;
+  }
+  return "";
+}
+
+function parseSearchPromptResult(generated: string, step: string): SearchPromptResult {
+  const parsed = normalizeGeminiJsonText(generated);
+  const displayQuestion = pickStringField(parsed, [
+    "display_question",
+    "displayQuestion",
+    "question",
+    "user_question",
+    "userQuestion",
+    "search_question",
+    "searchQuestion",
+    "verification_question",
+    "verificationQuestion",
+    "treatment_question",
+    "treatmentQuestion",
+  ]);
+  const tavilyQuery = pickStringField(parsed, [
+    "tavily_query",
+    "tavilyQuery",
+    "query",
+    "search_query",
+    "searchQuery",
+    "web_query",
+    "webQuery",
+  ]);
+
+  if (!displayQuestion || !tavilyQuery) {
+    throw new Error(`Gemini chưa trả đúng câu hỏi hiển thị và query Tavily cho bước ${step}.`);
+  }
+
+  return { displayQuestion, tavilyQuery };
+}
+
 async function callGeminiText(prompt: string, maxOutputTokens = 700) {
   if (!GEMINI_API_KEY) return null;
 
@@ -119,7 +159,17 @@ async function callGeminiText(prompt: string, maxOutputTokens = 700) {
       signal: controller.signal,
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      let message = `Gemini API lỗi ${response.status}`;
+      try {
+        const errorBody = (await response.json()) as { error?: { message?: string; status?: string } };
+        const detail = cleanText(errorBody.error?.status || errorBody.error?.message);
+        if (detail) message += `: ${detail}`;
+      } catch {
+        // Keep the HTTP status when Gemini does not return a JSON error body.
+      }
+      throw new Error(message);
+    }
     const data = (await response.json()) as {
       candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
     };
@@ -130,7 +180,8 @@ async function callGeminiText(prompt: string, maxOutputTokens = 700) {
         .join("\n")
         .trim() || null
     );
-  } catch {
+  } catch (error) {
+    if (error instanceof Error) throw error;
     return null;
   } finally {
     clearTimeout(timeout);
@@ -214,13 +265,7 @@ async function buildCompatibilitySearch(symptoms: string, topPredictions: Predic
   ].join("\n");
 
   const generated = await requireGeminiText(prompt, 220, "viết câu hỏi và query kiểm chứng triệu chứng");
-  const parsed = normalizeGeminiJsonText(generated);
-  const displayQuestion = cleanText(parsed?.display_question);
-  const tavilyQuery = cleanText(parsed?.tavily_query);
-  if (!displayQuestion || !tavilyQuery) {
-    throw new Error("Gemini không trả về đủ display_question và tavily_query cho bước kiểm chứng.");
-  }
-  return { displayQuestion, tavilyQuery };
+  return parseSearchPromptResult(generated, "kiểm chứng");
 }
 
 async function summarizeCompatibility({
@@ -284,13 +329,7 @@ async function buildTreatmentSearch(selectedPrediction?: Prediction | null, best
     .join("\n");
 
   const generated = await requireGeminiText(prompt, 220, "viết câu hỏi và query phương pháp xử lý");
-  const parsed = normalizeGeminiJsonText(generated);
-  const displayQuestion = cleanText(parsed?.display_question);
-  const tavilyQuery = cleanText(parsed?.tavily_query);
-  if (!displayQuestion || !tavilyQuery) {
-    throw new Error("Gemini không trả về đủ display_question và tavily_query cho bước xử lý.");
-  }
-  return { displayQuestion, tavilyQuery };
+  return parseSearchPromptResult(generated, "xử lý");
 }
 
 async function summarizeTreatment({
