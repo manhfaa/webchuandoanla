@@ -86,6 +86,8 @@ type SymptomResearchResult = {
   treatmentSummary?: string | null;
   treatmentSafetyNote?: string | null;
   treatmentSources?: SymptomResearchSource[];
+  finalConclusion?: string;
+  userNextStep?: string;
   generatedAt?: string;
 };
 
@@ -395,6 +397,16 @@ function buildResearchRecommendationBlocks(research?: SymptomResearchResult | nu
     });
   }
 
+  if (research.finalConclusion) {
+    blocks.push({
+      title: "Kết luận cuối cùng từ Gemini",
+      items: [
+        research.finalConclusion,
+        research.userNextStep ? `Bước tiếp theo: ${research.userNextStep}` : "",
+      ].filter(Boolean),
+    });
+  }
+
   return blocks;
 }
 
@@ -472,7 +484,15 @@ async function researchSymptomsWithSources({
     }),
   });
 
-  if (!response.ok) return null;
+  if (!response.ok) {
+    try {
+      const data = (await response.json()) as { error?: string };
+      throw new Error(data.error || "Không hoàn tất được kiểm chứng Gemini + Tavily.");
+    } catch (error) {
+      if (error instanceof Error) throw error;
+      throw new Error("Không hoàn tất được kiểm chứng Gemini + Tavily.");
+    }
+  }
   return (await response.json()) as SymptomResearchResult;
 }
 
@@ -554,6 +574,7 @@ export default function DashboardDiagnosisPage() {
   const [selectedRecord, setSelectedRecord] = useState<DiagnosisRecord | null>(null);
   const [pendingCnnReview, setPendingCnnReview] = useState<PendingCnnReview | null>(null);
   const [symptomText, setSymptomText] = useState("");
+  const [researchError, setResearchError] = useState<string | null>(null);
   const [leafAnalysis, setLeafAnalysis] = useState<LeafDetectionResult | null>(null);
   const [inputMethod, setInputMethod] = useState<DiagnosisInputMethod | null>(null);
   const [runCount, setRunCount] = useState(0);
@@ -807,6 +828,7 @@ export default function DashboardDiagnosisPage() {
       setSelectedRecord(null);
       setPendingCnnReview(null);
       setSymptomText("");
+      setResearchError(null);
       setLeafAnalysis(null);
       setStatus("idle");
     } catch {
@@ -815,6 +837,7 @@ export default function DashboardDiagnosisPage() {
       setSelectedRecord(null);
       setPendingCnnReview(null);
       setSymptomText("");
+      setResearchError(null);
       setLeafAnalysis(null);
       setStatus("invalid-image");
     }
@@ -841,6 +864,7 @@ export default function DashboardDiagnosisPage() {
     setSelectedRecord(null);
     setPendingCnnReview(null);
     setSymptomText("");
+    setResearchError(null);
     setLeafAnalysis(null);
 
     await delay(350);
@@ -921,17 +945,17 @@ export default function DashboardDiagnosisPage() {
     if (!pendingCnnReview) return;
 
     setStatus("scanning");
+    setResearchError(null);
 
     try {
       let research: SymptomResearchResult | null = null;
       if (symptoms.trim()) {
-        try {
-          research = await researchSymptomsWithSources({
-            symptoms,
-            cnn: pendingCnnReview.cnn,
-          });
-        } catch {
-          research = null;
+        research = await researchSymptomsWithSources({
+          symptoms,
+          cnn: pendingCnnReview.cnn,
+        });
+        if (!research || research.skipped) {
+          throw new Error("Chưa hoàn tất pipeline kiểm chứng Gemini + Tavily.");
         }
       }
 
@@ -943,7 +967,17 @@ export default function DashboardDiagnosisPage() {
       setSymptomText("");
       setStatus("success");
       setRunCount((value) => value + 1);
-    } catch {
+    } catch (error) {
+      if (symptoms.trim()) {
+        setResearchError(
+          error instanceof Error
+            ? error.message
+            : "Không hoàn tất được pipeline kiểm chứng Gemini + Tavily. Vui lòng thử lại.",
+        );
+        setStatus("symptom-review");
+        return;
+      }
+
       setLeafAnalysis({
         isLeaf: false,
         confidence: 0.12,
@@ -1116,11 +1150,19 @@ export default function DashboardDiagnosisPage() {
               <textarea
                 id="symptom-text"
                 value={symptomText}
-                onChange={(event) => setSymptomText(event.target.value)}
+                onChange={(event) => {
+                  setSymptomText(event.target.value);
+                  setResearchError(null);
+                }}
                 rows={7}
                 className="mt-3 w-full resize-none rounded-[22px] border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-sm leading-7 text-slate-900 outline-none transition focus:border-emerald-500 focus:bg-white"
                 placeholder="Ví dụ: lá có đốm nâu lan từ mép, mặt dưới hơi mốc trắng, cây mới mưa nhiều 3 ngày..."
               />
+              {researchError ? (
+                <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800">
+                  {researchError}
+                </div>
+              ) : null}
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <Button
                   onClick={() => {

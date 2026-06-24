@@ -29,6 +29,14 @@ type TavilySearchResponse = {
   results?: TavilyResult[];
 };
 
+type ResearchSource = {
+  id: number;
+  title: string;
+  url: string;
+  snippet: string;
+  rawContent: string;
+};
+
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
@@ -50,18 +58,6 @@ function describePrediction(prediction?: Prediction | null) {
     .join(" - ");
 }
 
-function buildFallbackCompatibilityQuery(symptoms: string, prediction?: Prediction | null) {
-  const plant = prediction?.plant_name_en || prediction?.plant_name || "plant";
-  const disease = prediction?.disease_name_en || prediction?.disease_name || prediction?.class_name || "leaf disease";
-  return `does ${plant} ${disease} match leaf symptoms ${symptoms} agriculture extension`;
-}
-
-function buildFallbackTreatmentQuery(prediction?: Prediction | null) {
-  const plant = prediction?.plant_name_en || prediction?.plant_name || "plant";
-  const disease = prediction?.disease_name_en || prediction?.disease_name || prediction?.class_name || "leaf disease";
-  return `${plant} ${disease} leaf disease management treatment extension`;
-}
-
 function extractJsonObject(text: string) {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
@@ -77,7 +73,7 @@ async function callGeminiText(prompt: string, maxOutputTokens = 700) {
   if (!GEMINI_API_KEY) return null;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), 20000);
 
   try {
     const response = await fetch(GEMINI_API_URL, {
@@ -94,7 +90,7 @@ async function callGeminiText(prompt: string, maxOutputTokens = 700) {
           },
         ],
         generationConfig: {
-          temperature: 0.25,
+          temperature: 0.2,
           topP: 0.9,
           maxOutputTokens,
         },
@@ -120,11 +116,19 @@ async function callGeminiText(prompt: string, maxOutputTokens = 700) {
   }
 }
 
+async function requireGeminiText(prompt: string, maxOutputTokens: number, step: string) {
+  const text = await callGeminiText(prompt, maxOutputTokens);
+  if (!text) {
+    throw new Error(`Gemini không hoàn tất bước: ${step}.`);
+  }
+  return text;
+}
+
 async function callTavily(query: string) {
   if (!TAVILY_API_KEY) return null;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), 20000);
 
   try {
     const response = await fetch(TAVILY_API_URL, {
@@ -152,7 +156,15 @@ async function callTavily(query: string) {
   }
 }
 
-function formatSources(results?: TavilyResult[]) {
+async function requireTavilySearch(query: string, step: string) {
+  const search = await callTavily(query);
+  if (!search?.results?.length) {
+    throw new Error(`Tavily không trả về nguồn cho bước: ${step}.`);
+  }
+  return search;
+}
+
+function formatSources(results?: TavilyResult[]): ResearchSource[] {
   return (results ?? [])
     .filter((result) => result.url)
     .slice(0, 5)
@@ -160,22 +172,18 @@ function formatSources(results?: TavilyResult[]) {
       id: index + 1,
       title: cleanText(result.title) || `Nguồn ${index + 1}`,
       url: cleanText(result.url),
-      snippet: cleanText(result.content).slice(0, 360),
-      rawContent: cleanText(result.raw_content || result.content).slice(0, 1500),
+      snippet: cleanText(result.content).slice(0, 480),
+      rawContent: cleanText(result.raw_content || result.content).slice(0, 1800),
     }));
 }
 
-async function buildCompatibilityQuery(
-  symptoms: string,
-  topPredictions: Prediction[],
-  selectedPrediction?: Prediction | null,
-) {
+async function buildCompatibilityQuery(symptoms: string, topPredictions: Prediction[], selectedPrediction?: Prediction | null) {
   const prompt = [
     "Bạn là trợ lý tìm kiếm nông nghiệp cho Agromind AI.",
-    "Nhiệm vụ: viết đúng 1 câu truy vấn Tavily bằng tiếng Anh để kiểm chứng câu hỏi:",
-    "\"Liệu bệnh/cây nằm trong top 5 CNN có phù hợp với triệu chứng người dùng nhập hay không?\"",
-    "Câu search phải chứa cây, bệnh khả nghi trong top 5, triệu chứng chính và nên ưu tiên nguồn extension/university/agriculture.",
-    "Không giải thích, không markdown, chỉ trả về câu search.",
+    "BẮT BUỘC: hãy viết đúng 1 câu search bằng tiếng Anh để đưa cho Tavily.",
+    "Mục tiêu search: kiểm tra liệu triệu chứng người dùng nhập có phù hợp với kết quả CNN đưa ra hay không.",
+    "Câu search phải bám vào top 5 CNN, cây/bệnh đang chọn, triệu chứng chính và ưu tiên nguồn extension/university/agriculture.",
+    "Không giải thích, không markdown, không JSON, chỉ trả về câu search.",
     "",
     `Kết quả CNN đang chọn: ${describePrediction(selectedPrediction)}`,
     "Top 5 CNN:",
@@ -183,33 +191,31 @@ async function buildCompatibilityQuery(
     `Triệu chứng người dùng nhập: ${symptoms}`,
   ].join("\n");
 
-  const generated = await callGeminiText(prompt, 80);
-  return generated?.replace(/^["']|["']$/g, "").trim() || buildFallbackCompatibilityQuery(symptoms, selectedPrediction);
+  return (await requireGeminiText(prompt, 120, "viết câu search kiểm chứng triệu chứng")).replace(/^["']|["']$/g, "").trim();
 }
 
-async function assessCompatibility({
+async function summarizeCompatibility({
   symptoms,
   selectedPrediction,
   topPredictions,
-  search,
+  sources,
 }: {
   symptoms: string;
   selectedPrediction?: Prediction | null;
   topPredictions: Prediction[];
-  search: TavilySearchResponse | null;
+  sources: ResearchSource[];
 }) {
-  const sources = formatSources(search?.results);
   const prompt = [
-    "Bạn là chuyên gia nông nghiệp hỗ trợ kiểm chứng kết quả CNN bằng Tavily.",
-    "Hãy đọc toàn bộ thông tin Tavily cung cấp bên dưới, gồm tiêu đề, URL, đoạn trích và raw content nếu có.",
-    "Nhiệm vụ: đánh giá liệu triệu chứng người dùng nhập có phù hợp với một bệnh/cây trong top 5 CNN hay không.",
-    "Nếu phù hợp với bệnh khác trong top 5 hơn kết quả đang chọn, hãy ghi bệnh đó ở best_match.",
-    "Tóm tắt bằng tiếng Việt dễ hiểu cho người dùng phổ thông, có trích nguồn dạng [1], [2].",
+    "Bạn là chuyên gia nông nghiệp của Agromind AI.",
+    "BẮT BUỘC: đọc tất cả thông tin từ các trang Tavily bên dưới rồi tổng hợp cho người dùng.",
+    "Nhiệm vụ: trả lời liệu triệu chứng người dùng nhập có phù hợp với kết quả CNN hoặc một bệnh/cây trong top 5 CNN không.",
+    "Nếu phù hợp với bệnh khác trong top 5 hơn kết quả đang chọn, ghi bệnh đó ở best_match.",
+    "Tóm tắt bằng tiếng Việt dễ hiểu, có trích nguồn dạng [1], [2]. Không bịa thông tin ngoài nguồn.",
     "Trả về JSON hợp lệ, không markdown, theo schema:",
-    '{"is_consistent":true,"best_match":"Tên cây - tên bệnh phù hợp nhất trong top 5","summary":"3-5 câu tiếng Việt có trích nguồn [1], [2]","confidence_note":"1 câu nói rõ đây là kiểm chứng tham khảo, không phải kết luận tuyệt đối"}',
+    '{"is_consistent":true,"best_match":"...","summary":"...","confidence_note":"..."}',
     "",
     `Triệu chứng: ${symptoms}`,
-    `Kết quả CNN đã chọn: ${describePrediction(selectedPrediction)}`,
+    `Kết quả CNN đang chọn: ${describePrediction(selectedPrediction)}`,
     "Top 5 CNN:",
     ...topPredictions.map((item, index) => `${index + 1}. ${describePrediction(item)}`),
     "",
@@ -220,69 +226,119 @@ async function assessCompatibility({
     ),
   ].join("\n");
 
-  const generated = await callGeminiText(prompt, 1000);
-  const parsed = generated ? extractJsonObject(generated) : null;
+  const generated = await requireGeminiText(prompt, 1200, "đọc nguồn Tavily và tổng hợp độ phù hợp triệu chứng");
+  const parsed = extractJsonObject(generated);
   return {
-    isConsistent: typeof parsed?.is_consistent === "boolean" ? parsed.is_consistent : Boolean(sources.length),
+    isConsistent: typeof parsed?.is_consistent === "boolean" ? parsed.is_consistent : false,
     bestMatch: cleanText(parsed?.best_match || describePrediction(selectedPrediction)),
-    summary:
-      cleanText(parsed?.summary) ||
-      "Đã tìm nguồn tham khảo bên ngoài để đối chiếu triệu chứng, nhưng chưa đủ dữ liệu để tổng hợp chắc chắn.",
+    summary: cleanText(parsed?.summary || generated),
     confidenceNote:
       cleanText(parsed?.confidence_note) ||
-      "Kết quả này chỉ tăng độ tin cậy tham khảo, không thay thế kiểm tra thực địa.",
+      "Đây là kiểm chứng tham khảo bằng nguồn web, không thay thế kiểm tra trực tiếp ngoài vườn.",
     sources,
   };
 }
 
-async function buildTreatmentSearch(selectedPrediction?: Prediction | null, bestMatch?: string) {
+async function buildTreatmentQuery(selectedPrediction?: Prediction | null, bestMatch?: string) {
   const prompt = [
-    "Bạn là trợ lý tìm kiếm nông nghiệp.",
-    "Viết đúng 1 câu truy vấn Tavily bằng tiếng Anh để tìm phương pháp xử lý/quản lý bệnh lá cây từ nguồn extension/university/agriculture uy tín.",
-    "Câu search phải bám theo bệnh/cây phù hợp nhất đã kiểm chứng.",
-    "Không giải thích, không markdown, chỉ trả về câu search.",
+    "Bạn là trợ lý tìm kiếm nông nghiệp cho Agromind AI.",
+    "BẮT BUỘC: hãy viết đúng 1 câu search bằng tiếng Anh để đưa cho Tavily.",
+    "Mục tiêu search: tìm phương pháp xử lý/quản lý bệnh lá cây từ nguồn extension/university/agriculture uy tín.",
+    "Câu search phải bám theo bệnh/cây phù hợp nhất sau bước kiểm chứng triệu chứng.",
+    "Không giải thích, không markdown, không JSON, chỉ trả về câu search.",
+    "",
     bestMatch ? `Bệnh/cây phù hợp nhất: ${bestMatch}` : "",
-    `Cây/bệnh: ${describePrediction(selectedPrediction)}`,
+    `Kết quả CNN đang chọn: ${describePrediction(selectedPrediction)}`,
   ]
     .filter(Boolean)
     .join("\n");
-  const generated = await callGeminiText(prompt, 80);
-  return generated?.replace(/^["']|["']$/g, "").trim() || `${bestMatch || buildFallbackTreatmentQuery(selectedPrediction)} treatment management extension`;
+
+  return (await requireGeminiText(prompt, 120, "viết câu search phương pháp xử lý")).replace(/^["']|["']$/g, "").trim();
 }
 
 async function summarizeTreatment({
   selectedPrediction,
-  treatmentSearch,
+  bestMatch,
+  sources,
 }: {
   selectedPrediction?: Prediction | null;
-  treatmentSearch: TavilySearchResponse | null;
+  bestMatch?: string;
+  sources: ResearchSource[];
 }) {
-  const sources = formatSources(treatmentSearch?.results);
   const prompt = [
-    "Bạn là chuyên gia nông nghiệp. Hãy đọc toàn bộ thông tin Tavily cung cấp bên dưới, gồm tiêu đề, URL, đoạn trích và raw content nếu có.",
-    "Tóm tắt ngắn gọn phương pháp xử lý/quản lý bệnh lá cây cho người dùng Việt Nam.",
-    "Chỉ dùng thông tin có trong nguồn, không bịa thuốc hoặc liều lượng cụ thể nếu nguồn không nêu.",
-    "Tóm tắt phải dễ hiểu, có trích nguồn dạng [1], [2].",
+    "Bạn là chuyên gia nông nghiệp của Agromind AI.",
+    "BẮT BUỘC: đọc tất cả thông tin từ các trang Tavily bên dưới rồi tổng hợp phương pháp xử lý cho người dùng.",
+    "Chỉ dùng thông tin có trong nguồn. Không bịa thuốc, liều lượng hoặc khẳng định quá mức nếu nguồn không nêu.",
+    "Tóm tắt ngắn gọn bằng tiếng Việt, có trích nguồn dạng [1], [2].",
     "Trả về JSON hợp lệ, không markdown, theo schema:",
-    '{"summary":"4-6 gạch ý ngắn bằng tiếng Việt, có trích nguồn [1], [2]","safety_note":"1 câu lưu ý an toàn"}',
+    '{"summary":"...","safety_note":"..."}',
     "",
-    `Cây/bệnh: ${describePrediction(selectedPrediction)}`,
+    bestMatch ? `Bệnh/cây phù hợp nhất: ${bestMatch}` : "",
+    `Kết quả CNN đang chọn: ${describePrediction(selectedPrediction)}`,
     "Nguồn Tavily:",
     ...sources.map(
       (source) =>
         `[${source.id}] ${source.title} - ${source.url}\nĐoạn trích: ${source.snippet}\nNội dung trang: ${source.rawContent}`,
     ),
-  ].join("\n");
-  const generated = await callGeminiText(prompt, 1000);
-  const parsed = generated ? extractJsonObject(generated) : null;
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const generated = await requireGeminiText(prompt, 1200, "đọc nguồn Tavily và tổng hợp phương pháp xử lý");
+  const parsed = extractJsonObject(generated);
   return {
-    summary:
-      cleanText(parsed?.summary) ||
-      "Ưu tiên loại bỏ lá bệnh nặng, giảm ẩm trên lá, cải thiện thông thoáng và hỏi kỹ thuật viên địa phương trước khi dùng thuốc.",
+    summary: cleanText(parsed?.summary || generated),
     safetyNote:
       cleanText(parsed?.safety_note) ||
-      "Luôn đọc nhãn thuốc, dùng bảo hộ và không lạm dụng thuốc khi chưa xác định rõ nguyên nhân.",
+      "Luôn đọc nhãn thuốc, dùng bảo hộ và hỏi kỹ thuật viên địa phương trước khi xử lý nếu bệnh lan rộng.",
     sources,
+  };
+}
+
+async function buildFinalConclusion({
+  symptoms,
+  selectedPrediction,
+  topPredictions,
+  compatibility,
+  treatment,
+}: {
+  symptoms: string;
+  selectedPrediction?: Prediction | null;
+  topPredictions: Prediction[];
+  compatibility: Awaited<ReturnType<typeof summarizeCompatibility>>;
+  treatment: Awaited<ReturnType<typeof summarizeTreatment>>;
+}) {
+  const prompt = [
+    "Bạn là Agromind AI.",
+    "BẮT BUỘC: chốt cuối cùng bằng Gemini sau khi pipeline đã chạy đủ:",
+    "1. Gemini viết câu search kiểm chứng triệu chứng.",
+    "2. Tavily search kiểm chứng.",
+    "3. Gemini đọc nguồn Tavily và tổng hợp độ phù hợp.",
+    "4. Gemini viết câu search phương pháp xử lý.",
+    "5. Tavily search phương pháp xử lý.",
+    "6. Gemini đọc nguồn Tavily và tổng hợp xử lý.",
+    "Bây giờ hãy chốt kết luận cuối cùng cho người dùng bằng tiếng Việt.",
+    "Trả về JSON hợp lệ, không markdown, theo schema:",
+    '{"final_conclusion":"...","user_next_step":"..."}',
+    "",
+    `Triệu chứng: ${symptoms}`,
+    `Kết quả CNN đang chọn: ${describePrediction(selectedPrediction)}`,
+    "Top 5 CNN:",
+    ...topPredictions.map((item, index) => `${index + 1}. ${describePrediction(item)}`),
+    `Độ phù hợp triệu chứng: ${compatibility.isConsistent ? "phù hợp" : "chưa phù hợp rõ"}`,
+    `Best match: ${compatibility.bestMatch}`,
+    `Tóm tắt kiểm chứng: ${compatibility.summary}`,
+    `Tóm tắt xử lý: ${treatment.summary}`,
+    `Lưu ý an toàn: ${treatment.safetyNote}`,
+  ].join("\n");
+
+  const generated = await requireGeminiText(prompt, 900, "chốt kết luận cuối cùng");
+  const parsed = extractJsonObject(generated);
+  return {
+    finalConclusion: cleanText(parsed?.final_conclusion || generated),
+    userNextStep:
+      cleanText(parsed?.user_next_step) ||
+      "Theo dõi cây thêm vài ngày và chụp lại nếu triệu chứng lan rộng.",
   };
 }
 
@@ -299,40 +355,77 @@ export async function POST(request: Request) {
     return NextResponse.json({ skipped: true, reason: "Không có triệu chứng để kiểm chứng." });
   }
 
+  if (!GEMINI_API_KEY) {
+    return NextResponse.json({ error: "Thiếu GEMINI_API_KEY để viết câu search và tổng hợp." }, { status: 503 });
+  }
+
+  if (!TAVILY_API_KEY) {
+    return NextResponse.json({ error: "Thiếu TAVILY_API_KEY để search nguồn web." }, { status: 503 });
+  }
+
   const selectedPrediction = body.selectedPrediction ?? body.topPredictions?.[0] ?? null;
   const topPredictions = (body.topPredictions ?? []).slice(0, 5);
 
-  const compatibilityQuery = await buildCompatibilityQuery(symptoms, topPredictions, selectedPrediction);
-  const compatibilitySearch = await callTavily(compatibilityQuery);
-  const compatibility = await assessCompatibility({
-    symptoms,
-    selectedPrediction,
-    topPredictions,
-    search: compatibilitySearch,
-  });
+  try {
+    const compatibilityQuery = await buildCompatibilityQuery(symptoms, topPredictions, selectedPrediction);
+    const compatibilitySearch = await requireTavilySearch(compatibilityQuery, "kiểm chứng triệu chứng với kết quả CNN");
+    const compatibilitySources = formatSources(compatibilitySearch.results);
+    const compatibility = await summarizeCompatibility({
+      symptoms,
+      selectedPrediction,
+      topPredictions,
+      sources: compatibilitySources,
+    });
 
-  let treatmentQuery: string | null = null;
-  let treatment: Awaited<ReturnType<typeof summarizeTreatment>> | null = null;
+    const treatmentQuery = await buildTreatmentQuery(selectedPrediction, compatibility.bestMatch);
+    const treatmentSearch = await requireTavilySearch(treatmentQuery, "tìm phương pháp xử lý");
+    const treatmentSources = formatSources(treatmentSearch.results);
+    const treatment = await summarizeTreatment({
+      selectedPrediction,
+      bestMatch: compatibility.bestMatch,
+      sources: treatmentSources,
+    });
 
-  if (compatibility.isConsistent) {
-    treatmentQuery = await buildTreatmentSearch(selectedPrediction, compatibility.bestMatch);
-    const treatmentSearch = await callTavily(treatmentQuery);
-    treatment = await summarizeTreatment({ selectedPrediction, treatmentSearch });
+    const final = await buildFinalConclusion({
+      symptoms,
+      selectedPrediction,
+      topPredictions,
+      compatibility,
+      treatment,
+    });
+
+    return NextResponse.json({
+      skipped: false,
+      available: true,
+      pipeline: [
+        "gemini_build_compatibility_query",
+        "tavily_search_compatibility",
+        "gemini_summarize_compatibility",
+        "gemini_build_treatment_query",
+        "tavily_search_treatment",
+        "gemini_summarize_treatment",
+        "gemini_final_conclusion",
+      ],
+      compatibilityQuery,
+      isSymptomConsistent: compatibility.isConsistent,
+      bestMatch: compatibility.bestMatch,
+      compatibilitySummary: compatibility.summary,
+      confidenceNote: compatibility.confidenceNote,
+      compatibilitySources: compatibility.sources,
+      treatmentQuery,
+      treatmentSummary: treatment.summary,
+      treatmentSafetyNote: treatment.safetyNote,
+      treatmentSources: treatment.sources,
+      finalConclusion: final.finalConclusion,
+      userNextStep: final.userNextStep,
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Không hoàn tất được pipeline Gemini + Tavily.",
+      },
+      { status: 502 },
+    );
   }
-
-  return NextResponse.json({
-    skipped: false,
-    available: Boolean(TAVILY_API_KEY),
-    compatibilityQuery,
-    isSymptomConsistent: compatibility.isConsistent,
-    bestMatch: compatibility.bestMatch,
-    compatibilitySummary: compatibility.summary,
-    confidenceNote: compatibility.confidenceNote,
-    compatibilitySources: compatibility.sources,
-    treatmentQuery,
-    treatmentSummary: treatment?.summary ?? null,
-    treatmentSafetyNote: treatment?.safetyNote ?? null,
-    treatmentSources: treatment?.sources ?? [],
-    generatedAt: new Date().toISOString(),
-  });
 }
