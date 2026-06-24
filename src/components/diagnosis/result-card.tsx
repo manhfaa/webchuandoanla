@@ -1,6 +1,6 @@
 "use client";
 
-import { LockKeyhole, Sparkles } from "lucide-react";
+import { ExternalLink, LockKeyhole, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,69 @@ function getCnnConfidenceTone(item: string) {
     className: "border-red-200 bg-red-50 text-red-800",
     badgeClassName: "bg-red-100 text-red-800",
   };
+}
+
+type ResearchSource = {
+  id?: number;
+  title?: string;
+  url?: string;
+};
+
+type TavilyResearchPayload = {
+  compatibilitySources?: ResearchSource[];
+  treatmentSources?: ResearchSource[];
+};
+
+function getTavilySources(record: DiagnosisRecord) {
+  const payload = record.cnnPayload?.tavily_research as TavilyResearchPayload | null | undefined;
+  const sourceMap = new Map<string, ResearchSource>();
+
+  for (const source of [...(payload?.compatibilitySources ?? []), ...(payload?.treatmentSources ?? [])]) {
+    if (source.url && !sourceMap.has(source.url)) {
+      sourceMap.set(source.url, source);
+    }
+  }
+
+  return Array.from(sourceMap.values()).slice(0, 6);
+}
+
+function renderRecommendationItem(item: string) {
+  const sourceMatch = item.match(/^(\[\d+\])\s*(.*?):\s*(https?:\/\/\S+)$/);
+  if (sourceMatch) {
+    const [, index, title, url] = sourceMatch;
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex items-center gap-1.5 font-medium text-emerald-700 underline decoration-emerald-300 underline-offset-4 hover:text-emerald-900"
+      >
+        {index} {title}
+        <ExternalLink size={13} />
+      </a>
+    );
+  }
+
+  const urlMatch = item.match(/https?:\/\/\S+/);
+  if (urlMatch) {
+    const url = urlMatch[0];
+    const before = item.slice(0, urlMatch.index);
+    return (
+      <span>
+        {before}
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="font-medium text-emerald-700 underline decoration-emerald-300 underline-offset-4 hover:text-emerald-900"
+        >
+          {url}
+        </a>
+      </span>
+    );
+  }
+
+  return <span>- {item}</span>;
 }
 
 export function DiagnosisResultCard({
@@ -84,6 +147,29 @@ export function DiagnosisResultCard({
                 {record.leafCheckNote}
               </div>
             ) : null}
+            {getTavilySources(record).length ? (
+              <div className="mt-4 rounded-2xl border border-emerald-300/20 bg-white/5 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100/70">
+                  Nguồn tham khảo
+                </p>
+                <div className="mt-3 space-y-2">
+                  {getTavilySources(record).map((source, index) => (
+                    <a
+                      key={source.url}
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-start justify-between gap-3 rounded-xl bg-white/5 px-3 py-2 text-sm leading-5 text-emerald-50/85 transition hover:bg-white/10 hover:text-white"
+                    >
+                      <span>
+                        [{source.id ?? index + 1}] {source.title || source.url}
+                      </span>
+                      <ExternalLink size={14} className="mt-0.5 shrink-0 text-lime-200" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="space-y-4">
@@ -114,7 +200,7 @@ export function DiagnosisResultCard({
                                 : undefined
                             }
                           >
-                            <span>{tone ? item : `- ${item}`}</span>
+                            <span>{tone ? item : renderRecommendationItem(item)}</span>
                             {tone ? (
                               <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${tone.badgeClassName}`}>
                                 {tone.label}
