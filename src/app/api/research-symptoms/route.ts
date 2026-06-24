@@ -52,6 +52,10 @@ function cleanText(value: unknown) {
   return String(value ?? "").trim();
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 function describePrediction(prediction?: Prediction | null) {
   if (!prediction) return "Không rõ";
   return [
@@ -68,6 +72,22 @@ function extractJsonObject(text: string) {
     .replace(/^```(?:json)?/i, "")
     .replace(/```$/i, "")
     .trim();
+
+  try {
+    const fullParse = JSON.parse(normalized) as unknown;
+    if (typeof fullParse === "string") {
+      return extractJsonObject(fullParse);
+    }
+    if (Array.isArray(fullParse)) {
+      return { items: fullParse };
+    }
+    if (isRecord(fullParse)) {
+      return fullParse;
+    }
+  } catch {
+    // Fall back to extracting the first object from mixed text.
+  }
+
   const start = normalized.indexOf("{");
   const end = normalized.lastIndexOf("}");
   if (start < 0 || end <= start) return null;
