@@ -97,9 +97,39 @@ function pickStringField(source: Record<string, unknown> | null, keys: string[])
   return "";
 }
 
-function parseSearchPromptResult(generated: string, step: string): SearchPromptResult {
+function collectStringFields(value: unknown, path: string[] = []): Array<{ key: string; value: string }> {
+  if (typeof value === "string") {
+    const text = cleanText(value);
+    return text ? [{ key: path.join("."), value: text }] : [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) => collectStringFields(item, [...path, String(index)]));
+  }
+
+  if (value && typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>).flatMap(([key, item]) => collectStringFields(item, [...path, key]));
+  }
+
+  return [];
+}
+
+function looksLikeVietnameseQuestion(value: string) {
+  return /[?？]$/.test(value) || /liệu|có phù hợp|nên được xử lý|như thế nào/i.test(value);
+}
+
+function looksLikeSearchQuery(value: string) {
+  return (
+    !looksLikeVietnameseQuestion(value) &&
+    /disease|symptom|leaf|plant|pepper|apple|corn|raspberry|bacterial|spot|rust|treatment|management|control|extension|university|agriculture/i.test(
+      value,
+    )
+  );
+}
+
+function tryParseSearchPromptResult(generated: string): SearchPromptResult | null {
   const parsed = normalizeGeminiJsonText(generated);
-  const displayQuestion = pickStringField(parsed, [
+  let displayQuestion = pickStringField(parsed, [
     "display_question",
     "displayQuestion",
     "question",
@@ -111,22 +141,73 @@ function parseSearchPromptResult(generated: string, step: string): SearchPromptR
     "verificationQuestion",
     "treatment_question",
     "treatmentQuestion",
+    "compatibility_question",
+    "compatibilityQuestion",
   ]);
-  const tavilyQuery = pickStringField(parsed, [
+  let tavilyQuery = pickStringField(parsed, [
     "tavily_query",
     "tavilyQuery",
+    "tavily_search_query",
+    "tavilySearchQuery",
     "query",
     "search_query",
     "searchQuery",
+    "search",
+    "search_term",
+    "searchTerm",
     "web_query",
     "webQuery",
   ]);
 
-  if (!displayQuestion || !tavilyQuery) {
-    throw new Error(`Gemini chưa trả đúng câu hỏi hiển thị và query Tavily cho bước ${step}.`);
+  const fields = collectStringFields(parsed);
+  if (!displayQuestion) {
+    displayQuestion = fields.find((field) => looksLikeVietnameseQuestion(field.value))?.value ?? "";
+  }
+  if (!tavilyQuery) {
+    tavilyQuery = fields.find((field) => field.value !== displayQuestion && looksLikeSearchQuery(field.value))?.value ?? "";
+  }
+  if ((!displayQuestion || !tavilyQuery) && fields.length >= 2) {
+    displayQuestion ||= fields[0]?.value ?? "";
+    tavilyQuery ||= fields.find((field) => field.value !== displayQuestion)?.value ?? "";
   }
 
+  if (!displayQuestion || !tavilyQuery) return null;
   return { displayQuestion, tavilyQuery };
+}
+
+function parseSearchPromptResult(generated: string, step: string): SearchPromptResult {
+  const parsed = tryParseSearchPromptResult(generated);
+  if (parsed) return parsed;
+
+  throw new Error(`Gemini chưa trả đúng câu hỏi hiển thị và query Tavily cho bước ${step}.`);
+}
+
+async function repairSearchPromptResult({
+  generated,
+  originalPrompt,
+  step,
+}: {
+  generated: string;
+  originalPrompt: string;
+  step: string;
+}) {
+  const prompt = [
+    "Bạn đang sửa output JSON cho Agromind AI.",
+    "Output trước đó của Gemini chưa đúng schema hoặc thiếu key.",
+    "BẮT BUỘC dùng chính ngữ cảnh yêu cầu ban đầu và output trước đó để viết lại đúng 2 trường.",
+    "Không markdown, không giải thích, không bọc ```json.",
+    "Chỉ trả về JSON object hợp lệ với đúng 2 key: display_question và tavily_query.",
+    '{"display_question":"...","tavily_query":"..."}',
+    "",
+    "Yêu cầu ban đầu:",
+    originalPrompt,
+    "",
+    "Output trước đó:",
+    generated,
+  ].join("\n");
+
+  const repaired = await requireGeminiText(prompt, 260, `sửa JSON câu search ${step}`);
+  return parseSearchPromptResult(repaired, step);
 }
 
 async function callGeminiText(prompt: string, maxOutputTokens = 700) {
@@ -265,7 +346,7 @@ async function buildCompatibilitySearch(symptoms: string, topPredictions: Predic
   ].join("\n");
 
   const generated = await requireGeminiText(prompt, 220, "viết câu hỏi và query kiểm chứng triệu chứng");
-  return parseSearchPromptResult(generated, "kiểm chứng");
+  return tryParseSearchPromptResult(generated) ?? repairSearchPromptResult({ generated, originalPrompt: prompt, step: "kiểm chứng" });
 }
 
 async function summarizeCompatibility({
@@ -329,7 +410,7 @@ async function buildTreatmentSearch(selectedPrediction?: Prediction | null, best
     .join("\n");
 
   const generated = await requireGeminiText(prompt, 220, "viết câu hỏi và query phương pháp xử lý");
-  return parseSearchPromptResult(generated, "xử lý");
+  return tryParseSearchPromptResult(generated) ?? repairSearchPromptResult({ generated, originalPrompt: prompt, step: "xử lý" });
 }
 
 async function summarizeTreatment({
