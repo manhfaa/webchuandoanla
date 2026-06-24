@@ -76,12 +76,14 @@ type SymptomResearchSource = {
 type SymptomResearchResult = {
   skipped?: boolean;
   available?: boolean;
+  compatibilityQuestion?: string;
   compatibilityQuery?: string;
   isSymptomConsistent?: boolean;
   bestMatch?: string;
   compatibilitySummary?: string;
   confidenceNote?: string;
   compatibilitySources?: SymptomResearchSource[];
+  treatmentQuestion?: string;
   treatmentQuery?: string | null;
   treatmentSummary?: string | null;
   treatmentSafetyNote?: string | null;
@@ -379,7 +381,7 @@ function buildResearchRecommendationBlocks(research?: SymptomResearchResult | nu
           "Đã tìm kiếm nguồn bên ngoài để đối chiếu triệu chứng với kết quả CNN.",
         research.confidenceNote ||
           "Nguồn web chỉ dùng để tăng độ tin cậy tham khảo, không thay thế kiểm tra thực địa.",
-        research.compatibilityQuery ? `Câu search: ${research.compatibilityQuery}` : "",
+        research.compatibilityQuestion ? `Câu hỏi kiểm chứng: ${research.compatibilityQuestion}` : "",
         ...formatResearchSources(research.compatibilitySources),
       ].filter(Boolean),
     },
@@ -391,7 +393,7 @@ function buildResearchRecommendationBlocks(research?: SymptomResearchResult | nu
       items: [
         research.treatmentSummary,
         research.treatmentSafetyNote || "",
-        research.treatmentQuery ? `Câu search xử lý: ${research.treatmentQuery}` : "",
+        research.treatmentQuestion ? `Câu hỏi xử lý: ${research.treatmentQuestion}` : "",
         ...formatResearchSources(research.treatmentSources),
       ].filter(Boolean),
     });
