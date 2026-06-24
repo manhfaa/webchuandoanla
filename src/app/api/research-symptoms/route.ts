@@ -230,7 +230,7 @@ async function repairSearchPromptResult({
   return parseSearchPromptResult(repaired, step);
 }
 
-async function callGeminiText(prompt: string, maxOutputTokens = 700) {
+async function callGeminiText(prompt: string, maxOutputTokens = 700, jsonMode = true) {
   if (!GEMINI_API_KEY) return null;
 
   const controller = new AbortController();
@@ -254,7 +254,7 @@ async function callGeminiText(prompt: string, maxOutputTokens = 700) {
           temperature: 0.2,
           topP: 0.9,
           maxOutputTokens,
-          responseMimeType: "application/json",
+          ...(jsonMode ? { responseMimeType: "application/json" } : {}),
         },
       }),
       signal: controller.signal,
@@ -295,6 +295,31 @@ async function requireGeminiText(prompt: string, maxOutputTokens: number, step: 
     throw new Error(`Gemini không hoàn tất bước: ${step}.`);
   }
   return text;
+}
+
+function cleanPlainGeminiText(value: string) {
+  const text = value
+    .replace(/^```(?:text|json)?/i, "")
+    .replace(/```$/i, "")
+    .trim();
+
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    if (typeof parsed === "string") return cleanText(parsed);
+  } catch {
+    // Plain text is expected for these single-field Gemini calls.
+  }
+
+  return text.replace(/^["'`]+|["'`]+$/g, "").trim();
+}
+
+async function requireGeminiPlainText(prompt: string, maxOutputTokens: number, step: string) {
+  const text = await callGeminiText(prompt, maxOutputTokens, false);
+  const cleaned = text ? cleanPlainGeminiText(text) : "";
+  if (!cleaned) {
+    throw new Error(`Gemini không hoàn tất bước: ${step}.`);
+  }
+  return cleaned;
 }
 
 async function callTavily(query: string) {
@@ -351,22 +376,41 @@ function formatSources(results?: TavilyResult[]): ResearchSource[] {
 }
 
 async function buildCompatibilitySearch(symptoms: string, topPredictions: Prediction[], selectedPrediction?: Prediction | null): Promise<SearchPromptResult> {
-  const prompt = [
-    "Bạn là trợ lý tìm kiếm nông nghiệp cho Agromind AI.",
-    "BẮT BUỘC: dùng Gemini để viết câu hỏi kiểm chứng và câu query đưa cho Tavily.",
-    "display_question phải là tiếng Việt tự nhiên theo mẫu: Liệu bệnh X trên cây Y có phù hợp với triệu chứng Z không?",
-    "tavily_query phải là tiếng Anh, đủ cụ thể, có cây, bệnh, triệu chứng và ưu tiên nguồn extension/university/agriculture.",
-    "Không giải thích, không markdown, không bọc ```json. Chỉ trả về JSON object hợp lệ theo schema:",
-    '{"display_question":"Liệu bệnh ... có phù hợp với triệu chứng ... không?","tavily_query":"..."}',
-    "",
+  const context = [
     `Kết quả CNN đang chọn: ${describePrediction(selectedPrediction)}`,
     "Top 5 CNN:",
     ...topPredictions.map((item, index) => `${index + 1}. ${describePrediction(item)}`),
     `Triệu chứng người dùng nhập: ${symptoms}`,
   ].join("\n");
 
-  const generated = await requireGeminiText(prompt, 220, "viết câu hỏi và query kiểm chứng triệu chứng");
-  return tryParseSearchPromptResult(generated) ?? repairSearchPromptResult({ generated, originalPrompt: prompt, step: "kiểm chứng" });
+  const displayQuestion = await requireGeminiPlainText(
+    [
+      "Bạn là trợ lý nông nghiệp của Agromind AI.",
+      "Hãy viết đúng 1 câu hỏi tiếng Việt để người dùng thấy hệ thống đang kiểm chứng triệu chứng bằng nguồn web.",
+      "Mẫu ý nghĩa: Liệu bệnh X trên cây Y có phù hợp với triệu chứng Z không?",
+      "Không markdown, không JSON, không giải thích, chỉ trả về đúng 1 câu hỏi.",
+      "",
+      context,
+    ].join("\n"),
+    120,
+    "viết câu hỏi hiển thị kiểm chứng triệu chứng",
+  );
+
+  const tavilyQuery = await requireGeminiPlainText(
+    [
+      "Bạn là trợ lý tìm kiếm nông nghiệp cho Agromind AI.",
+      "Hãy viết đúng 1 câu search tiếng Anh để đưa trực tiếp vào Tavily.",
+      "Câu search phải kiểm tra xem triệu chứng người dùng nhập có phù hợp với cây/bệnh trong top CNN hay không.",
+      "Bắt buộc có cây, bệnh, triệu chứng; ưu tiên từ khóa extension, university, agriculture.",
+      "Không markdown, không JSON, không giải thích, chỉ trả về đúng query.",
+      "",
+      context,
+    ].join("\n"),
+    120,
+    "viết Tavily query kiểm chứng triệu chứng",
+  );
+
+  return { displayQuestion, tavilyQuery };
 }
 
 async function summarizeCompatibility({
@@ -415,22 +459,41 @@ async function summarizeCompatibility({
 }
 
 async function buildTreatmentSearch(selectedPrediction?: Prediction | null, bestMatch?: string): Promise<SearchPromptResult> {
-  const prompt = [
-    "Bạn là trợ lý tìm kiếm nông nghiệp cho Agromind AI.",
-    "BẮT BUỘC: dùng Gemini để viết câu hỏi xử lý và câu query đưa cho Tavily.",
-    "display_question phải là tiếng Việt tự nhiên theo mẫu: Liệu bệnh X này nên được xử lý ban đầu như thế nào?",
-    "tavily_query phải là tiếng Anh, đủ cụ thể, có cây, bệnh, treatment/management/control và ưu tiên nguồn extension/university/agriculture.",
-    "Không giải thích, không markdown, không bọc ```json. Chỉ trả về JSON object hợp lệ theo schema:",
-    '{"display_question":"Liệu bệnh ... này nên được xử lý ban đầu như thế nào?","tavily_query":"..."}',
-    "",
+  const context = [
     bestMatch ? `Bệnh/cây phù hợp nhất: ${bestMatch}` : "",
     `Kết quả CNN đang chọn: ${describePrediction(selectedPrediction)}`,
   ]
     .filter(Boolean)
     .join("\n");
 
-  const generated = await requireGeminiText(prompt, 220, "viết câu hỏi và query phương pháp xử lý");
-  return tryParseSearchPromptResult(generated) ?? repairSearchPromptResult({ generated, originalPrompt: prompt, step: "xử lý" });
+  const displayQuestion = await requireGeminiPlainText(
+    [
+      "Bạn là trợ lý nông nghiệp của Agromind AI.",
+      "Hãy viết đúng 1 câu hỏi tiếng Việt để người dùng thấy hệ thống đang tìm phương pháp xử lý ban đầu bằng nguồn web.",
+      "Mẫu ý nghĩa: Liệu bệnh X này nên được xử lý ban đầu như thế nào?",
+      "Không markdown, không JSON, không giải thích, chỉ trả về đúng 1 câu hỏi.",
+      "",
+      context,
+    ].join("\n"),
+    120,
+    "viết câu hỏi hiển thị phương pháp xử lý",
+  );
+
+  const tavilyQuery = await requireGeminiPlainText(
+    [
+      "Bạn là trợ lý tìm kiếm nông nghiệp cho Agromind AI.",
+      "Hãy viết đúng 1 câu search tiếng Anh để đưa trực tiếp vào Tavily.",
+      "Câu search phải tìm phương pháp xử lý ban đầu, management hoặc control cho cây/bệnh đã chọn.",
+      "Bắt buộc có cây, bệnh, treatment/management/control; ưu tiên từ khóa extension, university, agriculture.",
+      "Không markdown, không JSON, không giải thích, chỉ trả về đúng query.",
+      "",
+      context,
+    ].join("\n"),
+    120,
+    "viết Tavily query phương pháp xử lý",
+  );
+
+  return { displayQuestion, tavilyQuery };
 }
 
 async function summarizeTreatment({
