@@ -283,9 +283,15 @@ async function callDeepSeekText(prompt: string, maxOutputTokens = 700, jsonMode 
       throw new Error(message);
     }
     const data = (await response.json()) as {
-      choices?: Array<{ message?: { content?: unknown } }>;
+      choices?: Array<{ finish_reason?: string; message?: { content?: unknown; reasoning_content?: unknown } }>;
     };
-    return extractDeepSeekContent(data.choices?.[0]?.message?.content) || null;
+    const choice = data.choices?.[0];
+    const content =
+      extractDeepSeekContent(choice?.message?.content) || extractDeepSeekContent(choice?.message?.reasoning_content);
+    if (!content && choice) {
+      throw new Error(`DeepSeek trả về nội dung rỗng, finish_reason=${choice.finish_reason || "unknown"}.`);
+    }
+    return content || null;
   } catch (error) {
     if (error instanceof Error) throw error;
     return null;

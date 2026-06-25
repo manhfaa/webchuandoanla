@@ -115,10 +115,15 @@ async function callDeepSeek({
     if (!response.ok) return null;
 
     const data = (await response.json()) as {
-      choices?: Array<{ message?: { content?: unknown } }>;
+      choices?: Array<{ message?: { content?: unknown; reasoning_content?: unknown } }>;
     };
 
-    return extractDeepSeekContent(data.choices?.[0]?.message?.content) || null;
+    const choice = data.choices?.[0];
+    return (
+      extractDeepSeekContent(choice?.message?.content) ||
+      extractDeepSeekContent(choice?.message?.reasoning_content) ||
+      null
+    );
   } catch {
     return null;
   } finally {
