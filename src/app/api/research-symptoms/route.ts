@@ -261,6 +261,7 @@ async function callDeepSeekText(prompt: string, maxOutputTokens = 700, jsonMode 
       },
       body: JSON.stringify({
         model: DEEPSEEK_MODEL,
+        thinking: { type: "disabled" },
         messages: [{ role: "user", content: prompt }],
         temperature: 0.2,
         top_p: 0.9,

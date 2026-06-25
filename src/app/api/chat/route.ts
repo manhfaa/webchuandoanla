@@ -100,6 +100,7 @@ async function callDeepSeek({
       },
       body: JSON.stringify({
         model: DEEPSEEK_MODEL,
+        thinking: { type: "disabled" },
         messages: [
           { role: "system", content: buildSystemPrompt(mode) },
           { role: "user", content: buildUserPrompt({ query, mode, latestDiagnosis }) },
