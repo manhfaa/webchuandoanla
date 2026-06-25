@@ -401,7 +401,7 @@ function buildResearchRecommendationBlocks(research?: SymptomResearchResult | nu
 
   if (research.finalConclusion) {
     blocks.push({
-      title: "Kết luận cuối cùng từ OpenRouter",
+      title: "Kết luận cuối cùng từ DeepSeek",
       items: [
         research.finalConclusion,
         research.userNextStep ? `Bước tiếp theo: ${research.userNextStep}` : "",
@@ -489,10 +489,10 @@ async function researchSymptomsWithSources({
   if (!response.ok) {
     try {
       const data = (await response.json()) as { error?: string };
-      throw new Error(data.error || "Không hoàn tất được kiểm chứng OpenRouter + Tavily.");
+      throw new Error(data.error || "Không hoàn tất được kiểm chứng DeepSeek + Tavily.");
     } catch (error) {
       if (error instanceof Error) throw error;
-      throw new Error("Không hoàn tất được kiểm chứng OpenRouter + Tavily.");
+      throw new Error("Không hoàn tất được kiểm chứng DeepSeek + Tavily.");
     }
   }
   return (await response.json()) as SymptomResearchResult;
@@ -539,8 +539,8 @@ function applyCnnResult(
         : "Không dùng triệu chứng bổ sung; giữ kết quả CNN cao nhất.",
       symptoms.trim() && research
         ? research.isSymptomConsistent
-          ? "Triệu chứng đã được kiểm chứng thêm bằng Tavily và OpenRouter với nguồn web tham khảo."
-          : "Tavily/OpenRouter chưa xác nhận rõ triệu chứng phù hợp với kết quả CNN; cần kiểm tra thực địa kỹ hơn."
+          ? "Triệu chứng đã được kiểm chứng thêm bằng Tavily và DeepSeek với nguồn web tham khảo."
+          : "Tavily/DeepSeek chưa xác nhận rõ triệu chứng phù hợp với kết quả CNN; cần kiểm tra thực địa kỹ hơn."
         : "",
       `Model: ${finalCnn.model_version}.`,
     ].filter(Boolean),
@@ -957,7 +957,7 @@ export default function DashboardDiagnosisPage() {
           cnn: pendingCnnReview.cnn,
         });
         if (!research || research.skipped) {
-          throw new Error("Chưa hoàn tất pipeline kiểm chứng OpenRouter + Tavily.");
+          throw new Error("Chưa hoàn tất pipeline kiểm chứng DeepSeek + Tavily.");
         }
       }
 
@@ -974,7 +974,7 @@ export default function DashboardDiagnosisPage() {
         setResearchError(
           error instanceof Error
             ? error.message
-            : "Không hoàn tất được pipeline kiểm chứng OpenRouter + Tavily. Vui lòng thử lại.",
+            : "Không hoàn tất được pipeline kiểm chứng DeepSeek + Tavily. Vui lòng thử lại.",
         );
         setStatus("symptom-review");
         return;
@@ -1121,7 +1121,7 @@ export default function DashboardDiagnosisPage() {
               </h3>
               <p className="mt-3 text-sm leading-7 text-slate-600">
                 Nếu bạn nhập triệu chứng, Agromind AI sẽ đối chiếu mô tả với 5 kết quả CNN cao nhất rồi chọn kết quả
-                cuối cùng, sau đó dùng OpenRouter tạo câu search Tavily để kiểm chứng nguồn ngoài. Nếu không nhập, hệ thống
+                cuối cùng, sau đó dùng DeepSeek tạo câu search Tavily để kiểm chứng nguồn ngoài. Nếu không nhập, hệ thống
                 giữ nguyên kết quả CNN có độ tin cậy cao nhất và bỏ qua bước search.
               </p>
 
@@ -1184,7 +1184,7 @@ export default function DashboardDiagnosisPage() {
                 </Button>
               </div>
               <p className="mt-4 text-xs leading-6 text-slate-500">
-                Tavily chỉ được gọi khi có triệu chứng. Kết quả nguồn web được OpenRouter tóm tắt và lưu kèm trích dẫn trong lịch sử.
+                Tavily chỉ được gọi khi có triệu chứng. Kết quả nguồn web được DeepSeek tóm tắt và lưu kèm trích dẫn trong lịch sử.
               </p>
             </div>
           </div>

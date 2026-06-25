@@ -42,9 +42,9 @@ type SearchPromptResult = {
   tavilyQuery: string;
 };
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL ?? "nvidia/llama-nemotron-rerank-vl-1b-v2:free";
-const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
+const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL ?? "deepseek-v4-flash";
+const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
 const TAVILY_API_URL = "https://api.tavily.com/search";
 
@@ -102,7 +102,7 @@ function extractJsonObject(text: string) {
   }
 }
 
-function normalizeGeminiJsonText(value: unknown) {
+function normalizeDeepSeekJsonText(value: unknown) {
   const text = cleanText(value);
   const parsed = extractJsonObject(text);
   if (parsed) return parsed;
@@ -148,7 +148,7 @@ function looksLikeSearchQuery(value: string) {
 }
 
 function tryParseSearchPromptResult(generated: string): SearchPromptResult | null {
-  const parsed = normalizeGeminiJsonText(generated);
+  const parsed = normalizeDeepSeekJsonText(generated);
   let displayQuestion = pickStringField(parsed, [
     "display_question",
     "displayQuestion",
@@ -199,10 +199,10 @@ function parseSearchPromptResult(generated: string, step: string): SearchPromptR
   const parsed = tryParseSearchPromptResult(generated);
   if (parsed) return parsed;
 
-  throw new Error(`OpenRouter chưa trả đúng câu hỏi hiển thị và query Tavily cho bước ${step}.`);
+  throw new Error(`DeepSeek chưa trả đúng câu hỏi hiển thị và query Tavily cho bước ${step}.`);
 }
 
-function extractOpenRouterContent(content: unknown) {
+function extractDeepSeekContent(content: unknown) {
   if (typeof content === "string") return content.trim();
   if (Array.isArray(content)) {
     return content
@@ -229,7 +229,7 @@ async function repairSearchPromptResult({
 }) {
   const prompt = [
     "Bạn đang sửa output JSON cho Agromind AI.",
-    "Output trước đó của model OpenRouter chưa đúng schema hoặc thiếu key.",
+    "Output trước đó của model DeepSeek chưa đúng schema hoặc thiếu key.",
     "BẮT BUỘC dùng chính ngữ cảnh yêu cầu ban đầu và output trước đó để viết lại đúng 2 trường.",
     "Không markdown, không giải thích, không bọc ```json.",
     "Chỉ trả về JSON object hợp lệ với đúng 2 key: display_question và tavily_query.",
@@ -242,50 +242,49 @@ async function repairSearchPromptResult({
     generated,
   ].join("\n");
 
-  const repaired = await requireGeminiText(prompt, 260, `sửa JSON câu search ${step}`);
+  const repaired = await requireDeepSeekText(prompt, 260, `sửa JSON câu search ${step}`);
   return parseSearchPromptResult(repaired, step);
 }
 
-async function callGeminiText(prompt: string, maxOutputTokens = 700, jsonMode = true) {
-  if (!OPENROUTER_API_KEY) return null;
+async function callDeepSeekText(prompt: string, maxOutputTokens = 700, jsonMode = true) {
+  if (!DEEPSEEK_API_KEY) return null;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20000);
 
   try {
-    const response = await fetch(OPENROUTER_API_URL, {
+    const response = await fetch(DEEPSEEK_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-        "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL ?? "https://agromindai.vercel.app",
-        "X-OpenRouter-Title": "Agromind AI",
+        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
       },
       body: JSON.stringify({
-        model: OPENROUTER_MODEL,
+        model: DEEPSEEK_MODEL,
         messages: [{ role: "user", content: prompt }],
         temperature: 0.2,
         top_p: 0.9,
         max_tokens: maxOutputTokens,
+        ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
       }),
       signal: controller.signal,
     });
 
     if (!response.ok) {
-      let message = `OpenRouter API lỗi ${response.status}`;
+      let message = `DeepSeek API lỗi ${response.status}`;
       try {
         const errorBody = (await response.json()) as { error?: { message?: string; status?: string; code?: string } };
         const detail = cleanText(errorBody.error?.status || errorBody.error?.message);
         if (detail) message += `: ${detail}`;
       } catch {
-        // Keep the HTTP status when OpenRouter does not return a JSON error body.
+        // Keep the HTTP status when DeepSeek does not return a JSON error body.
       }
       throw new Error(message);
     }
     const data = (await response.json()) as {
       choices?: Array<{ message?: { content?: unknown } }>;
     };
-    return extractOpenRouterContent(data.choices?.[0]?.message?.content) || null;
+    return extractDeepSeekContent(data.choices?.[0]?.message?.content) || null;
   } catch (error) {
     if (error instanceof Error) throw error;
     return null;
@@ -294,15 +293,15 @@ async function callGeminiText(prompt: string, maxOutputTokens = 700, jsonMode = 
   }
 }
 
-async function requireGeminiText(prompt: string, maxOutputTokens: number, step: string) {
-  const text = await callGeminiText(prompt, maxOutputTokens);
+async function requireDeepSeekText(prompt: string, maxOutputTokens: number, step: string) {
+  const text = await callDeepSeekText(prompt, maxOutputTokens);
   if (!text) {
-    throw new Error(`OpenRouter không hoàn tất bước: ${step}.`);
+    throw new Error(`DeepSeek không hoàn tất bước: ${step}.`);
   }
   return text;
 }
 
-function cleanPlainGeminiText(value: string) {
+function cleanPlainDeepSeekText(value: string) {
   const text = value
     .replace(/^```(?:text|json)?/i, "")
     .replace(/```$/i, "")
@@ -312,17 +311,17 @@ function cleanPlainGeminiText(value: string) {
     const parsed = JSON.parse(text) as unknown;
     if (typeof parsed === "string") return cleanText(parsed);
   } catch {
-    // Plain text is expected for these single-field OpenRouter calls.
+    // Plain text is expected for these single-field DeepSeek calls.
   }
 
   return text.replace(/^["'`]+|["'`]+$/g, "").trim();
 }
 
-async function requireGeminiPlainText(prompt: string, maxOutputTokens: number, step: string) {
-  const text = await callGeminiText(prompt, maxOutputTokens, false);
-  const cleaned = text ? cleanPlainGeminiText(text) : "";
+async function requireDeepSeekPlainText(prompt: string, maxOutputTokens: number, step: string) {
+  const text = await callDeepSeekText(prompt, maxOutputTokens, false);
+  const cleaned = text ? cleanPlainDeepSeekText(text) : "";
   if (!cleaned) {
-    throw new Error(`OpenRouter không hoàn tất bước: ${step}.`);
+    throw new Error(`DeepSeek không hoàn tất bước: ${step}.`);
   }
   return cleaned;
 }
@@ -388,7 +387,7 @@ async function buildCompatibilitySearch(symptoms: string, topPredictions: Predic
     `Triệu chứng người dùng nhập: ${symptoms}`,
   ].join("\n");
 
-  const displayQuestion = await requireGeminiPlainText(
+  const displayQuestion = await requireDeepSeekPlainText(
     [
       "Bạn là trợ lý nông nghiệp của Agromind AI.",
       "Hãy viết đúng 1 câu hỏi tiếng Việt để người dùng thấy hệ thống đang kiểm chứng triệu chứng bằng nguồn web.",
@@ -401,7 +400,7 @@ async function buildCompatibilitySearch(symptoms: string, topPredictions: Predic
     "viết câu hỏi hiển thị kiểm chứng triệu chứng",
   );
 
-  const tavilyQuery = await requireGeminiPlainText(
+  const tavilyQuery = await requireDeepSeekPlainText(
     [
       "Bạn là trợ lý tìm kiếm nông nghiệp cho Agromind AI.",
       "Hãy viết đúng 1 câu search tiếng Anh để đưa trực tiếp vào Tavily.",
@@ -450,7 +449,7 @@ async function summarizeCompatibility({
     ),
   ].join("\n");
 
-  const generated = await requireGeminiText(prompt, 1200, "đọc nguồn Tavily và tổng hợp độ phù hợp triệu chứng");
+  const generated = await requireDeepSeekText(prompt, 1200, "đọc nguồn Tavily và tổng hợp độ phù hợp triệu chứng");
   const parsed = extractJsonObject(generated);
   return {
     isConsistent: typeof parsed?.is_consistent === "boolean" ? parsed.is_consistent : false,
@@ -471,7 +470,7 @@ async function buildTreatmentSearch(selectedPrediction?: Prediction | null, best
     .filter(Boolean)
     .join("\n");
 
-  const displayQuestion = await requireGeminiPlainText(
+  const displayQuestion = await requireDeepSeekPlainText(
     [
       "Bạn là trợ lý nông nghiệp của Agromind AI.",
       "Hãy viết đúng 1 câu hỏi tiếng Việt để người dùng thấy hệ thống đang tìm phương pháp xử lý ban đầu bằng nguồn web.",
@@ -484,7 +483,7 @@ async function buildTreatmentSearch(selectedPrediction?: Prediction | null, best
     "viết câu hỏi hiển thị phương pháp xử lý",
   );
 
-  const tavilyQuery = await requireGeminiPlainText(
+  const tavilyQuery = await requireDeepSeekPlainText(
     [
       "Bạn là trợ lý tìm kiếm nông nghiệp cho Agromind AI.",
       "Hãy viết đúng 1 câu search tiếng Anh để đưa trực tiếp vào Tavily.",
@@ -529,7 +528,7 @@ async function summarizeTreatment({
     .filter(Boolean)
     .join("\n");
 
-  const generated = await requireGeminiText(prompt, 1200, "đọc nguồn Tavily và tổng hợp phương pháp xử lý");
+  const generated = await requireDeepSeekText(prompt, 1200, "đọc nguồn Tavily và tổng hợp phương pháp xử lý");
   const parsed = extractJsonObject(generated);
   return {
     summary: cleanText(parsed?.summary || generated),
@@ -555,13 +554,13 @@ async function buildFinalConclusion({
 }) {
   const prompt = [
     "Bạn là Agromind AI.",
-    "BẮT BUỘC: chốt cuối cùng bằng model OpenRouter sau khi pipeline đã chạy đủ:",
-    "1. Model OpenRouter viết câu search kiểm chứng triệu chứng.",
+    "BẮT BUỘC: chốt cuối cùng bằng model DeepSeek sau khi pipeline đã chạy đủ:",
+    "1. Model DeepSeek viết câu search kiểm chứng triệu chứng.",
     "2. Tavily search kiểm chứng.",
-    "3. Model OpenRouter đọc nguồn Tavily và tổng hợp độ phù hợp.",
-    "4. Model OpenRouter viết câu search phương pháp xử lý.",
+    "3. Model DeepSeek đọc nguồn Tavily và tổng hợp độ phù hợp.",
+    "4. Model DeepSeek viết câu search phương pháp xử lý.",
     "5. Tavily search phương pháp xử lý.",
-    "6. Model OpenRouter đọc nguồn Tavily và tổng hợp xử lý.",
+    "6. Model DeepSeek đọc nguồn Tavily và tổng hợp xử lý.",
     "Bây giờ hãy chốt kết luận cuối cùng cho người dùng bằng tiếng Việt.",
     "Trả về JSON object hợp lệ, không markdown, không bọc ```json, theo schema:",
     '{"final_conclusion":"...","user_next_step":"..."}',
@@ -577,7 +576,7 @@ async function buildFinalConclusion({
     `Lưu ý an toàn: ${treatment.safetyNote}`,
   ].join("\n");
 
-  const generated = await requireGeminiText(prompt, 900, "chốt kết luận cuối cùng");
+  const generated = await requireDeepSeekText(prompt, 900, "chốt kết luận cuối cùng");
   const parsed = extractJsonObject(generated);
   return {
     finalConclusion: cleanText(parsed?.final_conclusion || generated),
@@ -600,8 +599,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ skipped: true, reason: "Không có triệu chứng để kiểm chứng." });
   }
 
-  if (!OPENROUTER_API_KEY) {
-    return NextResponse.json({ error: "Thiếu OPENROUTER_API_KEY để viết câu search và tổng hợp." }, { status: 503 });
+  if (!DEEPSEEK_API_KEY) {
+    return NextResponse.json({ error: "Thiếu DEEPSEEK_API_KEY để viết câu search và tổng hợp." }, { status: 503 });
   }
 
   if (!TAVILY_API_KEY) {
@@ -643,13 +642,13 @@ export async function POST(request: Request) {
       skipped: false,
       available: true,
       pipeline: [
-        "openrouter_build_compatibility_query",
+        "deepseek_build_compatibility_query",
         "tavily_search_compatibility",
-        "openrouter_summarize_compatibility",
-        "openrouter_build_treatment_query",
+        "deepseek_summarize_compatibility",
+        "deepseek_build_treatment_query",
         "tavily_search_treatment",
-        "openrouter_summarize_treatment",
-        "openrouter_final_conclusion",
+        "deepseek_summarize_treatment",
+        "deepseek_final_conclusion",
       ],
       compatibilityQuestion: compatibilitySearchPrompt.displayQuestion,
       compatibilityQuery: compatibilitySearchPrompt.tavilyQuery,
@@ -670,7 +669,7 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Không hoàn tất được pipeline OpenRouter + Tavily.",
+        error: error instanceof Error ? error.message : "Không hoàn tất được pipeline DeepSeek + Tavily.",
       },
       { status: 502 },
     );

@@ -3,9 +3,9 @@ import { NextResponse } from "next/server";
 import { buildChatApiResponse } from "@/lib/chat-assistant";
 import { ChatApiRequest, ChatMode, DiagnosisRecord } from "@/types";
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL ?? "nvidia/llama-nemotron-rerank-vl-1b-v2:free";
-const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
+const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL ?? "deepseek-v4-flash";
+const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
 
 function buildSystemPrompt(mode: ChatMode) {
   if (mode === "expert") {
@@ -61,7 +61,7 @@ function buildUserPrompt({
   ].join("\n");
 }
 
-function extractOpenRouterContent(content: unknown) {
+function extractDeepSeekContent(content: unknown) {
   if (typeof content === "string") return content.trim();
   if (Array.isArray(content)) {
     return content
@@ -77,7 +77,7 @@ function extractOpenRouterContent(content: unknown) {
   return "";
 }
 
-async function callOpenRouter({
+async function callDeepSeek({
   query,
   mode,
   latestDiagnosis,
@@ -86,22 +86,20 @@ async function callOpenRouter({
   mode: ChatMode;
   latestDiagnosis?: DiagnosisRecord | null;
 }) {
-  if (!OPENROUTER_API_KEY) return null;
+  if (!DEEPSEEK_API_KEY) return null;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
 
   try {
-    const response = await fetch(OPENROUTER_API_URL, {
+    const response = await fetch(DEEPSEEK_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-        "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL ?? "https://agromindai.vercel.app",
-        "X-OpenRouter-Title": "Agromind AI",
+        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
       },
       body: JSON.stringify({
-        model: OPENROUTER_MODEL,
+        model: DEEPSEEK_MODEL,
         messages: [
           { role: "system", content: buildSystemPrompt(mode) },
           { role: "user", content: buildUserPrompt({ query, mode, latestDiagnosis }) },
@@ -119,7 +117,7 @@ async function callOpenRouter({
       choices?: Array<{ message?: { content?: unknown } }>;
     };
 
-    return extractOpenRouterContent(data.choices?.[0]?.message?.content) || null;
+    return extractDeepSeekContent(data.choices?.[0]?.message?.content) || null;
   } catch {
     return null;
   } finally {
@@ -145,12 +143,12 @@ export async function POST(request: Request) {
 
   const selectedDiagnosis = body.selectedDiagnosis ?? body.latestDiagnosis ?? null;
   const diagnosisForPrompt = mode === "assistant" ? selectedDiagnosis : null;
-  const openRouterAnswer = await callOpenRouter({ query, mode, latestDiagnosis: diagnosisForPrompt });
+  const deepSeekAnswer = await callDeepSeek({ query, mode, latestDiagnosis: diagnosisForPrompt });
 
-  if (openRouterAnswer) {
+  if (deepSeekAnswer) {
     return NextResponse.json({
       mode,
-      answer: openRouterAnswer,
+      answer: deepSeekAnswer,
       generatedAt: new Date().toISOString(),
     });
   }

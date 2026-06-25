@@ -10,7 +10,7 @@ Repo GitHub: https://github.com/manhfaa/webchuandoanla
 - YOLO xác thực ảnh lá và CNN trả top 5 kết quả bệnh/cây.
 - Cảnh báo độ tin cậy CNN bằng màu xanh/đỏ, cảnh báo khi confidence dưới 70%.
 - Khuyến nghị hành động sau chẩn đoán: mức rủi ro, việc cần làm ngay, theo dõi 3-7 ngày, khi nào hỏi chuyên gia, có nên chụp lại ảnh, lưu ý an toàn.
-- Chat AI qua OpenRouter nếu có `OPENROUTER_API_KEY`, fallback local nếu chưa cấu hình.
+- Chat AI qua DeepSeek nếu có `DEEPSEEK_API_KEY`, fallback local nếu chưa cấu hình.
 - Giọng nói: nút micro hỏi bằng tiếng Việt và đọc kết quả chẩn đoán.
 - Hỗ trợ mạng yếu: trạng thái online/offline, lưu tạm và gửi lại khi có mạng.
 - Thời tiết và cảnh báo sâu bệnh theo tỉnh/huyện/xã/vị trí canh tác.
@@ -120,8 +120,8 @@ Các biến quan trọng:
 # Frontend
 DJANGO_BASE_URL=http://127.0.0.1:8000
 NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
-OPENROUTER_API_KEY=
-OPENROUTER_MODEL=nvidia/llama-nemotron-rerank-vl-1b-v2:free
+DEEPSEEK_API_KEY=
+DEEPSEEK_MODEL=deepseek-v4-flash
 
 # Backend
 SECRET_KEY=change-me
@@ -136,7 +136,7 @@ CORS_ALLOWED_ORIGINS=
 CSRF_TRUSTED_ORIGINS=
 ```
 
-Không commit `.env`, `.env.local`, token OpenRouter hoặc Hugging Face thật.
+Không commit `.env`, `.env.local`, token DeepSeek hoặc Hugging Face thật.
 
 ## Database
 
@@ -211,13 +211,13 @@ $env:HF_TOKEN="your_huggingface_token"
 python scripts\deploy_hf_space.py
 ```
 
-## OpenRouter chat
+## DeepSeek chat
 
-Chat AI dùng OpenRouter qua biến:
+Chat AI dùng DeepSeek qua biến:
 
 ```env
-OPENROUTER_API_KEY=your_key
-OPENROUTER_MODEL=nvidia/llama-nemotron-rerank-vl-1b-v2:free
+DEEPSEEK_API_KEY=your_key
+DEEPSEEK_MODEL=deepseek-v4-flash
 ```
 
 Nếu không có key, app vẫn dùng fallback local để trả lời cơ bản.
@@ -300,7 +300,7 @@ Gợi ý cấu hình:
 - Backend: Render free, dùng `render.yaml`.
 - Database: Supabase Postgres hoặc SQLite cho local.
 - CNN: Hugging Face Space free.
-- OpenRouter: set `OPENROUTER_API_KEY` và `OPENROUTER_MODEL` trong Vercel env.
+- DeepSeek: set `DEEPSEEK_API_KEY` và `DEEPSEEK_MODEL` trong Vercel env.
 
 Backend Render cần các biến chính:
 
