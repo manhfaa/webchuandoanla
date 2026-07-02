@@ -301,6 +301,7 @@ Gợi ý cấu hình:
 - Database: Supabase Postgres hoặc SQLite cho local.
 - CNN: Hugging Face Space free.
 - DeepSeek: set `DEEPSEEK_API_KEY` và `DEEPSEEK_MODEL` trong Vercel env.
+- Cloudflare: xem `CLOUDFLARE_SECURITY.md` để bật proxy, SSL strict, WAF/rate limit và cập nhật domain production.
 
 Backend Render cần các biến chính:
 

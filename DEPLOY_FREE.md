@@ -101,6 +101,18 @@ CSRF_TRUSTED_ORIGINS=https://webchuandoanla-backend.onrender.com,https://*.verce
 
 Redeploy or restart the Render backend.
 
+## 5. Add Cloudflare security
+
+After the production domain is stable, add it to Cloudflare and follow `CLOUDFLARE_SECURITY.md`.
+
+Minimum recommended settings:
+
+- SSL/TLS: `Full (strict)`.
+- Enable `Always Use HTTPS`.
+- Proxy the public frontend hostname through Cloudflare.
+- Add WAF/rate-limit protection for `/login`, `/register`, `/api/chat`, and `/api/research-symptoms`.
+- Update Vercel and Render environment variables if the public domain changes.
+
 ## Free-tier constraints
 
 - Render Free backend spins down after idle time, so the first request can be slow.
