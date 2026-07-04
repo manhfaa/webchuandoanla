@@ -16,7 +16,7 @@ export function PlantsSection() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {supportedPlants.map((plant, index) => (
           <Reveal key={plant.id} delay={index * 0.03}>
-            <Card className="group h-full overflow-hidden rounded-[28px] border-white/75 bg-white/90 p-4 transition duration-300 hover:-translate-y-1 hover:shadow-float">
+            <Card className="group h-full overflow-hidden rounded-[28px] border-white/75 bg-white/90 p-4 transition duration-300 hover:-translate-y-1 hover:shadow-float dark:border-white/10 dark:bg-white/10">
               <div className={`relative overflow-hidden rounded-[24px] bg-gradient-to-br ${plant.accent} p-2`}>
                 <div className="relative h-36 overflow-hidden rounded-[20px] bg-brand-950/10">
                   <Image
@@ -33,14 +33,14 @@ export function PlantsSection() {
                 </div>
               </div>
               <div className="mt-5">
-                <h3 className="font-display text-2xl font-semibold text-ink">{plant.name}</h3>
-                <p className="mt-1 text-sm font-medium text-brand-700">{plant.latinLabel}</p>
-                <p className="mt-3 text-sm leading-7 text-slate-600">{plant.insight}</p>
+                <h3 className="font-display text-2xl font-semibold text-ink dark:text-white">{plant.name}</h3>
+                <p className="mt-1 text-sm font-semibold text-brand-700 dark:text-lime-100">{plant.latinLabel}</p>
+                <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-emerald-50/75">{plant.insight}</p>
                 <a
                   href={plant.imageSourceUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-4 inline-flex text-xs font-medium text-slate-500 transition hover:text-brand-700"
+                  className="mt-4 inline-flex text-xs font-semibold text-slate-500 transition hover:text-brand-700 dark:text-emerald-50/60 dark:hover:text-lime-100"
                 >
                   Ảnh: {plant.imageCredit}
                 </a>

@@ -22,8 +22,8 @@ export function TeamSection() {
 
           return (
             <Reveal key={member.id} delay={index * 0.06}>
-              <Card className="h-full rounded-[30px] border-white/70 bg-white/90 p-5 transition duration-300 hover:-translate-y-1 hover:shadow-float">
-                <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-emerald-50 to-lime-50 p-4">
+              <Card className="h-full rounded-[30px] border-white/70 bg-white/90 p-5 transition duration-300 hover:-translate-y-1 hover:shadow-float dark:border-white/10 dark:bg-white/10">
+                <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-emerald-50 to-lime-50 p-4 dark:from-emerald-300/12 dark:to-lime-200/10">
                   <Image
                     src={member.avatar}
                     alt={member.name}
@@ -43,35 +43,35 @@ export function TeamSection() {
                   />
                 </div>
                 <div className="mt-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-700">
+                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-brand-700 dark:text-lime-100">
                     {member.role}
                   </p>
-                  <h3 className="mt-2 font-display text-2xl font-semibold text-ink">
+                  <h3 className="mt-2 font-display text-2xl font-semibold text-ink dark:text-white">
                     {member.name}
                   </h3>
-                  <p className="mt-3 text-sm leading-7 text-slate-600">
+                  <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-emerald-50/75">
                     {member.description}
                   </p>
                   <div className="mt-5">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500 dark:text-emerald-50/60">
                       Nhiệm vụ
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {member.responsibilities.map((item) => (
                         <span
                           key={item}
-                          className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-medium text-brand-800"
+                          className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-semibold text-brand-800 dark:border-white/10 dark:bg-white/10 dark:text-emerald-50"
                         >
                           {item}
                         </span>
                       ))}
                     </div>
                   </div>
-                  <div className="mt-5 rounded-[20px] bg-slate-50 p-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+                  <div className="mt-5 rounded-[20px] bg-slate-50 p-4 dark:bg-white/10">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500 dark:text-emerald-50/60">
                       Nội dung xuất hiện
                     </p>
-                    <p className="mt-2 text-sm leading-6 text-slate-700">
+                    <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-emerald-50/75">
                       {member.presentationFocus.join(", ")}
                     </p>
                   </div>

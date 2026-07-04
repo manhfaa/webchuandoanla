@@ -49,16 +49,16 @@ export function MissionSection() {
             const Icon = pillar.icon;
             return (
               <Reveal key={pillar.title} delay={index * 0.05}>
-                <Card className="rounded-[30px] border-white/75 bg-white/90 p-6">
+                <Card className="rounded-[30px] border-white/75 bg-white/90 p-6 dark:border-white/10 dark:bg-white/10">
                   <div className="flex items-start gap-4">
-                    <div className="rounded-2xl bg-emerald-100 p-3 text-brand-700">
+                    <div className="rounded-2xl bg-emerald-100 p-3 text-brand-700 dark:bg-white/10 dark:text-lime-100">
                       <Icon size={20} />
                     </div>
                     <div>
-                      <h3 className="font-display text-xl font-semibold text-ink">
+                      <h3 className="font-display text-xl font-semibold text-ink dark:text-white">
                         {pillar.title}
                       </h3>
-                      <p className="mt-3 text-sm leading-7 text-slate-600">
+                      <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-emerald-50/75">
                         {pillar.description}
                       </p>
                     </div>

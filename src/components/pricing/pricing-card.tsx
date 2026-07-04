@@ -63,7 +63,7 @@ export function PricingCard({
         "relative flex h-full flex-col overflow-hidden rounded-lg p-5 lg:p-6",
         dark
           ? "border-white/10 bg-white/5 text-white"
-          : "border-white/75 bg-white/90 text-ink",
+          : "border-white/75 bg-white/90 text-ink dark:border-white/10 dark:bg-white/10 dark:text-white",
         plan.highlight &&
           !dark &&
           "bg-gradient-to-br from-[#0f221a] via-[#153524] to-[#10231c] text-white",
@@ -85,7 +85,7 @@ export function PricingCard({
                     ? "text-lime-200/80"
                     : dark
                       ? "text-emerald-100/70"
-                      : "text-brand-700",
+                      : "text-brand-700 dark:text-lime-100",
                 )}
               >
                 {plan.name}
@@ -106,7 +106,7 @@ export function PricingCard({
             <h3
               className={cn(
                 "max-w-full break-words font-display text-[1.75rem] font-semibold tracking-tight sm:text-[2rem]",
-                isEmphasized ? "text-white" : "text-ink",
+                isEmphasized ? "text-white" : "text-ink dark:text-white",
               )}
             >
               {plan.price}
@@ -114,7 +114,7 @@ export function PricingCard({
             <p
               className={cn(
                 "mt-3 text-sm leading-7",
-                isEmphasized ? "text-emerald-50/80" : "text-slate-600",
+                isEmphasized ? "text-emerald-50/80" : "text-slate-600 dark:text-emerald-50/75",
               )}
             >
               {plan.description}
@@ -130,13 +130,13 @@ export function PricingCard({
               key={feature}
               className={cn(
                 "flex items-start gap-3 rounded-lg px-3 py-3",
-                isEmphasized ? "bg-white/5" : "bg-emerald-50/60",
+                isEmphasized ? "bg-white/5" : "bg-emerald-50/60 dark:bg-white/10",
               )}
             >
               <span
                 className={cn(
                   "mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
-                  isEmphasized ? "bg-white/10 text-lime-200" : "bg-brand-100 text-brand-700",
+                  isEmphasized ? "bg-white/10 text-lime-200" : "bg-brand-100 text-brand-700 dark:bg-white/10 dark:text-lime-100",
                 )}
               >
                 <Check size={14} />
@@ -144,7 +144,7 @@ export function PricingCard({
               <p
                 className={cn(
                   "text-sm leading-7",
-                  isEmphasized ? "text-emerald-50/85" : "text-slate-700",
+                  isEmphasized ? "text-emerald-50/90" : "text-slate-700 dark:text-emerald-50/75",
                 )}
               >
                 {feature}
