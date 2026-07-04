@@ -4,36 +4,50 @@ export const workflowSteps: WorkflowStep[] = [
   {
     id: "upload",
     step: "Bước 1",
-    title: "Tải ảnh hoặc chụp ảnh lá cây",
+    title: "Tải ảnh lá",
     description:
-      "Người dùng đưa ảnh vào hệ thống qua upload hoặc thao tác chụp ảnh nhanh trên thiết bị một cách đơn giản, dễ hiểu.",
+      "Người dùng tải ảnh hoặc chụp trực tiếp trên điện thoại để bắt đầu ca chẩn đoán.",
   },
   {
-    id: "verify",
+    id: "yolo",
     step: "Bước 2",
-    title: "YOLO kiểm tra đúng lá cây",
+    title: "YOLO kiểm tra lá",
     description:
-      "Bộ xác thực hình ảnh giúp loại bỏ ảnh nhiễu, tăng độ tin cậy cho toàn bộ trải nghiệm và giữ đầu vào sạch cho các bước AI sau này.",
+      "Hệ thống xác thực ảnh có vùng lá rõ ràng trước khi cho đi tiếp qua mô hình phân loại.",
   },
   {
-    id: "store",
+    id: "cnn",
     step: "Bước 3",
-    title: "Lưu kết quả xác thực và chuẩn bị dữ liệu",
+    title: "CNN dự đoán top 5",
     description:
-      "Ảnh hợp lệ được lưu vào lịch sử cùng mức tin cậy YOLO để người dùng dễ theo dõi, so sánh và tái sử dụng khi cần.",
+      "Mô hình CNN trả về 5 khả năng bệnh/cây cao nhất kèm độ tin cậy để người dùng dễ so sánh.",
   },
   {
-    id: "advise",
+    id: "symptoms",
     step: "Bước 4",
-    title: "Chat RAG gợi ý bước tiếp theo",
+    title: "Nhập triệu chứng",
     description:
-      "Từ ảnh đã qua xác thực, Light RAG có thể tư vấn cách chụp tốt hơn, chuẩn hóa dữ liệu và cung cấp kiến thức nông nghiệp phù hợp.",
+      "Người dùng có thể mô tả đốm lá, màu sắc, mép lá hoặc chọn không nhập nếu chưa quan sát rõ.",
   },
   {
-    id: "roadmap",
+    id: "tavily",
     step: "Bước 5",
-    title: "CNN sẽ được bổ sung ở giai đoạn tiếp theo",
+    title: "Tavily tìm nguồn",
     description:
-      "Agromind AI đang ưu tiên làm chắc lớp YOLO trước. Khi CNN được tích hợp, các ảnh đã lưu sẽ trở thành dữ liệu đầu vào rất hữu ích.",
+      "DeepSeek tạo câu search, Tavily lấy nguồn web tham khảo để kiểm chứng triệu chứng với kết quả CNN.",
+  },
+  {
+    id: "deepseek",
+    step: "Bước 6",
+    title: "DeepSeek tổng hợp",
+    description:
+      "AI đọc nguồn, tóm tắt độ phù hợp và chốt kết luận cuối cùng bằng ngôn ngữ dễ hiểu.",
+  },
+  {
+    id: "history",
+    step: "Bước 7",
+    title: "Lưu lịch sử",
+    description:
+      "Kết quả, nguồn tham khảo và khuyến nghị hành động được lưu để người dùng theo dõi mùa vụ.",
   },
 ];

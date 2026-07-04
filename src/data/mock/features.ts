@@ -2,51 +2,59 @@ import { FeatureItem } from "@/types";
 
 export const featureItems: FeatureItem[] = [
   {
-    id: "yolo",
-    eyebrow: "Cổng kiểm tra YOLO",
-    title: "Nhận diện lá cây chuẩn đầu vào",
+    id: "cnn",
+    eyebrow: "CNN nhận diện bệnh",
+    title: "Dự đoán top 5 bệnh/cây từ ảnh lá",
     description:
-      "Kiểm tra ảnh có đúng là lá cây hay không trước khi đưa sang các bước AI sâu hơn, giúp toàn bộ quy trình rõ ràng và đáng tin cậy hơn.",
+      "Sau khi ảnh hợp lệ, CNN phân tích đặc trưng lá và trả về các khả năng cao nhất kèm độ tin cậy để người dùng không bị phụ thuộc vào một kết quả duy nhất.",
     accent: "from-emerald-400/30 via-lime-200/20 to-transparent",
   },
   {
-    id: "capture",
-    eyebrow: "Quy trình chụp di động",
-    title: "Tải ảnh hoặc chụp ảnh lá ngay trên thiết bị",
+    id: "yolo",
+    eyebrow: "YOLO xác thực ảnh",
+    title: "Chặn ảnh không phải lá trước khi phân tích",
     description:
-      "Người dùng có thể tải ảnh từ máy hoặc chụp nhanh trên điện thoại, xem trước ảnh và biết ngay ảnh đã đủ điều kiện qua YOLO hay chưa.",
+      "YOLO đóng vai trò cổng kiểm tra đầu vào: nếu ảnh mờ, không có lá hoặc vùng lá quá khó nhìn, hệ thống cảnh báo người dùng chụp rõ hơn.",
     accent: "from-teal-400/30 via-emerald-200/20 to-transparent",
   },
   {
-    id: "rag",
-    eyebrow: "Tư vấn chăm sóc RAG",
-    title: "Tư vấn bước tiếp theo bằng hội thoại dễ hiểu",
+    id: "tavily",
+    eyebrow: "Tavily tìm nguồn web",
+    title: "Kiểm chứng triệu chứng bằng nguồn tham khảo",
     description:
-      "Ngay cả khi chưa có CNN, Light RAG vẫn giúp người dùng hiểu cách chụp ảnh tốt hơn, chuẩn bị dữ liệu và hỏi đáp nông nghiệp theo ngữ cảnh.",
+      "Khi người dùng nhập triệu chứng, hệ thống tạo câu search và lấy nguồn web để đối chiếu xem mô tả thực tế có phù hợp với top kết quả CNN hay không.",
+    accent: "from-cyan-300/30 via-emerald-100/25 to-transparent",
+  },
+  {
+    id: "deepseek",
+    eyebrow: "DeepSeek tổng hợp",
+    title: "Chốt kết luận và khuyến nghị dễ hiểu",
+    description:
+      "DeepSeek đọc kết quả CNN, triệu chứng và nguồn Tavily để tóm tắt ngắn gọn, có trích dẫn và đề xuất hành động ban đầu phù hợp.",
     accent: "from-lime-300/40 via-amber-100/25 to-transparent",
   },
   {
-    id: "history",
-    eyebrow: "Dòng thời gian ca kiểm tra",
-    title: "Theo dõi lịch sử xác thực ảnh theo mùa vụ",
+    id: "weather",
+    eyebrow: "Thời tiết & sâu bệnh",
+    title: "Theo dõi điều kiện canh tác tại vị trí thật",
     description:
-      "Lưu lại các ảnh lá đã qua xác thực, xem lại ca cũ và tổ chức dữ liệu theo từng loại cây để quản lý canh tác thuận tiện hơn.",
+      "Người dùng có thể lưu vị trí vườn, xem thời tiết, độ ẩm, mưa gió và nhận cảnh báo chăm sóc cây theo điều kiện thực tế.",
+    accent: "from-sky-300/30 via-emerald-100/25 to-transparent",
+  },
+  {
+    id: "history",
+    eyebrow: "Lịch sử chẩn đoán",
+    title: "Lưu lại ảnh, kết quả và nguồn tham khảo",
+    description:
+      "Mỗi ca chẩn đoán có thể được lưu để xem lại diễn biến bệnh, so sánh ảnh cũ và theo dõi hiệu quả xử lý trong nhiều ngày.",
     accent: "from-emerald-300/40 via-white/10 to-transparent",
   },
   {
-    id: "pricing",
-    eyebrow: "Gói sử dụng linh hoạt",
-    title: "Lộ trình nâng cấp Free, Pro và Plus",
+    id: "crop-plans",
+    eyebrow: "Kế hoạch canh tác",
+    title: "Biến kết quả AI thành việc cần làm",
     description:
-      "Thiết kế rõ ràng từng quyền lợi để người dùng nhận biết ngay đâu là gói phù hợp với mức độ chuyên sâu mong muốn hiện tại.",
+      "Agromind AI hỗ trợ lập kế hoạch trồng, nhắc việc, theo dõi tưới bón và liên kết kết quả chẩn đoán với từng lô vườn.",
     accent: "from-green-300/40 via-yellow-100/25 to-transparent",
-  },
-  {
-    id: "roadmap",
-    eyebrow: "Lộ trình CNN",
-    title: "Sẵn sàng cho giai đoạn CNN tiếp theo",
-    description:
-      "Agromind AI tập trung làm tốt lớp YOLO xác thực ảnh lá ở hiện tại, đồng thời giữ sẵn dữ liệu đầu vào để mở rộng sang CNN khi sẵn sàng.",
-    accent: "from-cyan-300/30 via-emerald-100/25 to-transparent",
   },
 ];

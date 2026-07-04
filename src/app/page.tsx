@@ -14,11 +14,11 @@ export default function HomePage() {
       <Navbar />
       <main id="main-content">
         <HeroSection />
-        <TeamSection />
+        <WorkflowSection />
         <FeaturesSection />
         <PlantsSection />
-        <WorkflowSection />
         <MissionSection />
+        <TeamSection />
         <PricingPreviewSection />
       </main>
       <Footer />

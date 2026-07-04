@@ -1,134 +1,239 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Camera, ScanSearch, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  BadgeCheck,
+  BrainCircuit,
+  Camera,
+  CheckCircle2,
+  FileSearch,
+  Leaf,
+  Microscope,
+  ScanLine,
+  Sparkles,
+  UploadCloud,
+} from "lucide-react";
 
+import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Reveal } from "@/components/ui/reveal";
-import { brand } from "@/constants/brand";
-import { buttonVariants } from "@/components/ui/button";
+
+const cnnResults = [
+  { label: "Cà chua - Đốm vi khuẩn", score: "84%", tone: "bg-leaf-500" },
+  { label: "Ớt chuông - Đốm lá", score: "7%", tone: "bg-emerald-300" },
+  { label: "Táo - Gỉ sắt", score: "4%", tone: "bg-lime-300" },
+  { label: "Ngô - Khỏe mạnh", score: "3%", tone: "bg-sun-400" },
+  { label: "Nho - Esca", score: "2%", tone: "bg-amber-300" },
+];
+
+const heroStats = [
+  { label: "Ảnh lá", value: "Upload / Camera" },
+  { label: "AI thị giác", value: "YOLO + CNN" },
+  { label: "Nguồn web", value: "Tavily + DeepSeek" },
+];
+
+const leafSamples = [
+  { src: "/illustrations/leaf-sample-tomato.svg", label: "Cà chua" },
+  { src: "/illustrations/leaf-sample-grape.svg", label: "Nho" },
+  { src: "/illustrations/leaf-sample-corn.svg", label: "Ngô" },
+];
 
 export function HeroSection() {
   return (
     <section
       id="top"
-      className="overflow-hidden px-4 pb-20 pt-32 sm:px-6 lg:px-8 lg:pb-28 lg:pt-36"
+      className="relative isolate overflow-hidden bg-[radial-gradient(circle_at_16%_14%,rgba(180,228,195,0.58),transparent_28%),radial-gradient(circle_at_86%_18%,rgba(245,211,115,0.26),transparent_30%),linear-gradient(180deg,#f9fbf4_0%,#eff8e9_48%,#fbfaf1_100%)] px-4 pb-20 pt-32 sm:px-6 lg:px-8 lg:pb-28 lg:pt-36"
     >
-      <div className="mx-auto grid max-w-7xl gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-        <Reveal className="max-w-2xl">
-          <div className="inline-flex rounded-full border border-brand-100 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-brand-800 shadow-soft">
-            Kiểm tra ảnh lá cây dễ hiểu và dễ dùng
+      <div className="absolute inset-0 -z-10 opacity-[0.28] [background-image:linear-gradient(120deg,rgba(11,78,48,0.08)_1px,transparent_1px),linear-gradient(60deg,rgba(11,78,48,0.06)_1px,transparent_1px)] [background-size:44px_44px]" />
+      <div className="absolute -left-32 top-28 -z-10 h-72 w-72 rounded-full bg-leaf-300/30 blur-3xl" />
+      <div className="absolute -right-32 bottom-20 -z-10 h-80 w-80 rounded-full bg-sun-100/80 blur-3xl" />
+
+      <div className="mx-auto grid max-w-7xl gap-14 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
+        <Reveal className="max-w-3xl">
+          <div className="inline-flex items-center gap-2 rounded-full border border-leaf-200 bg-white/75 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-leaf-800 shadow-sm backdrop-blur">
+            <Leaf size={16} />
+            AI nông nghiệp cho người trồng cây Việt Nam
           </div>
-          <h1 className="mt-7 font-display text-5xl font-semibold tracking-tight text-ink sm:text-6xl">
-            Tải ảnh lá cây lên và nhận kết quả nhanh trong một giao diện dễ dùng.
+
+          <h1 className="mt-7 max-w-4xl font-display text-5xl font-semibold tracking-[-0.045em] text-ink-900 sm:text-6xl lg:text-7xl">
+            Chẩn đoán bệnh lá cây bằng AI, kiểm chứng triệu chứng bằng nguồn web.
           </h1>
-          <p className="mt-6 text-lg leading-8 text-slate-600">
-            {brand.description} {brand.slogan}
+
+          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-700">
+            Agromind AI giúp người trồng cây tải ảnh lá, nhận kết quả CNN, đối chiếu triệu chứng thực tế và nhận khuyến nghị chăm sóc phù hợp.
           </p>
 
-          <div className="mt-9 flex flex-wrap gap-4">
-            <Link href="/login" className={buttonVariants({ variant: "primary", size: "lg" })}>
-              Bắt đầu ngay
+          <div className="mt-8 flex flex-wrap gap-4">
+            <Link href="/login?next=/dashboard/diagnosis" className={buttonVariants({ variant: "primary", size: "lg" })}>
+              Chẩn đoán ngay
               <ArrowRight size={18} />
             </Link>
-            <a href="#tinh-nang" className={buttonVariants({ variant: "secondaryOnLight", size: "lg" })}>
-              Xem tính năng
+            <a href="#quy-trinh" className={buttonVariants({ variant: "secondaryOnLight", size: "lg" })}>
+              Xem quy trình AI
             </a>
           </div>
 
-          <div className="mt-10 grid gap-4 sm:grid-cols-3">
-            {[
-              { label: "Bước 1", value: "Tải ảnh hoặc chụp ảnh" },
-              { label: "Bước 2", value: "Kiểm tra xem có phải lá cây" },
-              { label: "Bước 3", value: "Lưu kết quả và hỏi tiếp" },
-            ].map((item) => (
-              <Card
+          <div className="mt-9 grid gap-3 sm:grid-cols-3">
+            {heroStats.map((item) => (
+              <div
                 key={item.label}
-                variant="light"
-                className="relative overflow-hidden rounded-[28px] border-emerald-100 bg-gradient-to-br from-white via-emerald-50/80 to-lime-50 p-5 shadow-[0_18px_45px_rgba(15,35,24,0.08)]"
+                className="rounded-[24px] border border-white/80 bg-white/72 p-4 shadow-[0_18px_60px_rgba(17,64,42,0.08)] backdrop-blur"
               >
-                <div className="absolute inset-x-5 top-0 h-1 rounded-b-full bg-gradient-to-r from-leaf-500 to-lime-300" />
-                <p className="text-sm font-semibold text-brand-700">{item.label}</p>
-                <p className="mt-3 font-display text-xl font-semibold leading-snug text-ink-900">{item.value}</p>
-              </Card>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-leaf-700">{item.label}</p>
+                <p className="mt-2 font-display text-xl font-semibold text-ink-900">{item.value}</p>
+              </div>
             ))}
+          </div>
+
+          <div className="mt-7 rounded-[24px] border border-amber-200/80 bg-amber-50/85 p-4 text-sm leading-7 text-amber-950 shadow-sm">
+            Kết quả AI mang tính tham khảo, nên kết hợp quan sát thực địa hoặc hỏi chuyên gia khi bệnh lan rộng.
           </div>
         </Reveal>
 
         <Reveal delay={0.1} className="relative">
-          <div className="absolute inset-0 -z-10 rounded-[48px] bg-gradient-to-br from-brand-200/50 via-transparent to-lime-100/60 blur-3xl" />
-          <Card className="relative overflow-hidden rounded-[36px] border-white/70 bg-white/80 p-4 sm:p-6">
+          <div className="absolute inset-0 -z-10 rounded-[56px] bg-gradient-to-br from-leaf-300/45 via-white/10 to-sun-100/60 blur-3xl" />
+          <Card className="relative overflow-hidden rounded-[40px] border-white/80 bg-white/72 p-4 shadow-[0_30px_90px_rgba(13,54,35,0.18)] backdrop-blur-xl sm:p-6">
             <div className="absolute left-6 top-6 flex gap-2">
               <span className="h-3 w-3 rounded-full bg-red-300" />
               <span className="h-3 w-3 rounded-full bg-amber-300" />
               <span className="h-3 w-3 rounded-full bg-emerald-300" />
             </div>
+            <div className="absolute right-6 top-5 rounded-full border border-leaf-200 bg-leaf-50 px-3 py-1 text-xs font-semibold text-leaf-800">
+              Agromind AI dashboard
+            </div>
 
-            <div className="grid gap-4 pt-8 sm:grid-cols-[1.05fr_0.95fr]">
-              <div className="rounded-[30px] bg-gradient-to-br from-[#0f221a] via-[#143324] to-[#10211a] p-5 text-white shadow-float">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.28em] text-emerald-50/50">
-                      Ảnh đầu vào
-                    </p>
-                    <p className="mt-2 font-display text-2xl font-semibold">Agromind Lens</p>
+            <div className="grid gap-5 pt-10 lg:grid-cols-[0.9fr_1.1fr]">
+              <div className="space-y-5">
+                <div className="rounded-[32px] bg-gradient-to-br from-[#08291b] via-[#0d3a25] to-[#082016] p-5 text-white shadow-float">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.28em] text-emerald-100/55">Ảnh đầu vào</p>
+                      <h3 className="mt-2 font-display text-2xl font-semibold">Tải ảnh lá cây</h3>
+                    </div>
+                    <div className="rounded-2xl bg-white/10 p-3 text-lime-200">
+                      <UploadCloud size={22} />
+                    </div>
                   </div>
-                  <div className="rounded-2xl bg-white/10 p-3">
-                    <ScanSearch size={22} className="text-lime-200" />
+
+                  <div className="mt-5 grid grid-cols-3 gap-3">
+                    {leafSamples.map((sample) => (
+                      <div key={sample.label} className="rounded-[22px] border border-white/10 bg-white/8 p-2">
+                        <Image
+                          src={sample.src}
+                          alt={`Ảnh lá ${sample.label}`}
+                          width={120}
+                          height={90}
+                          className="h-20 w-full rounded-2xl object-contain"
+                        />
+                        <p className="mt-2 text-center text-[11px] font-semibold text-emerald-50/70">{sample.label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 flex items-center justify-between rounded-[22px] border border-lime-200/20 bg-lime-200/10 p-3">
+                    <div className="flex items-center gap-3">
+                      <BadgeCheck className="text-lime-200" size={22} />
+                      <div>
+                        <p className="text-sm font-semibold">YOLO đã xác thực lá</p>
+                        <p className="text-xs text-emerald-50/60">Vùng lá rõ, đủ điều kiện chạy CNN</p>
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-lime-200 px-3 py-1 text-xs font-bold text-emerald-950">98%</span>
                   </div>
                 </div>
-                <div className="relative mt-5 overflow-hidden rounded-[28px] border border-white/10 bg-white/5 p-4">
-                  <Image
-                    src="/illustrations/hero-dashboard.svg"
-                    alt="Minh họa giao diện Agromind AI"
-                    width={560}
-                    height={460}
-                    className="w-full rounded-[22px]"
-                  />
-                  <div className="absolute right-5 top-5 rounded-full bg-brand-400 px-3 py-1 text-xs font-semibold text-emerald-950">
-                    Ảnh hợp lệ
+
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                  <div className="rounded-[28px] border border-leaf-100 bg-white/90 p-4 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-2xl bg-leaf-100 p-3 text-leaf-700">
+                        <FileSearch size={20} />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.2em] text-leaf-700">Tavily</p>
+                        <p className="font-display text-lg font-semibold text-ink-900">Tìm nguồn web</p>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-sm leading-6 text-slate-600">Đối chiếu triệu chứng người dùng nhập với nguồn tham khảo nông nghiệp.</p>
+                  </div>
+
+                  <div className="rounded-[28px] border border-emerald-100 bg-emerald-950 p-4 text-white shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-2xl bg-white/10 p-3 text-lime-200">
+                        <BrainCircuit size={20} />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.2em] text-emerald-100/60">DeepSeek</p>
+                        <p className="font-display text-lg font-semibold">Tổng hợp kết luận</p>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-sm leading-6 text-emerald-50/75">Chốt kết quả cuối cùng và giải thích dễ hiểu cho người trồng cây.</p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-4">
-                <Card className="rounded-[30px] bg-gradient-to-br from-white to-emerald-50">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-2xl bg-emerald-100 p-3 text-brand-700">
-                      <Camera size={20} />
-                    </div>
+              <div className="space-y-5">
+                <div className="rounded-[32px] border border-leaf-100 bg-white/95 p-5 shadow-[0_24px_70px_rgba(16,70,44,0.1)]">
+                  <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm text-slate-500">Xem trước ảnh</p>
-                      <h3 className="font-display text-xl font-semibold text-ink">
-                        Kiểm tra ảnh trước khi bắt đầu
-                      </h3>
+                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-leaf-700">CNN top 5</p>
+                      <h3 className="mt-2 font-display text-2xl font-semibold text-ink-900">Kết quả khả nghi nhất</h3>
+                    </div>
+                    <div className="rounded-2xl bg-leaf-50 p-3 text-leaf-700">
+                      <Microscope size={22} />
                     </div>
                   </div>
-                  <div className="mt-4 rounded-[26px] border border-emerald-100 bg-white p-3">
-                    <Image
-                      src="/illustrations/scan-panel.svg"
-                      alt="Khung xem trước ảnh"
-                      width={360}
-                      height={240}
-                      className="w-full rounded-[20px]"
-                    />
-                  </div>
-                </Card>
 
-                <Card glow className="rounded-[30px] bg-ink text-white">
-                  <div className="flex items-start gap-4">
-                    <div className="rounded-2xl bg-brand-500/20 p-3 text-lime-200">
-                      <Sparkles size={22} />
-                    </div>
-                    <div>
-                      <p className="text-sm uppercase tracking-[0.24em] text-emerald-100/60">
-                        Dễ sử dụng
-                      </p>
-                      <p className="mt-2 font-display text-2xl font-semibold">
-                        Agromind AI được thiết kế để người dùng phổ thông vẫn có thể thao tác dễ dàng.
-                      </p>
-                    </div>
+                  <div className="mt-5 space-y-3">
+                    {cnnResults.map((item, index) => (
+                      <div key={item.label} className="rounded-[22px] border border-slate-100 bg-slate-50/80 p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-semibold text-ink-900">
+                            {index + 1}. {item.label}
+                          </p>
+                          <span className="text-sm font-bold text-leaf-700">{item.score}</span>
+                        </div>
+                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+                          <div className={`h-full rounded-full ${item.tone}`} style={{ width: item.score }} />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </Card>
+                </div>
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="rounded-[30px] border border-emerald-100 bg-white/90 p-5 shadow-sm">
+                    <div className="mb-4 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
+                      Triệu chứng
+                    </div>
+                    <p className="font-display text-xl font-semibold text-ink-900">“Đốm vàng nhỏ li ti, mép lá khô nhẹ”</p>
+                    <p className="mt-3 text-sm leading-6 text-slate-600">Người dùng có thể nhập hoặc bỏ qua; hệ thống vẫn giữ kết quả CNN khi không có mô tả.</p>
+                  </div>
+
+                  <div className="rounded-[30px] border border-lime-200 bg-gradient-to-br from-lime-50 to-white p-5 shadow-sm">
+                    <div className="mb-4 flex items-center gap-2 text-leaf-700">
+                      <CheckCircle2 size={20} />
+                      <span className="text-xs font-semibold uppercase tracking-[0.18em]">Khuyến nghị</span>
+                    </div>
+                    <p className="font-display text-xl font-semibold text-ink-900">Cách ly lá bệnh, chụp lại sau 3 ngày và theo dõi độ ẩm.</p>
+                    <p className="mt-3 text-sm leading-6 text-slate-600">Gợi ý hành động riêng theo kết quả cuối cùng, không dùng câu trả lời chung chung.</p>
+                  </div>
+                </div>
+
+                <div className="rounded-[28px] border border-white/80 bg-gradient-to-r from-leaf-900 via-emerald-800 to-leaf-700 p-4 text-white shadow-float">
+                  <div className="flex flex-wrap items-center gap-3 text-sm font-semibold">
+                    <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2">
+                      <Camera size={16} /> Ảnh lá
+                    </span>
+                    <ArrowRight size={16} className="text-lime-200" />
+                    <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2">
+                      <ScanLine size={16} /> YOLO
+                    </span>
+                    <ArrowRight size={16} className="text-lime-200" />
+                    <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2">
+                      <Sparkles size={16} /> CNN + DeepSeek
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </Card>
