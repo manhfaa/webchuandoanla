@@ -154,6 +154,7 @@ USE_X_FORWARDED_HOST = True
 CNN_MODEL_PATH = os.getenv("CNN_MODEL_PATH", "").strip()
 CNN_API_URL = os.getenv("CNN_API_URL", "").strip()
 CNN_API_TOKEN = os.getenv("CNN_API_TOKEN", "").strip()
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
 
 # SePay payment gateway
 SEPAY_API_KEY = os.getenv("SEPAY_API_KEY", "")

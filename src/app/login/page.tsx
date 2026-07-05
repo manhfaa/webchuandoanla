@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 
 import { Logo } from "@/components/layout/logo";
@@ -11,11 +11,46 @@ import { Input } from "@/components/ui/input";
 import { brand } from "@/constants/brand";
 import { useSessionStore } from "@/store/session-store";
 
+type GoogleCredentialResponse = {
+  credential?: string;
+};
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (options: {
+            client_id: string;
+            callback: (response: GoogleCredentialResponse) => void;
+            use_fedcm_for_prompt?: boolean;
+          }) => void;
+          renderButton: (
+            element: HTMLElement,
+            options: {
+              theme?: "outline" | "filled_blue" | "filled_black";
+              size?: "large" | "medium" | "small";
+              shape?: "rectangular" | "pill" | "circle" | "square";
+              text?: "signin_with" | "signup_with" | "continue_with" | "signin";
+              width?: number;
+              locale?: string;
+            },
+          ) => void;
+          cancel: () => void;
+        };
+      };
+    };
+  }
+}
+
 export default function LoginPage() {
-  const { login, isAuthenticated, status, error, clearError } = useSessionStore();
+  const { login, loginWithGoogle, isAuthenticated, status, error, clearError } = useSessionStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nextPath, setNextPath] = useState("/dashboard");
+  const [googleError, setGoogleError] = useState<string | null>(null);
+  const googleButtonRef = useRef<HTMLDivElement | null>(null);
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -28,6 +63,64 @@ export default function LoginPage() {
       setNextPath(candidate);
     }
   }, []);
+
+  useEffect(() => {
+    if (!googleClientId || !googleButtonRef.current) return;
+
+    const buttonEl = googleButtonRef.current;
+    const existingScript = document.querySelector<HTMLScriptElement>("script[data-google-identity]");
+
+    const initializeGoogle = () => {
+      if (!window.google || !buttonEl) return;
+      buttonEl.innerHTML = "";
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        use_fedcm_for_prompt: true,
+        callback: async (response) => {
+          if (!response.credential) {
+            setGoogleError("Google không trả về mã xác thực. Vui lòng thử lại.");
+            return;
+          }
+
+          try {
+            clearError();
+            setGoogleError(null);
+            await loginWithGoogle({ credential: response.credential });
+            window.location.assign(nextPath);
+          } catch {
+            // The store exposes the backend error for the alert below.
+          }
+        },
+      });
+      window.google.accounts.id.renderButton(buttonEl, {
+        theme: "outline",
+        size: "large",
+        shape: "pill",
+        text: "continue_with",
+        width: Math.min(360, buttonEl.clientWidth || 360),
+        locale: "vi",
+      });
+    };
+
+    if (existingScript) {
+      if (window.google) initializeGoogle();
+      else existingScript.addEventListener("load", initializeGoogle, { once: true });
+      return () => existingScript.removeEventListener("load", initializeGoogle);
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.dataset.googleIdentity = "true";
+    script.onload = initializeGoogle;
+    script.onerror = () => setGoogleError("Không tải được đăng nhập Google. Vui lòng thử lại sau.");
+    document.head.appendChild(script);
+
+    return () => {
+      window.google?.accounts.id.cancel();
+    };
+  }, [clearError, googleClientId, loginWithGoogle, nextPath]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -99,6 +192,23 @@ export default function LoginPage() {
           </div>
 
           <form className="mt-8" onSubmit={handleSubmit}>
+            <div className="rounded-2xl border border-leaf-100 bg-leaf-50/70 p-4">
+              <p className="text-body-sm font-semibold text-ink-900">Đăng nhập nhanh bằng Google</p>
+              <div ref={googleButtonRef} className="mt-3 min-h-10 w-full" />
+              {!googleClientId ? (
+                <p className="mt-3 text-caption text-amber-700">
+                  Chưa cấu hình Google Client ID cho website.
+                </p>
+              ) : null}
+              {googleError ? <p className="mt-3 text-caption text-amber-700">{googleError}</p> : null}
+            </div>
+
+            <div className="my-6 flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.16em] text-ink-400">
+              <span className="h-px flex-1 bg-border-light" />
+              Hoặc dùng email
+              <span className="h-px flex-1 bg-border-light" />
+            </div>
+
             <div className="space-y-4">
               <Input
                 tone="light"

@@ -1,10 +1,25 @@
 from django.contrib.auth import get_user_model
+from django.conf import settings
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import UserSetting
 
 User = get_user_model()
+
+
+def build_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+    refresh["username"] = user.username
+    refresh["email"] = user.email
+    refresh["plan"] = user.current_plan
+
+    return {
+        "refresh": str(refresh),
+        "access": str(refresh.access_token),
+    }
 
 
 def build_unique_username(email: str) -> str:
@@ -102,12 +117,59 @@ class EmailTokenSerializer(serializers.Serializer):
         if not user:
             raise serializers.ValidationError("Email hoặc mật khẩu không đúng.")
 
-        refresh = RefreshToken.for_user(user)
-        refresh["username"] = user.username
-        refresh["email"] = user.email
-        refresh["plan"] = user.current_plan
+        return build_tokens_for_user(user)
 
-        return {
-            "refresh": str(refresh),
-            "access": str(refresh.access_token),
-        }
+
+class GoogleLoginSerializer(serializers.Serializer):
+    credential = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        client_id = getattr(settings, "GOOGLE_CLIENT_ID", "").strip()
+        if not client_id:
+            raise serializers.ValidationError("Chưa cấu hình đăng nhập Google trên máy chủ.")
+
+        credential = attrs.get("credential", "").strip()
+        if not credential:
+            raise serializers.ValidationError("Thiếu mã xác thực Google.")
+
+        try:
+            google_payload = id_token.verify_oauth2_token(
+                credential,
+                google_requests.Request(),
+                client_id,
+            )
+        except ValueError:
+            raise serializers.ValidationError("Phiên đăng nhập Google không hợp lệ hoặc đã hết hạn.")
+
+        email = str(google_payload.get("email", "")).strip().lower()
+        email_verified = bool(google_payload.get("email_verified"))
+        if not email or not email_verified:
+            raise serializers.ValidationError("Tài khoản Google chưa xác minh email.")
+
+        full_name = str(google_payload.get("name", "")).strip() or "Người dùng Agromind AI"
+        avatar_url = str(google_payload.get("picture", "")).strip()
+
+        user = User.objects.filter(email=email).first()
+        if user is None:
+            user = User(
+                username=build_unique_username(email),
+                email=email,
+                full_name=full_name,
+                avatar_url=avatar_url,
+            )
+            user.set_unusable_password()
+            user.save()
+            UserSetting.objects.get_or_create(user=user)
+        else:
+            changed = False
+            if full_name and (not user.full_name or user.full_name == "Người dùng Leafiq"):
+                user.full_name = full_name
+                changed = True
+            if avatar_url and not user.avatar_url:
+                user.avatar_url = avatar_url
+                changed = True
+            if changed:
+                user.save(update_fields=["full_name", "avatar_url", "updated_at"])
+            UserSetting.objects.get_or_create(user=user)
+
+        return build_tokens_for_user(user)

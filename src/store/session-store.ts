@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import { djangoLogin, djangoMe, djangoRegister, djangoUpdateMe } from "@/lib/django-client";
+import { djangoGoogleLogin, djangoLogin, djangoMe, djangoRegister, djangoUpdateMe } from "@/lib/django-client";
 import { normalizePlan } from "@/lib/plans";
 import type { PlanTier, UserProfile } from "@/types";
 
@@ -20,6 +20,7 @@ interface SessionState {
 
   hydrate: () => Promise<void>;
   login: (payload: { email: string; password: string }) => Promise<void>;
+  loginWithGoogle: (payload: { credential: string }) => Promise<void>;
   register: (payload: { email: string; password: string }) => Promise<void>;
   logout: () => void;
   clearError: () => void;
@@ -97,6 +98,33 @@ export const useSessionStore = create<SessionState>()(
             refreshToken: null,
             status: "error",
             error: err instanceof Error ? err.message : "Đăng nhập thất bại.",
+            isAuthenticated: false,
+          });
+          throw err;
+        }
+      },
+
+      loginWithGoogle: async ({ credential }) => {
+        try {
+          set({ status: "loading", error: null });
+          const tokens = await djangoGoogleLogin({ credential });
+          const user = await djangoMe(tokens.access);
+          set({
+            accessToken: tokens.access,
+            refreshToken: tokens.refresh,
+            user,
+            isAuthenticated: true,
+            initialized: true,
+            status: "authenticated",
+            error: null,
+          });
+        } catch (err) {
+          set({
+            user: null,
+            accessToken: null,
+            refreshToken: null,
+            status: "error",
+            error: err instanceof Error ? err.message : "Đăng nhập Google thất bại.",
             isAuthenticated: false,
           });
           throw err;

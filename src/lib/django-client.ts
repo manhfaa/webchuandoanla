@@ -114,6 +114,13 @@ export async function djangoLogin(payload: { email: string; password: string }) 
   });
 }
 
+export async function djangoGoogleLogin(payload: { credential: string }) {
+  return djangoFetch<DjangoLoginResponse>("/api/auth/google/", {
+    method: "POST",
+    body: JSON.stringify({ credential: payload.credential }),
+  });
+}
+
 export async function djangoRegister(payload: DjangoRegisterRequest) {
   return djangoFetch<{ id: number; email: string }>("/api/auth/register/", {
     method: "POST",

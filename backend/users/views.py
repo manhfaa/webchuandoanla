@@ -6,6 +6,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import UserSetting
 from .serializers import (
     EmailTokenSerializer,
+    GoogleLoginSerializer,
     RegisterSerializer,
     UserSerializer,
     UserSettingSerializer,
@@ -20,6 +21,15 @@ class RegisterAPIView(generics.CreateAPIView):
 class LoginAPIView(TokenObtainPairView):
     serializer_class = EmailTokenSerializer
     permission_classes = [permissions.AllowAny]
+
+
+class GoogleLoginAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = GoogleLoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.validated_data)
 
 
 class MeAPIView(APIView):
