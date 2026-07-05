@@ -607,11 +607,11 @@ export async function POST(request: Request) {
   }
 
   if (!DEEPSEEK_API_KEY) {
-    return NextResponse.json({ error: "Thiếu DEEPSEEK_API_KEY để viết câu search và tổng hợp." }, { status: 503 });
+    return NextResponse.json({ error: "Dịch vụ AI kiểm chứng triệu chứng chưa sẵn sàng. Vui lòng thử lại sau." }, { status: 503 });
   }
 
   if (!TAVILY_API_KEY) {
-    return NextResponse.json({ error: "Thiếu TAVILY_API_KEY để search nguồn web." }, { status: 503 });
+    return NextResponse.json({ error: "Dịch vụ tìm nguồn tham khảo chưa sẵn sàng. Vui lòng thử lại sau." }, { status: 503 });
   }
 
   const selectedPrediction = body.selectedPrediction ?? body.topPredictions?.[0] ?? null;
@@ -676,7 +676,7 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Không hoàn tất được pipeline DeepSeek + Tavily.",
+        error: error instanceof Error ? error.message : "Không hoàn tất được bước kiểm chứng triệu chứng bằng nguồn tham khảo.",
       },
       { status: 502 },
     );

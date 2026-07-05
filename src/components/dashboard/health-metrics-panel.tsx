@@ -43,9 +43,9 @@ export function HealthMetricsPanel() {
   return (
     <Card variant="dark" padding="md" className="flex flex-col">
       <p className="text-overline text-muted-on-dark">Chỉ số vận hành</p>
-      <h2 className="mt-2 text-h2 text-on-dark">Tín hiệu chất lượng pipeline</h2>
+      <h2 className="mt-2 text-h2 text-on-dark">Chất lượng các lần kiểm tra</h2>
       <p className="mt-1 text-body-sm text-muted-on-dark">
-        Tính từ các bản ghi chẩn đoán thật đang lưu trên backend của tài khoản hiện tại.
+        Tính từ các kết quả kiểm tra ảnh lá đang lưu trong tài khoản hiện tại.
       </p>
 
       <ul className="mt-5 space-y-4">

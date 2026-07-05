@@ -106,7 +106,7 @@ export default function DashboardHistoryPage() {
       <div className="grid gap-4">
         {loading ? (
           <Card className="rounded-[32px] border-white/10 bg-white/5 py-14 text-center text-white">
-            Đang tải lịch sử từ backend...
+            Đang tải lịch sử kiểm tra...
           </Card>
         ) : null}
         {error ? (

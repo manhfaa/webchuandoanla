@@ -43,9 +43,9 @@ function applyCnnResult(record: DiagnosisRecord, cnn: DjangoCnnResponse): Diagno
         ? "CNN nhận định ảnh lá hiện tại thuộc nhóm khỏe mạnh. Bạn vẫn nên tiếp tục theo dõi nếu cây có dấu hiệu bất thường ngoài thực địa."
         : `CNN nhận định ảnh có khả năng thuộc nhóm ${cnn.disease_name || cnn.class_name}. Kết quả này nên được dùng như gợi ý hỗ trợ, không thay thế đánh giá thực địa.`,
     causes: [
-      `Nhãn CNN: ${cnn.class_name}.`,
+      `Kết quả nhận diện: ${cnn.class_name}.`,
       `Độ tin cậy CNN: ${formatConfidence(cnn.confidence)}.`,
-      `Model: ${cnn.model_version}.`,
+      `Phiên bản phân tích: ${cnn.model_version}.`,
     ],
     recommendations: [
       {

@@ -10,8 +10,8 @@ export function PlantsSection() {
     <SectionShell
       id="cay-trong"
       eyebrow="Cây trồng hỗ trợ"
-      title="Hỗ trợ 14 nhóm cây trồng với card hiển thị sạch, rõ và nhất quán."
-      description="Từ cây ăn trái đến cây công nghiệp, mỗi card mang một mảng màu riêng để tạo cảm giác hệ sinh thái nông nghiệp hiện đại và dễ quét thông tin."
+      title="Hỗ trợ nhiều nhóm cây trồng phổ biến, từ cây ăn trái đến cây rau màu và cây công nghiệp."
+      description="Người dùng có thể xem nhanh nhóm cây phù hợp, triệu chứng thường gặp và các trường hợp nên chụp ảnh lá để kiểm tra sớm."
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {supportedPlants.map((plant, index) => (

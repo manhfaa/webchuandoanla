@@ -32,7 +32,7 @@ function buildAssistantAnswer(query: string, latestDiagnosis?: DiagnosisRecord |
       "Hiện tại hệ thống chat này không tự suy diễn bệnh như một mô hình phân loại. Nó chỉ đóng vai trò trợ lý AI trò chuyện thông thường.",
       hasClassification(latestDiagnosis)
         ? `Nếu ca được chọn đã có thêm dữ liệu phân loại cho ${latestDiagnosis?.plant.toLowerCase()}, bạn có thể dùng cuộc trò chuyện này để hỏi tiếp về cách theo dõi, ghi chú và chuẩn bị bước xử lý.`
-        : "Vì chưa có CNN, bạn nên xem đây là một kênh hỗ trợ hỏi đáp và chuẩn bị thông tin, không phải kết luận chẩn đoán cuối cùng.",
+        : "Vì chưa có kết quả phân tích ảnh, bạn nên xem đây là kênh hỗ trợ hỏi đáp và chuẩn bị thông tin, không phải kết luận chẩn đoán cuối cùng.",
       "Bạn có thể hỏi tiếp về cách mô tả triệu chứng, chụp bổ sung ảnh hoặc tổng hợp những gì cần ghi nhận ngoài hiện trường.",
     ].join("\n\n");
   }

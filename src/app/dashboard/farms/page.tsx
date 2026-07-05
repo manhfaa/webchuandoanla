@@ -28,7 +28,7 @@ const copy = {
     createPlot: "Tạo lô/vườn mới",
     createLog: "Ghi nhật ký",
     qr: "Tạo QR truy xuất",
-    login: "Cần đăng nhập backend Django để lưu lô vườn và nhật ký.",
+    login: "Cần đăng nhập để lưu lô vườn và nhật ký chăm sóc.",
     timeline: "Dòng thời gian chăm sóc",
     noPlot: "Chưa có lô vườn nào.",
     publicPage: "Mở trang công khai",
@@ -40,7 +40,7 @@ const copy = {
     createPlot: "Create plot",
     createLog: "Add log",
     qr: "Create QR",
-    login: "Cần đăng nhập backend Django để lưu lô vườn và nhật ký.",
+    login: "Cần đăng nhập để lưu lô vườn và nhật ký chăm sóc.",
     timeline: "Care timeline",
     noPlot: "No plot yet.",
     publicPage: "Mở trang công khai",
@@ -335,10 +335,10 @@ export default function FarmsPage() {
                 <Input label="Ngày ghi" type="date" value={logForm.activity_date} onChange={(e) => setLogForm({ ...logForm, activity_date: e.target.value })} />
                 <Input label="Tiêu đề" value={logForm.title} onChange={(e) => setLogForm({ ...logForm, title: e.target.value })} />
                 <Input
-                  label="ID chẩn đoán backend"
+                  label="ID lần kiểm tra"
                   type="number"
                   value={logForm.diagnosis}
-                  hint="Nếu có ID chẩn đoán Django, nhập tại đây để liên kết."
+                  hint="Nếu muốn liên kết với một kết quả kiểm tra lá đã lưu, nhập ID tại đây."
                   onChange={(e) => setLogForm({ ...logForm, diagnosis: e.target.value })}
                 />
               </div>

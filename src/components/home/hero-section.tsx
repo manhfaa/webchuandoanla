@@ -27,7 +27,7 @@ const cnnResults = [
 ];
 
 const heroStats = [
-  { label: "Ảnh lá", value: "Upload / Camera" },
+  { label: "Ảnh lá", value: "Tải ảnh / Chụp ảnh" },
   { label: "AI thị giác", value: "YOLO + CNN" },
   { label: "Nguồn web", value: "Tavily + DeepSeek" },
 ];
@@ -104,7 +104,7 @@ export function HeroSection() {
               <span className="h-3 w-3 rounded-full bg-emerald-300" />
             </div>
             <div className="absolute right-6 top-5 rounded-full border border-leaf-200 bg-leaf-50 px-3 py-1 text-xs font-bold text-leaf-900 dark:border-white/10 dark:bg-white/10 dark:text-lime-100">
-              Agromind AI dashboard
+              Bảng kết quả Agromind AI
             </div>
 
             <div className="grid gap-5 pt-10 lg:grid-cols-[0.9fr_1.1fr]">
@@ -140,7 +140,7 @@ export function HeroSection() {
                       <BadgeCheck className="text-lime-200" size={22} />
                       <div>
                         <p className="text-sm font-semibold">YOLO đã xác thực lá</p>
-                        <p className="text-xs font-medium text-emerald-50/80">Vùng lá rõ, đủ điều kiện chạy CNN</p>
+                        <p className="text-xs font-medium text-emerald-50/80">Vùng lá rõ, đủ điều kiện phân tích</p>
                       </div>
                     </div>
                     <span className="rounded-full bg-lime-200 px-3 py-1 text-xs font-bold text-emerald-950">98%</span>
@@ -158,7 +158,7 @@ export function HeroSection() {
                         <p className="font-display text-lg font-semibold text-ink-900 dark:text-white">Tìm nguồn web</p>
                       </div>
                     </div>
-                    <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-emerald-50/75">Đối chiếu triệu chứng người dùng nhập với nguồn tham khảo nông nghiệp.</p>
+                    <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-emerald-50/75">Đối chiếu triệu chứng đã quan sát với nguồn tham khảo nông nghiệp.</p>
                   </div>
 
                   <div className="rounded-[28px] border border-emerald-100 bg-emerald-950 p-4 text-white shadow-sm">
@@ -211,7 +211,7 @@ export function HeroSection() {
                       Triệu chứng
                     </div>
                     <p className="font-display text-xl font-semibold text-ink-900 dark:text-white">“Đốm vàng nhỏ li ti, mép lá khô nhẹ”</p>
-                    <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-emerald-50/75">Người dùng có thể nhập hoặc bỏ qua; hệ thống vẫn giữ kết quả CNN khi không có mô tả.</p>
+                    <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-emerald-50/75">Có thể nhập triệu chứng hoặc bỏ qua nếu chưa quan sát rõ; hệ thống vẫn giữ kết quả ảnh ban đầu.</p>
                   </div>
 
                   <div className="rounded-[30px] border border-lime-200 bg-gradient-to-br from-lime-50 to-white p-5 shadow-sm dark:border-lime-200/20 dark:from-lime-300/10 dark:to-white/10">
@@ -220,7 +220,7 @@ export function HeroSection() {
                       <span className="text-xs font-semibold uppercase tracking-[0.18em]">Khuyến nghị</span>
                     </div>
                     <p className="font-display text-xl font-semibold text-ink-900 dark:text-white">Cách ly lá bệnh, chụp lại sau 3 ngày và theo dõi độ ẩm.</p>
-                    <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-emerald-50/75">Gợi ý hành động riêng theo kết quả cuối cùng, không dùng câu trả lời chung chung.</p>
+                    <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-emerald-50/75">Gợi ý bước chăm sóc ban đầu phù hợp với tình trạng lá và mức độ tin cậy của kết quả.</p>
                   </div>
                 </div>
 

@@ -9,9 +9,9 @@ export function TeamSection() {
   return (
     <SectionShell
       id="thanh-vien"
-      eyebrow="Đội ngũ dự án"
-      title="Nhóm xây dựng Agromind AI có phân công rõ ràng từ khảo sát, AI, website đến kiểm thử và truyền thông."
-      description="Mỗi thành viên phụ trách một mảng cụ thể để sản phẩm vừa có giá trị công nghệ, vừa bám sát nhu cầu thật của người dùng Việt Nam."
+      eyebrow="Đội ngũ phát triển"
+      title="Agromind AI được xây dựng bởi nhóm phát triển trẻ với các vai trò rõ ràng từ khảo sát, AI, website đến kiểm thử."
+      description="Mỗi thành viên đóng góp vào một phần của sản phẩm để trải nghiệm sử dụng gần gũi hơn với nhu cầu của người trồng cây Việt Nam."
     >
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
         {teamMembers.map((member, index) => {
@@ -54,7 +54,7 @@ export function TeamSection() {
                   </p>
                   <div className="mt-5">
                     <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500 dark:text-emerald-50/60">
-                      Nhiệm vụ
+                      Vai trò chính
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {member.responsibilities.map((item) => (
@@ -69,7 +69,7 @@ export function TeamSection() {
                   </div>
                   <div className="mt-5 rounded-[20px] bg-slate-50 p-4 dark:bg-white/10">
                     <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500 dark:text-emerald-50/60">
-                      Nội dung xuất hiện
+                      Đóng góp chính
                     </p>
                     <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-emerald-50/75">
                       {member.presentationFocus.join(", ")}

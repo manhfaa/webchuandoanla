@@ -21,7 +21,7 @@ const statusLabelMap: Record<DiagnosisStatus, string> = {
 const tips = [
   "Ưu tiên một chiếc lá rõ, đủ sáng và không bị che khuất.",
   "Để lá chiếm phần lớn khung hình để hệ thống nhận biết ổn định hơn.",
-  "Sau khi ảnh hợp lệ, hệ thống sẽ lưu kết quả vào backend cho tài khoản của bạn.",
+  "Sau khi ảnh hợp lệ, hệ thống sẽ lưu kết quả vào lịch sử của tài khoản.",
 ];
 
 const options = [
@@ -97,7 +97,7 @@ export function UploadPanel({
               Tải ảnh hoặc chụp ảnh lá thật rõ để hệ thống kiểm tra
             </h3>
             <p className="mt-4 max-w-3xl text-sm leading-8 text-slate-600 sm:text-[15px]">
-              Ảnh hợp lệ sẽ được xác thực, phân loại CNN nếu backend sẵn sàng, rồi lưu vào lịch sử Django của tài khoản.
+              Ảnh hợp lệ sẽ được kiểm tra, phân tích bằng AI nếu hệ thống sẵn sàng, rồi lưu vào lịch sử của tài khoản.
             </p>
           </div>
 
@@ -171,7 +171,7 @@ export function UploadPanel({
               Sẵn sàng kiểm tra ảnh
             </p>
             <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
-              Khi đã có ảnh, bấm bắt đầu để xác thực lá và lưu bản ghi thật vào backend.
+              Khi đã có ảnh, bấm bắt đầu để xác thực lá và lưu kết quả vào lịch sử kiểm tra.
             </p>
           </div>
           <Button loading={busy} onClick={onStart}>

@@ -37,7 +37,7 @@ export default function DashboardProfilePage() {
   async function handleSaveProfile() {
     try {
       await updateProfile({ name, email, avatar: avatarUrl });
-      toast.success("Đã lưu hồ sơ lên backend.");
+      toast.success("Đã lưu hồ sơ.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Không thể lưu hồ sơ.");
     }
@@ -58,7 +58,7 @@ export default function DashboardProfilePage() {
               <div className="mt-5 rounded-lg border border-border-dark bg-app-surface-2 px-4 py-3 text-body-sm leading-relaxed text-muted-on-dark">
                 Gói hiện tại: <span className="font-semibold text-leaf-300">{currentPlan?.name ?? "Seed"}</span>
                 <br />
-                Hồ sơ được lưu trực tiếp vào Django backend.
+                Hồ sơ được đồng bộ với tài khoản của bạn.
               </div>
             </div>
           </div>
@@ -92,9 +92,9 @@ export default function DashboardProfilePage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-overline text-muted-on-dark">Gói dịch vụ</p>
-            <h3 className="mt-2 text-h2 text-on-dark-strong">Quản lý gói qua thanh toán backend</h3>
+            <h3 className="mt-2 text-h2 text-on-dark-strong">Quản lý gói dịch vụ</h3>
             <p className="mt-2 max-w-2xl text-body-sm leading-relaxed text-muted-on-dark">
-              Chọn gói sẽ đưa bạn sang checkout. Gói chỉ đổi sau khi backend xác nhận thanh toán.
+              Chọn gói phù hợp với nhu cầu sử dụng. Gói sẽ được cập nhật sau khi hệ thống xác nhận thanh toán.
             </p>
           </div>
         </div>

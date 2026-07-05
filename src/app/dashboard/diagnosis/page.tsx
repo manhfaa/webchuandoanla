@@ -532,7 +532,7 @@ function applyCnnResult(
           ? `Kết quả cuối cùng nghiêng về ${finalCnn.disease_name || finalCnn.class_name} sau khi kết hợp CNN với triệu chứng người dùng mô tả: ${symptoms.trim()}.`
           : `CNN nhận định ảnh có khả năng thuộc nhóm ${finalCnn.disease_name || finalCnn.class_name}. Kết quả này nên được dùng như gợi ý hỗ trợ, không thay thế đánh giá thực địa.`,
     causes: [
-      `Nhãn CNN cuối cùng: ${finalCnn.class_name}.`,
+      `Kết quả nhận diện cuối cùng: ${finalCnn.class_name}.`,
       `Độ tin cậy CNN: ${formatConfidence(finalCnn.confidence)}.`,
       symptoms.trim()
         ? "Có đối chiếu triệu chứng người dùng nhập với top 5 kết quả CNN."
@@ -542,7 +542,7 @@ function applyCnnResult(
           ? "Triệu chứng đã được kiểm chứng thêm bằng Tavily và DeepSeek với nguồn web tham khảo."
           : "Tavily/DeepSeek chưa xác nhận rõ triệu chứng phù hợp với kết quả CNN; cần kiểm tra thực địa kỹ hơn."
         : "",
-      `Model: ${finalCnn.model_version}.`,
+      `Phiên bản phân tích: ${finalCnn.model_version}.`,
     ].filter(Boolean),
     recommendations: [
       {
@@ -957,7 +957,7 @@ export default function DashboardDiagnosisPage() {
           cnn: pendingCnnReview.cnn,
         });
         if (!research || research.skipped) {
-          throw new Error("Chưa hoàn tất pipeline kiểm chứng DeepSeek + Tavily.");
+          throw new Error("Chưa hoàn tất bước kiểm chứng triệu chứng bằng nguồn tham khảo.");
         }
       }
 
@@ -974,7 +974,7 @@ export default function DashboardDiagnosisPage() {
         setResearchError(
           error instanceof Error
             ? error.message
-            : "Không hoàn tất được pipeline kiểm chứng DeepSeek + Tavily. Vui lòng thử lại.",
+            : "Không hoàn tất được bước kiểm chứng triệu chứng. Vui lòng thử lại.",
         );
         setStatus("symptom-review");
         return;
@@ -986,7 +986,7 @@ export default function DashboardDiagnosisPage() {
         greenRatio: leafAnalysis?.greenRatio ?? 0,
         plantLikeRatio: leafAnalysis?.plantLikeRatio ?? 0,
         averageSaturation: leafAnalysis?.averageSaturation ?? 0,
-        reason: "Không thể lưu kết quả chẩn đoán cuối cùng. Hãy kiểm tra đăng nhập/backend rồi thử lại.",
+        reason: "Không thể lưu kết quả kiểm tra cuối cùng. Hãy kiểm tra trạng thái đăng nhập rồi thử lại.",
       });
       setStatus("invalid-image");
     }
@@ -1117,16 +1117,15 @@ export default function DashboardDiagnosisPage() {
                 Bước 2 · Triệu chứng quan sát được
               </p>
               <h3 className="mt-3 font-display text-3xl font-semibold text-ink">
-                Thêm triệu chứng để chọn kết quả khả nghi nhất trong top 5 CNN
+                Thêm triệu chứng để chọn khả năng phù hợp nhất
               </h3>
               <p className="mt-3 text-sm leading-7 text-slate-600">
-                Nếu bạn nhập triệu chứng, Agromind AI sẽ đối chiếu mô tả với 5 kết quả CNN cao nhất rồi chọn kết quả
-                cuối cùng, sau đó dùng DeepSeek tạo câu search Tavily để kiểm chứng nguồn ngoài. Nếu không nhập, hệ thống
-                giữ nguyên kết quả CNN có độ tin cậy cao nhất và bỏ qua bước search.
+                Nếu bạn nhập triệu chứng, Agromind AI sẽ đối chiếu mô tả với các khả năng AI đã gợi ý, kiểm tra thêm bằng
+                nguồn tham khảo trên web rồi đưa ra kết quả cuối cùng. Nếu không nhập, hệ thống giữ kết quả ảnh có độ tin cậy cao nhất.
               </p>
 
               <div className="mt-5 rounded-[24px] border border-emerald-100 bg-emerald-50/70 p-4">
-                <p className="text-sm font-semibold text-emerald-950">Top 5 CNN hiện tại</p>
+                <p className="text-sm font-semibold text-emerald-950">Các khả năng hiện tại</p>
                 <div className="mt-3 space-y-2">
                   {pendingCnnReview.cnn.top_predictions.slice(0, 5).map((item, index) => (
                     <div
@@ -1184,7 +1183,7 @@ export default function DashboardDiagnosisPage() {
                 </Button>
               </div>
               <p className="mt-4 text-xs leading-6 text-slate-500">
-                Tavily chỉ được gọi khi có triệu chứng. Kết quả nguồn web được DeepSeek tóm tắt và lưu kèm trích dẫn trong lịch sử.
+                Nguồn tham khảo chỉ được kiểm tra khi bạn nhập triệu chứng. Kết quả tóm tắt và trích dẫn sẽ được lưu trong lịch sử.
               </p>
             </div>
           </div>

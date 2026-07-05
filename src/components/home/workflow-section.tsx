@@ -30,8 +30,8 @@ export function WorkflowSection() {
     <SectionShell
       id="quy-trinh"
       eyebrow="Quy trình AI của Agromind"
-      title="Từ ảnh lá đến khuyến nghị: toàn bộ pipeline được hiển thị rõ để người dùng biết AI đang làm gì."
-      description="Agromind AI không chỉ trả một nhãn bệnh. Hệ thống xác thực ảnh, dự đoán top 5, đối chiếu triệu chứng với nguồn web và lưu lại kết quả để theo dõi."
+      title="Từ ảnh lá đến khuyến nghị chăm sóc: mọi bước đều được trình bày rõ ràng để người dùng dễ kiểm tra."
+      description="Agromind AI không đưa ra kết luận một chiều. Ảnh lá được kiểm tra, phân tích, đối chiếu thêm với triệu chứng và nguồn tham khảo trước khi lưu lại kết quả."
       className="bg-gradient-to-b from-white via-emerald-50/50 to-white dark:from-[#04180f] dark:via-[#08281a] dark:to-[#04180f]"
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">

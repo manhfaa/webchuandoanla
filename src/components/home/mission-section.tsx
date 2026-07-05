@@ -26,21 +26,21 @@ const missionPillars = [
 export function MissionSection() {
   return (
     <SectionShell
-      eyebrow="Sứ mệnh thương hiệu"
-      title="Agromind AI định vị mình là nền tảng nông nghiệp công nghệ cao, sạch, thân thiện và đáng tin cậy."
+      eyebrow="Mục tiêu sản phẩm"
+      title="Agromind AI giúp người trồng cây kiểm tra lá nhanh hơn, hiểu rõ rủi ro hơn và theo dõi cây có hệ thống hơn."
       description={brand.mission}
     >
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <Reveal>
           <Card className="rounded-[36px] bg-[#10231c] p-8 text-white">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-100/60">
-              Brand direction
+              Cam kết sử dụng
             </p>
             <h3 className="mt-4 font-display text-4xl font-semibold">
-              Công nghệ AI đủ gần gũi để nông dân tin dùng ngay từ lần đầu.
+              Kết quả AI là nguồn tham khảo để người dùng quan sát kỹ hơn, không thay thế kinh nghiệm thực địa.
             </h3>
             <p className="mt-5 max-w-2xl text-base leading-8 text-emerald-50/75">
-              Agromind AI dùng cách trình bày trực quan, ngôn ngữ tiếng Việt rõ ràng và các tín hiệu thương hiệu sạch sẽ để giảm cảm giác phức tạp thường gặp trong sản phẩm AI.
+              Ứng dụng ưu tiên ngôn ngữ tiếng Việt dễ hiểu, hiển thị độ tin cậy, nguồn tham khảo và khuyến nghị ban đầu để người trồng cây có thêm cơ sở trước khi xử lý ngoài vườn.
             </p>
           </Card>
         </Reveal>

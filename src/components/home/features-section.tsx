@@ -30,8 +30,8 @@ export function FeaturesSection() {
     <SectionShell
       id="tinh-nang"
       eyebrow="Tính năng nổi bật"
-      title="Các component trên landing page bám sát sản phẩm: nhận diện bệnh lá, kiểm chứng nguồn và quản lý canh tác."
-      description="Mỗi tính năng đều liên quan trực tiếp đến hành trình người dùng thật: chụp ảnh lá, hiểu kết quả AI, kiểm chứng triệu chứng và theo dõi cây sau chẩn đoán."
+      title="Những công cụ giúp người trồng cây phát hiện sớm vấn đề trên lá và chăm sóc cây có cơ sở hơn."
+      description="Agromind AI kết hợp nhận diện ảnh, mô tả triệu chứng, nguồn tham khảo và lịch sử theo dõi để hỗ trợ người dùng ra quyết định thận trọng hơn trong canh tác."
       className="relative overflow-hidden bg-white dark:bg-[#04180f]"
     >
       <div className="pointer-events-none absolute left-0 top-24 -z-10 h-80 w-80 rounded-full bg-leaf-100/70 blur-3xl" />
@@ -56,7 +56,7 @@ export function FeaturesSection() {
                   </h3>
                   <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-emerald-50/75">{item.description}</p>
                   <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-leaf-700 dark:text-lime-100">
-                    Xem trong sản phẩm
+                    Tìm hiểu tính năng
                     <ArrowUpRight size={16} />
                   </div>
                 </div>

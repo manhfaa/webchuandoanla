@@ -107,8 +107,8 @@ export function mapDiagnosisToRecord(item: DjangoDiagnosis): DiagnosisRecord {
         ? "Kết quả phân loại đã được lưu cùng bản ghi chẩn đoán."
         : "Ảnh đã qua bước xác thực lá và đang chờ phân loại chi tiết."),
     causes: [
-      item.cnn_payload?.class_name ? `Nhãn CNN: ${String(item.cnn_payload.class_name)}.` : "",
-      item.model_version ? `Model: ${item.model_version}.` : "",
+      item.cnn_payload?.class_name ? `Kết quả nhận diện: ${String(item.cnn_payload.class_name)}.` : "",
+      item.model_version ? `Phiên bản phân tích: ${item.model_version}.` : "",
       item.yolo_confidence ? `Độ tin cậy xác thực lá: ${Math.round(item.yolo_confidence * 100)}%.` : "",
     ].filter(Boolean),
     recommendations,

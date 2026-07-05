@@ -185,7 +185,7 @@ export default function DashboardChatPage() {
                 void sendMessage("assistant", composerByMode.assistant);
               }}
               placeholder="Ví dụ: Tôi nên chụp thêm những góc nào của lá cây để lần phân tích sau rõ hơn?"
-              helperText="Chat gọi API backend của ứng dụng; nếu DeepSeek tạm lỗi, hệ thống trả lời an toàn theo bối cảnh hiện có."
+              helperText="Chat ưu tiên trả lời theo ca kiểm tra đã chọn. Nếu dịch vụ AI tạm thời chưa sẵn sàng, hệ thống sẽ đưa ra hướng dẫn an toàn theo bối cảnh hiện có."
               onVoiceClick={() => {
                 if (voice.listening) {
                   voice.stop();
@@ -232,7 +232,7 @@ export default function DashboardChatPage() {
                 <div>
                   <h3 className="font-display text-2xl font-semibold">AI tư vấn theo bối cảnh chẩn đoán</h3>
                   <p className="mt-2 text-sm leading-7 text-emerald-50/75">
-                    Luồng này gửi câu hỏi và ca chẩn đoán gần nhất tới API chat. Khi DeepSeek sẵn sàng, phản hồi đến từ mô hình đã cấu hình; khi API ngoài lỗi, hệ thống dùng phản hồi an toàn để tránh bịa kết quả chẩn đoán.
+                    AI sẽ dùng ca kiểm tra đang chọn làm bối cảnh để trả lời. Nếu dịch vụ AI tạm thời gặp lỗi, hệ thống sẽ ưu tiên hướng dẫn quan sát và theo dõi an toàn, không tự bịa kết luận bệnh.
                   </p>
                 </div>
               </div>
@@ -250,7 +250,7 @@ export default function DashboardChatPage() {
                     <p>
                       {selectedDiagnosis.classificationReady
                         ? `Ca đang chọn có dữ liệu phân loại cho ${selectedDiagnosis.plant.toLowerCase()} với kết quả ${selectedDiagnosis.disease.toLowerCase()}, nên phần tư vấn sẽ cụ thể hơn.`
-                        : "Hiện chưa có CNN nên AI sẽ không kết luận bệnh cụ thể, mà chỉ đưa ra hướng quan sát và ghi nhận an toàn."}
+                        : "Hiện chưa có kết quả phân tích ảnh, nên AI sẽ không kết luận bệnh cụ thể mà chỉ đưa ra hướng quan sát và ghi nhận an toàn."}
                     </p>
                   </>
                 ) : (

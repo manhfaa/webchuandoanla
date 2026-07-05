@@ -78,9 +78,9 @@ async function djangoFetch<T>(path: string, init?: DjangoFetchInit): Promise<T> 
     });
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
-      throw new Error("Kết nối backend quá lâu. Vui lòng kiểm tra server Django.");
+      throw new Error("Kết nối máy chủ quá lâu. Vui lòng thử lại sau ít phút.");
     }
-    throw new Error("Không thể kết nối backend Django. Vui lòng mở backend trước khi đăng nhập.");
+    throw new Error("Không thể kết nối máy chủ. Vui lòng thử lại sau ít phút.");
   } finally {
     clearTimeout(timeout);
   }

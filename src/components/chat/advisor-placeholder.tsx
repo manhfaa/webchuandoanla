@@ -18,23 +18,22 @@ export function AdvisorPlaceholder({
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-100/60">
-              AI điều trị
+              Chat theo kết quả kiểm tra
             </p>
             <h3 className="mt-2 font-display text-3xl font-semibold">
-              Luồng prompt chặt chẽ đang chờ kết quả CNN
+              Cần có kết quả phân tích ảnh trước khi tư vấn theo ca
             </h3>
             <p className="mt-3 text-sm leading-7 text-emerald-50/75">
-              Chat này sẽ dùng kết quả CNN để tạo prompt chặt chẽ cho phần đánh giá, giải pháp và
-              điều trị. Khi chưa có CNN, Agromind AI sẽ không giả lập trả lời để tránh gây hiểu nhầm.
+              Chat này sẽ dùng kết quả phân tích ảnh để hỗ trợ đánh giá tình trạng, gợi ý bước chăm sóc và theo dõi. Khi chưa có kết quả ảnh, Agromind AI sẽ không tự đưa ra kết luận bệnh.
             </p>
           </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
           {[
-            "Đánh giá tình trạng theo đúng cây, bệnh và độ tin cậy từ CNN.",
-            "Đề xuất giải pháp ưu tiên theo cấu trúc chặt chẽ, dễ kiểm tra lại.",
-            "Sinh hướng điều trị và theo dõi có định dạng nhất quán cho UI thương mại.",
+            "Đánh giá tình trạng theo cây, bệnh nghi ngờ và độ tin cậy của kết quả.",
+            "Đề xuất bước chăm sóc ưu tiên theo thứ tự dễ kiểm tra lại.",
+            "Gợi ý cách theo dõi tiếp theo để người dùng ghi nhận diễn biến của cây.",
           ].map((item) => (
             <div
               key={item}
@@ -51,8 +50,8 @@ export function AdvisorPlaceholder({
             <div>
               <p className="font-semibold text-amber-50">
                 {hasCnnResult
-                  ? "Kết quả CNN đã sẵn sàng cho bước tiếp theo."
-                  : "Hiện chưa có kết quả CNN nên chat này đang ở trạng thái chờ."}
+                  ? "Kết quả phân tích ảnh đã sẵn sàng cho bước tư vấn tiếp theo."
+                  : "Hiện chưa có kết quả phân tích ảnh nên chat này đang ở trạng thái chờ."}
               </p>
               <p className="mt-2">(AI có thể mắc lỗi vui lòng kiểm tra lại)</p>
             </div>
@@ -62,11 +61,10 @@ export function AdvisorPlaceholder({
         <div className="rounded-[26px] border border-white/10 bg-white/5 px-5 py-4 text-sm leading-7 text-emerald-50/75">
           <div className="flex items-center gap-2 text-lime-200">
             <ShieldCheck size={16} />
-            Gợi ý UX
+            Gợi ý sử dụng
           </div>
           <p className="mt-2">
-            Trong giai đoạn hiện tại, người dùng có thể chuyển sang tab chuyên gia nông nghiệp để
-            nhận câu trả lời dựa trên bộ tri thức Light RAG.
+            Bạn có thể chuyển sang tab chuyên gia nông nghiệp để hỏi các vấn đề chăm sóc cây tổng quát, không cần chọn ca kiểm tra ảnh.
           </p>
         </div>
       </div>

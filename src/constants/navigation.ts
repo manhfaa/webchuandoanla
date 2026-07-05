@@ -4,7 +4,7 @@ export const landingNavItems = [
   { label: "Cây trồng hỗ trợ", href: "#cay-trong" },
   { label: "Quy trình hoạt động", href: "#quy-trinh" },
   { label: "Gói dịch vụ", href: "#goi-dich-vu" },
-  { label: "Thành viên dự án", href: "#thanh-vien" },
+  { label: "Đội ngũ", href: "#thanh-vien" },
 ];
 
 export const dashboardNavItems = [

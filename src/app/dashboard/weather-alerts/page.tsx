@@ -53,7 +53,7 @@ const copy = {
     disclaimer: "Lưu ý an toàn",
     noWarnings: "Chưa có cảnh báo thời tiết nghiêm trọng.",
     noAlerts: "Chưa có cảnh báo sâu bệnh nổi bật cho dữ liệu hiện tại.",
-    login: "Cần đăng nhập dashboard bằng tài khoản backend Django để lưu vị trí và lấy cảnh báo.",
+    login: "Cần đăng nhập để lưu vị trí vườn và xem cảnh báo theo khu vực.",
   },
   en: {
     eyebrow: "Weather & pests",
@@ -78,7 +78,7 @@ const copy = {
     disclaimer: "Safety note",
     noWarnings: "No severe weather warning in the current data.",
     noAlerts: "No major pest alert in the current data.",
-    login: "Backend Django login is required to save locations and load alerts.",
+    login: "Please sign in to save locations and load alerts.",
   },
 };
 
@@ -298,7 +298,7 @@ export default function WeatherAlertsPage() {
               <div>
                 <p className="font-semibold text-on-dark-strong">Nguồn vị trí</p>
                 <p className="mt-1 text-body-sm leading-relaxed text-muted-on-dark">
-                  GPS sẽ chính xác nhất. Nếu nhập thủ công, backend sẽ geocode địa chỉ trước rồi chỉ lấy thời tiết thật từ Open-Meteo.
+                  GPS sẽ chính xác nhất. Nếu nhập thủ công, hệ thống sẽ xác định tọa độ từ địa chỉ trước khi lấy dữ liệu thời tiết từ Open-Meteo.
                 </p>
                 <p className="mt-2 text-caption text-leaf-200">
                   Tọa độ form: {coordinateText(form.latitude, form.longitude)}

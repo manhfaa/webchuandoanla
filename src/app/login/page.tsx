@@ -66,14 +66,14 @@ export default function LoginPage() {
               <p className="text-overline text-muted-on-dark">Đăng nhập</p>
               <h1 className="mt-3 text-display text-on-dark">Chào mừng trở lại Agromind AI</h1>
               <p className="mt-4 max-w-md text-body-lg text-muted-on-dark">
-                {brand.slogan} Đăng nhập bằng tài khoản Django để đồng bộ lịch sử, hồ sơ và dữ liệu chẩn đoán.
+                {brand.slogan} Đăng nhập để đồng bộ lịch sử kiểm tra, hồ sơ và dữ liệu chăm sóc cây.
               </p>
             </div>
 
             <ul className="space-y-3 text-body-sm text-muted-on-dark">
               <li className="flex gap-2">
                 <span className="text-leaf-300" aria-hidden>·</span>
-                Xác thực thật bằng JWT từ backend Django.
+                Phiên đăng nhập an toàn, dữ liệu được gắn với tài khoản của bạn.
               </li>
               <li className="flex gap-2">
                 <span className="text-leaf-300" aria-hidden>·</span>
@@ -81,7 +81,7 @@ export default function LoginPage() {
               </li>
               <li className="flex gap-2">
                 <span className="text-leaf-300" aria-hidden>·</span>
-                Dashboard yêu cầu phiên đăng nhập hợp lệ.
+                Khu quản lý chỉ mở khi bạn đã đăng nhập hợp lệ.
               </li>
             </ul>
           </div>
@@ -148,7 +148,7 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-6 text-caption text-ink-500">
-            Nếu quên mật khẩu, liên hệ quản trị viên để đặt lại trên Django admin.
+            Nếu quên mật khẩu, liên hệ quản trị viên để được hỗ trợ đặt lại.
           </p>
         </Card>
       </div>
