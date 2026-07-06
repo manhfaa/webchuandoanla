@@ -882,7 +882,7 @@ export default function DashboardDiagnosisPage() {
         return;
       }
 
-      let generatedRecord = buildGeneratedRecord({
+      const generatedRecord = buildGeneratedRecord({
         previewUrl: activePreview,
         detection,
         inputMethod: activeMethod,
@@ -921,7 +921,19 @@ export default function DashboardDiagnosisPage() {
             setStatus("invalid-image");
             return;
           }
-          // Keep the browser-side leaf validation result if backend CNN is unavailable.
+          setLeafAnalysis({
+            isLeaf: false,
+            confidence: detection.confidence,
+            greenRatio: detection.greenRatio,
+            plantLikeRatio: detection.plantLikeRatio,
+            averageSaturation: detection.averageSaturation,
+            reason:
+              error instanceof Error
+                ? `Ảnh đã qua bước kiểm tra lá, nhưng chưa chạy được bước nhận diện bệnh. Lý do: ${error.message}`
+                : "Ảnh đã qua bước kiểm tra lá, nhưng chưa chạy được bước nhận diện bệnh. Vui lòng thử lại sau ít phút.",
+          });
+          setStatus("invalid-image");
+          return;
         }
       }
 
