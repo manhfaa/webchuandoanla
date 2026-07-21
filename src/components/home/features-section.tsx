@@ -4,6 +4,7 @@ import { ArrowUpRight, BookOpen, CloudSun, History, Leaf, MessageSquareText, Sca
 import { SectionShell } from "@/components/layout/section-shell";
 import { SurfaceCard } from "@/components/ui/card";
 import { Reveal } from "@/components/ui/reveal";
+import { cn } from "@/lib/utils";
 
 const featureGroups = [
   {
@@ -34,6 +35,33 @@ const featureGroups = [
   },
 ];
 
+const groupStyles = [
+  {
+    frame: "border-leaf/35 bg-surface-soft",
+    rail: "bg-leaf",
+    number: "bg-leaf text-on-leaf",
+    label: "text-leaf-strong",
+    icon: "bg-leaf/10 text-leaf-strong",
+    item: "hover:border-leaf/40 hover:bg-surface-raised",
+  },
+  {
+    frame: "border-info/25 bg-surface-raised",
+    rail: "bg-info",
+    number: "bg-info text-on-forest shadow-sm",
+    label: "text-info",
+    icon: "bg-info/10 text-info",
+    item: "hover:border-info/35 hover:bg-surface-soft",
+  },
+  {
+    frame: "border-sun/35 bg-surface-raised",
+    rail: "bg-sun",
+    number: "bg-sun text-forest shadow-sm",
+    label: "text-soil",
+    icon: "bg-sun/15 text-soil",
+    item: "hover:border-sun/40 hover:bg-surface-soft",
+  },
+];
+
 export function FeaturesSection() {
   return (
     <SectionShell
@@ -44,38 +72,60 @@ export function FeaturesSection() {
       className="relative overflow-hidden bg-canvas"
     >
       <div className="grid gap-5 lg:grid-cols-3">
-        {featureGroups.map((featureGroup, groupIndex) => (
-          <Reveal key={featureGroup.name} delay={groupIndex * 0.06}>
-            <SurfaceCard variant={groupIndex === 0 ? "dark" : "raised"} padding="lg" className="h-full">
-              <div className="border-b border-line pb-5">
-                <p className={groupIndex === 0 ? "text-xs font-semibold uppercase tracking-[0.12em] text-on-forest-muted" : "text-xs font-semibold uppercase tracking-[0.12em] text-leaf-strong"}>
-                  Nhóm {groupIndex + 1}
-                </p>
-                <h3 className={groupIndex === 0 ? "mt-2 font-display text-2xl font-bold text-on-forest" : "mt-2 font-display text-2xl font-bold text-ink"}>{featureGroup.name}</h3>
-                <p className={groupIndex === 0 ? "mt-2 text-sm text-on-forest-muted" : "mt-2 text-sm text-ink-soft"}>{featureGroup.caption}</p>
-              </div>
-
-              <div className="mt-5 space-y-3">
-                {featureGroup.items.map(({ title, description, href, icon: Icon }) => (
-                  <Link key={title} href={href} className={groupIndex === 0 ? "group block rounded-2xl border border-on-forest/10 bg-on-forest/5 p-4 transition duration-180 hover:-translate-y-0.5 hover:bg-on-forest/10" : "group block rounded-2xl border border-line bg-surface p-4 transition duration-180 hover:-translate-y-0.5 hover:bg-surface-soft"}>
-                    <div className="flex items-start gap-3">
-                      <span className={groupIndex === 0 ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-on-forest/10 text-on-forest" : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-soft text-leaf-strong"}>
-                        <Icon size={18} aria-hidden />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-3">
-                          <p className={groupIndex === 0 ? "font-semibold text-on-forest" : "font-semibold text-ink"}>{title}</p>
-                          <ArrowUpRight size={16} className={groupIndex === 0 ? "shrink-0 text-on-forest-muted transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" : "shrink-0 text-ink-soft transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5"} aria-hidden />
-                        </div>
-                        <p className={groupIndex === 0 ? "mt-1 text-sm leading-6 text-on-forest-muted" : "mt-1 text-sm leading-6 text-ink-soft"}>{description}</p>
-                      </div>
+        {featureGroups.map((featureGroup, groupIndex) => {
+          const styles = groupStyles[groupIndex];
+          return (
+            <Reveal key={featureGroup.name} delay={groupIndex * 0.06}>
+              <SurfaceCard variant="raised" padding="none" className={cn("relative h-full overflow-hidden rounded-xl", styles.frame)}>
+                <span className={cn("absolute inset-x-0 top-0 h-1", styles.rail)} aria-hidden />
+                <div className="p-6 pt-7">
+                  <div className="flex items-start gap-4 border-b border-line pb-5">
+                    <span className={cn("inline-flex h-12 min-w-12 items-center justify-center rounded-xl font-display text-lg font-extrabold tabular-nums", styles.number)}>
+                      {String(groupIndex + 1).padStart(2, "0")}
+                    </span>
+                    <div className="min-w-0">
+                      <p className={cn("text-xs font-bold uppercase tracking-[0.12em]", styles.label)}>Nhóm {groupIndex + 1}</p>
+                      <h3 className="mt-1.5 font-display text-2xl font-bold tracking-[-0.025em] text-ink">{featureGroup.name}</h3>
+                      <p className="mt-2 text-sm leading-6 text-ink-soft">{featureGroup.caption}</p>
                     </div>
-                  </Link>
-                ))}
-              </div>
-            </SurfaceCard>
-          </Reveal>
-        ))}
+                  </div>
+
+                  <div className="mt-5 space-y-3">
+                    {featureGroup.items.map(({ title, description, href, icon: Icon }) => (
+                      <Link key={title} href={href} className={cn("group/item block rounded-lg border border-line bg-surface p-4 transition duration-180 hover:-translate-y-0.5 hover:shadow-sm", styles.item)}>
+                        <div className="flex items-start gap-3.5">
+                          <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition duration-180 group-hover/item:scale-105", styles.icon)}>
+                            <Icon size={19} aria-hidden />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="font-semibold text-ink">{title}</p>
+                              <ArrowUpRight size={16} className="shrink-0 text-ink-soft transition group-hover/item:-translate-y-0.5 group-hover/item:translate-x-0.5 group-hover/item:text-ink" aria-hidden />
+                            </div>
+                            <p className="mt-1 text-sm leading-6 text-ink-soft">{description}</p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+
+                  {groupIndex === 0 ? (
+                    <Link
+                      href="/login?next=/dashboard/diagnosis"
+                      className="mt-5 flex items-center justify-between gap-4 rounded-xl bg-leaf p-4 text-on-leaf shadow-sm transition duration-180 hover:-translate-y-0.5 hover:bg-leaf-strong hover:shadow-md"
+                    >
+                      <span>
+                        <span className="block text-sm font-bold">Bắt đầu với một ảnh lá</span>
+                        <span className="mt-1 block text-xs font-medium opacity-80">Tải ảnh rõ để xem các dấu hiệu cần chú ý.</span>
+                      </span>
+                      <ArrowUpRight size={19} className="shrink-0" aria-hidden />
+                    </Link>
+                  ) : null}
+                </div>
+              </SurfaceCard>
+            </Reveal>
+          );
+        })}
       </div>
     </SectionShell>
   );
