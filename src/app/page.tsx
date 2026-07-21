@@ -5,6 +5,7 @@ import { HeroSection } from "@/components/home/hero-section";
 import { MissionSection } from "@/components/home/mission-section";
 import { PlantsSection } from "@/components/home/plants-section";
 import { PricingPreviewSection } from "@/components/home/pricing-preview-section";
+import { TeamSection } from "@/components/home/team-section";
 import { WorkflowSection } from "@/components/home/workflow-section";
 import { AppShell } from "@/components/layout/layout-components";
 
@@ -18,6 +19,7 @@ export default function HomePage() {
         <FeaturesSection />
         <PlantsSection />
         <MissionSection />
+        <TeamSection />
         <PricingPreviewSection />
       </main>
       <Footer />
