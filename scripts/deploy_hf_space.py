@@ -34,13 +34,13 @@ def main() -> None:
         exist_ok=True,
     )
 
-    # The CNN checkpoint is large; resumable folder upload is more reliable than
-    # creating one regular commit for the entire Space directory.
-    api.upload_large_folder(
+    api.upload_folder(
         repo_id=repo_id,
         repo_type="space",
-        folder_path=SPACE_DIR,
+        token=token,
+        folder_path=str(SPACE_DIR),
         ignore_patterns=["__pycache__/**", "*.pyc"],
+        commit_message="Deploy Agromind CNN and YOLO leaf gate Space",
     )
 
     space_name = repo_id.split("/", 1)[1]
