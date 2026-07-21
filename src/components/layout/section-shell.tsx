@@ -21,15 +21,15 @@ export function SectionShell({
   contentClassName?: string;
 }) {
   return (
-    <section id={id} className={cn("px-4 py-20 sm:px-6 lg:px-8 lg:py-24", className)}>
+    <section id={id} className={cn("px-4 py-16 sm:px-6 lg:px-8 lg:py-20", className)}>
       <div className="mx-auto max-w-7xl">
-        <Reveal className="mb-10 max-w-4xl">
+        <Reveal className="mb-9 max-w-4xl">
           {eyebrow ? (
             <div className="mb-4 inline-flex rounded-full border border-line bg-surface-soft px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-leaf-strong">
               {eyebrow}
             </div>
           ) : null}
-          <h2 className="max-w-3xl font-display text-3xl font-bold tracking-[-0.035em] text-ink sm:text-4xl lg:text-[42px] lg:leading-[1.15]">
+          <h2 className="max-w-3xl font-display text-3xl font-bold tracking-[-0.035em] text-ink sm:text-4xl lg:text-[40px] lg:leading-[1.15]">
             {title}
           </h2>
           {description ? (

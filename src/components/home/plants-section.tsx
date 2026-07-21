@@ -9,11 +9,13 @@ import { Reveal } from "@/components/ui/reveal";
 import { supportedPlants } from "@/data/mock/plants";
 import { cn } from "@/lib/utils";
 
-const priorityPlantIds = new Set(["tomato", "pepper", "grape", "corn", "potato", "squash"]);
+const priorityPlantIds = ["tomato", "pepper", "grape", "corn", "potato", "squash"];
 
 export function PlantsSection() {
   const [filter, setFilter] = useState<"priority" | "all">("priority");
-  const visiblePlants = filter === "priority" ? supportedPlants.filter((plant) => priorityPlantIds.has(plant.id)) : supportedPlants;
+  const visiblePlants = filter === "priority"
+    ? priorityPlantIds.flatMap((plantId) => supportedPlants.filter((plant) => plant.id === plantId))
+    : supportedPlants;
 
   return (
     <SectionShell

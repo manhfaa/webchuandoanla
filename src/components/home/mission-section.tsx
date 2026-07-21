@@ -30,7 +30,7 @@ export function MissionSection() {
     <SectionShell
       eyebrow="Tin cậy và an toàn"
       title="Kết quả có cơ sở để bạn kiểm tra tiếp"
-      description="Agromind không che giấu mức độ chắc chắn. Mỗi kết quả được trình bày cùng trạng thái ảnh, độ tin cậy và nguồn liên quan khi có."
+      description="Agromind luôn hiển thị mức độ chắc chắn. Mỗi kết quả được trình bày cùng trạng thái ảnh, độ tin cậy và nguồn liên quan khi có."
       className="bg-surface"
     >
       <Reveal>

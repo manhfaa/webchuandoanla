@@ -1,5 +1,6 @@
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
+import { CapabilityStrip } from "@/components/home/capability-strip";
 import { FeaturesSection } from "@/components/home/features-section";
 import { HeroSection } from "@/components/home/hero-section";
 import { MissionSection } from "@/components/home/mission-section";
@@ -15,6 +16,7 @@ export default function HomePage() {
       <Navbar />
       <main id="main-content">
         <HeroSection />
+        <CapabilityStrip />
         <WorkflowSection />
         <FeaturesSection />
         <PlantsSection />
