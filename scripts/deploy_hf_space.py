@@ -26,20 +26,35 @@ def main() -> None:
     username = api.whoami()["name"]
     repo_id = os.getenv("HF_SPACE_ID") or f"{username}/agromind-cnn-api"
 
-    create_repo(
-        repo_id=repo_id,
-        token=token,
-        repo_type="space",
-        space_sdk="docker",
-        exist_ok=True,
-    )
+    # Reuse the existing Space. Creating a new Docker Space on the free plan
+    # returns 402 even when the target repository already exists.
+    try:
+        api.repo_info(repo_id=repo_id, repo_type="space")
+    except Exception as exc:
+        status_code = getattr(getattr(exc, "response", None), "status_code", None)
+        if status_code != 404:
+            raise
+        create_repo(
+            repo_id=repo_id,
+            token=token,
+            repo_type="space",
+            space_sdk="docker",
+            exist_ok=True,
+        )
 
     api.upload_folder(
         repo_id=repo_id,
         repo_type="space",
         token=token,
         folder_path=str(SPACE_DIR),
-        ignore_patterns=["__pycache__/**", "*.pyc"],
+        allow_patterns=[
+            "app.py",
+            "Dockerfile",
+            "README.md",
+            "requirements.txt",
+            "agromindaimodel.pth",
+            "yolo_leaf.pt",
+        ],
         commit_message="Deploy Agromind CNN and YOLO leaf gate Space",
     )
 

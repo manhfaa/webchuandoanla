@@ -252,8 +252,9 @@ app = FastAPI(title="Agromind CNN API")
 
 @app.on_event("startup")
 def warm_model() -> None:
-    load_bundle()
-    load_yolo_model()
+    # Do not load both large models during container startup on the free CPU
+    # runtime. They are cached and loaded lazily by the first real request.
+    return None
 
 
 @app.get("/health")
