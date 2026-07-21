@@ -65,7 +65,7 @@ def _model_path() -> Path:
     configured = getattr(settings, "CNN_MODEL_PATH", "")
     if configured:
         return Path(configured)
-    return Path(settings.BASE_DIR).parent / "best_model.pth"
+    return Path(settings.BASE_DIR).parent / "agromindaimodel.pth"
 
 
 def _preprocess(img_size: int):
@@ -87,24 +87,38 @@ def _load_bundle() -> dict[str, Any]:
 
     torch, _, _, _, _ = _deps()
     checkpoint = torch.load(path, map_location="cpu", weights_only=True)
-    classes = checkpoint.get("classes") or checkpoint.get("config", {}).get("classes")
-    state_dict = checkpoint.get("model")
-    if not classes or not state_dict:
-        raise CnnModelUnavailable("CNN checkpoint must contain 'model' and 'classes'.")
-
-    model = _build_model(num_classes=len(classes))
-    model.load_state_dict(state_dict)
-    model.eval()
-
     config = checkpoint.get("config", {})
-    img_size = int(config.get("img_size", 224))
+    new_state_dict = checkpoint.get("model_state_dict")
+    class_to_index = checkpoint.get("class_to_index")
+    if new_state_dict and class_to_index:
+        classes = [label for label, _ in sorted(class_to_index.items(), key=lambda item: item[1])]
+        _, _, nn, models, _ = _deps()
+        model = models.convnext_tiny(weights=None)
+        model.classifier[2] = nn.Linear(model.classifier[2].in_features, len(classes))
+        model.load_state_dict(new_state_dict)
+        model_name = str(checkpoint.get("model_name") or "convnext_tiny")
+        best_acc = checkpoint.get("best_macro_f1")
+        img_size = int(checkpoint.get("input_size") or 224)
+    else:
+        classes = checkpoint.get("classes") or config.get("classes")
+        state_dict = checkpoint.get("model")
+        if not classes or not state_dict:
+            raise CnnModelUnavailable("CNN checkpoint must contain model_state_dict/class_to_index.")
+        model = _build_model(num_classes=len(classes))
+        model.load_state_dict(state_dict)
+        model_name = "convnext_tiny_legacy"
+        best_acc = checkpoint.get("best_acc")
+        img_size = int(config.get("img_size", 224))
+
+    model.eval()
     return {
         "model": model,
         "classes": list(classes),
         "preprocess": _preprocess(img_size),
         "img_size": img_size,
-        "best_acc": checkpoint.get("best_acc"),
+        "best_acc": best_acc,
         "epoch": checkpoint.get("epoch"),
+        "model_name": model_name,
     }
 
 
@@ -160,7 +174,7 @@ def classify_image(image: Image.Image, top_k: int = 5) -> dict[str, Any]:
         "class_name": best["class_name"],
         "confidence": best["confidence"],
         "top_predictions": top_predictions,
-        "model_version": f"convnext_tiny_epoch_{bundle.get('epoch', 'unknown')}",
+        "model_version": f"{bundle.get('model_name', 'cnn')}_epoch_{bundle.get('epoch', 'unknown')}",
         "model_accuracy": bundle.get("best_acc"),
         "image_size": bundle["img_size"],
     })

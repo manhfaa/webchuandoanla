@@ -30,7 +30,7 @@ Repo GitHub: https://github.com/manhfaa/webchuandoanla
 - Frontend: Next.js App Router, TypeScript, Tailwind CSS, Zustand.
 - Backend: Django, Django REST Framework, Simple JWT.
 - Database: SQLite local mặc định hoặc PostgreSQL/Supabase qua `SUPABASE_DB_URL`.
-- CNN: chạy local bằng `best_model.pth` hoặc gọi Hugging Face Space qua `CNN_API_URL`.
+- CNN: chạy local bằng `agromindaimodel.pth` hoặc gọi Hugging Face Space qua `CNN_API_URL`.
 - Deploy free: Vercel cho frontend, Render cho backend, Hugging Face Space cho CNN FastAPI.
 
 ## Cấu trúc chính
@@ -58,7 +58,7 @@ Repo GitHub: https://github.com/manhfaa/webchuandoanla
 ├─ DEPLOY_FREE.md               Ghi chú deploy miễn phí
 ├─ render.yaml                  Cấu hình Render backend
 ├─ vercel.json                  Cấu hình Vercel frontend
-├─ best_model.pth               CNN checkpoint local
+├─ agromindaimodel.pth          CNN checkpoint local
 └─ README.md
 ```
 
@@ -195,9 +195,9 @@ Nếu tài khoản chưa có trong database local, đăng ký tài khoản mới
 Backend ưu tiên theo thứ tự:
 
 1. Gọi remote CNN FastAPI nếu có `CNN_API_URL`.
-2. Chạy local checkpoint nếu có `CNN_MODEL_PATH` hoặc file `best_model.pth` ở root repo.
+2. Chạy local checkpoint nếu có `CNN_MODEL_PATH` hoặc file `agromindaimodel.pth` ở root repo.
 
-File `best_model.pth` đang nằm trong repo để dev local có thể tiếp tục ngay. Nếu muốn deploy nhẹ hơn, đưa model lên Hugging Face Space và set:
+File `agromindaimodel.pth` là checkpoint ConvNeXt-Tiny mới. Nếu muốn deploy nhẹ hơn, đưa model lên Hugging Face Space và set:
 
 ```env
 CNN_API_URL=https://username-agromind-cnn-api.hf.space

@@ -24,5 +24,5 @@ Both endpoints accept either multipart field `image` or JSON field `image_data_u
 
 Required files:
 
-- `best_model.pth`
+- `agromindaimodel.pth`
 - `yolo_leaf.pt`

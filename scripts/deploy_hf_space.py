@@ -3,12 +3,12 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from huggingface_hub import HfApi, create_repo, upload_folder
+from huggingface_hub import HfApi, create_repo
 
 
 ROOT = Path(__file__).resolve().parent.parent
 SPACE_DIR = ROOT / "hf_space"
-MODEL_FILE = SPACE_DIR / "best_model.pth"
+MODEL_FILE = SPACE_DIR / "agromindaimodel.pth"
 YOLO_MODEL_FILE = SPACE_DIR / "yolo_leaf.pt"
 
 
@@ -20,7 +20,7 @@ def main() -> None:
     if not YOLO_MODEL_FILE.exists():
         raise SystemExit(f"Missing {YOLO_MODEL_FILE}. Copy moduleyolola/best.pt into hf_space/yolo_leaf.pt first.")
     if not MODEL_FILE.exists():
-        print(f"Warning: missing {MODEL_FILE}. This is OK only when the target Space already has best_model.pth.")
+        raise SystemExit(f"Missing {MODEL_FILE}. Copy the new CNN checkpoint into hf_space first.")
 
     api = HfApi(token=token)
     username = api.whoami()["name"]
@@ -34,12 +34,13 @@ def main() -> None:
         exist_ok=True,
     )
 
-    upload_folder(
+    # The CNN checkpoint is large; resumable folder upload is more reliable than
+    # creating one regular commit for the entire Space directory.
+    api.upload_large_folder(
         repo_id=repo_id,
         repo_type="space",
-        token=token,
-        folder_path=str(SPACE_DIR),
-        commit_message="Deploy Agromind CNN and YOLO leaf gate Space",
+        folder_path=SPACE_DIR,
+        ignore_patterns=["__pycache__/**", "*.pyc"],
     )
 
     space_name = repo_id.split("/", 1)[1]

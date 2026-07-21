@@ -16,7 +16,7 @@ from torchvision import models, transforms
 from ultralytics import YOLO
 
 
-MODEL_PATH = Path(__file__).with_name("best_model.pth")
+MODEL_PATH = Path(__file__).with_name("agromindaimodel.pth")
 YOLO_MODEL_PATH = Path(__file__).with_name("yolo_leaf.pt")
 YOLO_CONFIDENCE_THRESHOLD = 0.35
 YOLO_CROP_PADDING_RATIO = 0.08
@@ -69,24 +69,43 @@ def preprocess(img_size: int):
 @lru_cache(maxsize=1)
 def load_bundle() -> dict[str, Any]:
     checkpoint = torch.load(MODEL_PATH, map_location="cpu", weights_only=True)
-    classes = checkpoint.get("classes") or checkpoint.get("config", {}).get("classes")
-    state_dict = checkpoint.get("model")
-    if not classes or not state_dict:
-        raise RuntimeError("Checkpoint must contain 'model' and 'classes'.")
-
-    model = LeafDiseaseConvNeXt(num_classes=len(classes))
-    model.load_state_dict(state_dict)
-    model.eval()
-
     config = checkpoint.get("config", {})
-    img_size = int(config.get("img_size", 224))
+
+    # The new training pipeline saves a standard torchvision ConvNeXt checkpoint.
+    # Keep the old branch so local environments with the previous checkpoint do not
+    # fail unexpectedly while the Space is being updated.
+    new_state_dict = checkpoint.get("model_state_dict")
+    class_to_index = checkpoint.get("class_to_index")
+    if new_state_dict and class_to_index:
+        classes = [label for label, _ in sorted(class_to_index.items(), key=lambda item: item[1])]
+        model = models.convnext_tiny(weights=None)
+        model.classifier[2] = nn.Linear(model.classifier[2].in_features, len(classes))
+        model.load_state_dict(new_state_dict)
+        model_name = str(checkpoint.get("model_name") or "convnext_tiny")
+        epoch = checkpoint.get("epoch")
+        best_acc = checkpoint.get("best_macro_f1")
+        img_size = int(checkpoint.get("input_size") or 224)
+    else:
+        classes = checkpoint.get("classes") or config.get("classes")
+        state_dict = checkpoint.get("model")
+        if not classes or not state_dict:
+            raise RuntimeError("Checkpoint must contain model_state_dict/class_to_index.")
+        model = LeafDiseaseConvNeXt(num_classes=len(classes))
+        model.load_state_dict(state_dict)
+        model_name = "convnext_tiny_legacy"
+        epoch = checkpoint.get("epoch")
+        best_acc = checkpoint.get("best_acc")
+        img_size = int(config.get("img_size", 224))
+
+    model.eval()
     return {
         "model": model,
         "classes": list(classes),
         "preprocess": preprocess(img_size),
         "img_size": img_size,
-        "best_acc": checkpoint.get("best_acc"),
-        "epoch": checkpoint.get("epoch"),
+        "best_acc": best_acc,
+        "epoch": epoch,
+        "model_name": model_name,
     }
 
 
@@ -191,7 +210,7 @@ def detect_leaf_and_crop(image: Image.Image) -> dict[str, Any]:
 
 def classify_image(image: Image.Image, top_k: int = 5) -> dict[str, Any]:
     bundle = load_bundle()
-    model: LeafDiseaseConvNeXt = bundle["model"]
+    model: nn.Module = bundle["model"]
     classes: list[str] = bundle["classes"]
     transform = bundle["preprocess"]
 
@@ -222,7 +241,7 @@ def classify_image(image: Image.Image, top_k: int = 5) -> dict[str, Any]:
         "class_name": best["class_name"],
         "confidence": best["confidence"],
         "top_predictions": top_predictions,
-        "model_version": f"convnext_tiny_epoch_{bundle.get('epoch', 'unknown')}",
+        "model_version": f"{bundle.get('model_name', 'cnn')}_epoch_{bundle.get('epoch', 'unknown')}",
         "model_accuracy": bundle.get("best_acc"),
         "image_size": bundle["img_size"],
     }
@@ -243,7 +262,7 @@ def health() -> dict[str, Any]:
     return {
         "status": "ok",
         "classes": len(bundle["classes"]),
-        "model_version": f"convnext_tiny_epoch_{bundle.get('epoch', 'unknown')}",
+        "model_version": f"{bundle.get('model_name', 'cnn')}_epoch_{bundle.get('epoch', 'unknown')}",
         "model_accuracy": bundle.get("best_acc"),
         "yolo_enabled": YOLO_MODEL_PATH.exists(),
     }
