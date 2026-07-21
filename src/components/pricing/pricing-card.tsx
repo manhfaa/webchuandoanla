@@ -95,7 +95,10 @@ export function PricingCard({
             {plan.badge && !isCurrent ? (
               <Badge
                 variant={plan.highlight ? "warning" : dark ? "locked" : "brand"}
-                className="max-w-full whitespace-normal leading-5 no-underline"
+                className={cn(
+                  "max-w-full whitespace-nowrap leading-5 no-underline",
+                  plan.highlight && "bg-sun px-3 py-1 text-[11px] font-bold text-forest shadow-sm",
+                )}
               >
                 {plan.badge}
               </Badge>
@@ -105,7 +108,7 @@ export function PricingCard({
           <div>
             <h3
               className={cn(
-                "max-w-full break-words font-display text-[1.75rem] font-semibold tracking-tight sm:text-[2rem]",
+                "max-w-full whitespace-nowrap font-display text-[clamp(1.65rem,2vw,1.875rem)] font-bold leading-tight tracking-[-0.035em]",
                 isEmphasized ? "text-on-forest" : "text-ink",
               )}
             >
