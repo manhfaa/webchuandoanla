@@ -259,9 +259,18 @@ def warm_model() -> None:
 
 @app.get("/health")
 def health() -> dict[str, Any]:
-    bundle = load_bundle()
+    try:
+        bundle = load_bundle()
+    except Exception as exc:
+        return {
+            "status": "error",
+            "model_ready": False,
+            "model_error": f"{type(exc).__name__}: {exc}",
+            "yolo_enabled": YOLO_MODEL_PATH.exists(),
+        }
     return {
         "status": "ok",
+        "model_ready": True,
         "classes": len(bundle["classes"]),
         "model_version": f"{bundle.get('model_name', 'cnn')}_epoch_{bundle.get('epoch', 'unknown')}",
         "model_accuracy": bundle.get("best_acc"),
