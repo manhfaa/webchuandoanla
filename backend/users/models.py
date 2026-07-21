@@ -3,7 +3,7 @@ from django.db import models
 
 
 class User(AbstractUser):
-    full_name = models.CharField(max_length=120, blank=True, default="Người dùng Leafiq")
+    full_name = models.CharField(max_length=120, blank=True, default="Người dùng AgromindAI")
     phone = models.CharField(max_length=30, blank=True)
     avatar_url = models.URLField(blank=True, default="")
     company_name = models.CharField(max_length=150, blank=True)

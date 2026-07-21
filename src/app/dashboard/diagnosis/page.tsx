@@ -734,7 +734,7 @@ export default function DashboardDiagnosisPage() {
 
     stopCameraStream();
 
-    const file = new File([blob], `leafiq-capture-${Date.now()}.jpg`, {
+    const file = new File([blob], `agromindai-capture-${Date.now()}.jpg`, {
       type: "image/jpeg",
     });
 

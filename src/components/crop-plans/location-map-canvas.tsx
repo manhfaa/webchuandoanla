@@ -4,7 +4,7 @@ import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import { divIcon, type LatLngExpression } from "leaflet";
 
 const markerIcon = divIcon({
-  className: "leafiq-map-pin",
+  className: "agromindai-map-pin",
   html: `
     <div style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:999px;background:var(--leaf);border:3px solid var(--surface);box-shadow:var(--shadow-md);"></div>
   `,

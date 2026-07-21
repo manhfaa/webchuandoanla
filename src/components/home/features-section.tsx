@@ -66,7 +66,7 @@ export function FeaturesSection() {
   return (
     <SectionShell
       id="tinh-nang"
-      eyebrow="Bộ công cụ Field Lens"
+      eyebrow="Bộ công cụ chăm sóc cây"
       title="Mọi công cụ cần thiết để theo dõi sức khỏe cây từ ảnh lá đến việc chăm sóc"
       description="Agromind sắp xếp tính năng theo đúng cách bạn làm việc ngoài vườn: quan sát, theo dõi rồi mới quyết định hành động."
       className="relative overflow-hidden bg-canvas"

@@ -61,10 +61,6 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
           ))}
         </nav>
 
-        <div className="mx-1 rounded-2xl bg-forest p-4 text-on-forest">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-forest-muted">Gợi ý Field Lens</p>
-          <p className="mt-2 text-sm font-semibold leading-6">Chụp lại cùng một chiếc lá sau vài ngày để dễ so sánh thay đổi.</p>
-        </div>
       </aside>
     </>
   );

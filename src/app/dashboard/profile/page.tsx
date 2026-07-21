@@ -11,17 +11,18 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { pricingPlans } from "@/data/mock/plans";
+import { normalizeUserDisplayName } from "@/lib/user-profile";
 import { useSessionStore } from "@/store/session-store";
 
 export default function DashboardProfilePage() {
   const router = useRouter();
   const { user, status, updateProfile } = useSessionStore();
-  const [name, setName] = useState(user?.name ?? "");
+  const [name, setName] = useState(normalizeUserDisplayName(user?.name));
   const [email, setEmail] = useState(user?.email ?? "");
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar ?? "");
 
   useEffect(() => {
-    setName(user?.name ?? "");
+    setName(normalizeUserDisplayName(user?.name));
     setEmail(user?.email ?? "");
     setAvatarUrl(user?.avatar ?? "");
   }, [user]);
@@ -31,7 +32,7 @@ export default function DashboardProfilePage() {
     [user?.currentPlan],
   );
 
-  const displayName = user?.name ?? "Người dùng Agromind AI";
+  const displayName = normalizeUserDisplayName(user?.name);
   const avatarSrc = avatarUrl || user?.avatar || "/avatars/user-demo.svg";
 
   async function handleSaveProfile() {

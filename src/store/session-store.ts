@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware";
 
 import { djangoGoogleLogin, djangoLogin, djangoMe, djangoRegister, djangoUpdateMe } from "@/lib/django-client";
 import { normalizePlan } from "@/lib/plans";
+import { normalizeUserDisplayName } from "@/lib/user-profile";
 import type { PlanTier, UserProfile } from "@/types";
 
 type AuthStatus = "idle" | "loading" | "authenticated" | "error";
@@ -204,7 +205,7 @@ export const useSessionStore = create<SessionState>()(
     }),
     {
       name: "leafiq-session",
-      version: 4,
+      version: 5,
       partialize: (state) => ({
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
@@ -216,6 +217,7 @@ export const useSessionStore = create<SessionState>()(
         const user = state.user
           ? {
               ...state.user,
+              name: normalizeUserDisplayName(state.user.name),
               currentPlan: normalizePlan(state.user.currentPlan),
             }
           : null;

@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { normalizePlan, PLANS } from "@/lib/plans";
+import { normalizeUserDisplayName } from "@/lib/user-profile";
 import { useSessionStore } from "@/store/session-store";
 import type { PlanTier } from "@/types";
 
@@ -28,7 +29,8 @@ export function WorkspaceHeader({ pageTitle, pageDescription, onOpenMobileNav }:
   const { user, logout } = useSessionStore();
   const plan = normalizePlan(user?.currentPlan);
   const planInfo = PLANS[plan];
-  const initials = user?.name?.trim()?.[0]?.toUpperCase() ?? "U";
+  const displayName = normalizeUserDisplayName(user?.name);
+  const initials = displayName[0]?.toUpperCase() ?? "U";
 
   return (
     <header className="workspace-header sticky top-0 z-30 flex min-h-[72px] shrink-0 items-center px-4 sm:px-6 lg:px-8">
@@ -54,7 +56,7 @@ export function WorkspaceHeader({ pageTitle, pageDescription, onOpenMobileNav }:
           </Link>
           <Link href="/dashboard/profile" className="flex h-10 min-w-10 items-center gap-2 rounded-xl border border-line bg-surface px-1.5 pr-2.5 transition hover:bg-surface-soft" aria-label="Mở hồ sơ người dùng">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-soft text-xs font-bold text-leaf-strong">{initials}</span>
-            <span className="hidden max-w-[110px] truncate text-xs font-semibold text-ink xl:block">{user?.name ?? "Người dùng"}</span>
+            <span className="hidden max-w-[140px] truncate text-xs font-semibold text-ink xl:block">{displayName}</span>
           </Link>
           <button type="button" onClick={() => { logout(); router.push("/login"); }} className="flex h-10 w-10 items-center justify-center rounded-xl text-ink-soft transition hover:bg-danger/10 hover:text-danger" aria-label="Đăng xuất">
             <LogOut size={17} aria-hidden />

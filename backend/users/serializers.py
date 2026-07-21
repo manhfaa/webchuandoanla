@@ -57,7 +57,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         user = User(
             username=build_unique_username(email),
             email=email,
-            full_name="Người dùng Leafiq",
+            full_name="Người dùng AgromindAI",
         )
         user.set_password(password)
         user.save()
@@ -146,7 +146,7 @@ class GoogleLoginSerializer(serializers.Serializer):
         if not email or not email_verified:
             raise serializers.ValidationError("Tài khoản Google chưa xác minh email.")
 
-        full_name = str(google_payload.get("name", "")).strip() or "Người dùng Agromind AI"
+        full_name = str(google_payload.get("name", "")).strip() or "Người dùng AgromindAI"
         avatar_url = str(google_payload.get("picture", "")).strip()
 
         user = User.objects.filter(email=email).first()
@@ -162,7 +162,7 @@ class GoogleLoginSerializer(serializers.Serializer):
             UserSetting.objects.get_or_create(user=user)
         else:
             changed = False
-            if full_name and (not user.full_name or user.full_name == "Người dùng Leafiq"):
+            if full_name and (not user.full_name or user.full_name in {"Người dùng Leafiq", "Người dùng AgromindAI"}):
                 user.full_name = full_name
                 changed = True
             if avatar_url and not user.avatar_url:
