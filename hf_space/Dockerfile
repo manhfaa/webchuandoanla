@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 COPY app.py .
-COPY best_model.pth .
+COPY agromindaimodel.pth .
 COPY yolo_leaf.pt .
 
 EXPOSE 7860
