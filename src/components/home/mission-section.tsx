@@ -1,74 +1,63 @@
-import { LineChart, ShieldCheck, Sprout } from "lucide-react";
+import { ExternalLink, ScanLine, ShieldCheck, SlidersHorizontal } from "lucide-react";
 
 import { SectionShell } from "@/components/layout/section-shell";
-import { Card } from "@/components/ui/card";
+import { SurfaceCard } from "@/components/ui/card";
 import { Reveal } from "@/components/ui/reveal";
-import { brand } from "@/constants/brand";
 
-const missionPillars = [
+const trustPoints = [
   {
-    icon: Sprout,
-    title: "Nâng cao hiệu quả canh tác",
-    description: "Biến việc quan sát lá cây thành một quy trình số hóa rõ ràng và tiết kiệm thời gian hơn.",
+    icon: ScanLine,
+    title: "Kiểm tra ảnh đầu vào",
+    description: "Ảnh mờ, thiếu vùng lá hoặc không phù hợp sẽ được nhắc chụp lại trước khi phân tích tiếp.",
   },
   {
-    icon: ShieldCheck,
-    title: "Phát hiện bệnh sớm",
-    description: "Tăng khả năng can thiệp kịp thời trước khi bệnh lan rộng và gây tổn thất năng suất.",
+    icon: SlidersHorizontal,
+    title: "Hiển thị mức độ tin cậy",
+    description: "Bạn luôn thấy kết quả nào đang được ưu tiên và trường hợp nào nên kiểm tra thêm.",
   },
   {
-    icon: LineChart,
-    title: "Ra quyết định tự tin hơn",
-    description: "Cung cấp lớp giao diện giải thích trực quan để người dùng dễ hiểu cả khi không rành công nghệ.",
+    icon: ExternalLink,
+    title: "Nguồn tham khảo mở được",
+    description: "Khi nhập triệu chứng, các nguồn dùng để đối chiếu được hiển thị để bạn tự xem lại.",
   },
 ];
 
 export function MissionSection() {
   return (
     <SectionShell
-      eyebrow="Mục tiêu sản phẩm"
-      title="Agromind AI giúp người trồng cây kiểm tra lá nhanh hơn, hiểu rõ rủi ro hơn và theo dõi cây có hệ thống hơn."
-      description={brand.mission}
+      eyebrow="Tin cậy và an toàn"
+      title="Kết quả có cơ sở để bạn kiểm tra tiếp"
+      description="Agromind không che giấu mức độ chắc chắn. Mỗi kết quả được trình bày cùng trạng thái ảnh, độ tin cậy và nguồn liên quan khi có."
+      className="bg-surface"
     >
-      <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <Reveal>
-          <Card className="rounded-[36px] bg-[#10231c] p-8 text-white">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-100/60">
-              Cam kết sử dụng
-            </p>
-            <h3 className="mt-4 font-display text-4xl font-semibold">
-              Kết quả AI là nguồn tham khảo để người dùng quan sát kỹ hơn, không thay thế kinh nghiệm thực địa.
-            </h3>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-emerald-50/75">
-              Ứng dụng ưu tiên ngôn ngữ tiếng Việt dễ hiểu, hiển thị độ tin cậy, nguồn tham khảo và khuyến nghị ban đầu để người trồng cây có thêm cơ sở trước khi xử lý ngoài vườn.
-            </p>
-          </Card>
-        </Reveal>
-        <div className="grid gap-4">
-          {missionPillars.map((pillar, index) => {
-            const Icon = pillar.icon;
-            return (
-              <Reveal key={pillar.title} delay={index * 0.05}>
-                <Card className="rounded-[30px] border-white/75 bg-white/90 p-6 dark:border-white/10 dark:bg-white/10">
-                  <div className="flex items-start gap-4">
-                    <div className="rounded-2xl bg-emerald-100 p-3 text-brand-700 dark:bg-white/10 dark:text-lime-100">
-                      <Icon size={20} />
-                    </div>
-                    <div>
-                      <h3 className="font-display text-xl font-semibold text-ink dark:text-white">
-                        {pillar.title}
-                      </h3>
-                      <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-emerald-50/75">
-                        {pillar.description}
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              </Reveal>
-            );
-          })}
-        </div>
+      <div className="grid gap-4 lg:grid-cols-3">
+        {trustPoints.map((point, index) => {
+          const Icon = point.icon;
+          return (
+            <Reveal key={point.title} delay={index * 0.055}>
+              <SurfaceCard variant="raised" padding="lg" className="h-full">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-soft text-leaf-strong">
+                  <Icon size={20} aria-hidden />
+                </span>
+                <h3 className="mt-5 font-display text-xl font-bold text-ink">{point.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-ink-soft">{point.description}</p>
+              </SurfaceCard>
+            </Reveal>
+          );
+        })}
       </div>
+
+      <Reveal delay={0.16} className="mt-5">
+        <div className="flex flex-col gap-4 rounded-2xl border border-sun/35 bg-sun/10 p-5 sm:flex-row sm:items-center">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sun/20 text-soil">
+            <ShieldCheck size={21} aria-hidden />
+          </span>
+          <div>
+            <p className="font-semibold text-ink">Lưu ý khi sử dụng kết quả</p>
+            <p className="mt-1 text-sm leading-6 text-ink-soft">Kết quả AI mang tính tham khảo. Nếu cây bệnh lan nhanh hoặc cần dùng thuốc, hãy hỏi chuyên gia nông nghiệp tại địa phương.</p>
+          </div>
+        </div>
+      </Reveal>
     </SectionShell>
   );
 }

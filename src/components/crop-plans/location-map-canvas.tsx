@@ -6,7 +6,7 @@ import { divIcon, type LatLngExpression } from "leaflet";
 const markerIcon = divIcon({
   className: "leafiq-map-pin",
   html: `
-    <div style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:999px;background:#1d6d3b;border:3px solid #eefcf0;box-shadow:0 12px 30px rgba(16,35,27,0.28);"></div>
+    <div style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:999px;background:var(--leaf);border:3px solid var(--surface);box-shadow:var(--shadow-md);"></div>
   `,
   iconSize: [20, 20],
   iconAnchor: [10, 10],
@@ -58,4 +58,3 @@ export function LocationMapCanvas({
     </MapContainer>
   );
 }
-

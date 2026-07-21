@@ -42,7 +42,7 @@ export const PLANS = {
       "Kiểm tra ảnh lá không giới hạn",
       "Lưu toàn bộ lịch sử",
       "Chat AI không giới hạn",
-      "Chat chuyên gia nông nghiệp",
+      "Tư vấn nông nghiệp nâng cao",
       "Lập kế hoạch trồng cây (10 kế hoạch)",
       "Ưu tiên tốc độ xử lý",
       "Hỗ trợ qua email",
@@ -59,7 +59,7 @@ export const PLANS = {
     features: [
       "Tất cả tính năng Bloom",
       "Xuất báo cáo PDF",
-      "API access",
+      "Quyền tích hợp dữ liệu nâng cao",
       "Kế hoạch trồng cây không giới hạn",
       "Hỗ trợ ưu tiên qua email + chat",
     ],

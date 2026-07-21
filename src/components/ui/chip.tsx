@@ -4,13 +4,13 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const chipVariants = cva(
-  "inline-flex h-8 max-w-full items-center rounded-full px-3 text-caption font-medium no-underline [text-decoration:none!important] transition duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500/40",
+  "inline-flex h-8 max-w-full items-center rounded-full px-3 text-caption font-medium no-underline [text-decoration:none!important] transition duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf-strong/40",
   {
     variants: {
       tone: {
-        default: "bg-leaf-100 text-leaf-700",
-        muted: "border border-border-dark bg-white/5 text-muted-on-dark",
-        dark: "border border-border-dark bg-app-surface-2 text-on-dark hover:bg-white/5",
+        default: "bg-surface-soft text-leaf-strong",
+        muted: "border border-line bg-surface text-ink-soft",
+        dark: "border border-line bg-surface-soft text-ink hover:bg-surface",
       },
     },
     defaultVariants: {

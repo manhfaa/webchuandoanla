@@ -1,4 +1,4 @@
-import { forwardRef, type InputHTMLAttributes, type ReactNode } from "react";
+import { forwardRef, useId, type InputHTMLAttributes, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -7,57 +7,58 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   hint?: string;
   icon?: ReactNode;
-  tone?: "dark" | "light";
+  suffix?: ReactNode;
+  tone?: "dark" | "light"; // kept for backward compatibility, ignored
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, hint, icon, className, id: idProp, tone = "dark", ...props }, ref) => {
-    const genId = `input-${Math.random().toString(36).slice(2, 7)}`;
+  ({ label, error, hint, icon, suffix, className, id: idProp, tone, ...props }, ref) => {
+    const generatedId = useId();
+    const genId = `input-${generatedId.replace(/:/g, "")}`;
     const id = idProp ?? genId;
-    const isLight = tone === "light";
 
     return (
       <div className="flex flex-col gap-1.5">
         {label ? (
-          <label htmlFor={id} className={cn("text-sm font-medium", isLight ? "text-ink-800" : "text-[--text-default]")}>
+          <label htmlFor={id} className="text-sm font-medium text-ink">
             {label}
           </label>
         ) : null}
         <div className="relative">
           {icon ? (
-            <div className={cn("pointer-events-none absolute left-3 top-1/2 -translate-y-1/2", isLight ? "text-ink-400" : "text-[--text-muted]")}>
+            <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft">
               {icon}
             </div>
+          ) : null}
+          {suffix ? (
+            <div className="absolute right-1 top-1/2 -translate-y-1/2">{suffix}</div>
           ) : null}
           <input
             ref={ref}
             id={id}
             className={cn(
-              "h-11 w-full rounded-[--r-md] px-3.5",
-              isLight ? "bg-white" : "bg-[--bg-surface]",
+              "h-11 w-full rounded-md px-3.5",
+              "bg-surface",
               "border",
               error
-                ? "border-berry-500 focus:shadow-[0_0_0_3px_rgba(216,86,86,0.25)]"
-                : isLight
-                  ? "border-ink-200"
-                  : "border-[--border-primary]",
+                ? "border-danger focus:ring-2 focus:ring-danger/25"
+                : "border-line",
               "text-[15px]",
-              isLight ? "text-ink-950" : "text-[--text-default]",
-              isLight ? "placeholder:text-ink-400" : "placeholder:text-[--text-hint]",
-              isLight
-                ? "[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_#ffffff] [&:-webkit-autofill]:[-webkit-text-fill-color:#0C1410]"
-                : "[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_var(--bg-surface)] [&:-webkit-autofill]:[-webkit-text-fill-color:var(--text-default)]",
-              "outline-none transition-all duration-[--d-fast]",
-              "focus:border-leaf-500 focus:shadow-[--shadow-focus]",
+              "text-ink",
+              "placeholder:text-ink-soft",
+              "[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_var(--canvas)] [&:-webkit-autofill]:[-webkit-text-fill-color:var(--ink)]",
+              "outline-none transition-all duration-180",
+              "focus:border-leaf focus:shadow-focus",
               "disabled:cursor-not-allowed disabled:opacity-50",
               icon ? "pl-10" : "",
+              suffix ? "pr-12" : "",
               className,
             )}
             {...props}
           />
         </div>
-        {error ? <p className="text-xs text-berry-500">{error}</p> : null}
-        {hint && !error ? <p className={cn("text-xs", isLight ? "text-ink-500" : "text-[--text-muted]")}>{hint}</p> : null}
+        {error ? <p className="text-xs text-danger">{error}</p> : null}
+        {hint && !error ? <p className="text-xs text-ink-soft">{hint}</p> : null}
       </div>
     );
   },

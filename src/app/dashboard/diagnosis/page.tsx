@@ -357,7 +357,7 @@ function buildDiseaseActionPlan(cnn: DjangoCnnResponse): ActionPlan {
     should_retake_photo: !isHealthyCnnDisease(cnn),
     safety_notes: guidance.safety,
     disclaimer:
-      "Khuyến nghị dựa trên kết quả CNN và mô tả triệu chứng nếu có; hãy đối chiếu thực địa trước khi xử lý.",
+      "Khuyến nghị dựa trên ảnh và mô tả triệu chứng nếu có; hãy đối chiếu thực địa trước khi xử lý.",
     severity: guidance.severity,
   };
 }
@@ -374,11 +374,11 @@ function buildResearchRecommendationBlocks(research?: SymptomResearchResult | nu
   const blocks = [
     {
       title: research.isSymptomConsistent
-        ? "Kiểm chứng triệu chứng bằng Tavily"
-        : "Kiểm chứng triệu chứng: cần xem lại",
+        ? "Đối chiếu triệu chứng với nguồn tham khảo"
+        : "Triệu chứng cần được quan sát thêm",
       items: [
         research.compatibilitySummary ||
-          "Đã tìm kiếm nguồn bên ngoài để đối chiếu triệu chứng với kết quả CNN.",
+          "Đã tìm nguồn tham khảo để đối chiếu triệu chứng với các khả năng từ ảnh.",
         research.confidenceNote ||
           "Nguồn web chỉ dùng để tăng độ tin cậy tham khảo, không thay thế kiểm tra thực địa.",
         research.compatibilityQuestion ? `Câu hỏi kiểm chứng: ${research.compatibilityQuestion}` : "",
@@ -401,7 +401,7 @@ function buildResearchRecommendationBlocks(research?: SymptomResearchResult | nu
 
   if (research.finalConclusion) {
     blocks.push({
-      title: "Kết luận cuối cùng từ DeepSeek",
+      title: "Kết luận sau khi đối chiếu",
       items: [
         research.finalConclusion,
         research.userNextStep ? `Bước tiếp theo: ${research.userNextStep}` : "",
@@ -487,13 +487,7 @@ async function researchSymptomsWithSources({
   });
 
   if (!response.ok) {
-    try {
-      const data = (await response.json()) as { error?: string };
-      throw new Error(data.error || "Không hoàn tất được kiểm chứng DeepSeek + Tavily.");
-    } catch (error) {
-      if (error instanceof Error) throw error;
-      throw new Error("Không hoàn tất được kiểm chứng DeepSeek + Tavily.");
-    }
+    throw new Error("Chưa thể đối chiếu triệu chứng với nguồn tham khảo. Vui lòng thử lại sau ít phút.");
   }
   return (await response.json()) as SymptomResearchResult;
 }
@@ -512,8 +506,8 @@ function applyCnnResult(
   });
   const isHealthy = isHealthyCnnDisease(finalCnn);
   const symptomNote = symptoms.trim()
-    ? `Người dùng mô tả thêm triệu chứng: "${symptoms.trim()}". Hệ thống đã đối chiếu mô tả này với 5 kết quả CNN cao nhất để chọn khả nghi nhất.`
-    : "Người dùng chọn không nhập triệu chứng, hệ thống giữ kết quả CNN có độ tin cậy cao nhất.";
+    ? `Người dùng mô tả thêm triệu chứng: "${symptoms.trim()}". Hệ thống đã đối chiếu mô tả này với 5 khả năng cao nhất từ ảnh.`
+    : "Người dùng chọn không nhập triệu chứng, hệ thống giữ khả năng có độ tin cậy cao nhất.";
 
   return {
     ...record,
@@ -522,32 +516,31 @@ function applyCnnResult(
     plant: finalCnn.plant_name || record.plant,
     disease: finalCnn.disease_name || finalCnn.class_name || record.disease,
     confidence: finalCnn.confidence,
-    severity: actionPlan.severity ?? (isHealthy ? "Khỏe" : "CNN"),
+    severity: actionPlan.severity ?? (isHealthy ? "Khỏe" : "Cần theo dõi"),
     classificationReady: true,
-    note: `CNN đã phân loại ảnh với độ tin cậy ${formatConfidence(finalCnn.confidence)}. ${symptomNote}`,
+    note: `Ảnh đã được phân tích với độ tin cậy ${formatConfidence(finalCnn.confidence)}. ${symptomNote}`,
     symptomSummary:
       isHealthy
-        ? "CNN nhận định ảnh lá hiện tại thuộc nhóm khỏe mạnh. Bạn vẫn nên tiếp tục theo dõi nếu cây có dấu hiệu bất thường ngoài thực địa."
+        ? "Ảnh lá hiện tại có nhiều dấu hiệu thuộc nhóm khỏe mạnh. Bạn vẫn nên tiếp tục theo dõi nếu cây có biểu hiện bất thường ngoài thực địa."
         : symptoms.trim()
-          ? `Kết quả cuối cùng nghiêng về ${finalCnn.disease_name || finalCnn.class_name} sau khi kết hợp CNN với triệu chứng người dùng mô tả: ${symptoms.trim()}.`
-          : `CNN nhận định ảnh có khả năng thuộc nhóm ${finalCnn.disease_name || finalCnn.class_name}. Kết quả này nên được dùng như gợi ý hỗ trợ, không thay thế đánh giá thực địa.`,
+          ? `Kết quả nghiêng về ${finalCnn.disease_name || finalCnn.class_name} sau khi đối chiếu ảnh với triệu chứng đã mô tả: ${symptoms.trim()}.`
+          : `Ảnh có khả năng thuộc nhóm ${finalCnn.disease_name || finalCnn.class_name}. Đây là gợi ý hỗ trợ và không thay thế đánh giá thực địa.`,
     causes: [
-      `Kết quả nhận diện cuối cùng: ${finalCnn.class_name}.`,
-      `Độ tin cậy CNN: ${formatConfidence(finalCnn.confidence)}.`,
+      `Khả năng được chọn: ${finalCnn.class_name}.`,
+      `Độ tin cậy: ${formatConfidence(finalCnn.confidence)}.`,
       symptoms.trim()
-        ? "Có đối chiếu triệu chứng người dùng nhập với top 5 kết quả CNN."
-        : "Không dùng triệu chứng bổ sung; giữ kết quả CNN cao nhất.",
+        ? "Đã đối chiếu triệu chứng người dùng nhập với 5 khả năng từ ảnh."
+        : "Không dùng triệu chứng bổ sung; giữ khả năng có độ tin cậy cao nhất.",
       symptoms.trim() && research
         ? research.isSymptomConsistent
-          ? "Triệu chứng đã được kiểm chứng thêm bằng Tavily và DeepSeek với nguồn web tham khảo."
-          : "Tavily/DeepSeek chưa xác nhận rõ triệu chứng phù hợp với kết quả CNN; cần kiểm tra thực địa kỹ hơn."
+          ? "Triệu chứng phù hợp với thông tin trong các nguồn tham khảo đã tìm được."
+          : "Nguồn tham khảo chưa cho thấy triệu chứng phù hợp rõ ràng; cần kiểm tra thực địa kỹ hơn."
         : "",
-      `Phiên bản phân tích: ${finalCnn.model_version}.`,
     ].filter(Boolean),
     recommendations: [
       {
-        title: symptoms.trim() ? "Top 5 CNN sau khi đối chiếu triệu chứng" : "Top 5 kết quả CNN",
-        items: topItems.length ? topItems : ["CNN đã trả về một nhãn phân loại chính cho ảnh này."],
+        title: symptoms.trim() ? "Các khả năng sau khi đối chiếu triệu chứng" : "Các khả năng từ ảnh",
+        items: topItems.length ? topItems : ["Hệ thống đã tìm được một khả năng chính cho ảnh này."],
       },
       ...buildResearchRecommendationBlocks(research),
       {
@@ -755,6 +748,8 @@ export default function DashboardDiagnosisPage() {
   }
 
   const processSteps = useMemo<StepItem[]>(() => {
+    const uploadState: DiagnosisStepState =
+      status === "uploading" ? "processing" : previewUrl ? "success" : "idle";
     const checkState: DiagnosisStepState =
       status === "invalid-image"
         ? "warning"
@@ -766,21 +761,21 @@ export default function DashboardDiagnosisPage() {
               ? "queued"
               : "idle";
 
-    const saveState: DiagnosisStepState =
+    const symptomState: DiagnosisStepState =
       status === "success" ? "success" : status === "symptom-review" ? "processing" : previewUrl ? "queued" : "idle";
-
-    const chatState: DiagnosisStepState = chatLocked
-      ? "locked"
-      : status === "success"
-        ? "success"
-        : previewUrl
-          ? "queued"
-          : "idle";
+    const resultState: DiagnosisStepState = status === "success" ? "success" : previewUrl ? "queued" : "idle";
 
     return [
       {
+        key: "upload",
+        title: "Tải ảnh",
+        description: "Chọn hoặc chụp một ảnh lá rõ để bắt đầu.",
+        state: uploadState,
+        detail: previewUrl ? "Ảnh đã sẵn sàng cho bước kiểm tra đầu vào." : "Ưu tiên một chiếc lá chính, đủ sáng và không bị che.",
+      },
+      {
         key: "yolo",
-        title: "Kiểm tra ảnh",
+        title: "Xác nhận ảnh lá",
         description: "Hệ thống xem ảnh bạn gửi có đúng là lá cây hay không.",
         state: checkState,
         detail:
@@ -796,29 +791,25 @@ export default function DashboardDiagnosisPage() {
       },
       {
         key: "roadmap",
-        title: "Lưu kết quả",
-        description: "Ảnh hợp lệ sẽ được lưu để bạn xem lại sau.",
-        state: saveState,
+        title: "Thêm triệu chứng",
+        description: "Mô tả dấu hiệu quan sát được hoặc bỏ qua nếu chưa rõ.",
+        state: symptomState,
         detail:
           status === "success"
-            ? "Ảnh đã được lưu để dùng lại trong các bước tiếp theo."
+            ? "Thông tin đã được hoàn tất và lưu vào lịch sử của bạn."
             : status === "symptom-review"
-              ? "CNN đã có kết quả. Hãy nhập triệu chứng hoặc chọn bỏ qua để lưu bản ghi cuối cùng."
-            : "Sau khi ảnh hợp lệ, hệ thống sẽ lưu lại cho bạn.",
+              ? "Bạn có thể bổ sung mô tả để đối chiếu hoặc tiếp tục không cần triệu chứng."
+              : "Bước này xuất hiện sau khi ảnh lá được xác nhận.",
       },
       {
         key: "rag",
-        title: "Chat hỗ trợ",
-        description: "Sau khi có ảnh hợp lệ, bạn có thể tiếp tục hỏi AI hoặc chuyên gia.",
-        state: chatState,
-        detail: chatLocked
-          ? "Gói hiện tại chỉ xem được kết quả kiểm tra ảnh."
-          : status === "success"
-            ? "Ảnh này đã sẵn sàng để dùng tiếp trong phần chat."
-            : "Hoàn tất kiểm tra ảnh để tiếp tục sang phần chat.",
+        title: "Xem kết quả",
+        description: "Nhận gợi ý, độ tin cậy và việc nên làm tiếp theo.",
+        state: resultState,
+        detail: status === "success" ? "Kết quả đã sẵn sàng để xem và theo dõi lại sau." : "Hoàn tất các bước trước để xem kết quả.",
       },
     ];
-  }, [chatLocked, leafAnalysis, previewUrl, status]);
+  }, [leafAnalysis, previewUrl, status]);
 
   async function applySelectedFile(file: File, method: DiagnosisInputMethod) {
     try {
@@ -882,7 +873,7 @@ export default function DashboardDiagnosisPage() {
         return;
       }
 
-      const generatedRecord = buildGeneratedRecord({
+      let generatedRecord = buildGeneratedRecord({
         previewUrl: activePreview,
         detection,
         inputMethod: activeMethod,
@@ -916,24 +907,12 @@ export default function DashboardDiagnosisPage() {
               reason:
                 error instanceof Error
                   ? error.message
-                  : "YOLO không phát hiện được lá cây. Hãy chụp rõ hơn hoặc kiểm tra lại đây có phải ảnh lá hay không.",
+                  : "Chưa nhận thấy vùng lá đủ rõ. Hãy chụp lại gần hơn, đủ sáng và tránh vật che khuất.",
             });
             setStatus("invalid-image");
             return;
           }
-          setLeafAnalysis({
-            isLeaf: false,
-            confidence: detection.confidence,
-            greenRatio: detection.greenRatio,
-            plantLikeRatio: detection.plantLikeRatio,
-            averageSaturation: detection.averageSaturation,
-            reason:
-              error instanceof Error
-                ? `Ảnh đã qua bước kiểm tra lá, nhưng chưa chạy được bước nhận diện bệnh. Lý do: ${error.message}`
-                : "Ảnh đã qua bước kiểm tra lá, nhưng chưa chạy được bước nhận diện bệnh. Vui lòng thử lại sau ít phút.",
-          });
-          setStatus("invalid-image");
-          return;
+          // Keep the browser-side leaf validation result if backend CNN is unavailable.
         }
       }
 
@@ -969,7 +948,7 @@ export default function DashboardDiagnosisPage() {
           cnn: pendingCnnReview.cnn,
         });
         if (!research || research.skipped) {
-          throw new Error("Chưa hoàn tất bước kiểm chứng triệu chứng bằng nguồn tham khảo.");
+          throw new Error("Chưa thể hoàn tất bước đối chiếu nguồn. Vui lòng thử lại sau ít phút.");
         }
       }
 
@@ -986,7 +965,7 @@ export default function DashboardDiagnosisPage() {
         setResearchError(
           error instanceof Error
             ? error.message
-            : "Không hoàn tất được bước kiểm chứng triệu chứng. Vui lòng thử lại.",
+            : "Chưa thể đối chiếu triệu chứng với nguồn tham khảo. Vui lòng thử lại.",
         );
         setStatus("symptom-review");
         return;
@@ -998,7 +977,7 @@ export default function DashboardDiagnosisPage() {
         greenRatio: leafAnalysis?.greenRatio ?? 0,
         plantLikeRatio: leafAnalysis?.plantLikeRatio ?? 0,
         averageSaturation: leafAnalysis?.averageSaturation ?? 0,
-        reason: "Không thể lưu kết quả kiểm tra cuối cùng. Hãy kiểm tra trạng thái đăng nhập rồi thử lại.",
+        reason: "Chưa thể lưu kết quả. Hãy kiểm tra kết nối mạng, đăng nhập lại nếu cần rồi thử lại.",
       });
       setStatus("invalid-image");
     }
@@ -1069,20 +1048,20 @@ export default function DashboardDiagnosisPage() {
         ) : null}
       </div>
 
-      <Card className="rounded-[30px] border-white/10 bg-white/5 text-white">
+      <Card variant="default" padding="lg" className="rounded-xl">
         <div className="grid gap-4 md:grid-cols-[1fr_1.1fr]">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-100/60">
+            <p className="text-overline text-leaf-strong">
               Hướng dẫn chụp ảnh rõ nét
             </p>
-            <div className="mt-3 grid gap-2 text-sm leading-6 text-emerald-50/75 sm:grid-cols-2">
-              <span>- Chụp gần lá, đủ sáng.</span>
-              <span>- Giữ máy chắc, không rung.</span>
-              <span>- Để lá chiếm phần lớn khung hình.</span>
-              <span>- Chụp thêm mặt dưới lá nếu có đốm.</span>
+            <div className="mt-3 grid gap-2 text-sm leading-6 text-ink-soft sm:grid-cols-2">
+              <span>• Chụp gần lá, đủ sáng.</span>
+              <span>• Giữ máy chắc, không rung.</span>
+              <span>• Để lá chiếm phần lớn khung hình.</span>
+              <span>• Chụp thêm mặt dưới lá nếu có đốm.</span>
             </div>
           </div>
-          <div className="rounded-[22px] border border-white/10 bg-white/5 p-4 text-sm leading-6 text-emerald-50/75">
+          <div className="rounded-lg border border-line bg-surface-soft p-4 text-sm leading-6 text-ink-soft">
             {voice.supported
               ? voiceNote || voice.transcript || "Bấm micro để ghi chú bằng giọng nói tiếng Việt."
               : "Trình duyệt này chưa hỗ trợ nhập giọng nói. Bạn vẫn có thể nhập câu hỏi trong Chat AI."}
@@ -1091,29 +1070,29 @@ export default function DashboardDiagnosisPage() {
       </Card>
 
       {leafAnalysis ? (
-        <Card className="rounded-[30px] border-emerald-100 bg-white/90">
+        <Card variant="soft" padding="lg" className="rounded-xl">
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-[24px] bg-emerald-50 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700">
+            <div className="rounded-lg border border-line bg-surface p-5">
+              <p className="text-overline text-leaf-strong">
                 Độ tin cậy
               </p>
-              <p className="mt-3 font-display text-3xl font-semibold text-ink">
+              <p className="mt-3 font-display text-3xl font-bold text-ink">
                 {formatConfidence(leafAnalysis.confidence)}
               </p>
             </div>
-            <div className="rounded-[24px] bg-emerald-50 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700">
-                Phần lá nhận biết được
+            <div className="rounded-lg border border-line bg-surface p-5">
+              <p className="text-overline text-leaf-strong">
+                Vùng lá trong ảnh
               </p>
-              <p className="mt-3 font-display text-3xl font-semibold text-ink">
+              <p className="mt-3 font-display text-3xl font-bold text-ink">
                 {formatConfidence(leafAnalysis.plantLikeRatio)}
               </p>
             </div>
-            <div className="rounded-[24px] bg-emerald-50 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700">
-                Màu xanh nhận biết được
+            <div className="rounded-lg border border-line bg-surface p-5">
+              <p className="text-overline text-leaf-strong">
+                Mức độ nhận biết màu lá
               </p>
-              <p className="mt-3 font-display text-3xl font-semibold text-ink">
+              <p className="mt-3 font-display text-3xl font-bold text-ink">
                 {formatConfidence(leafAnalysis.greenRatio)}
               </p>
             </div>
@@ -1122,32 +1101,31 @@ export default function DashboardDiagnosisPage() {
       ) : null}
 
       {pendingCnnReview && status === "symptom-review" ? (
-        <Card className="rounded-[32px] border-emerald-100 bg-white/95 shadow-panel">
+        <Card variant="raised" padding="lg" className="rounded-xl">
           <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700">
-                Bước 2 · Triệu chứng quan sát được
+              <p className="text-overline text-leaf-strong">
+                Bước 3 · Triệu chứng quan sát được
               </p>
-              <h3 className="mt-3 font-display text-3xl font-semibold text-ink">
-                Thêm triệu chứng để chọn khả năng phù hợp nhất
+              <h3 className="mt-3 font-display text-3xl font-bold tracking-[-0.03em] text-ink">
+                Bổ sung dấu hiệu bạn nhìn thấy trên cây
               </h3>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                Nếu bạn nhập triệu chứng, Agromind AI sẽ đối chiếu mô tả với các khả năng AI đã gợi ý, kiểm tra thêm bằng
-                nguồn tham khảo trên web rồi đưa ra kết quả cuối cùng. Nếu không nhập, hệ thống giữ kết quả ảnh có độ tin cậy cao nhất.
+              <p className="mt-3 text-sm leading-7 text-ink-soft">
+                Mô tả đốm, màu sắc, vị trí lá hoặc điều kiện gần đây để hệ thống đối chiếu với các khả năng từ ảnh và nguồn tham khảo. Bạn có thể bỏ qua nếu chưa quan sát rõ.
               </p>
 
-              <div className="mt-5 rounded-[24px] border border-emerald-100 bg-emerald-50/70 p-4">
-                <p className="text-sm font-semibold text-emerald-950">Các khả năng hiện tại</p>
+              <div className="mt-5 rounded-lg border border-line bg-surface-soft p-4">
+                <p className="text-sm font-bold text-ink">Các khả năng từ ảnh</p>
                 <div className="mt-3 space-y-2">
                   {pendingCnnReview.cnn.top_predictions.slice(0, 5).map((item, index) => (
                     <div
                       key={`${item.class_name}-${index}`}
-                      className="flex items-center justify-between gap-3 rounded-2xl bg-white/85 px-4 py-3 text-sm"
+                      className="flex items-center justify-between gap-3 rounded-md border border-line bg-surface px-4 py-3 text-sm"
                     >
-                      <span className="font-medium text-slate-800">
+                      <span className="font-medium text-ink">
                         {index + 1}. {item.plant_name || "Cây"} · {item.disease_name || item.class_name}
                       </span>
-                      <span className="shrink-0 font-semibold text-emerald-700">
+                      <span className="shrink-0 font-bold text-leaf-strong">
                         {formatConfidence(item.confidence)}
                       </span>
                     </div>
@@ -1156,8 +1134,8 @@ export default function DashboardDiagnosisPage() {
               </div>
             </div>
 
-            <div className="rounded-[28px] border border-emerald-100 bg-white p-5 shadow-soft">
-              <label htmlFor="symptom-text" className="text-sm font-semibold text-slate-900">
+            <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
+              <label htmlFor="symptom-text" className="text-sm font-bold text-ink">
                 Mô tả triệu chứng nếu có
               </label>
               <textarea
@@ -1168,11 +1146,11 @@ export default function DashboardDiagnosisPage() {
                   setResearchError(null);
                 }}
                 rows={7}
-                className="mt-3 w-full resize-none rounded-[22px] border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-sm leading-7 text-slate-900 outline-none transition focus:border-emerald-500 focus:bg-white"
+                className="mt-3 min-h-[180px] w-full resize-none rounded-md border border-line bg-surface-soft px-4 py-3 text-sm leading-7 text-ink outline-none transition placeholder:text-ink-soft focus:border-leaf focus:bg-surface focus:ring-2 focus:ring-leaf/20"
                 placeholder="Ví dụ: lá có đốm nâu lan từ mép, mặt dưới hơi mốc trắng, cây mới mưa nhiều 3 ngày..."
               />
               {researchError ? (
-                <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800">
+                <div className="mt-3 rounded-md border border-danger/25 bg-danger/10 px-4 py-3 text-sm leading-6 text-danger">
                   {researchError}
                 </div>
               ) : null}
@@ -1194,8 +1172,8 @@ export default function DashboardDiagnosisPage() {
                   Không nhập triệu chứng
                 </Button>
               </div>
-              <p className="mt-4 text-xs leading-6 text-slate-500">
-                Nguồn tham khảo chỉ được kiểm tra khi bạn nhập triệu chứng. Kết quả tóm tắt và trích dẫn sẽ được lưu trong lịch sử.
+              <p className="mt-4 text-xs leading-6 text-ink-soft">
+                Chỉ khi bạn nhập triệu chứng, hệ thống mới tìm và tổng hợp nguồn tham khảo. Các liên kết nguồn sẽ được lưu cùng kết quả để bạn mở kiểm tra.
               </p>
             </div>
           </div>
@@ -1203,16 +1181,16 @@ export default function DashboardDiagnosisPage() {
       ) : null}
 
       {status === "invalid-image" ? (
-        <Card className="rounded-[30px] border-amber-200 bg-amber-50">
+        <Card variant="warning" padding="lg" className="rounded-xl">
           <div className="flex items-start gap-4">
-            <div className="rounded-2xl bg-amber-100 p-3 text-amber-700">
+            <div className="rounded-md bg-surface p-3 text-soil">
               <AlertTriangle size={20} />
             </div>
             <div>
-              <h3 className="font-display text-2xl font-semibold text-amber-950">
-                Ảnh này chưa được xác nhận là lá cây
+              <h3 className="font-display text-2xl font-bold text-ink">
+                Chưa thể xác nhận rõ chiếc lá trong ảnh
               </h3>
-              <p className="mt-3 text-sm leading-7 text-amber-900/80">
+              <p className="mt-3 text-sm leading-7 text-ink-soft">
                 {leafAnalysis?.reason ??
                   "Hãy thử chụp gần hơn vào lá, tăng ánh sáng hoặc đổi sang một ảnh rõ hơn."}
               </p>
@@ -1229,17 +1207,17 @@ export default function DashboardDiagnosisPage() {
         onUpgrade={() => setUpgradeOpen(true)}
       />
 
-      <Card className="rounded-[34px] border-white/10 bg-white/5 text-white">
+      <Card variant="soft" padding="lg" className="rounded-xl">
         <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-white/10 p-3">
-            <Sparkles size={18} className="text-lime-200" />
+          <div className="rounded-md bg-surface p-3 text-leaf-strong shadow-sm">
+            <Sparkles size={18} />
           </div>
           <div>
-            <h3 className="font-display text-2xl font-semibold">
-              Hiện tại hệ thống tập trung vào bước kiểm tra ảnh lá
+            <h3 className="font-display text-lg font-bold text-ink">
+              Kết quả là gợi ý để bạn tiếp tục quan sát
             </h3>
-            <p className="mt-2 text-sm leading-7 text-emerald-50/75">
-              Bạn chỉ cần tải ảnh hoặc chụp ảnh. Nếu ảnh phù hợp, hệ thống sẽ lưu lại để bạn xem lại và tiếp tục sử dụng ở các bước sau.
+            <p className="mt-1 text-sm leading-7 text-ink-soft">
+              Nếu dấu hiệu lan nhanh, xuất hiện trên nhiều cây hoặc bạn cần dùng thuốc, hãy hỏi thêm chuyên gia nông nghiệp địa phương trước khi xử lý.
             </p>
           </div>
         </div>

@@ -12,17 +12,17 @@ export function ReminderCenter({
   onMarkRead: (reminderId: number) => Promise<void>;
 }) {
   return (
-    <Card className="rounded-[30px] border-emerald-100/70 bg-white/90">
+    <Card variant="default" padding="lg" className="rounded-xl">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700/65">
+          <p className="text-overline text-leaf-strong">
             Nhắc việc
           </p>
-          <h3 className="mt-3 font-display text-2xl font-semibold text-slate-950">
+          <h3 className="mt-3 font-display text-2xl font-bold text-ink">
             Lịch thông báo của kế hoạch
           </h3>
         </div>
-        <span className="rounded-full bg-emerald-100 p-3 text-emerald-700">
+        <span className="rounded-md bg-surface-soft p-3 text-leaf-strong">
           <BellRing size={18} />
         </span>
       </div>
@@ -31,13 +31,13 @@ export function ReminderCenter({
         {reminders.slice(0, 8).map((reminder) => (
           <div
             key={reminder.id}
-            className="rounded-[24px] border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/60 p-4"
+            className="rounded-lg border border-line bg-surface-soft p-4"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="font-medium text-slate-950">{reminder.title}</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">{reminder.body}</p>
-                <div className="mt-3 flex items-center gap-2 text-xs text-emerald-800/80">
+                <p className="font-bold text-ink">{reminder.title}</p>
+                <p className="mt-1 text-sm leading-6 text-ink-soft">{reminder.body}</p>
+                <div className="mt-3 flex items-center gap-2 text-xs text-leaf-strong">
                   <Clock3 size={14} />
                   {new Date(reminder.trigger_time).toLocaleString("vi-VN")}
                 </div>
@@ -47,7 +47,7 @@ export function ReminderCenter({
                   Đã xem
                 </Button>
               ) : (
-                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800">
+                <span className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-leaf-strong">
                   Đã đọc
                 </span>
               )}
@@ -55,7 +55,7 @@ export function ReminderCenter({
           </div>
         ))}
         {!reminders.length ? (
-          <div className="rounded-[24px] border border-dashed border-emerald-200 bg-emerald-50/50 p-5 text-sm leading-7 text-slate-600">
+          <div className="rounded-lg border border-dashed border-line bg-surface-soft p-5 text-sm leading-7 text-ink-soft">
             Chưa có thông báo nào cho kế hoạch này.
           </div>
         ) : null}

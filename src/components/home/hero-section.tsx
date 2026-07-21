@@ -1,247 +1,118 @@
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowRight,
-  BadgeCheck,
-  BrainCircuit,
-  Camera,
-  CheckCircle2,
-  FileSearch,
-  Leaf,
-  Microscope,
-  ScanLine,
-  Sparkles,
-  UploadCloud,
-} from "lucide-react";
+import { ArrowRight, CheckCircle2, FileCheck2, Leaf, SearchCheck } from "lucide-react";
 
+import { ActionCard } from "@/components/ui/action-card";
+import { StatusBadge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { SurfaceCard } from "@/components/ui/card";
+import { ConfidenceMeter } from "@/components/ui/confidence-meter";
 import { Reveal } from "@/components/ui/reveal";
 
-const cnnResults = [
-  { label: "Cà chua - Đốm vi khuẩn", score: "84%", tone: "bg-leaf-500" },
-  { label: "Ớt chuông - Đốm lá", score: "7%", tone: "bg-emerald-300" },
-  { label: "Táo - Gỉ sắt", score: "4%", tone: "bg-lime-300" },
-  { label: "Ngô - Khỏe mạnh", score: "3%", tone: "bg-sun-400" },
-  { label: "Nho - Esca", score: "2%", tone: "bg-amber-300" },
-];
-
-const heroStats = [
-  { label: "Ảnh lá", value: "Tải ảnh / Chụp ảnh" },
-  { label: "AI thị giác", value: "YOLO + CNN" },
-  { label: "Nguồn web", value: "Tavily + DeepSeek" },
-];
-
-const leafSamples = [
-  { src: "/illustrations/leaf-sample-tomato.svg", label: "Cà chua" },
-  { src: "/illustrations/leaf-sample-grape.svg", label: "Nho" },
-  { src: "/illustrations/leaf-sample-corn.svg", label: "Ngô" },
+const trustItems = [
+  { icon: Leaf, label: "Kiểm tra ảnh lá" },
+  { icon: SearchCheck, label: "Đối chiếu triệu chứng" },
+  { icon: FileCheck2, label: "Lưu lịch sử theo dõi" },
 ];
 
 export function HeroSection() {
   return (
-    <section
-      id="top"
-      className="relative isolate overflow-hidden bg-[radial-gradient(circle_at_16%_14%,rgba(180,228,195,0.58),transparent_28%),radial-gradient(circle_at_86%_18%,rgba(245,211,115,0.26),transparent_30%),linear-gradient(180deg,#f9fbf4_0%,#eff8e9_48%,#fbfaf1_100%)] px-4 pb-20 pt-28 transition-colors duration-300 dark:bg-[radial-gradient(circle_at_16%_14%,rgba(47,166,100,0.24),transparent_30%),radial-gradient(circle_at_86%_18%,rgba(255,207,82,0.14),transparent_30%),linear-gradient(180deg,#04180f_0%,#08281a_48%,#04150d_100%)] sm:px-6 sm:pt-[7.5rem] lg:px-8 lg:pb-28 lg:pt-32"
-    >
-      <div className="absolute inset-0 -z-10 opacity-[0.28] [background-image:linear-gradient(120deg,rgba(11,78,48,0.08)_1px,transparent_1px),linear-gradient(60deg,rgba(11,78,48,0.06)_1px,transparent_1px)] [background-size:44px_44px]" />
-      <div className="absolute -left-32 top-28 -z-10 h-72 w-72 rounded-full bg-leaf-300/30 blur-3xl" />
-      <div className="absolute -right-32 bottom-20 -z-10 h-80 w-80 rounded-full bg-sun-100/80 blur-3xl" />
-
+    <section id="top" className="field-contours relative isolate overflow-hidden px-4 pb-20 pt-28 sm:px-6 lg:px-8 lg:pb-28 lg:pt-32">
       <div className="mx-auto grid max-w-7xl gap-14 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
-        <Reveal className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-leaf-200 bg-white/75 px-4 py-2 text-xs font-bold uppercase tracking-[0.24em] text-leaf-800 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/10 dark:text-lime-100">
-            <Leaf size={16} />
-            AI nông nghiệp cho người trồng cây Việt Nam
+        <Reveal className="max-w-2xl">
+          <div className="inline-flex items-center gap-2 rounded-full border border-line bg-surface/90 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-leaf-strong shadow-sm">
+            <Leaf size={14} aria-hidden />
+            Trợ lý sức khỏe cây trồng cho người Việt
           </div>
 
-          <h1 className="mt-7 max-w-4xl font-display text-5xl font-semibold tracking-[-0.045em] text-ink-900 dark:text-white sm:text-6xl lg:text-7xl">
-            Chẩn đoán bệnh lá cây bằng AI, đối chiếu triệu chứng từ nguồn web.
+          <h1 className="mt-6 font-display text-[42px] font-extrabold leading-[1.08] tracking-[-0.045em] text-ink sm:text-5xl lg:text-[64px]">
+            Biết lá cây đang gặp vấn đề gì, trước khi bệnh lan rộng.
           </h1>
 
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-700 dark:text-emerald-50/80">
-            Agromind AI giúp người trồng cây tải ảnh lá, nhận kết quả CNN, đối chiếu triệu chứng thực tế và nhận khuyến nghị chăm sóc phù hợp.
+          <p className="mt-6 max-w-xl text-base font-medium leading-7 text-ink-soft sm:text-lg sm:leading-8">
+            Tải ảnh lá để nhận gợi ý bệnh, đối chiếu triệu chứng và xem việc cần làm tiếp theo.
           </p>
 
-          <div className="mt-5 inline-flex max-w-2xl items-start gap-3 rounded-[22px] border border-leaf-200/80 bg-white/80 px-4 py-3 text-sm font-semibold leading-6 text-leaf-900 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/10 dark:text-emerald-50">
-            <CheckCircle2 className="mt-0.5 shrink-0 text-leaf-600 dark:text-lime-200" size={18} />
-            Hỗ trợ nhận diện nhiều cây trồng, gợi ý triệu chứng và khuyến nghị chăm sóc.
-          </div>
-
-          <div className="mt-8 flex flex-wrap gap-4">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link href="/login?next=/dashboard/diagnosis" className={buttonVariants({ variant: "primary", size: "lg" })}>
-              Chẩn đoán ngay
-              <ArrowRight size={18} />
+              Kiểm tra ảnh lá
+              <ArrowRight size={18} aria-hidden />
             </Link>
-            <a href="#quy-trinh" className={buttonVariants({ variant: "secondaryOnLight", size: "lg" })}>
-              Xem quy trình AI
+            <a href="#quy-trinh" className={buttonVariants({ variant: "secondary", size: "lg" })}>
+              Xem cách hoạt động
             </a>
           </div>
 
-          <div className="mt-9 grid gap-3 sm:grid-cols-3">
-            {heroStats.map((item) => (
-              <div
-                key={item.label}
-                className="rounded-[24px] border border-white/80 bg-white/75 p-4 shadow-[0_18px_60px_rgba(17,64,42,0.08)] backdrop-blur dark:border-white/10 dark:bg-white/10"
-              >
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-leaf-700 dark:text-lime-100">{item.label}</p>
-                <p className="mt-2 font-display text-xl font-semibold text-ink-900 dark:text-white">{item.value}</p>
+          <div className="mt-8 grid gap-2 sm:grid-cols-3">
+            {trustItems.map(({ icon: Icon, label }) => (
+              <div key={label} className="flex items-center gap-2 rounded-xl border border-line bg-surface/75 px-3 py-2.5 text-xs font-semibold text-ink-soft backdrop-blur">
+                <Icon size={15} className="shrink-0 text-leaf-strong" aria-hidden />
+                {label}
               </div>
             ))}
           </div>
 
-          <div className="mt-7 rounded-[24px] border border-amber-200/80 bg-amber-50/85 p-4 text-sm leading-7 text-amber-950 shadow-sm dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-50">
-            Kết quả AI mang tính tham khảo, nên kết hợp quan sát thực địa hoặc hỏi chuyên gia khi bệnh lan rộng.
-          </div>
+          <p className="mt-5 flex items-start gap-2 text-xs leading-5 text-ink-soft">
+            <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-leaf-strong" aria-hidden />
+            Kết quả là gợi ý tham khảo có giải thích, giúp bạn quan sát cây kỹ hơn trước khi xử lý.
+          </p>
         </Reveal>
 
-        <Reveal delay={0.1} className="relative lg:mt-8">
-          <div className="absolute inset-0 -z-10 rounded-[56px] bg-gradient-to-br from-leaf-300/45 via-white/10 to-sun-100/60 blur-3xl" />
-          <Card className="relative overflow-hidden rounded-[40px] border-white/80 bg-white/75 p-4 shadow-[0_30px_90px_rgba(13,54,35,0.18)] backdrop-blur-xl dark:border-white/10 dark:bg-white/10 dark:shadow-[0_30px_100px_rgba(0,0,0,0.38)] sm:p-6">
-            <div className="absolute left-6 top-6 flex gap-2">
-              <span className="h-3 w-3 rounded-full bg-red-300" />
-              <span className="h-3 w-3 rounded-full bg-amber-300" />
-              <span className="h-3 w-3 rounded-full bg-emerald-300" />
-            </div>
-            <div className="absolute right-6 top-5 rounded-full border border-leaf-200 bg-leaf-50 px-3 py-1 text-xs font-bold text-leaf-900 dark:border-white/10 dark:bg-white/10 dark:text-lime-100">
-              Bảng kết quả Agromind AI
-            </div>
-
-            <div className="grid gap-5 pt-10 lg:grid-cols-[0.9fr_1.1fr]">
-              <div className="space-y-5">
-                <div className="rounded-[32px] bg-gradient-to-br from-[#08291b] via-[#0d3a25] to-[#082016] p-5 text-white shadow-float">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.28em] text-emerald-50/90">Ảnh đầu vào</p>
-                      <h3 className="mt-2 font-display text-2xl font-semibold">Tải ảnh lá cây</h3>
-                    </div>
-                    <div className="rounded-2xl bg-white/10 p-3 text-lime-200">
-                      <UploadCloud size={22} />
-                    </div>
-                  </div>
-
-                  <div className="mt-5 grid grid-cols-3 gap-3">
-                    {leafSamples.map((sample) => (
-                      <div key={sample.label} className="rounded-[22px] border border-white/10 bg-white/10 p-2">
-                        <Image
-                          src={sample.src}
-                          alt={`Ảnh lá ${sample.label}`}
-                          width={120}
-                          height={90}
-                          className="h-20 w-full rounded-2xl object-contain"
-                        />
-                        <p className="mt-2 text-center text-[11px] font-bold text-emerald-50/90">{sample.label}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-5 flex items-center justify-between rounded-[22px] border border-lime-200/20 bg-lime-200/10 p-3">
-                    <div className="flex items-center gap-3">
-                      <BadgeCheck className="text-lime-200" size={22} />
-                      <div>
-                        <p className="text-sm font-semibold">YOLO đã xác thực lá</p>
-                        <p className="text-xs font-medium text-emerald-50/80">Vùng lá rõ, đủ điều kiện phân tích</p>
-                      </div>
-                    </div>
-                    <span className="rounded-full bg-lime-200 px-3 py-1 text-xs font-bold text-emerald-950">98%</span>
-                  </div>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                  <div className="rounded-[28px] border border-leaf-100 bg-white/90 p-4 shadow-sm dark:border-white/10 dark:bg-white/10">
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-2xl bg-leaf-100 p-3 text-leaf-700">
-                        <FileSearch size={20} />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-leaf-800 dark:text-lime-100">Tavily</p>
-                        <p className="font-display text-lg font-semibold text-ink-900 dark:text-white">Tìm nguồn web</p>
-                      </div>
-                    </div>
-                    <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-emerald-50/75">Đối chiếu triệu chứng đã quan sát với nguồn tham khảo nông nghiệp.</p>
-                  </div>
-
-                  <div className="rounded-[28px] border border-emerald-100 bg-emerald-950 p-4 text-white shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-2xl bg-white/10 p-3 text-lime-200">
-                        <BrainCircuit size={20} />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-50/90">DeepSeek</p>
-                        <p className="font-display text-lg font-semibold">Tổng hợp kết luận</p>
-                      </div>
-                    </div>
-                    <p className="mt-3 text-sm leading-6 text-emerald-50/90">Chốt kết quả cuối cùng và giải thích dễ hiểu cho người trồng cây.</p>
-                  </div>
-                </div>
+        <Reveal delay={0.1} className="relative mx-auto w-full max-w-2xl">
+          <div className="absolute -inset-8 -z-10 rounded-[48px] bg-mint/35 blur-3xl" aria-hidden />
+          <SurfaceCard variant="raised" padding="lg" className="relative overflow-hidden border-surface/70 bg-surface/95">
+            <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-mint/35 blur-3xl" aria-hidden />
+            <div className="relative flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-leaf-strong">Phiếu kiểm tra lá</p>
+                <p className="mt-1 text-sm font-semibold text-ink">Vườn cà chua · Hôm nay</p>
               </div>
+              <StatusBadge status="watch" label="Cần theo dõi" />
+            </div>
 
-              <div className="space-y-5">
-                <div className="rounded-[32px] border border-leaf-100 bg-white/95 p-5 shadow-[0_24px_70px_rgba(16,70,44,0.1)] dark:border-white/10 dark:bg-white/10">
+            <div className="relative mt-5 grid gap-5 md:grid-cols-[0.9fr_1.1fr]">
+              <div className="space-y-4">
+                <div className="rounded-2xl bg-forest p-4 text-on-forest">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.24em] text-leaf-800 dark:text-lime-100">CNN top 5</p>
-                      <h3 className="mt-2 font-display text-2xl font-semibold text-ink-900 dark:text-white">Kết quả khả nghi nhất</h3>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-forest-muted">Ảnh đã kiểm tra</p>
+                      <p className="mt-1 text-base font-bold">Lá cà chua</p>
                     </div>
-                    <div className="rounded-2xl bg-leaf-50 p-3 text-leaf-700">
-                      <Microscope size={22} />
-                    </div>
+                    <StatusBadge status="healthy" label="Ảnh hợp lệ" className="bg-on-forest/10 text-on-forest" />
                   </div>
-
-                  <div className="mt-5 space-y-3">
-                    {cnnResults.map((item, index) => (
-                      <div key={item.label} className="rounded-[22px] border border-slate-100 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/10">
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="text-sm font-semibold text-ink-900 dark:text-emerald-50">
-                            {index + 1}. {item.label}
-                          </p>
-                          <span className="text-sm font-bold text-leaf-700 dark:text-lime-100">{item.score}</span>
-                        </div>
-                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
-                          <div className={`h-full rounded-full ${item.tone}`} style={{ width: item.score }} />
-                        </div>
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    {["leaf-sample-tomato.svg", "leaf-sample-grape.svg", "leaf-sample-corn.svg"].map((image, index) => (
+                      <div key={image} className={`relative h-24 overflow-hidden rounded-xl border ${index === 0 ? "border-mint" : "border-on-forest/10 opacity-55"}`}>
+                        <Image src={`/illustrations/${image}`} alt={index === 0 ? "Ảnh lá cà chua đang được kiểm tra" : "Ảnh lá tham khảo"} fill sizes="120px" className="object-cover" />
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div className="rounded-[30px] border border-emerald-100 bg-white/90 p-5 shadow-sm dark:border-white/10 dark:bg-white/10">
-                    <div className="mb-4 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
-                      Triệu chứng
-                    </div>
-                    <p className="font-display text-xl font-semibold text-ink-900 dark:text-white">“Đốm vàng nhỏ li ti, mép lá khô nhẹ”</p>
-                    <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-emerald-50/75">Có thể nhập triệu chứng hoặc bỏ qua nếu chưa quan sát rõ; hệ thống vẫn giữ kết quả ảnh ban đầu.</p>
-                  </div>
+                <div className="rounded-2xl border border-line bg-surface-soft p-4">
+                  <p className="text-xs font-semibold text-ink-soft">Triệu chứng đã ghi nhận</p>
+                  <p className="mt-2 text-sm font-semibold leading-6 text-ink">Đốm vàng nhỏ, mép lá khô nhẹ sau nhiều ngày ẩm.</p>
+                </div>
+              </div>
 
-                  <div className="rounded-[30px] border border-lime-200 bg-gradient-to-br from-lime-50 to-white p-5 shadow-sm dark:border-lime-200/20 dark:from-lime-300/10 dark:to-white/10">
-                    <div className="mb-4 flex items-center gap-2 text-leaf-700">
-                      <CheckCircle2 size={20} />
-                      <span className="text-xs font-semibold uppercase tracking-[0.18em]">Khuyến nghị</span>
-                    </div>
-                    <p className="font-display text-xl font-semibold text-ink-900 dark:text-white">Cách ly lá bệnh, chụp lại sau 3 ngày và theo dõi độ ẩm.</p>
-                    <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-emerald-50/75">Gợi ý bước chăm sóc ban đầu phù hợp với tình trạng lá và mức độ tin cậy của kết quả.</p>
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-line bg-surface-raised p-4 shadow-sm">
+                  <p className="text-xs font-semibold text-ink-soft">Khả năng cần chú ý nhất</p>
+                  <p className="mt-2 font-display text-xl font-bold text-ink">Đốm vi khuẩn trên cà chua</p>
+                  <ConfidenceMeter score={0.84} className="mt-4" />
+                  <div className="mt-4 flex items-center gap-2 rounded-xl bg-surface-soft px-3 py-2.5 text-xs font-medium text-ink-soft">
+                    <SearchCheck size={16} className="shrink-0 text-leaf-strong" aria-hidden />
+                    Triệu chứng phù hợp với nguồn tham khảo đã tìm thấy
                   </div>
                 </div>
 
-                <div className="rounded-[28px] border border-white/80 bg-gradient-to-r from-leaf-900 via-emerald-800 to-leaf-700 p-4 text-white shadow-float">
-                  <div className="flex flex-wrap items-center gap-3 text-sm font-semibold">
-                    <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2">
-                      <Camera size={16} /> Ảnh lá
-                    </span>
-                    <ArrowRight size={16} className="text-lime-200" />
-                    <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2">
-                      <ScanLine size={16} /> YOLO
-                    </span>
-                    <ArrowRight size={16} className="text-lime-200" />
-                    <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2">
-                      <Sparkles size={16} /> CNN + DeepSeek
-                    </span>
-                  </div>
+                <div>
+                  <p className="mb-2 text-xs font-semibold text-ink-soft">Việc nên làm tiếp theo</p>
+                  <ActionCard title="Tách lá có đốm và chụp lại sau 3 ngày" priority="high" time="Nên thực hiện hôm nay" />
                 </div>
               </div>
             </div>
-          </Card>
+          </SurfaceCard>
         </Reveal>
       </div>
     </section>

@@ -4,28 +4,31 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-60 active:scale-[0.98] active:duration-80 dark:focus-visible:ring-offset-app",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition duration-180 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf-strong/40 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:pointer-events-none disabled:opacity-60 active:scale-[0.98] active:duration-80",
   {
     variants: {
       variant: {
         primary:
-          "bg-leaf-500 text-white shadow-sm hover:-translate-y-px hover:bg-leaf-600 hover:shadow-md",
+          "bg-leaf text-on-leaf shadow-sm hover:bg-leaf-strong hover:shadow-md",
         secondary:
-          "border border-white/12 bg-white/8 text-on-dark shadow-sm hover:bg-white/10 dark:border-white/12",
+          "border border-line bg-surface text-ink shadow-sm hover:bg-surface-soft",
         secondaryOnLight:
-          "border border-border-light bg-leaf-50 text-ink-900 shadow-sm hover:bg-leaf-100",
-        ghost: "bg-transparent text-ink-700 hover:bg-ink-100/90",
-        ghostOnDark: "bg-transparent text-on-dark hover:bg-white/5",
+          "border border-line bg-surface-soft text-ink shadow-sm hover:bg-surface",
+        tertiary:
+          "bg-transparent text-ink-soft hover:bg-surface-soft hover:text-ink",
+        ghost: "bg-transparent text-ink hover:bg-surface-soft",
+        ghostOnDark: "bg-transparent text-ink hover:bg-surface-soft",
         outline:
-          "border border-white/12 bg-transparent text-on-dark hover:bg-white/8 dark:text-on-dark",
-        dark: "bg-ink-900 text-white shadow-sm hover:bg-leaf-950",
+          "border border-line bg-transparent text-ink hover:bg-surface-soft",
+        dark: "bg-forest text-on-forest shadow-sm hover:opacity-90",
+        danger: "bg-danger text-on-danger shadow-sm hover:opacity-90",
       },
       size: {
-        sm: "h-8 rounded-md px-4 text-body-sm",
-        md: "h-10 rounded-md px-5 text-body",
-        lg: "h-12 rounded-md px-6 text-body-lg",
-        icon: "h-10 w-10 shrink-0 rounded-md p-0",
-        iconSm: "h-8 w-8 shrink-0 rounded-md p-0",
+        sm: "h-9 rounded-md px-4 text-body-sm",
+        md: "h-11 rounded-md px-5 text-body",
+        lg: "h-12 rounded-lg px-6 text-body-lg",
+        icon: "h-11 w-11 shrink-0 rounded-md p-0",
+        iconSm: "h-9 w-9 shrink-0 rounded-md p-0",
       },
     },
     defaultVariants: {

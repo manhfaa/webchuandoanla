@@ -12,7 +12,7 @@ export function LanguageToggle() {
     <button
       type="button"
       onClick={toggleLanguage}
-      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border-dark bg-app-surface-2 px-3 text-body-sm font-semibold text-on-dark transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500/40"
+      className="inline-flex h-9 items-center gap-1.5 rounded-md border border-line bg-surface-soft px-3 text-body-sm font-semibold text-ink transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/40"
       aria-label="Đổi ngôn ngữ"
     >
       <Languages className="h-4 w-4" />

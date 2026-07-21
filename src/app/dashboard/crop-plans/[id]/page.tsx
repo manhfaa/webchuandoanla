@@ -10,7 +10,7 @@ import { CropPlanTimeline } from "@/components/crop-plans/crop-plan-timeline";
 import { ReminderCenter } from "@/components/crop-plans/reminder-center";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState, LoadingState } from "@/components/ui/states";
 import {
   completeCropPlanStep,
   delayCropPlanStep,
@@ -101,38 +101,28 @@ export default function CropPlanDetailPage() {
   }
 
   if (loading) {
-    return (
-      <div className="space-y-5">
-        <Skeleton className="h-44 rounded-[30px]" />
-        <Skeleton className="h-28 rounded-[30px]" />
-        <Skeleton className="h-[540px] rounded-[30px]" />
-      </div>
-    );
+    return <LoadingState title="Đang mở kế hoạch trồng" description="Agromind AI đang lấy tiến độ, bước chăm sóc và nhắc việc." />;
   }
 
   if (error || !plan) {
-    return (
-      <Card className="rounded-[30px] border-rose-100 bg-rose-50/80 text-sm leading-7 text-rose-700">
-        {error ?? "Không tìm thấy kế hoạch."}
-      </Card>
-    );
+    return <ErrorState title="Không mở được kế hoạch" description={error ?? "Không tìm thấy kế hoạch này."} onRetry={() => void loadPlan()} />;
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="rounded-[32px] border-emerald-100/70 bg-gradient-to-br from-white via-[#f5fceb] to-emerald-50 p-6 sm:p-8">
+    <div className="mx-auto max-w-[1420px] space-y-6">
+      <Card variant="raised" padding="lg" className="field-contours rounded-xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700/65">
+            <p className="text-overline text-leaf-strong">
               {plan.crop.name} | {plan.location.name}
             </p>
-            <h1 className="mt-3 font-display text-3xl font-semibold text-slate-950 sm:text-4xl">
+            <h1 className="mt-3 font-display text-3xl font-bold tracking-[-0.035em] text-ink sm:text-4xl">
               {plan.title}
             </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">{plan.summary}</p>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-ink-soft">{plan.summary}</p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <span className="rounded-full bg-white px-4 py-3 text-sm font-semibold text-emerald-800 shadow-soft">
+            <span className="rounded-full bg-surface px-4 py-3 text-sm font-semibold text-leaf-strong shadow-sm">
               Phù hợp {plan.suitability_score}/100
             </span>
             <Button variant="secondary" onClick={handleRefreshWeather} loading={refreshing}>
@@ -151,11 +141,11 @@ export default function CropPlanDetailPage() {
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-6">
-          <Card className="rounded-[30px] border-emerald-100/70 bg-white/90">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700/65">
+          <Card variant="default" padding="lg" className="rounded-xl">
+            <p className="text-overline text-leaf-strong">
               Dòng thời gian chăm sóc
             </p>
-            <h2 className="mt-3 font-display text-3xl font-semibold text-slate-950">
+            <h2 className="mt-3 font-display text-3xl font-bold tracking-[-0.03em] text-ink">
               Từng bước theo dõi từ lúc bắt đầu đến khi thu hoạch
             </h2>
             <div className="mt-6">

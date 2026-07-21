@@ -13,6 +13,7 @@ export function PricingPreviewSection() {
       eyebrow="Gói dịch vụ"
       title="Chọn gói phù hợp với nhu cầu sử dụng của bạn."
       description="Bạn có thể bắt đầu miễn phí, sau đó nâng cấp khi cần lưu nhiều hơn hoặc dùng thêm phần chat hỗ trợ."
+      className="bg-canvas"
     >
       <div className="grid gap-5 xl:grid-cols-2 2xl:grid-cols-3">
         {pricingPlans.map((plan, index) => (

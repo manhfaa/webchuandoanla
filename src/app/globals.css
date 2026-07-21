@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --font-be-vietnam: "Be Vietnam Pro", "Inter", "Segoe UI", system-ui, sans-serif;
+    --font-be-vietnam: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
   }
 
   html {
@@ -15,11 +15,12 @@
 
   body {
     min-height: 100vh;
-    background-color: var(--ink-50);
-    color: var(--ink-900);
+    background-color: var(--canvas);
+    color: var(--ink);
     font-size: 14px;
-    line-height: 1.55;
+    line-height: 1.6;
     font-feature-settings: "kern" 1, "liga" 1;
+    transition: background-color 180ms ease-out, color 180ms ease-out;
   }
 }
 
@@ -104,13 +105,20 @@
 
 .section-grid {
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.4) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.4) 1px, transparent 1px);
+    linear-gradient(color-mix(in srgb, var(--line) 44%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--line) 44%, transparent) 1px, transparent 1px);
   background-size: 34px 34px;
 }
 
+.field-contours {
+  background-image:
+    radial-gradient(ellipse at 12% 15%, color-mix(in srgb, var(--mint) 46%, transparent), transparent 34%),
+    radial-gradient(ellipse at 88% 8%, color-mix(in srgb, var(--sun) 16%, transparent), transparent 28%),
+    repeating-radial-gradient(ellipse at 82% 18%, transparent 0 30px, color-mix(in srgb, var(--line) 35%, transparent) 31px 32px);
+}
+
 .text-gradient {
-  background: linear-gradient(120deg, var(--leaf-900) 0%, var(--leaf-500) 48%, var(--leaf-300) 100%);
+  background: linear-gradient(120deg, var(--forest) 0%, var(--leaf-strong) 52%, var(--leaf) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -162,10 +170,10 @@
   }
 
   .workspace-header {
-    background-color: var(--bg-app);
+    background-color: color-mix(in srgb, var(--canvas) 86%, transparent);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--line);
   }
 
   main.page-content {

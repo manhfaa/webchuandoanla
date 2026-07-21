@@ -1,49 +1,21 @@
 "use client";
 
-import type { ChangeEvent } from "react";
-import { useRef } from "react";
-import { ArrowRight, Camera, CheckCircle2, PlayCircle, Sparkles, Upload } from "lucide-react";
+import type { ChangeEvent, DragEvent } from "react";
+import { useRef, useState } from "react";
+import { Camera, CheckCircle2, ImagePlus, PlayCircle, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { DiagnosisInputMethod, DiagnosisStatus } from "@/types";
-
-const statusLabelMap: Record<DiagnosisStatus, string> = {
-  idle: "Sẵn sàng nhận ảnh",
-  uploading: "Đang chuẩn bị ảnh",
-  scanning: "Đang kiểm tra ảnh",
-  "symptom-review": "Chờ bổ sung triệu chứng",
-  success: "Ảnh đã được xác nhận",
-  "invalid-image": "Ảnh chưa phù hợp",
-  locked: "Tính năng đang khóa",
-};
+import { DiagnosisStatus as DiagnosisStatusBadge } from "@/components/ui/diagnosis-status";
+import { MobileBottomAction } from "@/components/ui/mobile-bottom-action";
+import { cn } from "@/lib/utils";
+import type { DiagnosisInputMethod, DiagnosisStatus } from "@/types";
 
 const tips = [
-  "Ưu tiên một chiếc lá rõ, đủ sáng và không bị che khuất.",
-  "Để lá chiếm phần lớn khung hình để hệ thống nhận biết ổn định hơn.",
-  "Sau khi ảnh hợp lệ, hệ thống sẽ lưu kết quả vào lịch sử của tài khoản.",
+  "Chụp một chiếc lá rõ, đủ sáng và không bị che khuất.",
+  "Để lá chiếm phần lớn khung hình, tránh nền quá nhiều chi tiết.",
+  "Nếu có đốm ở mặt dưới, hãy chụp thêm một ảnh để tiện theo dõi.",
 ];
-
-const options = [
-  {
-    key: "upload",
-    title: "Tải ảnh",
-    description: "Chọn ảnh lá đã có sẵn trong thiết bị của bạn.",
-    hint: "Từ thiết bị",
-    tone: "from-emerald-100 via-emerald-50 to-white",
-    badge: "Ảnh có sẵn",
-    icon: Upload,
-  },
-  {
-    key: "capture",
-    title: "Chụp ảnh",
-    description: "Mở camera để chụp nhanh một ảnh lá ngay trên giao diện.",
-    hint: "Mở camera",
-    tone: "from-teal-100 via-emerald-50 to-white",
-    badge: "Chụp mới",
-    icon: Camera,
-  },
-] as const;
 
 export function UploadPanel({
   status,
@@ -62,6 +34,7 @@ export function UploadPanel({
 }) {
   const uploadRef = useRef<HTMLInputElement | null>(null);
   const captureRef = useRef<HTMLInputElement | null>(null);
+  const [dragActive, setDragActive] = useState(false);
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>, method: DiagnosisInputMethod) {
     const file = event.target.files?.[0];
@@ -69,117 +42,79 @@ export function UploadPanel({
     event.target.value = "";
   }
 
-  function handleOptionClick(optionKey: (typeof options)[number]["key"]) {
-    if (optionKey === "upload") {
-      uploadRef.current?.click();
-      return;
-    }
+  function handleDrop(event: DragEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    setDragActive(false);
+    const file = event.dataTransfer.files?.[0];
+    if (file) onFileSelected(file, "upload");
+  }
 
-    if (cameraSupported) {
-      onOpenCamera();
-      return;
-    }
-
-    captureRef.current?.click();
+  function openCapture() {
+    if (cameraSupported) onOpenCamera();
+    else captureRef.current?.click();
   }
 
   return (
-    <Card className="relative overflow-hidden rounded-[36px] border-emerald-100/80 p-0 shadow-panel">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(111,214,156,0.18),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(217,247,164,0.26),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.96),rgba(246,251,246,0.92))]" />
-      <div className="relative p-6 sm:p-7">
-        <div className="grid gap-5 2xl:grid-cols-[minmax(0,1.2fr)_320px] 2xl:items-start">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/85 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700 shadow-soft">
-              <Sparkles size={14} />
-              Bước 1 · Chọn ảnh thật
-            </div>
-            <h3 className="mt-4 max-w-3xl font-display text-3xl font-semibold leading-tight text-ink sm:text-[2.25rem]">
-              Tải ảnh hoặc chụp ảnh lá thật rõ để hệ thống kiểm tra
-            </h3>
-            <p className="mt-4 max-w-3xl text-sm leading-8 text-slate-600 sm:text-[15px]">
-              Ảnh hợp lệ sẽ được kiểm tra, phân tích bằng AI nếu hệ thống sẵn sàng, rồi lưu vào lịch sử của tài khoản.
-            </p>
-          </div>
-
-          <div className="rounded-[28px] border border-emerald-100 bg-white/80 p-5 shadow-soft backdrop-blur">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-100 to-lime-100 text-emerald-800">
-                <Sparkles size={20} />
-              </div>
-              <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800">
-                {statusLabelMap[status]}
-              </div>
-            </div>
-
-            <p className="mt-4 text-sm font-semibold text-slate-900">
-              Một ảnh rõ ngay từ đầu sẽ cho kết quả kiểm tra ổn định hơn.
-            </p>
-            <div className="mt-4 space-y-3">
-              {tips.map((tip) => (
-                <div key={tip} className="flex items-start gap-3 rounded-2xl bg-emerald-50/70 px-4 py-3">
-                  <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-700" />
-                  <p className="text-sm leading-6 text-slate-600">{tip}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+    <Card variant="raised" padding="lg" className="rounded-xl">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-overline text-leaf-strong">Bước 1 · Tải ảnh</p>
+          <h2 className="mt-2 max-w-2xl font-display text-[28px] font-bold leading-tight tracking-[-0.035em] text-ink">Chọn một ảnh lá rõ để bắt đầu</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">Bạn có thể kéo ảnh vào khung, chọn từ thiết bị hoặc chụp trực tiếp bằng camera.</p>
         </div>
+        <DiagnosisStatusBadge status={status} />
+      </div>
 
-        <div className="mt-7 grid gap-4 md:grid-cols-2">
-          {options.map((option) => {
-            const Icon = option.icon;
-            const cameraFallback = option.key === "capture" && !cameraSupported ? "Thiết bị / camera" : option.hint;
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => uploadRef.current?.click()}
+        onDragEnter={(event) => {
+          event.preventDefault();
+          setDragActive(true);
+        }}
+        onDragOver={(event) => event.preventDefault()}
+        onDragLeave={() => setDragActive(false)}
+        onDrop={handleDrop}
+        className={cn(
+          "group mt-6 flex min-h-[250px] w-full flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-10 text-center transition duration-180 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/35 disabled:cursor-not-allowed disabled:opacity-60",
+          dragActive ? "border-leaf bg-surface-soft" : "border-line bg-canvas hover:border-leaf/45 hover:bg-surface-soft",
+        )}
+      >
+        <span className="flex h-14 w-14 items-center justify-center rounded-lg bg-surface text-leaf-strong shadow-sm transition group-hover:-translate-y-1">
+          <ImagePlus size={25} aria-hidden />
+        </span>
+        <span className="mt-5 text-base font-bold text-ink">Kéo ảnh lá vào đây hoặc bấm để chọn</span>
+        <span className="mt-2 max-w-md text-sm leading-6 text-ink-soft">Hỗ trợ ảnh JPG, PNG và ảnh chụp từ điện thoại. Ưu tiên ảnh chỉ có một chiếc lá chính.</span>
+        <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-leaf-strong"><Upload size={16} aria-hidden /> Chọn ảnh từ thiết bị</span>
+      </button>
 
-            return (
-              <button
-                key={option.key}
-                type="button"
-                disabled={busy}
-                onClick={() => handleOptionClick(option.key)}
-                className="group relative overflow-hidden rounded-[26px] border border-emerald-100 bg-white/90 p-5 text-left shadow-soft transition duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-float disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                <div className={`pointer-events-none absolute inset-x-5 top-5 h-16 rounded-[22px] bg-gradient-to-r ${option.tone} opacity-95`} />
-                <div className="relative flex items-center justify-between gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/90 text-emerald-700 ring-1 ring-emerald-100">
-                    <Icon size={20} />
-                  </div>
-                  <span className="rounded-full border border-emerald-100 bg-white/80 px-3 py-1 text-xs font-semibold text-emerald-700">
-                    {option.badge}
-                  </span>
-                </div>
-                <h4 className="relative mt-10 font-display text-2xl font-semibold leading-tight text-ink sm:text-[1.7rem]">
-                  {option.title}
-                </h4>
-                <p className="relative mt-3 text-sm leading-7 text-slate-600">{option.description}</p>
-                <div className="relative mt-5 flex items-center justify-between gap-3 border-t border-emerald-100 pt-4">
-                  <span className="text-xs font-medium uppercase tracking-[0.08em] text-emerald-700/80">
-                    {cameraFallback}
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-800">
-                    Chọn
-                    <ArrowRight size={16} className="transition duration-300 group-hover:translate-x-0.5" />
-                  </span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
+        <button type="button" onClick={openCapture} disabled={busy} className="flex min-h-12 items-center justify-center gap-2 rounded-md border border-line bg-surface px-5 text-sm font-semibold text-ink transition hover:bg-surface-soft disabled:opacity-60">
+          <Camera size={18} className="text-leaf-strong" aria-hidden /> {cameraSupported ? "Mở camera để chụp" : "Chụp ảnh từ thiết bị"}
+        </button>
+        <Button type="button" size="lg" loading={busy} disabled={busy} onClick={onStart} className="w-full sm:w-auto">
+          <PlayCircle size={18} aria-hidden /> Bắt đầu kiểm tra
+        </Button>
+      </div>
 
-        <div className="mt-6 flex flex-col gap-4 rounded-[30px] border border-emerald-100 bg-white/82 p-5 shadow-soft sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">
-              Sẵn sàng kiểm tra ảnh
-            </p>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
-              Khi đã có ảnh, bấm bắt đầu để xác thực lá và lưu kết quả vào lịch sử kiểm tra.
-            </p>
-          </div>
-          <Button loading={busy} onClick={onStart}>
-            <PlayCircle size={18} />
-            Bắt đầu kiểm tra
-          </Button>
+      <div className="mt-6 border-t border-line pt-5">
+        <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">Để ảnh dễ kiểm tra hơn</p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          {tips.map((tip) => (
+            <div key={tip} className="flex items-start gap-2.5 rounded-lg bg-surface-soft p-3">
+              <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-leaf-strong" aria-hidden />
+              <p className="text-xs font-medium leading-6 text-ink-soft">{tip}</p>
+            </div>
+          ))}
         </div>
       </div>
+
+      <MobileBottomAction>
+        <Button type="button" size="lg" loading={busy} disabled={busy} onClick={onStart} className="w-full">
+          <PlayCircle size={18} aria-hidden /> Bắt đầu kiểm tra
+        </Button>
+      </MobileBottomAction>
 
       <input ref={uploadRef} type="file" accept="image/*" className="hidden" onChange={(event) => handleFileChange(event, "upload")} />
       <input ref={captureRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(event) => handleFileChange(event, "capture")} />

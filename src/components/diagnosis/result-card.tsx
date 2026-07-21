@@ -1,241 +1,163 @@
 "use client";
 
-import { ExternalLink, LockKeyhole, Sparkles } from "lucide-react";
+import { ExternalLink, Leaf, LockKeyhole, Sparkles } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { DiagnosisRecord } from "@/types";
-import { formatConfidence } from "@/lib/utils";
+import { ConfidenceMeter } from "@/components/ui/confidence-meter";
+import { SourceList } from "@/components/ui/source-list";
+import { EmptyState } from "@/components/ui/states";
+import { toUserFacingText } from "@/lib/user-facing-copy";
+import type { DiagnosisRecord } from "@/types";
 
-function getCnnConfidenceTone(item: string) {
-  const match = item.match(/(\d+(?:[.,]\d+)?)%/);
-  const confidence = match ? Number(match[1].replace(",", ".")) / 100 : 0;
+type ResearchSource = { id?: number; title?: string; url?: string };
+type ResearchPayload = { compatibilitySources?: ResearchSource[]; treatmentSources?: ResearchSource[] };
 
-  if (confidence >= 0.7) {
-    return {
-      label: "Tin cậy",
-      className: "border-emerald-200 bg-emerald-50 text-emerald-800",
-      badgeClassName: "bg-emerald-100 text-emerald-800",
-    };
-  }
-
-  return {
-    label: "Cảnh báo",
-    className: "border-red-200 bg-red-50 text-red-800",
-    badgeClassName: "bg-red-100 text-red-800",
-  };
-}
-
-type ResearchSource = {
-  id?: number;
-  title?: string;
-  url?: string;
-};
-
-type TavilyResearchPayload = {
-  compatibilitySources?: ResearchSource[];
-  treatmentSources?: ResearchSource[];
-};
-
-function getTavilySources(record: DiagnosisRecord) {
-  const payload = record.cnnPayload?.tavily_research as TavilyResearchPayload | null | undefined;
+function getResearchSources(record: DiagnosisRecord) {
+  const payload = record.cnnPayload?.tavily_research as ResearchPayload | null | undefined;
   const sourceMap = new Map<string, ResearchSource>();
-
   for (const source of [...(payload?.compatibilitySources ?? []), ...(payload?.treatmentSources ?? [])]) {
-    if (source.url && !sourceMap.has(source.url)) {
-      sourceMap.set(source.url, source);
-    }
+    if (source.url && !sourceMap.has(source.url)) sourceMap.set(source.url, source);
   }
-
   return Array.from(sourceMap.values()).slice(0, 6);
 }
 
-function renderRecommendationItem(item: string) {
+function sourceDomain(url?: string) {
+  if (!url) return "Nguồn tham khảo";
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "Nguồn tham khảo";
+  }
+}
+
+function customerTitle(title: string) {
+  return toUserFacingText(title
+    .replace(/Top 5 CNN[^:]*/gi, "Các khả năng khác từ ảnh")
+    .replace(/Kết luận cuối cùng từ DeepSeek/gi, "Kết luận sau khi đối chiếu")
+    .replace(/Kiểm chứng triệu chứng bằng Tavily/gi, "Đối chiếu triệu chứng với nguồn tham khảo"));
+}
+
+function customerText(text: string) {
+  return toUserFacingText(text);
+}
+
+function renderRecommendationItem(rawItem: string) {
+  const item = customerText(rawItem);
   const sourceMatch = item.match(/^(\[\d+\])\s*(.*?):\s*(https?:\/\/\S+)$/);
   if (sourceMatch) {
     const [, index, title, url] = sourceMatch;
-    return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex items-center gap-1.5 font-medium text-emerald-700 underline decoration-emerald-300 underline-offset-4 hover:text-emerald-900"
-      >
-        {index} {title}
-        <ExternalLink size={13} />
-      </a>
-    );
+    return <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-semibold text-leaf-strong hover:text-leaf"><span>{index} {title}</span><ExternalLink size={13} aria-hidden /></a>;
   }
-
   const urlMatch = item.match(/https?:\/\/\S+/);
   if (urlMatch) {
     const url = urlMatch[0];
-    const before = item.slice(0, urlMatch.index);
-    return (
-      <span>
-        {before}
-        <a
-          href={url}
-          target="_blank"
-          rel="noreferrer"
-          className="font-medium text-emerald-700 underline decoration-emerald-300 underline-offset-4 hover:text-emerald-900"
-        >
-          {url}
-        </a>
-      </span>
-    );
+    return <span>{item.slice(0, urlMatch.index)}<a href={url} target="_blank" rel="noreferrer" className="font-semibold text-leaf-strong hover:text-leaf">Mở nguồn tham khảo <ExternalLink className="inline h-3.5 w-3.5" aria-hidden /></a></span>;
   }
-
-  return <span>- {item}</span>;
+  return <span>{item}</span>;
 }
 
 export function DiagnosisResultCard({
   record,
   locked,
   onUpgrade,
+  detailsOnly = false,
 }: {
   record: DiagnosisRecord | null;
   locked?: boolean;
   onUpgrade?: () => void;
+  detailsOnly?: boolean;
 }) {
+  if (!record) {
+    return (
+      <Card variant="raised" padding="lg" className="rounded-xl">
+        <EmptyState title="Kết quả sẽ xuất hiện tại đây" description="Chọn hoặc chụp ảnh lá, sau đó hoàn tất các bước kiểm tra để xem gợi ý và việc nên làm." icon={Leaf} />
+      </Card>
+    );
+  }
+
+  const confidence = record.cnnConfidence ?? record.confidence ?? 0;
+  const sources = getResearchSources(record);
+  const sourceItems = sources
+    .filter((source): source is ResearchSource & { url: string } => Boolean(source.url))
+    .map((source, index) => ({
+      title: `[${source.id ?? index + 1}] ${source.title || sourceDomain(source.url)}`,
+      url: source.url,
+      domain: sourceDomain(source.url),
+    }));
+  const recommendationSections = detailsOnly
+    ? record.recommendations.filter((section) => !/khuyến nghị hành động|bạn có thể làm tiếp|để ảnh rõ hơn/i.test(section.title))
+    : record.recommendations;
+  const status = confidence >= 0.7 ? { state: "healthy" as const, label: "Tin cậy cao" } : { state: "watch" as const, label: "Cần theo dõi" };
+
   return (
-    <Card className="relative overflow-hidden rounded-[34px] border-emerald-100 bg-white/90">
-      <div className="flex items-start justify-between gap-4">
+    <Card variant="raised" padding="lg" className="overflow-hidden rounded-xl">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-700">
-            Kết quả
-          </p>
-          <h3 className="mt-2 font-display text-3xl font-semibold text-ink">
-            Kết quả kiểm tra ảnh lá
-          </h3>
+          <p className="text-overline text-leaf-strong">{detailsOnly ? "Thông tin bổ sung" : "Bước 4 · Kết quả"}</p>
+          <h2 className="mt-2 font-display text-[30px] font-bold tracking-[-0.035em] text-ink">{detailsOnly ? "Các khả năng khác và nguồn đối chiếu" : "Kết quả kiểm tra ảnh lá"}</h2>
+          <p className="mt-2 text-sm text-ink-soft">{detailsOnly ? "Xem thêm cơ sở tham khảo cho kết luận chính ở trên." : "Xem gợi ý chính, mức tin cậy và các bước nên thực hiện tiếp theo."}</p>
         </div>
-        <Badge variant={locked ? "warning" : "success"}>
-          {locked ? "Mở thêm chat ở gói cao hơn" : "Đã sẵn sàng"}
-        </Badge>
+        {!detailsOnly ? <StatusBadge status={status.state} label={status.label} /> : null}
       </div>
 
-      {record ? (
-        <div className="mt-6 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="rounded-[30px] bg-[#10231c] p-5 text-white">
-            <p className="text-sm text-emerald-50/70">{record.plant}</p>
-            <h4 className="mt-2 font-display text-3xl font-semibold">{record.disease}</h4>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-emerald-50/60">Độ tin cậy</p>
-                <p className="mt-2 text-lg font-semibold">
-                  {record.leafConfidence ? formatConfidence(record.leafConfidence) : "Đã xác nhận"}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-emerald-50/60">Trạng thái</p>
-                <p className="mt-2 text-lg font-semibold">Ảnh lá hợp lệ</p>
-              </div>
-              <div className="rounded-2xl bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-emerald-50/60">Nguồn ảnh</p>
-                <p className="mt-2 text-lg font-semibold">
-                  {record.inputMethod === "capture"
-                    ? "Ảnh chụp"
-                    : record.inputMethod === "upload"
-                      ? "Ảnh tải lên"
-                      : "Ảnh mẫu"}
-                </p>
-              </div>
+      <div className="mt-6 grid gap-5 xl:grid-cols-[0.86fr_1.14fr]">
+        <div className="space-y-4">
+          {!detailsOnly ? <div className="rounded-xl bg-forest p-6 text-on-forest">
+            <Badge className="bg-on-forest/10 text-on-forest">{record.plant || "Chưa xác định cây"}</Badge>
+            <p className="mt-6 text-overline text-on-forest-muted">Khả năng cao nhất</p>
+            <h3 className="mt-2 font-display text-[30px] font-bold leading-tight tracking-[-0.03em] text-on-forest">{record.disease || "Chưa có gợi ý bệnh"}</h3>
+            <ConfidenceMeter score={confidence} tone="dark" className="mt-6" />
+            <div className="mt-5 grid grid-cols-2 gap-3 border-t border-on-forest/10 pt-5 text-sm">
+              <div><p className="text-xs text-on-forest-muted">Ảnh đầu vào</p><p className="mt-1 font-semibold text-on-forest">Ảnh lá hợp lệ</p></div>
+              <div><p className="text-xs text-on-forest-muted">Nguồn ảnh</p><p className="mt-1 font-semibold text-on-forest">{record.inputMethod === "capture" ? "Ảnh chụp" : "Ảnh tải lên"}</p></div>
             </div>
-            {record.leafCheckNote ? (
-              <div className="mt-4 rounded-2xl bg-white/5 px-4 py-3 text-sm leading-6 text-emerald-50/80">
-                {record.leafCheckNote}
-              </div>
-            ) : null}
-            {getTavilySources(record).length ? (
-              <div className="mt-4 rounded-2xl border border-emerald-300/20 bg-white/5 px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100/70">
-                  Nguồn tham khảo
-                </p>
-                <div className="mt-3 space-y-2">
-                  {getTavilySources(record).map((source, index) => (
-                    <a
-                      key={source.url}
-                      href={source.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-start justify-between gap-3 rounded-xl bg-white/5 px-3 py-2 text-sm leading-5 text-emerald-50/85 transition hover:bg-white/10 hover:text-white"
-                    >
-                      <span>
-                        [{source.id ?? index + 1}] {source.title || source.url}
-                      </span>
-                      <ExternalLink size={14} className="mt-0.5 shrink-0 text-lime-200" />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </div>
+          </div> : null}
 
-          <div className="space-y-4">
-            <div className="rounded-[28px] bg-emerald-50 p-5">
-              <p className="text-sm font-semibold text-brand-700">Tình trạng hiện tại</p>
-              <p className="mt-3 text-sm leading-7 text-slate-700">{record.symptomSummary}</p>
+          {sourceItems.length ? (
+            <div className="rounded-xl border border-line bg-surface-soft p-5">
+              <p className="text-overline text-leaf-strong">Nguồn tham khảo</p>
+              <p className="mt-2 text-xs leading-6 text-ink-soft">Mở nguồn để tự đối chiếu thông tin đã được tổng hợp.</p>
+              <div className="mt-3"><SourceList sources={sourceItems} /></div>
             </div>
-            <div className="rounded-[28px] border border-emerald-100 bg-white p-5">
-              <p className="flex items-center gap-2 text-sm font-semibold text-brand-700">
-                <Sparkles size={16} />
-                Gợi ý tiếp theo
-              </p>
-              <div className="mt-4 space-y-4">
-                {record.recommendations.map((section) => (
-                  <div key={section.title}>
-                    <p className="font-medium text-ink">{section.title}</p>
-                    <ul className="mt-2 space-y-2 text-sm leading-7 text-slate-600">
-                      {section.items.slice(0, locked ? 1 : section.items.length).map((item) => {
-                        const isCnnResult = section.title.includes("CNN");
-                        const tone = isCnnResult ? getCnnConfidenceTone(item) : null;
+          ) : detailsOnly ? <EmptyState title="Chưa có nguồn đối chiếu" description="Nguồn tham khảo chỉ xuất hiện khi bạn nhập triệu chứng và bước đối chiếu hoàn tất." icon={ExternalLink} /> : null}
+        </div>
 
-                        return (
-                          <li
-                            key={item}
-                            className={
-                              tone
-                                ? `flex items-start justify-between gap-3 rounded-2xl border px-3 py-3 ${tone.className}`
-                                : undefined
-                            }
-                          >
-                            <span>{tone ? item : renderRecommendationItem(item)}</span>
-                            {tone ? (
-                              <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${tone.badgeClassName}`}>
-                                {tone.label}
-                              </span>
-                            ) : null}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                ))}
-              </div>
+        <div className="space-y-4">
+          {!detailsOnly ? <div className="rounded-xl bg-surface-soft p-5">
+            <p className="text-sm font-bold text-ink">Tình trạng hiện tại</p>
+            <p className="mt-3 text-sm leading-7 text-ink-soft">{customerText(record.symptomSummary)}</p>
+          </div> : null}
+
+          <div className="rounded-xl border border-line bg-surface p-5">
+            <p className="flex items-center gap-2 text-sm font-bold text-ink"><Sparkles size={16} className="text-leaf-strong" aria-hidden /> {detailsOnly ? "Thông tin đã đối chiếu" : "Giải thích và việc nên làm"}</p>
+            <div className="mt-5 space-y-5">
+              {recommendationSections.map((section) => (
+                <section key={section.title}>
+                  <h4 className="text-sm font-bold text-ink">{customerTitle(section.title)}</h4>
+                  <ul className="mt-2 space-y-2">
+                    {section.items.slice(0, locked ? 1 : section.items.length).filter((item) => customerText(item).trim()).map((item) => (
+                      <li key={item} className="flex gap-2 rounded-lg bg-surface-soft px-3 py-3 text-sm leading-7 text-ink-soft">
+                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-leaf" aria-hidden />
+                        <span>{renderRecommendationItem(item)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
             </div>
           </div>
         </div>
-      ) : (
-        <div className="mt-6 rounded-[30px] border border-dashed border-emerald-200 bg-emerald-50/70 px-6 py-10 text-center text-sm leading-7 text-slate-600">
-          Tải ảnh hoặc dùng ảnh mẫu để xem kết quả kiểm tra.
-        </div>
-      )}
+      </div>
 
-      {locked ? (
-        <div className="absolute inset-x-0 bottom-0 flex flex-col items-center justify-center gap-4 bg-gradient-to-t from-white via-white/95 to-white/60 px-6 py-8 text-center">
-          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-brand-700">
-            <LockKeyhole size={22} />
+      {locked && !detailsOnly ? (
+        <div className="mt-5 flex flex-col items-start justify-between gap-4 rounded-xl border border-line bg-surface-soft p-5 sm:flex-row sm:items-center">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-surface text-leaf-strong"><LockKeyhole size={18} aria-hidden /></span>
+            <div><p className="text-sm font-bold text-ink">Mở rộng phần hỏi đáp về kết quả</p><p className="mt-1 text-xs leading-6 text-ink-soft">Bạn vẫn xem được kết quả chính. Nâng cấp nếu muốn dùng thêm hỗ trợ trò chuyện theo ca đã lưu.</p></div>
           </div>
-          <div>
-            <h4 className="font-display text-2xl font-semibold text-ink">
-              Mở thêm phần chat ở gói cao hơn
-            </h4>
-            <p className="mt-2 max-w-xl text-sm leading-7 text-slate-600">
-              Bạn vẫn xem được kết quả kiểm tra ảnh. Nếu muốn dùng thêm chat hỗ trợ, hãy nâng cấp gói.
-            </p>
-          </div>
-          <Button size="md" onClick={onUpgrade}>Nâng cấp</Button>
+          <Button size="sm" onClick={onUpgrade}>Xem gói phù hợp</Button>
         </div>
       ) : null}
     </Card>

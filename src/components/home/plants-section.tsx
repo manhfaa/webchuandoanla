@@ -1,51 +1,63 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 
 import { SectionShell } from "@/components/layout/section-shell";
-import { Card } from "@/components/ui/card";
+import { SurfaceCard } from "@/components/ui/card";
 import { Reveal } from "@/components/ui/reveal";
 import { supportedPlants } from "@/data/mock/plants";
+import { cn } from "@/lib/utils";
+
+const priorityPlantIds = new Set(["tomato", "pepper", "grape", "corn", "potato", "squash"]);
 
 export function PlantsSection() {
+  const [filter, setFilter] = useState<"priority" | "all">("priority");
+  const visiblePlants = filter === "priority" ? supportedPlants.filter((plant) => priorityPlantIds.has(plant.id)) : supportedPlants;
+
   return (
     <SectionShell
       id="cay-trong"
       eyebrow="Cây trồng hỗ trợ"
-      title="Hỗ trợ nhiều nhóm cây trồng phổ biến, từ cây ăn trái đến cây rau màu và cây công nghiệp."
-      description="Người dùng có thể xem nhanh nhóm cây phù hợp, triệu chứng thường gặp và các trường hợp nên chụp ảnh lá để kiểm tra sớm."
+      title="Bắt đầu với những nhóm cây quen thuộc trong vườn"
+      description="Chọn nhóm ưu tiên để xem nhanh các loại cây gần với nhu cầu canh tác phổ biến, hoặc mở toàn bộ danh sách đang được hỗ trợ."
+      className="bg-canvas"
     >
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {supportedPlants.map((plant, index) => (
-          <Reveal key={plant.id} delay={index * 0.03}>
-            <Card className="group h-full overflow-hidden rounded-[28px] border-white/75 bg-white/90 p-4 transition duration-300 hover:-translate-y-1 hover:shadow-float dark:border-white/10 dark:bg-white/10">
-              <div className={`relative overflow-hidden rounded-[24px] bg-gradient-to-br ${plant.accent} p-2`}>
-                <div className="relative h-36 overflow-hidden rounded-[20px] bg-brand-950/10">
-                  <Image
-                    src={plant.image}
-                    alt={plant.imageAlt}
-                    fill
-                    sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                    className="object-cover transition duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-ink/45 via-transparent to-white/10" />
-                  <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-800 shadow-sm">
-                    Lá thật
-                  </span>
-                </div>
+      <div className="mb-7 inline-flex rounded-xl border border-line bg-surface p-1" role="group" aria-label="Lọc cây trồng">
+        <button type="button" onClick={() => setFilter("priority")} className={cn("min-h-11 rounded-lg px-4 text-sm font-semibold transition duration-180", filter === "priority" ? "bg-forest text-on-forest shadow-sm" : "text-ink-soft hover:bg-surface-soft hover:text-ink")}>
+          Phổ biến tại Việt Nam
+        </button>
+        <button type="button" onClick={() => setFilter("all")} className={cn("min-h-11 rounded-lg px-4 text-sm font-semibold transition duration-180", filter === "all" ? "bg-forest text-on-forest shadow-sm" : "text-ink-soft hover:bg-surface-soft hover:text-ink")}>
+          Tất cả {supportedPlants.length} nhóm
+        </button>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {visiblePlants.map((plant, index) => (
+          <Reveal key={plant.id} delay={Math.min(index * 0.035, 0.2)}>
+            <SurfaceCard variant="raised" padding="none" className="group h-full overflow-hidden">
+              <div className="relative h-48 overflow-hidden bg-surface-soft">
+                <Image
+                  src={plant.image}
+                  alt={plant.imageAlt}
+                  fill
+                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                  className="object-cover transition duration-500 group-hover:scale-[1.035]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-forest/65 via-transparent to-transparent" aria-hidden />
+                <span className="absolute bottom-3 left-3 rounded-full bg-surface/90 px-2.5 py-1 text-[11px] font-semibold text-ink shadow-sm backdrop-blur">Ảnh lá thật</span>
               </div>
-              <div className="mt-5">
-                <h3 className="font-display text-2xl font-semibold text-ink dark:text-white">{plant.name}</h3>
-                <p className="mt-1 text-sm font-semibold text-brand-700 dark:text-lime-100">{plant.latinLabel}</p>
-                <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-emerald-50/75">{plant.insight}</p>
-                <a
-                  href={plant.imageSourceUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-4 inline-flex text-xs font-semibold text-slate-500 transition hover:text-brand-700 dark:text-emerald-50/60 dark:hover:text-lime-100"
-                >
-                  Ảnh: {plant.imageCredit}
+              <div className="p-5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <h3 className="font-display text-xl font-bold text-ink">{plant.name}</h3>
+                  <p className="text-xs italic text-ink-soft">{plant.latinLabel}</p>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-ink-soft">{plant.insight}</p>
+                <a href={plant.imageSourceUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex text-xs font-semibold text-leaf-strong hover:underline">
+                  Xem nguồn ảnh
                 </a>
               </div>
-            </Card>
+            </SurfaceCard>
           </Reveal>
         ))}
       </div>

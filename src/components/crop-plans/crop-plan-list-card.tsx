@@ -5,12 +5,12 @@ import type { CropPlan } from "@/types";
 import { Card } from "@/components/ui/card";
 
 const planStatusTone: Record<string, string> = {
-  active: "bg-emerald-100 text-emerald-800",
-  completed: "bg-sky-100 text-sky-800",
-  needs_review: "bg-amber-100 text-amber-800",
-  paused: "bg-slate-200 text-slate-700",
-  draft: "bg-lime-100 text-lime-800",
-  archived: "bg-slate-200 text-slate-700",
+  active: "bg-surface-soft text-leaf-strong",
+  completed: "bg-info/10 text-info",
+  needs_review: "bg-sun/20 text-soil",
+  paused: "bg-surface-soft text-ink-soft",
+  draft: "bg-surface-soft text-leaf-strong",
+  archived: "bg-surface-soft text-ink-soft",
 };
 
 export function CropPlanListCard({ plan }: { plan: CropPlan }) {
@@ -18,11 +18,11 @@ export function CropPlanListCard({ plan }: { plan: CropPlan }) {
 
   return (
     <Link href={`/dashboard/crop-plans/${plan.id}`}>
-      <Card className="group rounded-[30px] border-emerald-100/70 bg-gradient-to-br from-white via-white to-emerald-50/70 transition duration-300 hover:-translate-y-1 hover:shadow-float">
+      <Card variant="default" padding="lg" className="group rounded-xl transition duration-180 hover:-translate-y-[3px] hover:border-leaf/35 hover:shadow-md">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-800">
+              <span className="rounded-full bg-surface-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-leaf-strong">
                 {plan.crop.name}
               </span>
               <span
@@ -31,37 +31,37 @@ export function CropPlanListCard({ plan }: { plan: CropPlan }) {
                 {plan.status}
               </span>
             </div>
-            <h3 className="mt-4 font-display text-2xl font-semibold text-slate-950">
+            <h3 className="mt-4 font-display text-2xl font-bold text-ink">
               {plan.title}
             </h3>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">{plan.summary}</p>
+            <p className="mt-2 max-w-2xl text-sm leading-7 text-ink-soft">{plan.summary}</p>
           </div>
-          <span className="rounded-full bg-white p-3 text-slate-700 shadow-soft transition duration-300 group-hover:bg-emerald-600 group-hover:text-white">
+          <span className="rounded-md bg-surface-soft p-3 text-ink-soft shadow-sm transition duration-180 group-hover:bg-leaf group-hover:text-on-leaf">
             <ArrowUpRight size={18} />
           </span>
         </div>
 
         <div className="mt-6 grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl border border-emerald-100 bg-white/85 px-4 py-3">
-            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-emerald-700/65">
+          <div className="rounded-lg border border-line bg-surface-soft px-4 py-3">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">
               <MapPin size={14} />
               Vị trí
             </div>
-            <p className="mt-2 text-sm font-medium text-slate-900">{plan.location.name}</p>
+            <p className="mt-2 text-sm font-semibold text-ink">{plan.location.name}</p>
           </div>
-          <div className="rounded-2xl border border-emerald-100 bg-white/85 px-4 py-3">
-            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-emerald-700/65">
+          <div className="rounded-lg border border-line bg-surface-soft px-4 py-3">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">
               <CalendarDays size={14} />
               Bắt đầu đề xuất
             </div>
-            <p className="mt-2 text-sm font-medium text-slate-900">{plan.recommended_start_date ?? plan.planned_start_date}</p>
+            <p className="mt-2 text-sm font-semibold text-ink">{plan.recommended_start_date ?? plan.planned_start_date}</p>
           </div>
-          <div className="rounded-2xl border border-emerald-100 bg-white/85 px-4 py-3">
-            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-emerald-700/65">
+          <div className="rounded-lg border border-line bg-surface-soft px-4 py-3">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">
               <Sprout size={14} />
               Bước tiếp theo
             </div>
-            <p className="mt-2 text-sm font-medium text-slate-900">
+            <p className="mt-2 text-sm font-semibold text-ink">
               {nextStep ? `${nextStep.step_number}. ${nextStep.title}` : "Đang cập nhật"}
             </p>
           </div>

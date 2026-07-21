@@ -1,8 +1,8 @@
 export const brand = {
   name: "Agromind AI",
-  slogan: "Kiểm tra lá nhanh, chăm cây có cơ sở.",
+  slogan: "Hiểu chiếc lá, chăm cả khu vườn.",
   description:
-    "Nền tảng AI hỗ trợ kiểm tra ảnh lá cây, đối chiếu triệu chứng, tham khảo nguồn web và gợi ý bước chăm sóc ban đầu.",
+    "Trợ lý nông nghiệp giúp người trồng kiểm tra ảnh lá, đối chiếu triệu chứng và theo dõi việc chăm sóc cây theo thời gian.",
   mission:
-    "Agromind AI giúp người trồng cây ghi nhận tình trạng lá, hiểu các khả năng rủi ro và theo dõi quá trình chăm sóc theo từng lần kiểm tra.",
+    "Agromind AI giúp người trồng quan sát tình trạng lá có hệ thống, hiểu rõ việc nên làm tiếp theo và lưu lại quá trình chăm sóc của khu vườn.",
 };

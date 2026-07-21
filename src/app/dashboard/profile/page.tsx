@@ -37,34 +37,34 @@ export default function DashboardProfilePage() {
   async function handleSaveProfile() {
     try {
       await updateProfile({ name, email, avatar: avatarUrl });
-      toast.success("Đã lưu hồ sơ.");
+      toast.success("Đã lưu thay đổi hồ sơ.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Không thể lưu hồ sơ.");
     }
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-[1380px] space-y-6">
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        <Card variant="dark" padding="lg" className="border-border-dark bg-app-surface text-on-dark">
+        <Card variant="dark" padding="lg" className="field-contours rounded-xl">
           <div className="flex items-start gap-4">
-            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 border-border-dark ring-2 ring-leaf-500/20">
+            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 border-on-forest/15 ring-2 ring-on-forest/10">
               <Image src={avatarSrc} alt={displayName} width={160} height={160} className="h-full w-full object-cover" />
             </div>
             <div>
-              <p className="text-overline text-muted-on-dark">Hồ sơ người dùng</p>
-              <h2 className="mt-2 text-h2 text-on-dark-strong">{displayName}</h2>
-              <p className="mt-2 text-body-sm text-muted-on-dark">{user?.email}</p>
-              <div className="mt-5 rounded-lg border border-border-dark bg-app-surface-2 px-4 py-3 text-body-sm leading-relaxed text-muted-on-dark">
-                Gói hiện tại: <span className="font-semibold text-leaf-300">{currentPlan?.name ?? "Seed"}</span>
+              <p className="text-overline text-on-forest-muted">Hồ sơ người dùng</p>
+              <h2 className="mt-2 text-h2 font-bold text-on-forest">{displayName}</h2>
+              <p className="mt-2 text-body-sm text-on-forest-muted">{user?.email}</p>
+              <div className="mt-5 rounded-lg border border-on-forest/10 bg-on-forest/5 px-4 py-3 text-body-sm leading-relaxed text-on-forest-muted">
+                Gói hiện tại: <span className="font-semibold text-on-forest">{currentPlan?.name ?? "Seed"}</span>
                 <br />
-                Hồ sơ được đồng bộ với tài khoản của bạn.
+                Thông tin này được đồng bộ theo tài khoản của bạn.
               </div>
             </div>
           </div>
         </Card>
 
-        <Card variant="light" padding="lg" className="shadow-sm">
+        <Card variant="raised" padding="lg" className="rounded-xl shadow-sm">
           <div className="grid gap-5 md:grid-cols-2">
             <Input tone="light" label="Tên người dùng" value={name} onChange={(event) => setName(event.target.value)} />
             <Input tone="light" label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
@@ -88,13 +88,13 @@ export default function DashboardProfilePage() {
         </Card>
       </div>
 
-      <Card variant="dark" padding="lg" className="border-border-dark bg-app-surface text-on-dark">
+      <Card variant="default" padding="lg" className="rounded-xl">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-overline text-muted-on-dark">Gói dịch vụ</p>
-            <h3 className="mt-2 text-h2 text-on-dark-strong">Quản lý gói dịch vụ</h3>
-            <p className="mt-2 max-w-2xl text-body-sm leading-relaxed text-muted-on-dark">
-              Chọn gói phù hợp với nhu cầu sử dụng. Gói sẽ được cập nhật sau khi hệ thống xác nhận thanh toán.
+            <p className="text-overline text-leaf-strong">Gói dịch vụ</p>
+            <h3 className="mt-2 text-h2 font-bold text-ink">Chọn mức sử dụng phù hợp</h3>
+            <p className="mt-2 max-w-2xl text-body-sm leading-relaxed text-ink-soft">
+              So sánh quyền lợi và chuyển đến bước xác nhận trước khi thay đổi gói.
             </p>
           </div>
         </div>

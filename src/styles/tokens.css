@@ -1,91 +1,86 @@
 /**
  * Agromind AI design tokens — single source for all colors, radii, motion.
- * Components dùng trực tiếp var(--token) hoặc Tailwind arbitrary [--token].
  */
 :root {
-  /* ── Leaf green ramp ── */
-  --leaf-50:  #F0FAF4;
-  --leaf-100: #DCF5E4;
-  --leaf-200: #B8E9C8;
-  --leaf-300: #8DD8A6;
-  --leaf-400: #5BC282;
-  --leaf-500: #2FA664;
-  --leaf-600: #1F8A50;
-  --leaf-700: #166B3E;
-  --leaf-800: #0F4D2C;
-  --leaf-900: #0A3320;
-  --leaf-950: #051A10;
+  /* Light theme */
+  --canvas: #F7F5EE;
+  --surface: #FFFEFA;
+  --surface-raised: #FFFFFF;
+  --paper: #FFFFFF;
+  --surface-soft: #EAF4EC;
 
-  /* ── Accent ── */
-  --sun-100:   #FFF4D6;
-  --sun-400:   #FFCF52;
-  --sun-600:   #D9A218;
-  --earth-100: #FAF1E4;
-  --earth-300: #E8C988;
-  --earth-500: #C49850;
-  --berry-300: #F2A4A4;
-  --berry-500: #D85656;
+  --ink: #13251A;
+  --ink-soft: #5C6D62;
+  --line: #DCE8DD;
 
-  /* ── Neutrals ── */
-  --ink-50:  #F7F9F8;
-  --ink-100: #ECEFEE;
-  --ink-300: #B6BFBA;
-  --ink-500: #6B7670;
-  --ink-700: #2F3833;
-  --ink-900: #0C1410;
+  --forest: #0B2B1D;
+  --on-forest: #F4FFF7;
+  --on-forest-muted: #C5D7CA;
+  --leaf: #238554;
+  --leaf-strong: #17683F;
+  --on-leaf: #FFFFFF;
+  --mint: #BFE8CD;
 
-  /* ── Surfaces (dark app) ── */
-  --bg-app:       #051A10;
-  --bg-surface:   #0E2419;
-  --bg-surface-2: #143020;
-  --bg-light:     #FFFFFF;
-
-  /* ── Text on dark ── */
-  --text-strong:  #F0F5F1;
-  --text-default: #E8F1EB;
-  --text-muted:   #93A89A;
-  --text-hint:    #607060;
-
-  /* ── Legacy aliases (backward compat) ── */
-  --text-on-dark:        var(--text-default);
-  --text-on-dark-strong: var(--text-strong);
-  --text-muted-on-dark:  var(--text-muted);
-
-  /* ── Borders ── */
-  --border:         rgba(255, 255, 255, 0.06);
-  --border-medium:  rgba(255, 255, 255, 0.12);
-  --border-primary: rgba(47, 166, 100, 0.4);
-  --border-light:   #E5EAE7;
-
-  /* ── Legacy border aliases ── */
-  --border-dark: var(--border);
+  --sun: #EAB64B;
+  --soil: #77563C;
+  --danger: #C9513E;
+  --on-danger: #FFFFFF;
+  --info: #2F6FA9;
 
   /* ── Radii ── */
   --r-sm:   6px;
-  --r-md:   10px;
+  --r-md:   12px;
   --r-lg:   16px;
-  --r-xl:   20px;
+  --r-xl:   24px;
+  --r-2xl:  28px;
   --r-pill: 9999px;
 
   /* ── Elevation ── */
   --shadow-sm:    0 1px 2px rgba(0, 0, 0, 0.08);
   --shadow-md:    0 4px 12px rgba(0, 0, 0, 0.1);
-  --shadow-lg:    0 12px 32px rgba(0, 0, 0, 0.16);
-  --shadow-focus: 0 0 0 3px rgba(47, 166, 100, 0.25);
+  --shadow-lg:    0 16px 42px rgba(16, 49, 29, 0.08);
+  --shadow-focus: 0 0 0 3px rgba(35, 133, 84, 0.25);
   --shadow-glow:  var(--shadow-focus);
 
   /* ── Motion ── */
   --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --d-fast: 120ms;
-  --d-base: 200ms;
-  --d-slow: 400ms;
+  --d-base: 180ms;
+  --d-slow: 260ms;
 
-  --ring-leaf: rgba(47, 166, 100, 0.35);
+  --ring-leaf: rgba(35, 133, 84, 0.35);
 
   color-scheme: light;
 }
 
-.theme-dashboard {
+[data-theme="dark"] {
+  /* Dark theme */
+  --canvas: #07170F;
+  --surface: #0D2418;
+  --surface-raised: #123321;
+  --paper: #FFFFFF;
+  --surface-soft: #173C29;
+
+  --ink: #F2F8F3;
+  --ink-soft: #A5B9AA;
+  --line: rgba(213, 245, 223, 0.12);
+
+  --forest: #0B2B1D;
+  --on-forest: #F4FFF7;
+  --on-forest-muted: #B9CCBF;
+  --leaf: #2FA664; /* Sáng vừa đủ, không neon */
+  --leaf-strong: #3FBB77;
+  --on-leaf: #07170F;
+  --mint: #154D31;
+
+  --sun: #EAB64B;
+  --soil: #936F52;
+  --danger: #E46651;
+  --on-danger: #07170F;
+  --info: #468AD2;
+
+  --shadow-lg: 0 16px 42px rgba(0, 0, 0, 0.4);
+
   color-scheme: dark;
 }

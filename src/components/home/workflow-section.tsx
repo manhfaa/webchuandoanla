@@ -1,62 +1,66 @@
-import {
-  BrainCircuit,
-  Camera,
-  CheckCircle2,
-  ChevronRight,
-  Database,
-  FileSearch,
-  ListChecks,
-  Microscope,
-  ScanLine,
-} from "lucide-react";
+import { Camera, CheckCircle2, ClipboardCheck, ScanSearch } from "lucide-react";
 
 import { SectionShell } from "@/components/layout/section-shell";
-import { Card } from "@/components/ui/card";
+import { SurfaceCard } from "@/components/ui/card";
 import { Reveal } from "@/components/ui/reveal";
-import { workflowSteps } from "@/data/mock/workflow";
 
-const workflowIcons = {
-  upload: Camera,
-  yolo: ScanLine,
-  cnn: Microscope,
-  symptoms: ListChecks,
-  tavily: FileSearch,
-  deepseek: BrainCircuit,
-  history: Database,
-};
+const stages = [
+  {
+    step: "01",
+    title: "Chụp lá",
+    description: "Tải ảnh có sẵn hoặc chụp trực tiếp. Hướng dẫn trên màn hình giúp bạn lấy được ảnh đủ sáng và rõ vùng lá.",
+    detail: "Kiểm tra vùng lá bằng YOLO",
+    icon: Camera,
+  },
+  {
+    step: "02",
+    title: "Phân tích ảnh",
+    description: "Hệ thống gợi ý những khả năng cần chú ý và hiển thị độ tin cậy để bạn không phải dựa vào một nhãn duy nhất.",
+    detail: "Gợi ý các khả năng bằng CNN",
+    icon: ScanSearch,
+  },
+  {
+    step: "03",
+    title: "Đối chiếu triệu chứng",
+    description: "Bạn có thể bổ sung điều quan sát được. Hệ thống tìm nguồn tham khảo để kiểm tra mức độ phù hợp của mô tả.",
+    detail: "Tìm và tổng hợp nguồn tham khảo",
+    icon: ClipboardCheck,
+  },
+  {
+    step: "04",
+    title: "Theo dõi việc cần làm",
+    description: "Kết quả, nguồn và khuyến nghị được lưu lại để bạn chụp lại, so sánh và theo dõi cây theo thời gian.",
+    detail: "Lưu lịch sử theo tài khoản",
+    icon: CheckCircle2,
+  },
+];
 
 export function WorkflowSection() {
   return (
     <SectionShell
       id="quy-trinh"
-      eyebrow="Quy trình AI của Agromind"
-      title="Từ ảnh lá đến khuyến nghị chăm sóc: mọi bước đều được trình bày rõ ràng để người dùng dễ kiểm tra."
-      description="Agromind AI không đưa ra kết luận một chiều. Ảnh lá được kiểm tra, phân tích, đối chiếu thêm với triệu chứng và nguồn tham khảo trước khi lưu lại kết quả."
-      className="bg-gradient-to-b from-white via-emerald-50/50 to-white dark:from-[#04180f] dark:via-[#08281a] dark:to-[#04180f]"
+      eyebrow="Cách Agromind hỗ trợ bạn"
+      title="Một hành trình rõ ràng từ ảnh lá đến việc cần làm"
+      description="Mỗi bước đều trả lời một câu hỏi cụ thể: ảnh có dùng được không, lá có dấu hiệu gì, triệu chứng có phù hợp không và bạn nên theo dõi tiếp ra sao."
+      className="relative overflow-hidden bg-surface"
     >
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-        {workflowSteps.map((step, index) => {
-          const Icon = workflowIcons[step.id as keyof typeof workflowIcons] ?? CheckCircle2;
+      <div className="pointer-events-none absolute left-[8%] right-[8%] top-[46%] hidden h-px bg-line lg:block" aria-hidden />
+      <div className="relative grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {stages.map((stage, index) => {
+          const Icon = stage.icon;
           return (
-            <Reveal key={step.id} delay={index * 0.045}>
-              <Card className="group relative h-full overflow-hidden rounded-[30px] border-white/80 bg-white/90 p-5 shadow-[0_18px_50px_rgba(17,64,42,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-float dark:border-white/10 dark:bg-white/10 dark:shadow-[0_18px_60px_rgba(0,0,0,0.25)]">
-                <div className="absolute inset-x-5 top-0 h-1 rounded-b-full bg-gradient-to-r from-leaf-500 via-lime-300 to-sun-400" />
-                <div className="mb-5 flex items-center justify-between gap-3">
-                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-leaf-50 text-leaf-700 ring-1 ring-leaf-100 transition group-hover:bg-leaf-600 group-hover:text-white dark:bg-white/10 dark:text-lime-100 dark:ring-white/10">
-                    <Icon size={21} />
+            <Reveal key={stage.step} delay={index * 0.055}>
+              <SurfaceCard variant={index === 1 ? "soft" : "default"} padding="lg" className="group h-full border-line bg-surface-raised">
+                <div className="flex items-center justify-between">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-forest text-on-forest shadow-sm transition duration-180 group-hover:-translate-y-1">
+                    <Icon size={21} aria-hidden />
                   </span>
-                  {index < workflowSteps.length - 1 ? (
-                    <ChevronRight className="hidden text-leaf-300 xl:block" size={18} />
-                  ) : (
-                    <CheckCircle2 className="text-lime-500" size={18} />
-                  )}
+                  <span className="font-display text-3xl font-extrabold text-line">{stage.step}</span>
                 </div>
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-leaf-700 dark:text-lime-100">
-                  {step.step}
-                </p>
-                <h3 className="mt-3 font-display text-xl font-semibold leading-tight text-ink-900 dark:text-white">{step.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-emerald-50/75">{step.description}</p>
-              </Card>
+                <h3 className="mt-6 font-display text-xl font-bold text-ink">{stage.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-ink-soft">{stage.description}</p>
+                <div className="mt-5 border-t border-line pt-4 text-xs font-semibold text-leaf-strong">{stage.detail}</div>
+              </SurfaceCard>
             </Reveal>
           );
         })}

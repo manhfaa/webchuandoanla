@@ -2,7 +2,7 @@ export type PlanTier = "seed" | "grow" | "bloom" | "elite";
 
 export type PlantType = string;
 
-export type DiagnosisStepKey = "yolo" | "roadmap" | "rag";
+export type DiagnosisStepKey = "upload" | "yolo" | "roadmap" | "rag";
 
 export type DiagnosisStepState =
   | "idle"

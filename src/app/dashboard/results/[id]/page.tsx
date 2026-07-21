@@ -7,81 +7,48 @@ import { useParams } from "next/navigation";
 import { Bookmark, Leaf, RefreshCcw, Volume2 } from "lucide-react";
 
 import { ActionRecommendations } from "@/components/diagnosis/action-recommendations";
-import { Badge } from "@/components/ui/badge";
+import { DiagnosisResultCard } from "@/components/diagnosis/result-card";
+import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ConfidenceMeter } from "@/components/ui/confidence-meter";
+import { ErrorState, LoadingState } from "@/components/ui/states";
+import { useTextToSpeech } from "@/hooks/use-text-to-speech";
 import { djangoClassifyLeafImage, type DjangoCnnResponse } from "@/lib/django-client";
 import { diagnosisPayloadFromRecord, fetchDiagnosisRecord, updateDiagnosisRecord } from "@/lib/diagnoses-client";
 import { fetchInputLibrary, type AgriculturalInput } from "@/lib/farmops-client";
+import { toUserFacingText } from "@/lib/user-facing-copy";
 import { formatConfidence, formatDate } from "@/lib/utils";
-import { useTextToSpeech } from "@/hooks/use-text-to-speech";
 import { useDiagnosisStore } from "@/store/diagnosis-store";
 import { useSessionStore } from "@/store/session-store";
 import type { DiagnosisRecord } from "@/types";
 
-function isHealthyCnnDisease(cnn: DjangoCnnResponse) {
-  const disease = `${cnn.disease_name || ""} ${cnn.disease_name_en || ""}`.toLowerCase();
-  return disease.includes("healthy") || disease.includes("khỏe") || disease.includes("khoe");
-}
-
-function applyCnnResult(record: DiagnosisRecord, cnn: DjangoCnnResponse): DiagnosisRecord {
-  const topItems = cnn.top_predictions.slice(0, 5).map((item) => {
-    return `${item.plant_name || "Cây"} - ${item.disease_name}: ${formatConfidence(item.confidence)}`;
-  });
-  const isHealthy = isHealthyCnnDisease(cnn);
+function applyClassificationResult(record: DiagnosisRecord, result: DjangoCnnResponse): DiagnosisRecord {
+  const topItems = result.top_predictions.slice(0, 5).map((item) => `${item.plant_name || "Cây"} - ${item.disease_name}: ${formatConfidence(item.confidence)}`);
+  const healthy = result.disease_name?.toLowerCase().includes("healthy");
 
   return {
     ...record,
-    plant: cnn.plant_name || record.plant,
-    disease: cnn.disease_name || cnn.class_name || record.disease,
-    confidence: cnn.confidence,
-    severity: isHealthy ? "Khỏe" : "CNN",
+    plant: result.plant_name || record.plant,
+    disease: result.disease_name || result.class_name || record.disease,
+    confidence: result.confidence,
+    severity: healthy ? "Khỏe" : "Cần theo dõi",
     classificationReady: true,
-    note: `CNN đã phân loại ảnh với độ tin cậy ${formatConfidence(cnn.confidence)}.`,
-    symptomSummary:
-      isHealthy
-        ? "CNN nhận định ảnh lá hiện tại thuộc nhóm khỏe mạnh. Bạn vẫn nên tiếp tục theo dõi nếu cây có dấu hiệu bất thường ngoài thực địa."
-        : `CNN nhận định ảnh có khả năng thuộc nhóm ${cnn.disease_name || cnn.class_name}. Kết quả này nên được dùng như gợi ý hỗ trợ, không thay thế đánh giá thực địa.`,
-    causes: [
-      `Kết quả nhận diện: ${cnn.class_name}.`,
-      `Độ tin cậy CNN: ${formatConfidence(cnn.confidence)}.`,
-      `Phiên bản phân tích: ${cnn.model_version}.`,
-    ],
-    recommendations: [
-      {
-        title: "Kết quả CNN",
-        items: topItems.length ? topItems : ["CNN đã trả về một nhãn phân loại chính cho ảnh này."],
-      },
-      ...record.recommendations,
-    ],
-    cnnConfidence: cnn.confidence,
-    cnnPayload: cnn as unknown as Record<string, unknown>,
-    actionPlan: cnn.action_plan,
-    modelVersion: cnn.model_version,
-  };
-}
-
-function getCnnConfidenceTone(item: string) {
-  const match = item.match(/(\d+(?:[.,]\d+)?)%/);
-  const confidence = match ? Number(match[1].replace(",", ".")) / 100 : 0;
-
-  if (confidence >= 0.7) {
-    return {
-      label: "Tin cậy",
-      className: "border-emerald-300/45 bg-emerald-500/12 text-emerald-50",
-      badgeClassName: "bg-emerald-400/20 text-emerald-100 ring-1 ring-emerald-300/40",
-    };
-  }
-
-  return {
-    label: "Cảnh báo",
-    className: "border-red-300/45 bg-red-500/12 text-red-50",
-    badgeClassName: "bg-red-400/20 text-red-100 ring-1 ring-red-300/40",
+    note: `Ảnh đã được phân tích với độ tin cậy ${formatConfidence(result.confidence)}.`,
+    symptomSummary: healthy
+      ? "Ảnh lá hiện tại được xếp vào nhóm khỏe mạnh. Bạn vẫn nên tiếp tục theo dõi nếu cây có dấu hiệu bất thường ngoài thực địa."
+      : `Ảnh có khả năng thuộc nhóm ${result.disease_name || result.class_name}. Đây là gợi ý hỗ trợ, không thay thế đánh giá trực tiếp tại vườn.`,
+    causes: [`Khả năng được chọn: ${result.class_name}.`, `Độ tin cậy: ${formatConfidence(result.confidence)}.`],
+    recommendations: [{ title: "Các khả năng khác từ ảnh", items: topItems.length ? topItems : ["Hệ thống đã trả về một khả năng chính cho ảnh này."] }, ...record.recommendations],
+    cnnConfidence: result.confidence,
+    cnnPayload: result as unknown as Record<string, unknown>,
+    actionPlan: result.action_plan,
+    modelVersion: result.model_version,
   };
 }
 
 function inputCategoryLabel(category: string) {
-  if (category === "pesticide") return "Thuốc BVTV";
+  if (category === "pesticide") return "Thuốc bảo vệ thực vật";
   if (category === "fertilizer") return "Phân bón";
   if (category === "nutrition") return "Dinh dưỡng";
   return category;
@@ -91,16 +58,13 @@ export default function ResultDetailPage() {
   const params = useParams<{ id: string }>();
   const { records, saveRecord, savedRecordIds, addGeneratedRecord } = useDiagnosisStore();
   const { accessToken } = useSessionStore();
-  const [cnnRefreshState, setCnnRefreshState] = useState<"idle" | "loading" | "error">("idle");
+  const [refreshState, setRefreshState] = useState<"idle" | "loading" | "error">("idle");
   const [relatedInputs, setRelatedInputs] = useState<AgriculturalInput[]>([]);
   const [remoteRecord, setRemoteRecord] = useState<DiagnosisRecord | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const tts = useTextToSpeech("vi-VN");
 
-  const record = useMemo(
-    () => records.find((item) => item.id === params.id) ?? remoteRecord,
-    [params.id, records, remoteRecord],
-  );
+  const record = useMemo(() => records.find((item) => item.id === params.id) ?? remoteRecord, [params.id, records, remoteRecord]);
 
   useEffect(() => {
     if (!accessToken || records.some((item) => item.id === params.id)) return;
@@ -112,9 +76,8 @@ export default function ResultDetailPage() {
         addGeneratedRecord(item);
         setLoadError(null);
       })
-      .catch((err) => {
-        if (cancelled) return;
-        setLoadError(err instanceof Error ? err.message : "Không tải được bản ghi chẩn đoán.");
+      .catch((requestError) => {
+        if (!cancelled) setLoadError(requestError instanceof Error ? requestError.message : "Không tải được kết quả kiểm tra.");
       });
     return () => {
       cancelled = true;
@@ -122,37 +85,22 @@ export default function ResultDetailPage() {
   }, [accessToken, addGeneratedRecord, params.id, records]);
 
   useEffect(() => {
-    if (
-      !record ||
-      record.classificationReady ||
-      !record.image.startsWith("data:")
-    ) {
-      return;
-    }
-
+    if (!record || record.classificationReady || !record.image.startsWith("data:")) return;
     let cancelled = false;
-    setCnnRefreshState("loading");
-
-    void djangoClassifyLeafImage({
-      imageDataUrl: record.image,
-      accessToken,
-      })
-      .then((cnn) => {
+    setRefreshState("loading");
+    void djangoClassifyLeafImage({ imageDataUrl: record.image, accessToken })
+      .then((result) => {
         if (cancelled) return;
-        const nextRecord = applyCnnResult(record, cnn);
+        const nextRecord = applyClassificationResult(record, result);
         addGeneratedRecord(nextRecord);
         if (accessToken) {
-          void updateDiagnosisRecord(accessToken, nextRecord.id, diagnosisPayloadFromRecord(nextRecord))
-            .then((saved) => addGeneratedRecord(saved))
-            .catch(() => undefined);
+          void updateDiagnosisRecord(accessToken, nextRecord.id, diagnosisPayloadFromRecord(nextRecord)).then((saved) => addGeneratedRecord(saved)).catch(() => undefined);
         }
-        setCnnRefreshState("idle");
+        setRefreshState("idle");
       })
       .catch(() => {
-        if (cancelled) return;
-        setCnnRefreshState("error");
+        if (!cancelled) setRefreshState("error");
       });
-
     return () => {
       cancelled = true;
     };
@@ -160,232 +108,85 @@ export default function ResultDetailPage() {
 
   useEffect(() => {
     if (!record?.classificationReady) return;
-    void fetchInputLibrary({ crop: record.plant, disease: record.disease })
-      .then((items) => setRelatedInputs(items.slice(0, 3)))
-      .catch(() => setRelatedInputs([]));
+    void fetchInputLibrary({ crop: record.plant, disease: record.disease }).then((items) => setRelatedInputs(items.slice(0, 3))).catch(() => setRelatedInputs([]));
   }, [record]);
 
-  if (!record) {
-    return (
-      <Card className="rounded-[34px] border-white/10 bg-white/5 py-20 text-center text-white">
-        <h2 className="font-display text-3xl font-semibold">Không tìm thấy kết quả xác thực</h2>
-        <p className="mt-4 text-sm leading-7 text-emerald-50/75">
-          {loadError ?? "Bản ghi này không tồn tại hoặc không thuộc tài khoản hiện tại."}
-        </p>
-        <div className="mt-6">
-          <Link href="/dashboard/history" className={buttonVariants({ variant: "secondary" })}>
-            Quay về lịch sử
-          </Link>
-        </div>
-      </Card>
-    );
+  if (!record && accessToken && !loadError) {
+    return <LoadingState title="Đang mở kết quả kiểm tra" description="Agromind AI đang lấy ảnh và thông tin đã lưu của bạn." />;
   }
 
-  const classificationReady = Boolean(record.classificationReady);
-  const cnnConfidenceLow = typeof record.cnnConfidence === "number" && record.cnnConfidence < 0.7;
-  const cnnStatusLabel = classificationReady
-    ? record.cnnConfidence !== undefined
-      ? formatConfidence(record.cnnConfidence)
-      : "Đã sẵn sàng"
-    : cnnRefreshState === "loading"
-      ? "Đang chạy"
-      : cnnRefreshState === "error"
-        ? "Chưa chạy được"
-        : "Chưa có";
-  const sourceLabel =
-    record.inputMethod === "capture"
-      ? "Ảnh chụp"
-      : record.inputMethod === "upload"
-        ? "Ảnh tải lên"
-        : "Ảnh mẫu";
+  if (!record) {
+    return <ErrorState title="Không tìm thấy kết quả" description={loadError ?? "Kết quả này không tồn tại hoặc không thuộc tài khoản hiện tại."} action={<Link href="/dashboard/history" className={buttonVariants({ variant: "secondary", size: "md" })}>Quay về lịch sử</Link>} />;
+  }
+
+  const confidence = record.cnnConfidence ?? record.confidence ?? 0;
+  const lowConfidence = confidence < 0.7;
+  const sourceLabel = record.inputMethod === "capture" ? "Ảnh chụp" : record.inputMethod === "upload" ? "Ảnh tải lên" : "Ảnh đã chọn";
 
   return (
-    <div className="space-y-6">
-      <Card className="rounded-[36px] border-white/10 bg-white/5 text-white">
-        <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-          <div className="overflow-hidden rounded-[30px] border border-white/10 bg-white/5 p-3">
-            <Image
-              src={record.image}
-              alt={record.disease}
-              width={1200}
-              height={900}
-              unoptimized
-              className="h-full min-h-[320px] w-full rounded-[24px] object-cover"
-            />
+    <div className="mx-auto max-w-[1320px] space-y-6">
+      <Card variant="raised" padding="lg" className="rounded-xl">
+        <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
+          <div className="relative min-h-[320px] overflow-hidden rounded-xl border border-line bg-surface-soft sm:min-h-[430px]">
+            <Image src={record.image} alt={`Ảnh lá ${record.plant}`} fill sizes="(max-width: 1280px) 100vw, 520px" unoptimized className="object-cover" />
+            <div className="absolute left-4 top-4 flex flex-wrap gap-2"><Badge className="bg-surface/90 text-ink shadow-sm">{record.plant || "Chưa xác định cây"}</Badge><Badge className="bg-surface/90 text-ink shadow-sm">{sourceLabel}</Badge></div>
           </div>
-          <div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Badge variant="locked">{record.plant}</Badge>
-              <Badge variant="dark">{record.severity}</Badge>
-              {savedRecordIds.includes(record.id) ? <Badge variant="success">Đã lưu</Badge> : null}
-              <Badge variant="brand">{sourceLabel}</Badge>
-            </div>
-            <h2 className="mt-5 font-display text-5xl font-semibold">{record.disease}</h2>
-            <p className="mt-4 text-base leading-8 text-emerald-50/75">{record.note}</p>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-emerald-100/60">Ngày tạo</p>
-                <p className="mt-3 font-display text-2xl font-semibold">
-                  {formatDate(record.createdAt)}
-                </p>
-              </div>
-              <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-emerald-100/60">
-                  Độ tin cậy YOLO
-                </p>
-                <p className="mt-3 font-display text-2xl font-semibold text-lime-200">
-                  {formatConfidence(record.leafConfidence ?? record.confidence)}
-                </p>
-              </div>
-              <div
-                className={`rounded-[24px] border p-4 ${
-                  classificationReady
-                    ? cnnConfidenceLow
-                      ? "border-red-300/45 bg-red-500/12"
-                      : "border-emerald-300/45 bg-emerald-500/12"
-                    : "border-white/10 bg-white/5"
-                }`}
-              >
-                <p className="text-xs uppercase tracking-[0.2em] text-emerald-100/60">
-                  {classificationReady ? "Độ tin cậy CNN" : "Trạng thái CNN"}
-                </p>
-                <p className={`mt-3 font-display text-2xl font-semibold ${cnnConfidenceLow ? "text-red-100" : "text-lime-200"}`}>
-                  {cnnStatusLabel}
-                </p>
-              </div>
+          <div className="flex flex-col justify-center">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge status={lowConfidence ? "watch" : "healthy"} label={lowConfidence ? "Cần theo dõi" : "Tin cậy cao"} />
+              {savedRecordIds.includes(record.id) ? <Badge variant="muted">Đã lưu</Badge> : null}
+              {refreshState === "loading" ? <StatusBadge status="processing" label="Đang hoàn thiện kết quả" /> : null}
+            </div>
+            <p className="mt-6 text-overline text-leaf-strong">Kết luận chính</p>
+            <h2 className="mt-2 font-display text-[34px] font-bold leading-[1.14] tracking-[-0.04em] text-ink sm:text-[44px]">{record.disease || "Chưa có gợi ý bệnh"}</h2>
+            <p className="mt-4 text-base leading-8 text-ink-soft">{toUserFacingText(record.note, "Mở phần thông tin bên dưới để xem chi tiết kết quả.")}</p>
+
+            <ConfidenceMeter score={confidence} className="mt-6 max-w-xl" />
+
+            <div className="mt-6 grid grid-cols-2 gap-3 rounded-lg bg-surface-soft p-4 sm:grid-cols-3">
+              <div><p className="text-xs font-medium text-ink-soft">Ngày kiểm tra</p><p className="mt-1 text-sm font-bold text-ink">{formatDate(record.createdAt)}</p></div>
+              <div><p className="text-xs font-medium text-ink-soft">Chất lượng ảnh</p><p className="mt-1 text-sm font-bold text-ink">{formatConfidence(record.leafConfidence ?? record.confidence)}</p></div>
+              <div className="col-span-2 sm:col-span-1"><p className="text-xs font-medium text-ink-soft">Trạng thái</p><p className="mt-1 text-sm font-bold text-ink">{record.classificationReady ? "Đã có gợi ý" : refreshState === "error" ? "Cần thử lại" : "Đang xử lý"}</p></div>
             </div>
 
-            {cnnConfidenceLow ? (
-              <div className="mt-5 rounded-[24px] border border-red-300/45 bg-red-500/12 px-4 py-4 text-sm leading-7 text-red-50">
-                Cảnh báo: độ tin cậy CNN dưới 70%, nên chụp lại ảnh rõ hơn hoặc hỏi chuyên gia trước khi xử lý ngoài vườn.
-              </div>
-            ) : null}
-
-            {record.leafCheckNote ? (
-              <div className="mt-5 rounded-[24px] border border-white/10 bg-white/5 px-4 py-4 text-sm leading-7 text-emerald-50/75">
-                {record.leafCheckNote}
-              </div>
-            ) : null}
+            {lowConfidence ? <div className="mt-4 rounded-lg border border-sun/35 bg-sun/10 px-4 py-3 text-sm leading-7 text-ink-soft">Độ tin cậy dưới 70%. Nên chụp thêm ảnh rõ hơn hoặc hỏi chuyên gia trước khi xử lý ngoài vườn.</div> : null}
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <Button
-                onClick={() => {
-                  saveRecord(record.id);
-                  if (accessToken) {
-                    void updateDiagnosisRecord(accessToken, record.id, { saved_by_user: true })
-                      .then((saved) => addGeneratedRecord(saved))
-                      .catch(() => undefined);
-                  }
-                }}
-              >
-                <Bookmark size={16} />
-                Lưu kết quả
-              </Button>
-              <Button
-                variant="secondary"
-                disabled={!tts.supported}
-                onClick={() => {
-                  const actionText = record.actionPlan
-                    ? [
-                        `Mức rủi ro ${record.actionPlan.risk_level}.`,
-                        ...(record.actionPlan.immediate_actions ?? []),
-                        ...(record.actionPlan.follow_up_actions ?? []),
-                      ].join(" ")
-                    : "";
-                  tts.speak(`${record.plant}. ${record.disease}. ${record.note}. ${actionText}`);
-                }}
-              >
-                <Volume2 size={16} />
-                {tts.speaking ? "Đang đọc" : "Đọc kết quả"}
-              </Button>
-              <Link href="/dashboard/diagnosis" className={buttonVariants({ variant: "secondary" })}>
-                <RefreshCcw size={16} />
-                Xác thực ảnh khác
-              </Link>
+              <Button onClick={() => {
+                saveRecord(record.id);
+                if (accessToken) void updateDiagnosisRecord(accessToken, record.id, { saved_by_user: true }).then((saved) => addGeneratedRecord(saved)).catch(() => undefined);
+              }}><Bookmark size={16} aria-hidden /> Lưu kết quả</Button>
+              <Button variant="secondary" disabled={!tts.supported} onClick={() => {
+                const actionText = record.actionPlan ? [...(record.actionPlan.immediate_actions ?? []), ...(record.actionPlan.follow_up_actions ?? [])].join(" ") : "";
+                tts.speak(`${record.plant}. ${record.disease}. ${toUserFacingText(record.note)}. ${actionText}`);
+              }}><Volume2 size={16} aria-hidden /> {tts.speaking ? "Đang đọc" : "Đọc kết quả"}</Button>
+              <Link href="/dashboard/diagnosis" className={buttonVariants({ variant: "secondary" })}><RefreshCcw size={16} aria-hidden /> Kiểm tra ảnh khác</Link>
             </div>
           </div>
         </div>
       </Card>
 
       <ActionRecommendations plan={record.actionPlan} />
+      <DiagnosisResultCard record={record} detailsOnly />
 
-      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-        <Card className="rounded-[34px] border-white/10 bg-white/5 text-white">
-          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-100/60">
-            <Leaf size={14} className="text-lime-200" />
-            {classificationReady ? "Tóm tắt chẩn đoán" : "Tóm tắt xác thực ảnh lá"}
-          </p>
-          <p className="mt-5 text-base leading-8 text-emerald-50/80">{record.symptomSummary}</p>
-          <div className="mt-8">
-            <p className="text-sm font-semibold text-white">
-              {classificationReady ? "Nguyên nhân khả thi" : "Tín hiệu YOLO sử dụng"}
-            </p>
-            <div className="mt-4 space-y-3">
-              {record.causes.map((cause) => (
-                <div
-                  key={cause}
-                  className="rounded-[24px] border border-white/10 bg-white/5 px-4 py-4 text-sm leading-7 text-emerald-50/75"
-                >
-                  {cause}
-                </div>
-              ))}
-            </div>
+      {record.causes.length ? (
+        <Card variant="default" padding="lg" className="rounded-xl">
+          <p className="flex items-center gap-2 text-overline text-leaf-strong"><Leaf size={14} aria-hidden /> Vì sao có gợi ý này</p>
+          <h3 className="mt-2 text-h2 font-bold text-ink">Các thông tin hỗ trợ kết luận</h3>
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {record.causes.map((cause) => <div key={cause} className="rounded-lg border border-line bg-surface-soft px-4 py-4 text-sm leading-7 text-ink-soft">{toUserFacingText(cause)}</div>)}
           </div>
         </Card>
-
-        <div className="space-y-6">
-          {record.recommendations.map((section) => (
-            <Card
-              key={section.title}
-              className="rounded-[34px] border-white/10 bg-white/5 text-white"
-            >
-              <h3 className="font-display text-3xl font-semibold">{section.title}</h3>
-              <div className="mt-5 space-y-3">
-                {section.items.map((item) => {
-                  const isCnnResult = section.title.includes("CNN");
-                  const tone = isCnnResult ? getCnnConfidenceTone(item) : null;
-
-                  return (
-                    <div
-                      key={item}
-                      className={
-                        tone
-                          ? `flex items-start justify-between gap-3 rounded-[24px] border px-4 py-4 text-sm leading-7 ${tone.className}`
-                          : "rounded-[24px] border border-white/10 bg-white/5 px-4 py-4 text-sm leading-7 text-emerald-50/75"
-                      }
-                    >
-                      <span>{item}</span>
-                      {tone ? (
-                        <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${tone.badgeClassName}`}>
-                          {tone.label}
-                        </span>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          ))}
-        </div>
-      </div>
+      ) : null}
 
       {relatedInputs.length ? (
-        <Card className="rounded-[34px] border-white/10 bg-white/5 text-white">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-100/60">
-            Gợi ý từ thư viện vật tư
-          </p>
+        <Card variant="soft" padding="lg" className="rounded-xl">
+          <p className="text-overline text-leaf-strong">Thư viện vật tư</p>
+          <h3 className="mt-2 text-h2 font-bold text-ink">Thông tin có thể liên quan</h3>
+          <p className="mt-2 text-sm leading-7 text-ink-soft">Đọc kỹ hướng dẫn và hỏi người có chuyên môn trước khi sử dụng bất kỳ sản phẩm nào.</p>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
-            {relatedInputs.map((item) => (
-              <div key={item.id} className="rounded-[24px] border border-white/10 bg-white/5 p-4">
-                <p className="text-sm font-semibold text-white">{item.name}</p>
-                <p className="mt-2 text-xs uppercase tracking-[0.18em] text-emerald-100/60">
-                  {inputCategoryLabel(item.category)}
-                </p>
-                <p className="mt-3 text-sm leading-6 text-emerald-50/75">{item.usage}</p>
-                {item.warning ? <p className="mt-3 text-xs leading-5 text-amber-100">{item.warning}</p> : null}
-              </div>
-            ))}
+            {relatedInputs.map((item) => <div key={item.id} className="rounded-lg border border-line bg-surface p-4"><p className="text-sm font-bold text-ink">{item.name}</p><p className="mt-2 text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">{inputCategoryLabel(item.category)}</p><p className="mt-3 text-sm leading-6 text-ink-soft">{item.usage}</p>{item.warning ? <p className="mt-3 text-xs leading-6 text-soil">{item.warning}</p> : null}</div>)}
           </div>
         </Card>
       ) : null}

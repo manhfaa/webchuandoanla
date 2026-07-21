@@ -58,19 +58,20 @@ export function CropPlanProgress({
         return (
           <Card
             key={metric.label}
-            className="rounded-[28px] border-emerald-100/70 bg-gradient-to-br from-white via-white to-emerald-50/70"
+            variant={metric.label === "Tiến độ tổng" ? "dark" : metric.label === "Cần xem lại" && delayed ? "warning" : "default"}
+            className="rounded-lg"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700/65">
+                <p className={metric.label === "Tiến độ tổng" ? "text-overline text-on-forest-muted" : "text-overline text-leaf-strong"}>
                   {metric.label}
                 </p>
-                <p className="mt-4 font-display text-3xl font-semibold text-slate-950">
+                <p className={metric.label === "Tiến độ tổng" ? "mt-4 font-display text-3xl font-bold text-on-forest" : "mt-4 font-display text-3xl font-bold text-ink"}>
                   {metric.value}
                 </p>
-                <p className="mt-3 text-sm leading-6 text-slate-600">{metric.note}</p>
+                <p className={metric.label === "Tiến độ tổng" ? "mt-3 text-sm leading-6 text-on-forest-muted" : "mt-3 text-sm leading-6 text-ink-soft"}>{metric.note}</p>
               </div>
-              <span className="rounded-full bg-emerald-100 p-3 text-emerald-700">
+              <span className={metric.label === "Tiến độ tổng" ? "rounded-md bg-on-forest/10 p-3 text-on-forest" : "rounded-md bg-surface-soft p-3 text-leaf-strong"}>
                 <Icon size={18} />
               </span>
             </div>

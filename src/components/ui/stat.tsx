@@ -2,40 +2,71 @@ import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-export function Stat({
+export function MetricCard({
   label,
   value,
   helper,
   icon: Icon,
+  tone = "default",
   className,
 }: {
   label: string;
   value: string;
   helper?: string;
   icon?: LucideIcon;
+  tone?: "default" | "brand" | "warning";
   className?: string;
 }) {
+  const toneClasses = {
+    default: {
+      card: "border-line bg-surface",
+      label: "text-ink-soft",
+      value: "text-ink",
+      helper: "text-ink-soft",
+      icon: "bg-surface-soft text-leaf-strong",
+    },
+    brand: {
+      card: "border-transparent bg-forest",
+      label: "text-on-forest-muted",
+      value: "text-on-forest",
+      helper: "text-on-forest-muted",
+      icon: "bg-on-forest/10 text-on-forest",
+    },
+    warning: {
+      card: "border-sun/30 bg-sun/10",
+      label: "text-ink-soft",
+      value: "text-ink",
+      helper: "text-ink-soft",
+      icon: "bg-sun/20 text-soil",
+    },
+  }[tone];
+
   return (
     <div
       className={cn(
-        "flex h-[120px] flex-col rounded-lg border border-border-dark bg-app-surface p-4 text-on-dark shadow-sm transition duration-150 ease-out",
+        "flex flex-col rounded-lg border p-5 shadow-sm transition duration-180 ease-out",
+        toneClasses.card,
         className,
       )}
     >
-      {Icon ? (
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-leaf-500/15 text-leaf-300">
-          <Icon strokeWidth={1.75} className="h-5 w-5" aria-hidden />
-        </span>
-      ) : null}
-      <div className="mt-auto min-h-0">
-        <p className="font-display text-[32px] font-semibold leading-none tracking-tight text-on-dark">
+      <div className="mb-4 flex items-center justify-between">
+        <p className={cn("text-body-sm font-semibold", toneClasses.label)}>{label}</p>
+        {Icon ? (
+          <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-md", toneClasses.icon)}>
+            <Icon strokeWidth={2} className="h-4 w-4" aria-hidden />
+          </span>
+        ) : null}
+      </div>
+      <div>
+        <p className={cn("font-display text-[36px] font-bold leading-none tracking-[-0.035em]", toneClasses.value)}>
           {value}
         </p>
-        <p className="mt-1 text-body-sm text-muted-on-dark">{label}</p>
         {helper ? (
-          <p className="mt-0.5 line-clamp-2 text-caption text-muted-on-dark/90">{helper}</p>
+          <p className={cn("mt-2 line-clamp-2 text-xs font-medium", toneClasses.helper)}>{helper}</p>
         ) : null}
       </div>
     </div>
   );
 }
+
+export const Stat = MetricCard;

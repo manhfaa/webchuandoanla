@@ -37,10 +37,10 @@ export function LocationMapPicker({
 }) {
   return (
     <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-      <Card className="overflow-hidden rounded-[30px] border-emerald-100/70 bg-white/90 p-0">
-        <div className="border-b border-emerald-100 bg-gradient-to-r from-white to-emerald-50/80 px-5 py-4">
-          <div className="flex items-center gap-3 text-sm text-slate-600">
-            <span className="rounded-full bg-emerald-100 p-2 text-emerald-700">
+      <Card variant="raised" className="overflow-hidden rounded-xl p-0">
+        <div className="border-b border-line bg-surface-soft px-5 py-4">
+          <div className="flex items-center gap-3 text-sm text-ink-soft">
+            <span className="rounded-md bg-surface p-2 text-leaf-strong">
               <MapPin size={16} />
             </span>
             Chạm hoặc kéo ghim để chọn đúng nơi bạn sẽ trồng cây.
@@ -52,53 +52,53 @@ export function LocationMapPicker({
       </Card>
 
       <div className="space-y-5">
-        <Card className="rounded-[30px] border-emerald-100/70 bg-white/90">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700/70">
+        <Card variant="default" padding="lg" className="rounded-xl">
+          <p className="text-overline text-leaf-strong">
             Vị trí trồng
           </p>
           <div className="mt-4 space-y-4">
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Tên khu trồng</span>
+              <span className="mb-2 block text-sm font-semibold text-ink">Tên khu trồng</span>
               <input
                 value={name}
                 onChange={(event) => onNameChange(event.target.value)}
-                className="w-full rounded-2xl border border-emerald-100 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-300"
+                className="w-full rounded-md border border-line bg-surface px-4 py-3 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
                 placeholder="Ví dụ: Vườn sau nhà"
               />
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Mô tả địa chỉ</span>
+              <span className="mb-2 block text-sm font-semibold text-ink">Mô tả địa chỉ</span>
               <div className="relative">
-                <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft" size={16} />
                 <input
                   value={address}
                   onChange={(event) => onAddressChange(event.target.value)}
-                  className="w-full rounded-2xl border border-emerald-100 bg-white py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-emerald-300"
+                  className="w-full rounded-md border border-line bg-surface py-3 pl-11 pr-4 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
                   placeholder="Ví dụ: Phường Linh Trung, Thủ Đức"
                 />
               </div>
             </label>
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.18em] text-emerald-700/65">Lat</p>
-                <p className="mt-1 font-semibold text-slate-900">{lat.toFixed(4)}</p>
+              <div className="rounded-md border border-line bg-surface-soft px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">Vĩ độ</p>
+                <p className="mt-1 font-semibold text-ink">{lat.toFixed(4)}</p>
               </div>
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.18em] text-emerald-700/65">Lon</p>
-                <p className="mt-1 font-semibold text-slate-900">{lon.toFixed(4)}</p>
+              <div className="rounded-md border border-line bg-surface-soft px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">Kinh độ</p>
+                <p className="mt-1 font-semibold text-ink">{lon.toFixed(4)}</p>
               </div>
             </div>
           </div>
         </Card>
 
-        <Card className="rounded-[30px] border-emerald-100/70 bg-gradient-to-br from-white via-[#f5fceb] to-emerald-50">
+        <Card variant="soft" padding="lg" className="rounded-xl">
           <div className="flex items-center gap-3">
-            <span className="rounded-full bg-lime-100 p-2 text-emerald-800">
+            <span className="rounded-md bg-surface p-2 text-leaf-strong">
               <Sparkles size={16} />
             </span>
             <div>
-              <p className="font-medium text-slate-900">Chọn nhanh khu vực gợi ý</p>
-              <p className="text-sm text-slate-600">Bạn có thể chọn nhanh rồi kéo lại ghim nếu cần.</p>
+              <p className="font-bold text-ink">Chọn nhanh khu vực gợi ý</p>
+              <p className="text-sm text-ink-soft">Bạn có thể chọn nhanh rồi kéo lại ghim nếu cần.</p>
             </div>
           </div>
           <div className="mt-4 grid gap-3">
@@ -106,7 +106,7 @@ export function LocationMapPicker({
               <Button
                 key={location.label}
                 variant="secondary"
-                className="justify-between rounded-2xl border border-emerald-100 bg-white/90 px-4"
+                className="justify-between border-line bg-surface px-4"
                 onClick={() => {
                   onNameChange(location.label);
                   onAddressChange(location.label);
@@ -114,7 +114,7 @@ export function LocationMapPicker({
                 }}
               >
                 <span>{location.label}</span>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-ink-soft">
                   {location.lat.toFixed(2)}, {location.lon.toFixed(2)}
                 </span>
               </Button>

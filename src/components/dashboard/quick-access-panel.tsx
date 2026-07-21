@@ -1,31 +1,28 @@
 import Link from "next/link";
 import { ArrowRight, CalendarRange, History, MessageSquareText, ScanSearch } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-
 const quickLinks = [
   {
     title: "Kiểm tra ảnh lá",
-    description: "Tải hoặc chụp ảnh để Agromind AI hỗ trợ phân tích.",
+    description: "Tải hoặc chụp ảnh để xác minh lá cây.",
     href: "/dashboard/diagnosis",
     icon: ScanSearch,
-    featured: true,
   },
   {
     title: "Chat tư vấn",
-    description: "Hỏi thêm về triệu chứng, chăm sóc cây hoặc sâu bệnh.",
+    description: "Hỏi AI hoặc chuyên gia nông nghiệp.",
     href: "/dashboard/chat",
     icon: MessageSquareText,
   },
   {
-    title: "Xem lịch sử",
-    description: "Xem lại các lần kiểm tra và khuyến nghị đã lưu.",
+    title: "Lịch sử ảnh",
+    description: "Xem lại các lần kiểm tra trước.",
     href: "/dashboard/history",
     icon: History,
   },
   {
     title: "Kế hoạch trồng cây",
-    description: "Theo dõi các việc chăm sóc cây theo từng bước.",
+    description: "Lịch chăm cây theo bước.",
     href: "/dashboard/crop-plans",
     icon: CalendarRange,
   },
@@ -33,39 +30,39 @@ const quickLinks = [
 
 export function QuickAccessPanel() {
   return (
-    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <section>
+      <div className="mb-4">
+        <p className="text-overline text-leaf-strong">Thao tác nhanh</p>
+        <h2 className="mt-2 text-h2 font-bold text-ink">Bạn muốn làm gì tiếp theo?</h2>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {quickLinks.map((item) => {
         const Icon = item.icon;
+        const featured = item.href === "/dashboard/diagnosis";
         return (
           <Link
             key={item.href}
             href={item.href}
-            className={cn(
-              "group relative min-h-[150px] overflow-hidden rounded-[28px] border border-[#7CFFB2]/[0.12] bg-[#0A2A1A]/80 p-5 text-[#F4FFF7] shadow-[0_24px_80px_rgba(0,0,0,0.14)] backdrop-blur transition duration-200 hover:-translate-y-1 hover:border-[#55D98B]/45 hover:bg-[#103D28]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#75E0A1]/50",
-              item.featured && "bg-[linear-gradient(135deg,rgba(16,61,40,.98),rgba(47,166,100,.28))]",
-            )}
+            className={`group flex min-h-[152px] flex-col justify-between rounded-lg border p-5 shadow-sm transition duration-180 ease-out hover:-translate-y-[3px] hover:border-leaf/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/35 ${featured ? "border-transparent bg-forest text-on-forest" : "border-line bg-surface text-ink"}`}
           >
-            <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[#55D98B]/10 blur-2xl transition group-hover:bg-[#55D98B]/18" />
-            <div className="relative flex h-full flex-col justify-between gap-6">
-              <div className="flex items-start justify-between gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#55D98B]/12 text-[#75E0A1]">
-                  <Icon strokeWidth={2} className="h-5 w-5" aria-hidden />
-                </span>
-                <ArrowRight
-                  strokeWidth={2}
-                  className="h-5 w-5 shrink-0 text-[#9EB8A8] transition group-hover:translate-x-1 group-hover:text-[#75E0A1]"
-                  aria-hidden
-                />
-              </div>
-
-              <div>
-                <h3 className="text-[22px] font-bold leading-tight text-[#F4FFF7]">{item.title}</h3>
-                <p className="mt-2 line-clamp-2 text-[14px] leading-6 text-[#9EB8A8]">{item.description}</p>
-              </div>
+            <div className="flex items-start justify-between gap-2">
+              <span className={`flex h-10 w-10 items-center justify-center rounded-md ${featured ? "bg-on-forest/10 text-on-forest" : "bg-surface-soft text-leaf-strong"}`}>
+                <Icon strokeWidth={1.8} className="h-5 w-5" aria-hidden />
+              </span>
+              <ArrowRight
+                strokeWidth={1.75}
+                className={`h-4 w-4 shrink-0 transition group-hover:translate-x-1 ${featured ? "text-on-forest-muted group-hover:text-on-forest" : "text-ink-soft group-hover:text-leaf-strong"}`}
+                aria-hidden
+              />
+            </div>
+            <div>
+              <h3 className={`text-h3 font-bold ${featured ? "text-on-forest" : "text-ink"}`}>{item.title}</h3>
+              <p className={`mt-1 line-clamp-2 text-body-sm ${featured ? "text-on-forest-muted" : "text-ink-soft"}`}>{item.description}</p>
             </div>
           </Link>
         );
       })}
+      </div>
     </section>
   );
 }

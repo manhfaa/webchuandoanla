@@ -3,20 +3,10 @@
 import type { FormEvent } from "react";
 import { Mic, SendHorizonal } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-export function ChatComposer({
-  label,
-  value,
-  onChange,
-  onSubmit,
-  placeholder,
-  disabled,
-  helperText,
-  onVoiceClick,
-  voiceListening,
-  voiceSupported = false,
-}: {
+export function ChatComposer({ label, value, onChange, onSubmit, placeholder, disabled, helperText, onVoiceClick, voiceListening, voiceSupported = false }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -29,38 +19,15 @@ export function ChatComposer({
   voiceSupported?: boolean;
 }) {
   return (
-    <Card className="rounded-[30px] border-white/10 bg-white/5 text-white">
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <label className="block text-sm font-semibold text-emerald-50/75">{label}</label>
-        <textarea
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-          disabled={disabled}
-          className="min-h-[120px] w-full rounded-[26px] border border-white/10 bg-white/5 px-4 py-4 text-sm leading-7 text-white outline-none transition placeholder:text-emerald-50/40 focus:border-lime-200/50 focus:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-        />
-        <div className="flex items-center justify-between gap-4">
-          {helperText ? <p className="text-xs text-emerald-50/60">{helperText}</p> : <div />}
-          <div className="flex shrink-0 items-center gap-2">
-            {voiceSupported ? (
-              <button
-                type="button"
-                onClick={onVoiceClick}
-                aria-pressed={voiceListening}
-                title="Nhập bằng giọng nói"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-200/50"
-              >
-                <Mic size={16} />
-              </button>
-            ) : null}
-            <button
-              type="submit"
-              disabled={disabled}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-white px-5 text-sm font-medium text-ink transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <SendHorizonal size={16} />
-              Gửi câu hỏi
-            </button>
+    <Card variant="default" padding="sm" className="rounded-xl">
+      <form className="space-y-3" onSubmit={onSubmit}>
+        <label className="block text-sm font-bold text-ink">{label}</label>
+        <textarea value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} disabled={disabled} className="min-h-[112px] w-full resize-none rounded-md border border-line bg-surface-soft px-4 py-3 text-sm leading-7 text-ink outline-none transition placeholder:text-ink-soft focus:border-leaf focus:bg-surface focus:ring-2 focus:ring-leaf/20 disabled:cursor-not-allowed disabled:opacity-60" />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {helperText ? <p className="max-w-lg text-xs leading-6 text-ink-soft">{helperText}</p> : <div />}
+          <div className="flex shrink-0 items-center justify-end gap-2">
+            {voiceSupported ? <Button type="button" variant={voiceListening ? "primary" : "secondary"} size="icon" onClick={onVoiceClick} aria-pressed={voiceListening} aria-label={voiceListening ? "Dừng nhập bằng giọng nói" : "Nhập bằng giọng nói"}><Mic size={17} aria-hidden /></Button> : null}
+            <Button type="submit" disabled={disabled || !value.trim()}><SendHorizonal size={16} aria-hidden /> Gửi câu hỏi</Button>
           </div>
         </div>
       </form>

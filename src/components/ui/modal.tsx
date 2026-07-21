@@ -22,7 +22,7 @@ export function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-forest/70 p-4 backdrop-blur-sm">
       <div
         className="absolute inset-0"
         aria-hidden="true"
@@ -30,7 +30,7 @@ export function Modal({
       />
       <div
         className={cn(
-          "relative z-[71] w-full max-w-3xl rounded-[32px] border border-white/10 bg-[#10231c] p-6 text-white shadow-float",
+          "relative z-[71] w-full max-w-3xl rounded-2xl border border-line bg-surface p-6 text-ink shadow-float",
           className,
         )}
       >
@@ -38,13 +38,13 @@ export function Modal({
           <div className="space-y-1">
             <h3 className="font-display text-2xl font-semibold">{title}</h3>
             {description ? (
-              <p className="max-w-2xl text-sm text-emerald-50/75">{description}</p>
+              <p className="max-w-2xl text-sm text-ink-soft">{description}</p>
             ) : null}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-white/10 p-2 text-white/80 transition hover:bg-white/10 hover:text-white"
+            className="rounded-full border border-line p-2 text-ink-soft transition hover:bg-surface-soft hover:text-ink"
             aria-label="Đóng"
           >
             <X size={18} />

@@ -7,6 +7,7 @@ import { CalendarDays, Leaf, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { ErrorState, LoadingState } from "@/components/ui/states";
 import { fetchPublicTraceability, type PublicTraceability } from "@/lib/farmops-client";
 
 function activityLabel(type: string) {
@@ -43,7 +44,7 @@ export default function PublicTraceabilityPage() {
   }, [params.token]);
 
   return (
-    <main id="main-content" className="min-h-screen bg-[#f6faf6] px-4 py-8 text-ink-900 sm:px-6 lg:px-8">
+    <main id="main-content" className="field-contours min-h-screen bg-canvas px-4 py-8 text-ink sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl space-y-6">
         <Link href="/" className="inline-flex items-center gap-2 text-body-sm font-semibold text-leaf-700 no-underline">
           <Leaf strokeWidth={1.75} className="h-4 w-4" />
@@ -52,9 +53,9 @@ export default function PublicTraceabilityPage() {
 
         <Card variant="light" padding="lg" className="shadow-sm">
           {loading ? (
-            <p className="text-body text-ink-500">Đang tải truy xuất nguồn gốc...</p>
+            <LoadingState title="Đang mở nhật ký canh tác" description="Thông tin công khai đang được tải." />
           ) : error ? (
-            <p className="text-body text-berry-500">{error}</p>
+            <ErrorState title="Chưa mở được nhật ký" description={error} />
           ) : data ? (
             <>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -72,17 +73,17 @@ export default function PublicTraceabilityPage() {
               </div>
 
               <div className="mt-6 grid gap-4 md:grid-cols-3">
-                <div className="rounded-md border border-emerald-100 bg-emerald-50 p-4">
+                <div className="rounded-md border border-line bg-surface-soft p-4">
                   <p className="text-caption uppercase tracking-[0.14em] text-leaf-700">Ngày xuống giống</p>
                   <p className="mt-2 text-xl font-semibold text-ink-900">
                     {data.planting_start_date ? new Date(data.planting_start_date).toLocaleDateString("vi-VN") : "Chưa ghi"}
                   </p>
                 </div>
-                <div className="rounded-md border border-emerald-100 bg-emerald-50 p-4">
+                <div className="rounded-md border border-line bg-surface-soft p-4">
                   <p className="text-caption uppercase tracking-[0.14em] text-leaf-700">Giai đoạn</p>
                   <p className="mt-2 text-xl font-semibold text-ink-900">{data.growth_stage || "Đang theo dõi"}</p>
                 </div>
-                <div className="rounded-md border border-emerald-100 bg-emerald-50 p-4">
+                <div className="rounded-md border border-line bg-surface-soft p-4">
                   <p className="text-caption uppercase tracking-[0.14em] text-leaf-700">Ngày công khai</p>
                   <p className="mt-2 text-xl font-semibold text-ink-900">
                     {new Date(data.created_at).toLocaleDateString("vi-VN")}
@@ -102,7 +103,7 @@ export default function PublicTraceabilityPage() {
             <div className="mt-5 space-y-3">
               {data.logs.length ? (
                 data.logs.map((log) => (
-                  <div key={log.id} className="rounded-md border border-border-light bg-white p-4">
+                  <div key={log.id} className="rounded-md border border-line bg-surface p-4">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="muted">{activityLabel(log.activity_type)}</Badge>
                       <span className="text-caption text-ink-500">{new Date(log.activity_date).toLocaleDateString("vi-VN")}</span>

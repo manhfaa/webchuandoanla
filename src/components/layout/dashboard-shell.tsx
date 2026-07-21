@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
+import { LoaderCircle, Sprout } from "lucide-react";
 import { Toaster } from "sonner";
 
 import { UpgradeModal } from "@/components/pricing/upgrade-modal";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useSessionStore } from "@/store/session-store";
 import { useLanguageStore } from "@/store/language-store";
 
@@ -38,6 +39,32 @@ const PAGE_TITLES_EN: Record<string, string> = {
   "/dashboard/crop-plans":     "Crop plans",
 };
 
+const PAGE_DESCRIPTIONS_VI: Record<string, string> = {
+  "/dashboard": "Theo dõi ảnh lá, các kết quả cần chú ý và việc nên làm tiếp theo.",
+  "/dashboard/diagnosis": "Tải ảnh rõ để nhận gợi ý và hướng chăm sóc phù hợp.",
+  "/dashboard/weather-alerts": "Theo dõi điều kiện thời tiết và nguy cơ ảnh hưởng đến cây.",
+  "/dashboard/farms": "Tổ chức vị trí trồng và thông tin từng khu vực canh tác.",
+  "/dashboard/input-library": "Tra cứu vật tư và lưu ý sử dụng an toàn.",
+  "/dashboard/chat": "Hỏi về kết quả đã lưu hoặc các vấn đề chăm sóc cây.",
+  "/dashboard/history": "Xem lại ảnh, kết quả và thay đổi của cây theo thời gian.",
+  "/dashboard/pricing": "Chọn mức sử dụng phù hợp với nhu cầu theo dõi của bạn.",
+  "/dashboard/profile": "Quản lý thông tin cá nhân và tùy chọn tài khoản.",
+  "/dashboard/crop-plans": "Lập và theo dõi các công việc chăm sóc theo từng giai đoạn.",
+};
+
+const PAGE_DESCRIPTIONS_EN: Record<string, string> = {
+  "/dashboard": "Track leaf checks, results that need attention, and your next actions.",
+  "/dashboard/diagnosis": "Upload a clear leaf image to receive guidance and next steps.",
+  "/dashboard/weather-alerts": "Follow weather conditions and risks affecting your plants.",
+  "/dashboard/farms": "Organize growing locations and cultivation details.",
+  "/dashboard/input-library": "Review agricultural inputs and safe-use notes.",
+  "/dashboard/chat": "Ask about saved results or plant care questions.",
+  "/dashboard/history": "Review images, results, and plant changes over time.",
+  "/dashboard/pricing": "Choose the usage level that fits your needs.",
+  "/dashboard/profile": "Manage your personal details and account preferences.",
+  "/dashboard/crop-plans": "Plan and track care tasks by growing stage.",
+};
+
 function getPageTitle(pathname: string, lang: "vi" | "en"): string {
   const map = lang === "en" ? PAGE_TITLES_EN : PAGE_TITLES_VI;
   if (map[pathname]) return map[pathname];
@@ -53,9 +80,22 @@ function getPageTitle(pathname: string, lang: "vi" | "en"): string {
   return "Agromind AI";
 }
 
+function getPageDescription(pathname: string, lang: "vi" | "en"): string {
+  const map = lang === "en" ? PAGE_DESCRIPTIONS_EN : PAGE_DESCRIPTIONS_VI;
+  if (map[pathname]) return map[pathname];
+  if (pathname.startsWith("/dashboard/results")) {
+    return lang === "en" ? "Review the result, supporting details, and recommended next steps." : "Xem kết luận, cơ sở gợi ý và việc nên làm tiếp theo.";
+  }
+  if (pathname.startsWith("/dashboard/crop-plans/")) {
+    return lang === "en" ? "Follow the plan and update completed care tasks." : "Theo dõi kế hoạch và cập nhật các việc chăm sóc đã hoàn thành.";
+  }
+  return lang === "en" ? "Your Agromind AI workspace." : "Không gian theo dõi sức khỏe cây trồng của bạn.";
+}
+
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { initialized, hydrate, isAuthenticated } = useSessionStore();
   const { language } = useLanguageStore();
+  const { resolvedTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -78,28 +118,31 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }, [initialized, isAuthenticated, mounted, pathname, router]);
 
   const pageTitle = getPageTitle(pathname, language);
+  const pageDescription = getPageDescription(pathname, language);
 
   if (!mounted || !initialized || !isAuthenticated) {
     return (
-      <div className="dark theme-dashboard min-h-screen bg-dashboard-mesh px-4 py-6 sm:px-6">
-        <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-          <Skeleton className="hidden h-[calc(100vh-3rem)] rounded-lg lg:block" />
-          <div className="space-y-6">
-            <Skeleton className="h-16 rounded-lg" />
-            <Skeleton className="min-h-[60vh] rounded-lg" />
-          </div>
+      <div className="field-contours flex min-h-screen items-center justify-center bg-canvas px-5 text-ink">
+        <div className="w-full max-w-sm rounded-xl border border-line bg-surface p-7 text-center shadow-lg">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-surface-soft text-leaf-strong">
+            <Sprout size={23} aria-hidden />
+          </span>
+          <h1 className="mt-4 font-display text-lg font-bold tracking-[-0.025em]">Đang mở không gian làm việc</h1>
+          <p className="mt-2 text-sm text-ink-soft">Agromind AI đang kiểm tra phiên đăng nhập và dữ liệu của bạn.</p>
+          <LoaderCircle className="mx-auto mt-5 h-5 w-5 animate-spin text-leaf" aria-hidden />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="dark theme-dashboard min-h-screen bg-dashboard-mesh text-[--text-default]">
-      <Toaster richColors position="top-center" theme="dark" closeButton />
+    <div className="min-h-screen bg-canvas text-ink">
+      <Toaster richColors position="top-center" theme={resolvedTheme === "dark" ? "dark" : "light"} closeButton />
       <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
-      <div className="flex min-h-screen flex-col lg:pl-[240px]">
+      <div className="flex min-h-screen flex-col lg:pl-[252px]">
         <WorkspaceHeader
           pageTitle={pageTitle}
+          pageDescription={pageDescription}
           onOpenMobileNav={() => setMobileOpen(true)}
         />
         <main

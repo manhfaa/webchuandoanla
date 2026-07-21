@@ -2,17 +2,18 @@
 
 import { useEffect } from "react";
 
-import { DashboardHeroPanel } from "@/components/dashboard/dashboard-hero-panel";
 import { HealthMetricsPanel } from "@/components/dashboard/health-metrics-panel";
+import { GardenStatusPanel } from "@/components/dashboard/garden-status-panel";
 import { OverviewStatGrid } from "@/components/dashboard/overview-stat-grid";
 import { QuickAccessPanel } from "@/components/dashboard/quick-access-panel";
 import { RecentDiagnosisPanel } from "@/components/dashboard/recent-diagnosis-panel";
+import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
 import { fetchDiagnosisRecords } from "@/lib/diagnoses-client";
 import { useDiagnosisStore } from "@/store/diagnosis-store";
 import { useSessionStore } from "@/store/session-store";
 
 export default function DashboardOverviewPage() {
-  const { accessToken } = useSessionStore();
+  const { user, accessToken } = useSessionStore();
   const { setRecords } = useDiagnosisStore();
 
   useEffect(() => {
@@ -29,8 +30,8 @@ export default function DashboardOverviewPage() {
   }, [accessToken, setRecords]);
 
   return (
-    <div className="relative space-y-6">
-      <DashboardHeroPanel />
+    <div className="mx-auto max-w-[1480px] space-y-8">
+      <GardenStatusPanel />
 
       <OverviewStatGrid />
 
@@ -40,6 +41,8 @@ export default function DashboardOverviewPage() {
       </div>
 
       <QuickAccessPanel />
+
+      <UpgradeBanner currentPlan={user?.currentPlan ?? "seed"} />
     </div>
   );
 }

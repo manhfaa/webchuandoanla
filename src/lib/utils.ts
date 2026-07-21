@@ -1,8 +1,20 @@
 import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { extendTailwindMerge } from "tailwind-merge";
+
+const mergeClasses = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      "font-size": [
+        {
+          text: ["display", "h1", "h2", "h3", "body-lg", "body", "body-sm", "caption", "overline"],
+        },
+      ],
+    },
+  },
+});
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  return mergeClasses(clsx(inputs));
 }
 
 export function formatConfidence(value: number) {
@@ -22,11 +34,4 @@ export function getPlanLabel(plan: string) {
   if (plan === "bloom") return "Bloom";
   if (plan === "grow") return "Grow";
   return "Seed";
-}
-
-export function getPlanIcon(plan: string) {
-  if (plan === "elite") return "👑";
-  if (plan === "bloom") return "🌳";
-  if (plan === "grow") return "🌿";
-  return "🌱";
 }

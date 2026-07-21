@@ -1,22 +1,39 @@
 export const landingNavItems = [
-  { label: "Trang chủ", href: "#top" },
+  { label: "Quy trình", href: "#quy-trinh" },
   { label: "Tính năng", href: "#tinh-nang" },
-  { label: "Cây trồng hỗ trợ", href: "#cay-trong" },
-  { label: "Quy trình hoạt động", href: "#quy-trinh" },
-  { label: "Gói dịch vụ", href: "#goi-dich-vu" },
-  { label: "Đội ngũ", href: "#thanh-vien" },
+  { label: "Cây trồng", href: "#cay-trong" },
+  { label: "Bảng giá", href: "#goi-dich-vu" },
 ];
 
-export const dashboardNavItems = [
-  { label: "Tổng quan", href: "/dashboard" },
-  { label: "Xác thực ảnh", href: "/dashboard/diagnosis" },
-  { label: "Thời tiết & sâu bệnh", href: "/dashboard/weather-alerts" },
-  { label: "Lô vườn", href: "/dashboard/farms" },
-  { label: "Thư viện vật tư", href: "/dashboard/input-library" },
-  { label: "Kế hoạch trồng cây", href: "/dashboard/crop-plans" },
-  { label: "Kết quả", href: "/dashboard/history" },
-  { label: "Chat tư vấn", href: "/dashboard/chat" },
-  { label: "Lịch sử", href: "/dashboard/history" },
-  { label: "Gói dịch vụ", href: "/dashboard/pricing" },
-  { label: "Hồ sơ", href: "/dashboard/profile" },
+export const dashboardNavGroups = [
+  {
+    group: "Theo dõi",
+    items: [
+      { label: "Tổng quan", href: "/dashboard" },
+      { label: "Kiểm tra ảnh", href: "/dashboard/diagnosis" },
+      { label: "Lịch sử", href: "/dashboard/history" },
+    ],
+  },
+  {
+    group: "Quản lý vườn",
+    items: [
+      { label: "Lô vườn", href: "/dashboard/farms" },
+      { label: "Thời tiết & cảnh báo", href: "/dashboard/weather-alerts" },
+      { label: "Kế hoạch trồng", href: "/dashboard/crop-plans" },
+    ],
+  },
+  {
+    group: "Hỗ trợ",
+    items: [
+      { label: "Chat tư vấn", href: "/dashboard/chat" },
+      { label: "Thư viện vật tư", href: "/dashboard/input-library" },
+    ],
+  },
+  {
+    group: "Tài khoản",
+    items: [
+      { label: "Gói dịch vụ", href: "/dashboard/pricing" },
+      { label: "Hồ sơ", href: "/dashboard/profile" },
+    ],
+  },
 ];

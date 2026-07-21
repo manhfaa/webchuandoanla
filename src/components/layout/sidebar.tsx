@@ -2,128 +2,68 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  BookOpen,
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  CloudSun,
-  CreditCard,
-  LayoutDashboard,
-  MessageSquareText,
-  ScanSearch,
-  ShieldCheck,
-  Sparkles,
-  Sprout,
-  UserRound,
-} from "lucide-react";
-import { useState } from "react";
+import { BookOpen, CalendarDays, CloudSun, CreditCard, History, LayoutDashboard, MessageSquareText, ScanSearch, Sprout, UserRound, X } from "lucide-react";
 
 import { Logo } from "@/components/layout/logo";
-import { t } from "@/lib/i18n";
+import { dashboardNavGroups } from "@/constants/navigation";
 import { cn } from "@/lib/utils";
-import { useLanguageStore } from "@/store/language-store";
 
-const navItems = [
-  { labelKey: "nav.overview", href: "/dashboard", icon: LayoutDashboard },
-  { labelKey: "nav.diagnosis", href: "/dashboard/diagnosis", icon: ScanSearch },
-  { labelKey: "nav.weather", href: "/dashboard/weather-alerts", icon: CloudSun },
-  { labelKey: "nav.farms", href: "/dashboard/farms", icon: Sprout },
-  { labelKey: "nav.library", href: "/dashboard/input-library", icon: BookOpen },
-  { labelKey: "nav.cropPlans", href: "/dashboard/crop-plans", icon: CalendarDays },
-  { labelKey: "nav.chat", href: "/dashboard/chat", icon: MessageSquareText },
-  { labelKey: "nav.history", href: "/dashboard/history", icon: ShieldCheck },
-  { labelKey: "nav.pricing", href: "/dashboard/pricing", icon: CreditCard },
-  { labelKey: "nav.profile", href: "/dashboard/profile", icon: UserRound },
-];
+const iconByHref = {
+  "/dashboard": LayoutDashboard,
+  "/dashboard/diagnosis": ScanSearch,
+  "/dashboard/history": History,
+  "/dashboard/farms": Sprout,
+  "/dashboard/weather-alerts": CloudSun,
+  "/dashboard/crop-plans": CalendarDays,
+  "/dashboard/chat": MessageSquareText,
+  "/dashboard/input-library": BookOpen,
+  "/dashboard/pricing": CreditCard,
+  "/dashboard/profile": UserRound,
+};
 
-export function Sidebar({
-  mobileOpen,
-  onClose,
-}: {
-  mobileOpen: boolean;
-  onClose: () => void;
-}) {
+export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
-  const { language } = useLanguageStore();
-  const widthClass = collapsed ? "lg:w-[72px]" : "lg:w-[240px]";
 
   return (
     <>
-      <div
-        className={cn(
-          "fixed inset-0 z-40 bg-leaf-950/60 transition lg:hidden",
-          mobileOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
-        )}
-        aria-hidden={!mobileOpen}
+      <button
+        type="button"
+        aria-label="Đóng menu điều hướng"
+        className={cn("fixed inset-0 z-40 bg-forest/55 backdrop-blur-sm transition lg:hidden", mobileOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0")}
         onClick={onClose}
       />
-      <aside
-        className={cn(
-          "fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-border-dark bg-app-surface p-4 text-on-dark transition-[width,transform] duration-200 ease-out lg:translate-x-0",
-          widthClass,
-          mobileOpen ? "w-[240px] translate-x-0" : "-translate-x-full lg:translate-x-0",
-        )}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <Logo dark compact={collapsed} href="/dashboard" className="min-w-0" />
-          <button
-            type="button"
-            aria-label={collapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên"}
-            className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border-dark text-muted-on-dark transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500/40 lg:inline-flex"
-            onClick={() => setCollapsed((c) => !c)}
-          >
-            {collapsed ? <ChevronRight strokeWidth={1.75} className="h-4 w-4" /> : <ChevronLeft strokeWidth={1.75} className="h-4 w-4" />}
+      <aside className={cn("fixed left-0 top-0 z-50 flex h-screen w-[252px] flex-col border-r border-line bg-surface px-3 py-4 text-ink shadow-lg transition-transform duration-260 lg:translate-x-0 lg:shadow-none", mobileOpen ? "translate-x-0" : "-translate-x-full")}>
+        <div className="flex items-center justify-between gap-3 px-2">
+          <Logo href="/dashboard" showTagline={false} />
+          <button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl text-ink-soft hover:bg-surface-soft hover:text-ink lg:hidden" aria-label="Đóng menu">
+            <X size={19} aria-hidden />
           </button>
         </div>
 
-        <div className="mt-6 rounded-lg border border-border-dark bg-app-surface-2 p-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-leaf-500/20 text-leaf-200">
-              <Sparkles strokeWidth={1.75} className="h-4 w-4" />
+        <nav className="mt-7 flex-1 space-y-6 overflow-y-auto px-1 pb-4" aria-label="Điều hướng chính">
+          {dashboardNavGroups.map((group) => (
+            <div key={group.group}>
+              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-soft">{group.group}</p>
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const Icon = iconByHref[item.href as keyof typeof iconByHref] ?? Sprout;
+                  const active = item.href === "/dashboard" ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  return (
+                    <Link key={item.href} href={item.href} onClick={onClose} className={cn("relative flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition duration-180 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/35", active ? "bg-surface-soft text-leaf-strong" : "text-ink-soft hover:bg-surface-soft hover:text-ink")}>
+                      {active ? <span className="absolute inset-y-2 left-0 w-[3px] rounded-r-full bg-leaf" aria-hidden /> : null}
+                      <Icon size={18} strokeWidth={1.8} className="shrink-0" aria-hidden />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
-            <div className={cn("min-w-0", collapsed && "lg:hidden")}>
-              <p className="text-overline text-muted-on-dark">Lịch thông minh</p>
-              <p className="mt-0.5 text-body-sm font-semibold leading-snug text-on-dark">
-                Chăm cây theo địa điểm và thời tiết
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <nav className="mt-6 flex-1 space-y-1 overflow-y-auto" aria-label="Điều hướng chính">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const label = t(language, item.labelKey);
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                title={collapsed ? label : undefined}
-                className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-body font-medium transition duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500/40",
-                  active
-                    ? "bg-leaf-500 text-white shadow-sm"
-                    : "text-muted-on-dark hover:bg-white/5 hover:text-on-dark",
-                  collapsed && "lg:justify-center lg:px-2",
-                )}
-              >
-                <Icon strokeWidth={1.75} className="h-[18px] w-[18px] shrink-0" aria-hidden />
-                <span className={cn("truncate", collapsed && "lg:sr-only")}>{label}</span>
-              </Link>
-            );
-          })}
+          ))}
         </nav>
 
-        <div className={cn("mt-4 rounded-lg border border-border-dark bg-app-surface-2 p-4", collapsed && "lg:hidden")}>
-          <p className="text-overline text-muted-on-dark">Agromind AI Planner</p>
-          <p className="mt-2 text-body-sm leading-relaxed text-muted-on-dark">
-            Theo dõi từng việc cần làm cho vụ trồng — nhắc việc đúng lúc.
-          </p>
+        <div className="mx-1 rounded-2xl bg-forest p-4 text-on-forest">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-forest-muted">Gợi ý Field Lens</p>
+          <p className="mt-2 text-sm font-semibold leading-6">Chụp lại cùng một chiếc lá sau vài ngày để dễ so sánh thay đổi.</p>
         </div>
       </aside>
     </>

@@ -21,7 +21,7 @@ export function Tabs({
   return (
     <div
       className={cn(
-        "inline-flex rounded-full border border-white/10 bg-white/5 p-1",
+        "inline-flex rounded-full border border-line bg-surface-soft p-1",
         className,
       )}
     >
@@ -35,8 +35,8 @@ export function Tabs({
             className={cn(
               "rounded-full px-4 py-2 text-sm font-medium transition",
               active
-                ? "bg-white text-ink shadow-soft"
-                : "text-white/70 hover:text-white",
+                ? "bg-surface text-ink shadow-sm"
+                : "text-ink-soft hover:text-ink",
             )}
           >
             {tab.label}

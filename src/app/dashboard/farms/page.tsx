@@ -23,12 +23,12 @@ import { useSessionStore } from "@/store/session-store";
 const copy = {
   vi: {
     eyebrow: "Nhật ký canh tác",
-    title: "Lô vườn, dòng thời gian chăm sóc và QR truy xuất",
-    intro: "Tạo lô/vườn/ruộng, ghi lại tưới nước, bón phân, phun thuốc, kiểm tra sâu bệnh và xuất QR công khai.",
+    title: "Quản lý từng lô vườn và nhật ký chăm sóc",
+    intro: "Tạo khu trồng, ghi lại tưới nước, bón phân, kiểm tra sâu bệnh và tạo mã QR truy xuất khi cần.",
     createPlot: "Tạo lô/vườn mới",
     createLog: "Ghi nhật ký",
     qr: "Tạo QR truy xuất",
-    login: "Cần đăng nhập để lưu lô vườn và nhật ký chăm sóc.",
+    login: "Cần đăng nhập để lưu lô vườn và nhật ký.",
     timeline: "Dòng thời gian chăm sóc",
     noPlot: "Chưa có lô vườn nào.",
     publicPage: "Mở trang công khai",
@@ -40,7 +40,7 @@ const copy = {
     createPlot: "Create plot",
     createLog: "Add log",
     qr: "Create QR",
-    login: "Cần đăng nhập để lưu lô vườn và nhật ký chăm sóc.",
+    login: "Please sign in to save plots and care logs.",
     timeline: "Care timeline",
     noPlot: "No plot yet.",
     publicPage: "Mở trang công khai",
@@ -84,37 +84,37 @@ function PlotSummary({ plot, active, onSelect }: { plot: FarmPlot; active: boole
     <button
       type="button"
       onClick={onSelect}
-      className={`w-full rounded-md border p-4 text-left transition ${
-        active ? "border-leaf-500 bg-leaf-800/50 text-on-dark-strong" : "border-border-dark bg-app-surface-2 text-on-dark hover:bg-white/5"
+      className={`w-full rounded-lg border p-4 text-left transition ${
+        active ? "border-leaf/35 bg-surface-soft text-ink" : "border-line bg-surface text-ink hover:bg-surface-soft"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-semibold">{plot.name}</p>
-          <p className="mt-1 text-body-sm text-muted-on-dark">{plot.crop_type} · {plot.growth_stage || "Đang theo dõi"}</p>
+          <p className="mt-1 text-body-sm text-ink-soft">{plot.crop_type} · {plot.growth_stage || "Đang theo dõi"}</p>
         </div>
         <Badge variant="locked">{plot.logs?.length ?? 0} nhật ký</Badge>
       </div>
-      <p className="mt-3 text-caption text-muted-on-dark">{plot.address_text || "Chưa ghi vị trí"}</p>
+      <p className="mt-3 text-caption text-ink-soft">{plot.address_text || "Chưa ghi vị trí"}</p>
     </button>
   );
 }
 
 function Timeline({ logs }: { logs: CultivationLog[] }) {
   if (!logs.length) {
-    return <p className="text-body-sm text-muted-on-dark">Chưa có nhật ký cho lô này.</p>;
+    return <p className="text-body-sm text-ink-soft">Chưa có nhật ký cho lô này.</p>;
   }
 
   return (
     <div className="space-y-3">
       {logs.map((log) => (
-        <div key={log.id} className="rounded-md border border-border-dark bg-app-surface-2 p-4">
+        <div key={log.id} className="rounded-lg border border-line bg-surface-soft p-4">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="locked">{activityLabel(log.activity_type)}</Badge>
-            <span className="text-caption text-muted-on-dark">{new Date(log.activity_date).toLocaleDateString("vi-VN")}</span>
+            <span className="text-caption text-ink-soft">{new Date(log.activity_date).toLocaleDateString("vi-VN")}</span>
           </div>
-          <p className="mt-3 font-semibold text-on-dark-strong">{log.title}</p>
-          <p className="mt-1 text-body-sm leading-relaxed text-muted-on-dark">{log.description}</p>
+          <p className="mt-3 font-semibold text-ink">{log.title}</p>
+          <p className="mt-1 text-body-sm leading-relaxed text-ink-soft">{log.description}</p>
         </div>
       ))}
     </div>
@@ -244,17 +244,17 @@ export default function FarmsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card variant="dark" padding="lg" className="border-border-dark bg-app-surface text-on-dark">
-        <p className="text-overline text-leaf-300">{text.eyebrow}</p>
-        <h2 className="mt-2 text-h2 text-on-dark-strong">{text.title}</h2>
-        <p className="mt-3 max-w-3xl text-body-sm leading-relaxed text-muted-on-dark">{text.intro}</p>
+    <div className="mx-auto max-w-[1380px] space-y-6">
+      <Card variant="dark" padding="lg" className="field-contours rounded-xl">
+        <p className="text-overline text-on-forest-muted">{text.eyebrow}</p>
+        <h2 className="mt-2 text-h2 font-bold text-on-forest">{text.title}</h2>
+        <p className="mt-3 max-w-3xl text-body-sm leading-relaxed text-on-forest-muted">{text.intro}</p>
       </Card>
 
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <div className="space-y-6">
-          <Card variant="dark" padding="lg" className="border-border-dark">
-            <h3 className="text-h3 text-on-dark-strong">{text.createPlot}</h3>
+          <Card variant="raised" padding="lg" className="rounded-xl">
+            <h3 className="text-h3 font-bold text-ink">{text.createPlot}</h3>
             <form className="mt-5 space-y-4" onSubmit={handleCreatePlot}>
               <div className="grid gap-4 md:grid-cols-2">
                 <Input label="Tên lô/vườn/ruộng" value={plotForm.name} onChange={(e) => setPlotForm({ ...plotForm, name: e.target.value })} />
@@ -272,14 +272,14 @@ export default function FarmsPage() {
             </form>
           </Card>
 
-          <Card variant="dark" padding="lg" className="border-border-dark">
+          <Card variant="default" padding="lg" className="rounded-xl">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-h3 text-on-dark-strong">Danh sách lô vườn</h3>
+              <h3 className="text-h3 font-bold text-ink">Danh sách lô vườn</h3>
               {selectedPlot ? (
                 <button
                   type="button"
                   onClick={() => void handleDeleteSelected()}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-berry-500/40 px-2.5 text-caption font-semibold text-berry-300 transition hover:bg-berry-500/10"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-md border border-danger/30 px-3 text-caption font-semibold text-danger transition hover:bg-danger/10"
                 >
                   <Trash2 strokeWidth={1.75} className="h-3.5 w-3.5" />
                   Xóa
@@ -300,28 +300,28 @@ export default function FarmsPage() {
                   />
                 ))
               ) : (
-                <p className="text-body-sm text-muted-on-dark">{text.noPlot}</p>
+                <p className="text-body-sm text-ink-soft">{text.noPlot}</p>
               )}
             </div>
-            {!accessToken ? <p className="mt-4 text-body-sm text-berry-500">{text.login}</p> : null}
-            {error ? <p className="mt-4 text-body-sm text-berry-500">{error}</p> : null}
+            {!accessToken ? <p className="mt-4 text-body-sm text-danger">{text.login}</p> : null}
+            {error ? <p className="mt-4 text-body-sm text-danger">{error}</p> : null}
           </Card>
         </div>
 
         <div className="space-y-6">
-          <Card variant="dark" padding="lg" className="border-border-dark bg-app-surface text-on-dark">
+          <Card variant="raised" padding="lg" className="rounded-xl">
             <div className="flex items-center gap-2">
-              <CalendarDays strokeWidth={1.75} className="h-5 w-5 text-leaf-300" />
-              <h3 className="text-h3 text-on-dark-strong">{text.createLog}</h3>
+              <CalendarDays strokeWidth={1.75} className="h-5 w-5 text-leaf-strong" />
+              <h3 className="text-h3 font-bold text-ink">{text.createLog}</h3>
             </div>
             <form className="mt-5 space-y-4" onSubmit={handleCreateLog}>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="space-y-1.5">
-                  <span className="text-body-sm font-medium text-muted-on-dark">Loại hoạt động</span>
+                  <span className="text-body-sm font-semibold text-ink">Loại hoạt động</span>
                   <select
                     value={logForm.activity_type}
                     onChange={(e) => setLogForm({ ...logForm, activity_type: e.target.value })}
-                    className="h-11 w-full rounded-[10px] border border-border-dark bg-app-surface-2 px-3.5 text-body text-on-dark outline-none focus:border-leaf-500 focus:ring-2 focus:ring-leaf-500/30"
+                    className="h-11 w-full rounded-md border border-line bg-surface px-3.5 text-body text-ink outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20"
                   >
                     <option value="watering">Tưới nước</option>
                     <option value="fertilizing">Bón phân</option>
@@ -335,19 +335,19 @@ export default function FarmsPage() {
                 <Input label="Ngày ghi" type="date" value={logForm.activity_date} onChange={(e) => setLogForm({ ...logForm, activity_date: e.target.value })} />
                 <Input label="Tiêu đề" value={logForm.title} onChange={(e) => setLogForm({ ...logForm, title: e.target.value })} />
                 <Input
-                  label="ID lần kiểm tra"
+                  label="Mã kết quả đã lưu"
                   type="number"
                   value={logForm.diagnosis}
-                  hint="Nếu muốn liên kết với một kết quả kiểm tra lá đã lưu, nhập ID tại đây."
+                  hint="Nhập mã kết quả nếu bạn muốn liên kết hoạt động này với một lần kiểm tra ảnh."
                   onChange={(e) => setLogForm({ ...logForm, diagnosis: e.target.value })}
                 />
               </div>
               <label className="block space-y-1.5">
-                <span className="text-body-sm font-medium text-muted-on-dark">Mô tả</span>
+                <span className="text-body-sm font-semibold text-ink">Mô tả</span>
                 <textarea
                   value={logForm.description}
                   onChange={(e) => setLogForm({ ...logForm, description: e.target.value })}
-                  className="min-h-[120px] w-full rounded-[10px] border border-border-dark bg-app-surface-2 px-3.5 py-3 text-body text-on-dark outline-none focus:border-leaf-500 focus:ring-2 focus:ring-leaf-500/30"
+                  className="min-h-[120px] w-full rounded-md border border-line bg-surface-soft px-3.5 py-3 text-body text-ink outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20"
                 />
               </label>
               <Button type="submit" loading={loading} disabled={!selectedPlot}>
@@ -356,10 +356,10 @@ export default function FarmsPage() {
             </form>
           </Card>
 
-          <Card variant="dark" padding="lg" className="border-border-dark bg-app-surface text-on-dark">
+          <Card variant="default" padding="lg" className="rounded-xl">
             <div className="flex items-center gap-2">
-              <QrCode strokeWidth={1.75} className="h-5 w-5 text-leaf-300" />
-              <h3 className="text-h3 text-on-dark-strong">{text.qr}</h3>
+              <QrCode strokeWidth={1.75} className="h-5 w-5 text-leaf-strong" />
+              <h3 className="text-h3 font-bold text-ink">{text.qr}</h3>
             </div>
             <form className="mt-5 flex flex-col gap-4 sm:flex-row" onSubmit={handleTraceability}>
               <Input label="Tên sản phẩm công khai" value={productName} onChange={(e) => setProductName(e.target.value)} />
@@ -372,15 +372,15 @@ export default function FarmsPage() {
             {traceability ? (
               <div className="mt-5 grid gap-4 md:grid-cols-[220px_1fr]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={traceability.qr_image_url} alt="QR truy xuất" className="h-[220px] w-[220px] rounded-md bg-white p-2" />
+                <img src={traceability.qr_image_url} alt="QR truy xuất" className="h-[220px] w-[220px] rounded-md bg-paper p-2" />
                 <div>
-                  <p className="font-semibold text-on-dark-strong">{traceability.product_name}</p>
-                  <p className="mt-2 break-all text-body-sm leading-relaxed text-muted-on-dark">{traceability.public_url}</p>
+                  <p className="font-semibold text-ink">{traceability.product_name}</p>
+                  <p className="mt-2 break-all text-body-sm leading-relaxed text-ink-soft">{traceability.public_url}</p>
                   <a
                     href={traceability.public_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-border-dark px-3 text-body-sm font-medium text-on-dark transition hover:bg-white/5"
+                    className="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-line px-3 text-body-sm font-medium text-ink transition hover:bg-surface-soft"
                   >
                     <ExternalLink strokeWidth={1.75} className="h-4 w-4" />
                     {text.publicPage}
@@ -390,8 +390,8 @@ export default function FarmsPage() {
             ) : null}
           </Card>
 
-          <Card variant="dark" padding="lg" className="border-border-dark bg-app-surface text-on-dark">
-            <h3 className="text-h3 text-on-dark-strong">{text.timeline}</h3>
+          <Card variant="default" padding="lg" className="rounded-xl">
+            <h3 className="text-h3 font-bold text-ink">{text.timeline}</h3>
             <div className="mt-5">
               <Timeline logs={selectedPlot?.logs ?? []} />
             </div>

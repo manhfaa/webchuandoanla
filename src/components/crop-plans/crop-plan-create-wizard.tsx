@@ -147,17 +147,17 @@ export function CropPlanCreateWizard() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="rounded-[32px] border-emerald-100/70 bg-gradient-to-br from-white via-[#f5fceb] to-emerald-50 p-6 sm:p-8">
+    <div className="mx-auto max-w-[1320px] space-y-6">
+      <Card variant="raised" padding="lg" className="field-contours rounded-xl">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700/65">
+            <p className="text-overline text-leaf-strong">
               Kế hoạch trồng cây tự động
             </p>
-            <h1 className="mt-3 font-display text-3xl font-semibold text-slate-950 sm:text-4xl">
+            <h1 className="mt-3 font-display text-3xl font-bold tracking-[-0.035em] text-ink sm:text-4xl">
               Tạo lịch trồng cây theo địa điểm
             </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-ink-soft sm:text-base">
               Chọn cây, đặt vị trí trên bản đồ, nhập quy mô canh tác và để Agromind AI tạo lịch chăm cây chi tiết theo từng bước.
             </p>
           </div>
@@ -172,8 +172,8 @@ export function CropPlanCreateWizard() {
                 key={item.key}
                 className={`rounded-full px-4 py-2 text-sm font-medium ${
                   screen === item.key || (screen === "analyzing" && item.key === "preview")
-                    ? "bg-emerald-600 text-white"
-                    : "bg-white text-slate-600 ring-1 ring-emerald-100"
+                    ? "bg-leaf text-on-leaf"
+                    : "bg-surface text-ink-soft ring-1 ring-line"
                 }`}
               >
                 {item.label}
@@ -184,15 +184,15 @@ export function CropPlanCreateWizard() {
       </Card>
 
       {error ? (
-        <Card className="rounded-[28px] border-rose-100 bg-rose-50/80 text-sm leading-7 text-rose-700">
+        <Card className="rounded-lg border-danger/25 bg-danger/10 text-sm leading-7 text-danger">
           {error}
         </Card>
       ) : null}
 
       {loading ? (
         <div className="grid gap-5 lg:grid-cols-3">
-          <Skeleton className="h-[220px] rounded-[30px] bg-white/70" />
-          <Skeleton className="h-[220px] rounded-[30px] bg-white/70 lg:col-span-2" />
+          <Skeleton className="h-[220px] rounded-xl bg-surface-soft" />
+          <Skeleton className="h-[220px] rounded-xl bg-surface-soft lg:col-span-2" />
         </div>
       ) : null}
 
@@ -206,19 +206,19 @@ export function CropPlanCreateWizard() {
                 onClick={() => setSelectedCrop(crop.slug)}
                 className={`text-left ${selectedCrop === crop.slug ? "scale-[1.01]" : ""}`}
               >
-                <Card className="h-full rounded-[30px] border-emerald-100/70 bg-white/90 p-6 transition duration-300 hover:-translate-y-1 hover:shadow-float">
+                <Card variant={selectedCrop === crop.slug ? "soft" : "default"} className="h-full rounded-xl p-6 transition duration-180 hover:-translate-y-[3px] hover:border-leaf/35 hover:shadow-md">
                   <div className="flex items-start justify-between gap-4">
-                    <span className="rounded-2xl bg-emerald-100 p-3 text-emerald-700">
+                    <span className="rounded-md bg-surface-soft p-3 text-leaf-strong">
                       <Leaf size={20} />
                     </span>
                     {crop.is_beginner_friendly ? (
-                      <span className="rounded-full bg-lime-100 px-3 py-1 text-xs font-semibold text-emerald-800">
+                      <span className="rounded-full bg-surface-soft px-3 py-1 text-xs font-semibold text-leaf-strong">
                         Dễ bắt đầu
                       </span>
                     ) : null}
                   </div>
-                  <h3 className="mt-6 font-display text-3xl font-semibold text-slate-950">{crop.name}</h3>
-                  <p className="mt-3 text-sm leading-7 text-slate-600">{crop.description}</p>
+                  <h3 className="mt-6 font-display text-3xl font-bold text-ink">{crop.name}</h3>
+                  <p className="mt-3 text-sm leading-7 text-ink-soft">{crop.description}</p>
                 </Card>
               </button>
             ))}
@@ -235,8 +235,8 @@ export function CropPlanCreateWizard() {
       {!loading && screen === "location" ? (
         <div className="space-y-5">
           {locations.length ? (
-            <Card className="rounded-[30px] border-emerald-100/70 bg-white/90">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700/65">
+            <Card variant="default" className="rounded-xl">
+              <p className="text-overline text-leaf-strong">
                 Khu trồng đã lưu
               </p>
               <div className="mt-4 flex flex-wrap gap-3">
@@ -299,13 +299,13 @@ export function CropPlanCreateWizard() {
 
       {!loading && screen === "details" ? (
         <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-          <Card className="rounded-[30px] border-emerald-100/70 bg-white/90">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700/65">
+          <Card variant="raised" padding="lg" className="rounded-xl">
+            <p className="text-overline text-leaf-strong">
               Thông tin trồng
             </p>
             <div className="mt-5 grid gap-5 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">Hình thức trồng</span>
+                <span className="mb-2 block text-sm font-semibold text-ink">Hình thức trồng</span>
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { value: "pot", label: "Trồng chậu" },
@@ -314,10 +314,10 @@ export function CropPlanCreateWizard() {
                     <button
                       key={item.value}
                       type="button"
-                      className={`rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                      className={`rounded-md px-4 py-3 text-sm font-medium transition ${
                         plantingMode === item.value
-                          ? "bg-emerald-600 text-white"
-                          : "bg-emerald-50 text-slate-700 ring-1 ring-emerald-100"
+                          ? "bg-leaf text-on-leaf"
+                          : "bg-surface-soft text-ink ring-1 ring-line"
                       }`}
                       onClick={() => setPlantingMode(item.value as "pot" | "ground")}
                     >
@@ -328,46 +328,46 @@ export function CropPlanCreateWizard() {
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">Số lượng cây</span>
+                <span className="mb-2 block text-sm font-semibold text-ink">Số lượng cây</span>
                 <input
                   value={plantCount}
                   onChange={(event) => setPlantCount(event.target.value)}
-                  className="w-full rounded-2xl border border-emerald-100 px-4 py-3 text-sm outline-none focus:border-emerald-300"
+                  className="w-full rounded-md border border-line bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20"
                 />
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">Diện tích / quy mô</span>
+                <span className="mb-2 block text-sm font-semibold text-ink">Diện tích / quy mô</span>
                 <div className="grid grid-cols-[1fr_110px] gap-3">
                   <input
                     value={areaValue}
                     onChange={(event) => setAreaValue(event.target.value)}
-                    className="w-full rounded-2xl border border-emerald-100 px-4 py-3 text-sm outline-none focus:border-emerald-300"
+                    className="w-full rounded-md border border-line bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20"
                   />
                   <input
                     value={areaUnit}
                     onChange={(event) => setAreaUnit(event.target.value)}
-                    className="w-full rounded-2xl border border-emerald-100 px-4 py-3 text-sm outline-none focus:border-emerald-300"
+                    className="w-full rounded-md border border-line bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20"
                   />
                 </div>
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">Ngày dự kiến bắt đầu</span>
+                <span className="mb-2 block text-sm font-semibold text-ink">Ngày dự kiến bắt đầu</span>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(event) => setStartDate(event.target.value)}
-                  className="w-full rounded-2xl border border-emerald-100 px-4 py-3 text-sm outline-none focus:border-emerald-300"
+                  className="w-full rounded-md border border-line bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20"
                 />
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">Mức kinh nghiệm</span>
+                <span className="mb-2 block text-sm font-semibold text-ink">Mức kinh nghiệm</span>
                 <select
                   value={experienceLevel}
                   onChange={(event) => setExperienceLevel(event.target.value as "beginner" | "intermediate")}
-                  className="w-full rounded-2xl border border-emerald-100 px-4 py-3 text-sm outline-none focus:border-emerald-300"
+                  className="w-full rounded-md border border-line bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20"
                 >
                   <option value="beginner">Mới bắt đầu</option>
                   <option value="intermediate">Đã từng trồng</option>
@@ -375,7 +375,7 @@ export function CropPlanCreateWizard() {
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">Mục tiêu vụ trồng</span>
+                <span className="mb-2 block text-sm font-semibold text-ink">Mục tiêu vụ trồng</span>
                 <select
                   value={planGoal}
                   onChange={(event) =>
@@ -383,7 +383,7 @@ export function CropPlanCreateWizard() {
                       event.target.value as "home" | "trial" | "small_farm" | "commercial",
                     )
                   }
-                  className="w-full rounded-2xl border border-emerald-100 px-4 py-3 text-sm outline-none focus:border-emerald-300"
+                  className="w-full rounded-md border border-line bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20"
                 >
                   <option value="home">Ăn gia đình</option>
                   <option value="trial">Trồng thử</option>
@@ -394,19 +394,19 @@ export function CropPlanCreateWizard() {
             </div>
           </Card>
 
-          <Card className="rounded-[30px] border-emerald-100/70 bg-gradient-to-br from-[#10231c] via-[#133125] to-[#1b4f33] text-white">
+          <Card variant="dark" padding="lg" className="rounded-xl">
             <div className="flex items-start gap-3">
-              <span className="rounded-full bg-white/10 p-3 text-lime-200">
+              <span className="rounded-md bg-on-forest/10 p-3 text-on-forest">
                 <Sparkles size={18} />
               </span>
               <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-emerald-100/60">Tóm tắt đầu vào</p>
-                <h3 className="mt-3 font-display text-2xl font-semibold">
+                <p className="text-overline text-on-forest-muted">Tóm tắt đầu vào</p>
+                <h3 className="mt-3 font-display text-2xl font-bold text-on-forest">
                   {activeCrop?.name ?? "Chưa chọn cây"}
                 </h3>
               </div>
             </div>
-            <div className="mt-6 space-y-3 text-sm leading-7 text-emerald-50/80">
+            <div className="mt-6 space-y-3 text-sm leading-7 text-on-forest-muted">
               <p>- Khu trồng: {selectedLocationId ? locations.find((item) => item.id === selectedLocationId)?.name : locationName}</p>
               <p>- Hình thức: {plantingMode === "pot" ? "Trồng chậu" : "Trồng đất"}</p>
               <p>- Số lượng: {plantCount} cây</p>
@@ -430,30 +430,30 @@ export function CropPlanCreateWizard() {
 
       {screen === "analyzing" ? (
         <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-          <Card className="rounded-[30px] border-emerald-100/70 bg-white/90">
+          <Card variant="default" className="rounded-xl">
             <div className="flex items-start gap-3">
-              <span className="rounded-full bg-emerald-100 p-3 text-emerald-700">
+              <span className="rounded-md bg-surface-soft p-3 text-leaf-strong">
                 <LoaderCircle size={18} className="animate-spin" />
               </span>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700/65">
+                <p className="text-overline text-leaf-strong">
                   Đang phân tích
                 </p>
-                <h3 className="mt-3 font-display text-2xl font-semibold text-slate-950">
+                <h3 className="mt-3 font-display text-2xl font-bold text-ink">
                   Agromind AI đang tạo lịch trồng phù hợp
                 </h3>
-                <p className="mt-3 text-sm leading-7 text-slate-600">
+                <p className="mt-3 text-sm leading-7 text-ink-soft">
                   {loadingStages[loadingIndex]}
                 </p>
               </div>
             </div>
           </Card>
-          <Card className="rounded-[30px] border-emerald-100/70 bg-white/90">
+          <Card variant="default" className="rounded-xl">
             <div className="space-y-4">
-              <Skeleton className="h-10 rounded-2xl bg-emerald-100/70" />
-              <Skeleton className="h-28 rounded-[26px] bg-emerald-100/60" />
-              <Skeleton className="h-28 rounded-[26px] bg-emerald-100/60" />
-              <Skeleton className="h-28 rounded-[26px] bg-emerald-100/60" />
+              <Skeleton className="h-10 rounded-md bg-surface-soft" />
+              <Skeleton className="h-28 rounded-lg bg-surface-soft" />
+              <Skeleton className="h-28 rounded-lg bg-surface-soft" />
+              <Skeleton className="h-28 rounded-lg bg-surface-soft" />
             </div>
           </Card>
         </div>
@@ -462,50 +462,50 @@ export function CropPlanCreateWizard() {
       {screen === "preview" && preview ? (
         <div className="space-y-5">
           <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-            <Card className="rounded-[30px] border-emerald-100/70 bg-gradient-to-br from-white via-[#f5fceb] to-emerald-50">
+            <Card variant="soft" padding="lg" className="rounded-xl">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700/65">
+                  <p className="text-overline text-leaf-strong">
                     Kết quả phân tích
                   </p>
-                  <h2 className="mt-3 font-display text-3xl font-semibold text-slate-950">
+                  <h2 className="mt-3 font-display text-3xl font-bold text-ink">
                     {preview.crop.name} tại {preview.location.name}
                   </h2>
                 </div>
-                <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-emerald-800 shadow-soft">
+                <span className="rounded-full bg-surface px-4 py-2 text-sm font-semibold text-leaf-strong shadow-sm">
                   {preview.summary.suitability_score}/100
                 </span>
               </div>
-              <div className="mt-5 space-y-3 text-sm leading-7 text-slate-600">
+              <div className="mt-5 space-y-3 text-sm leading-7 text-ink-soft">
                 <p>- Bắt đầu đề xuất: {preview.summary.recommended_start_date}</p>
                 <p>- Mức phù hợp: {preview.summary.suitability_level}</p>
                 <p>- Phân tích: {preview.summary.reasoning_summary}</p>
               </div>
               <div className="mt-5 grid gap-3">
                 {preview.summary.key_warnings.map((warning) => (
-                  <div key={warning} className="rounded-2xl border border-amber-100 bg-amber-50/70 px-4 py-3 text-sm text-amber-900">
+                  <div key={warning} className="rounded-md border border-sun/30 bg-sun/10 px-4 py-3 text-sm text-ink-soft">
                     {warning}
                   </div>
                 ))}
               </div>
             </Card>
 
-            <Card className="rounded-[30px] border-emerald-100/70 bg-white/90">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700/65">
+            <Card variant="default" padding="lg" className="rounded-xl">
+              <p className="text-overline text-leaf-strong">
                 Dòng thời gian xem trước
               </p>
               <div className="mt-5 space-y-3">
                 {preview.steps.slice(0, 6).map((step: any) => (
                   <div key={step.step_number} className="grid grid-cols-[42px_minmax(0,1fr)] gap-4">
                     <div className="flex flex-col items-center">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-sm font-semibold text-white">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-leaf text-sm font-semibold text-on-leaf">
                         {step.step_number}
                       </div>
-                      <div className="mt-2 h-full min-h-[56px] w-[2px] rounded-full bg-emerald-200" />
+                      <div className="mt-2 h-full min-h-[56px] w-[2px] rounded-full bg-line" />
                     </div>
-                    <div className="rounded-[24px] border border-emerald-100 bg-emerald-50/60 px-4 py-3">
-                      <p className="font-medium text-slate-950">{step.title}</p>
-                      <p className="mt-1 text-sm leading-6 text-slate-600">
+                    <div className="rounded-lg border border-line bg-surface-soft px-4 py-3">
+                      <p className="font-medium text-ink">{step.title}</p>
+                      <p className="mt-1 text-sm leading-6 text-ink-soft">
                         {new Date(step.suggested_start_time).toLocaleString("vi-VN")}
                       </p>
                     </div>

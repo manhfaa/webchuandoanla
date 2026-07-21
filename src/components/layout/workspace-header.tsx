@@ -1,103 +1,63 @@
 "use client";
 
 import Link from "next/link";
-import { Menu } from "lucide-react";
+import { Crown, LogOut, Menu, ScanSearch } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { normalizePlan, PLANS } from "@/lib/plans";
 import { useSessionStore } from "@/store/session-store";
 import type { PlanTier } from "@/types";
 
 interface WorkspaceHeaderProps {
   pageTitle: string;
+  pageDescription?: string;
   onOpenMobileNav?: () => void;
 }
 
 function planBadgeVariant(plan: PlanTier) {
   if (plan === "elite") return "elite" as const;
   if (plan === "bloom") return "success" as const;
-  if (plan === "grow") return "muted" as const;
   return "muted" as const;
 }
 
-export function WorkspaceHeader({ pageTitle, onOpenMobileNav }: WorkspaceHeaderProps) {
+export function WorkspaceHeader({ pageTitle, pageDescription, onOpenMobileNav }: WorkspaceHeaderProps) {
   const router = useRouter();
   const { user, logout } = useSessionStore();
   const plan = normalizePlan(user?.currentPlan);
   const planInfo = PLANS[plan];
-  const initials = user?.name?.[0]?.toUpperCase() ?? "U";
+  const initials = user?.name?.trim()?.[0]?.toUpperCase() ?? "U";
 
   return (
-    <header
-      className="sticky top-0 z-50 flex h-16 shrink-0 items-center px-4 sm:px-6 lg:px-8"
-      style={{
-        background: "var(--bg-app)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        borderBottom: "1px solid var(--border)",
-      }}
-    >
-      {/* Left: hamburger + brand + page title */}
-      <div className="flex min-w-0 flex-1 items-center gap-3">
+    <header className="workspace-header sticky top-0 z-30 flex min-h-[72px] shrink-0 items-center px-4 sm:px-6 lg:px-8">
+      <div className="flex w-full min-w-0 items-center gap-3">
         {onOpenMobileNav ? (
-          <button
-            type="button"
-            onClick={onOpenMobileNav}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[--r-md] border border-[--border] text-[--text-muted] transition-colors hover:text-[--text-default] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500/40 lg:hidden"
-            aria-label="Mở menu điều hướng"
-          >
-            <Menu size={16} strokeWidth={1.75} />
+          <button type="button" onClick={onOpenMobileNav} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-ink-soft transition hover:bg-surface-soft hover:text-ink lg:hidden" aria-label="Mở menu điều hướng">
+            <Menu size={19} aria-hidden />
           </button>
         ) : null}
 
-        <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[--text-muted]">
-            Agromind AI
-          </p>
-          <h1 className="truncate text-[15px] font-semibold leading-tight text-[--text-strong]">
-            {pageTitle}
-          </h1>
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate font-display text-base font-bold tracking-[-0.02em] text-ink sm:text-lg">{pageTitle}</h1>
+          {pageDescription ? <p className="mt-0.5 hidden truncate text-xs text-ink-soft md:block">{pageDescription}</p> : null}
         </div>
-      </div>
 
-      {/* Right: plan badge + upgrade + avatar */}
-      <div className="flex shrink-0 items-center gap-2">
-        {/* Online dot + plan — gom làm 1 badge */}
-        <Badge variant={planBadgeVariant(plan)} className="hidden items-center gap-1.5 sm:inline-flex">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-leaf-500" />
-          {planInfo.icon} {planInfo.name}
-        </Badge>
-
-        {/* Upgrade link — ẩn khi đang ở gói elite */}
-        {plan !== "elite" ? (
-          <Link
-            href="/dashboard/pricing"
-            className="hidden items-center gap-1 rounded-[--r-md] border border-[--border-medium] px-3 py-1.5 text-xs font-medium text-[--text-default] transition-colors hover:bg-[--bg-surface] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500/40 sm:flex"
-          >
-            Nâng cấp
+        <div className="flex shrink-0 items-center gap-2">
+          <Badge variant={planBadgeVariant(plan)} className="hidden min-h-8 items-center gap-1.5 px-3 sm:inline-flex">
+            <Crown size={13} aria-hidden /> {planInfo.name}
+          </Badge>
+          <ThemeToggle className="border border-line bg-surface" />
+          <Link href="/dashboard/diagnosis" className={buttonVariants({ variant: "primary", size: "sm", className: "hidden md:inline-flex" })}>
+            <ScanSearch size={16} aria-hidden /> Kiểm tra ảnh mới
           </Link>
-        ) : null}
-
-        {/* Avatar dropdown */}
-        <div className="flex items-center gap-2 rounded-[--r-md] border border-[--border] px-2 py-1">
-          <Link href="/dashboard/profile" aria-label="Hồ sơ">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[--bg-surface-2] border border-[--border-medium] text-xs font-semibold text-[--text-muted] select-none">
-              {initials}
-            </div>
+          <Link href="/dashboard/profile" className="flex h-10 min-w-10 items-center gap-2 rounded-xl border border-line bg-surface px-1.5 pr-2.5 transition hover:bg-surface-soft" aria-label="Mở hồ sơ người dùng">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-soft text-xs font-bold text-leaf-strong">{initials}</span>
+            <span className="hidden max-w-[110px] truncate text-xs font-semibold text-ink xl:block">{user?.name ?? "Người dùng"}</span>
           </Link>
-          <p className="hidden max-w-[120px] truncate text-[13px] font-medium text-[--text-default] sm:block">
-            {user?.name ?? "Người dùng"}
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              logout();
-              router.push("/login");
-            }}
-            className="rounded-[--r-sm] px-2 py-0.5 text-[11px] font-semibold text-[--text-muted] transition-colors hover:bg-white/5 hover:text-[--text-default] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-leaf-500/40"
-          >
-            Đăng xuất
+          <button type="button" onClick={() => { logout(); router.push("/login"); }} className="flex h-10 w-10 items-center justify-center rounded-xl text-ink-soft transition hover:bg-danger/10 hover:text-danger" aria-label="Đăng xuất">
+            <LogOut size={17} aria-hidden />
           </button>
         </div>
       </div>

@@ -19,32 +19,32 @@ const statusMeta: Record<
   pending: {
     label: "Sắp tới",
     icon: CircleDashed,
-    nodeClass: "bg-white text-slate-400 ring-1 ring-slate-200",
-    lineClass: "bg-slate-200",
+    nodeClass: "bg-surface text-ink-soft ring-1 ring-line",
+    lineClass: "bg-line",
   },
   current: {
     label: "Đang thực hiện",
     icon: Clock3,
-    nodeClass: "bg-emerald-600 text-white shadow-float",
-    lineClass: "bg-emerald-300",
+    nodeClass: "bg-leaf text-on-leaf shadow-md",
+    lineClass: "bg-leaf/45",
   },
   completed: {
     label: "Đã hoàn thành",
     icon: CheckCircle2,
-    nodeClass: "bg-brand-600 text-white",
-    lineClass: "bg-brand-500",
+    nodeClass: "bg-leaf-strong text-on-leaf",
+    lineClass: "bg-leaf",
   },
   skipped: {
     label: "Bỏ qua",
     icon: PauseCircle,
-    nodeClass: "bg-slate-300 text-slate-700",
-    lineClass: "bg-slate-300",
+    nodeClass: "bg-surface-soft text-ink-soft",
+    lineClass: "bg-line",
   },
   delayed: {
     label: "Bị đổi lịch",
     icon: TriangleAlert,
-    nodeClass: "bg-amber-500 text-white",
-    lineClass: "bg-[linear-gradient(to_bottom,#f59e0b_50%,transparent_50%)] bg-[length:100%_12px]",
+    nodeClass: "bg-sun text-forest",
+    lineClass: "bg-[linear-gradient(to_bottom,var(--sun)_50%,transparent_50%)] bg-[length:100%_12px]",
   },
 };
 
@@ -73,7 +73,7 @@ export function CropPlanTimeline({
           <div key={step.id}>
             {showPhase ? (
               <div className="mb-4 flex items-center gap-3">
-                <span className="rounded-full bg-emerald-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-800">
+                <span className="rounded-full bg-surface-soft px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-leaf-strong">
                   {step.phase_key}
                 </span>
               </div>
@@ -81,7 +81,7 @@ export function CropPlanTimeline({
 
             <div className="grid grid-cols-[60px_minmax(0,1fr)] gap-4">
               <div className="relative flex flex-col items-center">
-                <div className="text-2xl font-semibold text-emerald-900/80">{step.step_number}</div>
+                <div className="text-2xl font-bold text-leaf-strong">{step.step_number}</div>
                 <div className={cn("mt-3 flex h-12 w-12 items-center justify-center rounded-full", meta.nodeClass)}>
                   <Icon size={18} />
                 </div>
@@ -92,47 +92,47 @@ export function CropPlanTimeline({
 
               <Card
                 className={cn(
-                  "mb-5 rounded-[28px] border-emerald-100/70 bg-white/92 p-5 transition duration-200",
-                  selectedStepId === step.id && "ring-2 ring-emerald-300 shadow-float",
+                  "mb-5 rounded-lg border-line bg-surface p-5 transition duration-180",
+                  selectedStepId === step.id && "ring-2 ring-leaf/35 shadow-md",
                 )}
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <div className="flex flex-wrap items-center gap-3">
-                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                      <span className="rounded-full bg-surface-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">
                         {step.short_label || step.title}
                       </span>
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                      <span className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-ink-soft">
                         {meta.label}
                       </span>
                     </div>
-                    <h3 className="mt-3 font-display text-2xl font-semibold text-slate-950">
+                    <h3 className="mt-3 font-display text-2xl font-bold text-ink">
                       {step.title}
                     </h3>
-                    <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">{step.description}</p>
+                    <p className="mt-3 max-w-3xl text-sm leading-7 text-ink-soft">{step.description}</p>
                   </div>
-                  <div className="rounded-2xl bg-emerald-50/80 px-4 py-3 text-right">
-                    <p className="text-xs uppercase tracking-[0.18em] text-emerald-700/65">Thời gian</p>
-                    <p className="mt-1 text-sm font-medium text-slate-900">
+                  <div className="rounded-lg bg-surface-soft px-4 py-3 text-right">
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">Thời gian</p>
+                    <p className="mt-1 text-sm font-medium text-ink">
                       {new Date(step.suggested_start_time).toLocaleString("vi-VN")}
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-5 grid gap-3 md:grid-cols-3">
-                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm text-slate-700">
-                    <p className="text-xs uppercase tracking-[0.18em] text-emerald-700/65">Thời lượng</p>
-                    <p className="mt-2 font-medium text-slate-900">{step.estimated_duration_minutes} phút</p>
+                  <div className="rounded-lg border border-line bg-surface-soft px-4 py-3 text-sm text-ink-soft">
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">Thời lượng</p>
+                    <p className="mt-2 font-medium text-ink">{step.estimated_duration_minutes} phút</p>
                   </div>
-                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm text-slate-700">
-                    <p className="text-xs uppercase tracking-[0.18em] text-emerald-700/65">Nước tưới</p>
-                    <p className="mt-2 font-medium text-slate-900">
+                  <div className="rounded-lg border border-line bg-surface-soft px-4 py-3 text-sm text-ink-soft">
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">Nước tưới</p>
+                    <p className="mt-2 font-medium text-ink">
                       {step.water_amount ? `${step.water_amount.value} ${step.water_amount.unit}` : "Theo dõi ẩm đất"}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm text-slate-700">
-                    <p className="text-xs uppercase tracking-[0.18em] text-emerald-700/65">Nắng</p>
-                    <p className="mt-2 font-medium text-slate-900">{step.sunlight_requirement_text || "Theo điều kiện thực tế"}</p>
+                  <div className="rounded-lg border border-line bg-surface-soft px-4 py-3 text-sm text-ink-soft">
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">Nắng</p>
+                    <p className="mt-2 font-medium text-ink">{step.sunlight_requirement_text || "Theo điều kiện thực tế"}</p>
                   </div>
                 </div>
 
@@ -143,7 +143,7 @@ export function CropPlanTimeline({
                   {step.status !== "completed" ? (
                     <Button onClick={() => onComplete(step.id)}>Hoàn thành</Button>
                   ) : (
-                    <span className="rounded-full bg-emerald-100 px-4 py-3 text-sm font-medium text-emerald-800">
+                    <span className="rounded-full bg-surface-soft px-4 py-3 text-sm font-medium text-leaf-strong">
                       Bước này đã xong
                     </span>
                   )}

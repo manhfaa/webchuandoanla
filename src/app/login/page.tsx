@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, ShieldCheck } from "lucide-react";
+import { ArrowRight, LockKeyhole } from "lucide-react";
 
-import { Logo } from "@/components/layout/logo";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { brand } from "@/constants/brand";
+import { PasswordInput } from "@/components/ui/password-input";
 import { useSessionStore } from "@/store/session-store";
 
 type GoogleCredentialResponse = {
@@ -53,32 +52,29 @@ export default function LoginPage() {
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-    window.location.replace(nextPath);
+    if (isAuthenticated) window.location.replace(nextPath);
   }, [isAuthenticated, nextPath]);
 
   useEffect(() => {
     const candidate = new URLSearchParams(window.location.search).get("next");
-    if (candidate && candidate.startsWith("/dashboard")) {
-      setNextPath(candidate);
-    }
+    if (candidate?.startsWith("/dashboard")) setNextPath(candidate);
   }, []);
 
   useEffect(() => {
     if (!googleClientId || !googleButtonRef.current) return;
 
-    const buttonEl = googleButtonRef.current;
+    const buttonElement = googleButtonRef.current;
     const existingScript = document.querySelector<HTMLScriptElement>("script[data-google-identity]");
 
     const initializeGoogle = () => {
-      if (!window.google || !buttonEl) return;
-      buttonEl.innerHTML = "";
+      if (!window.google) return;
+      buttonElement.innerHTML = "";
       window.google.accounts.id.initialize({
         client_id: googleClientId,
         use_fedcm_for_prompt: true,
         callback: async (response) => {
           if (!response.credential) {
-            setGoogleError("Google không trả về mã xác thực. Vui lòng thử lại.");
+            setGoogleError("Google chưa xác nhận được tài khoản. Vui lòng thử lại.");
             return;
           }
 
@@ -88,16 +84,16 @@ export default function LoginPage() {
             await loginWithGoogle({ credential: response.credential });
             window.location.assign(nextPath);
           } catch {
-            // The store exposes the backend error for the alert below.
+            // The session store provides a user-facing message below.
           }
         },
       });
-      window.google.accounts.id.renderButton(buttonEl, {
+      window.google.accounts.id.renderButton(buttonElement, {
         theme: "outline",
         size: "large",
-        shape: "pill",
+        shape: "rectangular",
         text: "continue_with",
-        width: Math.min(360, buttonEl.clientWidth || 360),
+        width: Math.min(420, buttonElement.clientWidth || 420),
         locale: "vi",
       });
     };
@@ -114,12 +110,10 @@ export default function LoginPage() {
     script.defer = true;
     script.dataset.googleIdentity = "true";
     script.onload = initializeGoogle;
-    script.onerror = () => setGoogleError("Không tải được đăng nhập Google. Vui lòng thử lại sau.");
+    script.onerror = () => setGoogleError("Chưa thể mở đăng nhập Google. Vui lòng dùng email hoặc thử lại sau.");
     document.head.appendChild(script);
 
-    return () => {
-      window.google?.accounts.id.cancel();
-    };
+    return () => window.google?.accounts.id.cancel();
   }, [clearError, googleClientId, loginWithGoogle, nextPath]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -128,140 +122,77 @@ export default function LoginPage() {
       await login({ email, password });
       window.location.assign(nextPath);
     } catch {
-      // The store exposes the backend error for the alert below.
+      // The session store provides a user-facing message below.
     }
   }
 
   return (
-    <main id="main-content" className="min-h-screen bg-ink-50 px-4 py-8 sm:px-6 lg:px-10">
-      <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-5xl gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-stretch">
-        <Card variant="dark" padding="lg" className="relative overflow-hidden border-border-dark bg-app text-on-dark">
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.35]"
-            style={{
-              backgroundImage: "radial-gradient(circle, rgba(232,241,235,0.14) 1px, transparent 1px)",
-              backgroundSize: "20px 20px",
-            }}
-          />
-          <div className="pointer-events-none absolute inset-0 bg-hero-radial opacity-90" aria-hidden />
-          <div className="relative flex h-full flex-col justify-between gap-10">
-            <div className="flex items-center justify-between gap-4">
-              <Logo dark />
-              <Link
-                href="/"
-                className="rounded-md border border-border-dark px-3 py-2 text-body-sm font-medium text-muted-on-dark transition hover:bg-white/5 hover:text-on-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500/40"
-              >
-                Về trang chủ
-              </Link>
-            </div>
-
-            <div>
-              <p className="text-overline text-muted-on-dark">Đăng nhập</p>
-              <h1 className="mt-3 text-display text-on-dark">Chào mừng trở lại Agromind AI</h1>
-              <p className="mt-4 max-w-md text-body-lg text-muted-on-dark">
-                {brand.slogan} Đăng nhập để đồng bộ lịch sử kiểm tra, hồ sơ và dữ liệu chăm sóc cây.
-              </p>
-            </div>
-
-            <ul className="space-y-3 text-body-sm text-muted-on-dark">
-              <li className="flex gap-2">
-                <span className="text-leaf-300" aria-hidden>·</span>
-                Phiên đăng nhập an toàn, dữ liệu được gắn với tài khoản của bạn.
-              </li>
-              <li className="flex gap-2">
-                <span className="text-leaf-300" aria-hidden>·</span>
-                Mỗi chẩn đoán được gắn với tài khoản của bạn.
-              </li>
-              <li className="flex gap-2">
-                <span className="text-leaf-300" aria-hidden>·</span>
-                Khu quản lý chỉ mở khi bạn đã đăng nhập hợp lệ.
-              </li>
-            </ul>
-          </div>
-        </Card>
-
-        <Card variant="light" padding="lg" className="flex flex-col justify-center shadow-md">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-md bg-leaf-100 text-leaf-700">
-              <ShieldCheck strokeWidth={1.75} className="h-5 w-5" aria-hidden />
-            </div>
-            <div>
-              <p className="text-overline text-leaf-700">Truy cập an toàn</p>
-              <h2 className="mt-1 text-h2 text-ink-900">Đăng nhập tài khoản</h2>
-            </div>
-          </div>
-
-          <form className="mt-8" onSubmit={handleSubmit}>
-            <div className="rounded-2xl border border-leaf-100 bg-leaf-50/70 p-4">
-              <p className="text-body-sm font-semibold text-ink-900">Đăng nhập nhanh bằng Google</p>
-              <div ref={googleButtonRef} className="mt-3 min-h-10 w-full" />
-              {!googleClientId ? (
-                <p className="mt-3 text-caption text-amber-700">
-                  Chưa cấu hình Google Client ID cho website.
-                </p>
-              ) : null}
-              {googleError ? <p className="mt-3 text-caption text-amber-700">{googleError}</p> : null}
-            </div>
-
-            <div className="my-6 flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.16em] text-ink-400">
-              <span className="h-px flex-1 bg-border-light" />
+    <AuthShell
+      eyebrow="Truy cập tài khoản"
+      title="Tiếp tục theo dõi khu vườn của bạn"
+      description="Đăng nhập để xem lại ảnh lá, kết quả cần chú ý và các kế hoạch chăm sóc đã lưu."
+      asideTitle="Từ một chiếc lá, theo dõi cả quá trình chăm sóc."
+      asideDescription="Agromind AI sắp xếp kết quả kiểm tra, điều kiện vườn và việc nên làm trong một không gian dễ theo dõi."
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {googleClientId ? (
+          <div className="rounded-lg border border-line bg-surface-soft p-4">
+            <p className="text-sm font-semibold text-ink">Tiếp tục nhanh bằng Google</p>
+            <div ref={googleButtonRef} className="mt-3 min-h-11 w-full overflow-hidden rounded-md" />
+            {googleError ? <p role="alert" className="mt-3 text-xs leading-6 text-danger">{googleError}</p> : null}
+            <div className="mt-5 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
+              <span className="h-px flex-1 bg-line" aria-hidden />
               Hoặc dùng email
-              <span className="h-px flex-1 bg-border-light" />
+              <span className="h-px flex-1 bg-line" aria-hidden />
             </div>
+          </div>
+        ) : null}
 
-            <div className="space-y-4">
-              <Input
-                tone="light"
-                label="Email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => {
-                  clearError();
-                  setEmail(event.target.value);
-                }}
-                placeholder="vd: user@example.com"
-              />
-              <Input
-                tone="light"
-                label="Mật khẩu"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(event) => {
-                  clearError();
-                  setPassword(event.target.value);
-                }}
-                placeholder="Nhập mật khẩu"
-              />
-            </div>
+        <Input
+          label="Email"
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(event) => {
+            clearError();
+            setEmail(event.target.value);
+          }}
+          placeholder="tenban@example.com"
+          required
+        />
+        <PasswordInput
+          label="Mật khẩu"
+          autoComplete="current-password"
+          value={password}
+          onChange={(event) => {
+            clearError();
+            setPassword(event.target.value);
+          }}
+          placeholder="Nhập mật khẩu"
+          required
+        />
 
-            {error ? (
-              <div role="alert" className="mt-5 rounded-md border border-amber-200/80 bg-amber-50 px-4 py-3 text-body text-amber-950">
-                {error}
-              </div>
-            ) : null}
+        {error ? (
+          <div role="alert" className="rounded-md border border-danger/25 bg-danger/10 px-4 py-3 text-sm font-medium text-danger">
+            {error}
+          </div>
+        ) : null}
 
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button size="lg" loading={status === "loading"} type="submit">
-                Vào dashboard
-                <ArrowRight strokeWidth={1.75} className="h-4 w-4" aria-hidden />
-              </Button>
+        <Button size="lg" loading={status === "loading"} type="submit" className="w-full">
+          <LockKeyhole size={17} aria-hidden /> Đăng nhập <ArrowRight size={17} aria-hidden />
+        </Button>
 
-              <Link
-                href="/register"
-                className="inline-flex h-12 items-center justify-center rounded-md border border-border-light bg-leaf-50 px-5 text-body font-medium text-ink-900 transition hover:bg-leaf-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500/40"
-              >
-                Tạo tài khoản
-              </Link>
-            </div>
-          </form>
+        <div className="flex flex-col items-center justify-between gap-3 border-t border-line pt-5 text-sm sm:flex-row">
+          <span className="text-ink-soft">Chưa có tài khoản?</span>
+          <Link href="/register" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+            Tạo tài khoản
+          </Link>
+        </div>
+      </form>
 
-          <p className="mt-6 text-caption text-ink-500">
-            Nếu quên mật khẩu, liên hệ quản trị viên để được hỗ trợ đặt lại.
-          </p>
-        </Card>
-      </div>
-    </main>
+      <p className="mt-6 text-xs leading-6 text-ink-soft">
+        Nếu quên mật khẩu, hãy liên hệ quản trị viên hỗ trợ tài khoản.
+      </p>
+    </AuthShell>
   );
 }

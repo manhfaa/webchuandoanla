@@ -32,9 +32,9 @@ import { useSessionStore } from "@/store/session-store";
 const copy = {
   vi: {
     eyebrow: "Thời tiết & sâu bệnh",
-    title: "Cảnh báo theo vị trí thực tế",
+    title: "Thời tiết tại vườn và việc cần chú ý",
     intro:
-      "Lấy vị trí hiện tại bằng GPS hoặc nhập địa chỉ thủ công. Khi có tọa độ, hệ thống dùng Open-Meteo để lấy dự báo thật 7 ngày và suy luận rủi ro sâu bệnh.",
+      "Dùng vị trí hiện tại hoặc nhập khu vực trồng để xem dự báo 7 ngày, cảnh báo thời tiết và nguy cơ sâu bệnh có thể liên quan.",
     locationName: "Tên vị trí",
     province: "Tỉnh / thành phố",
     district: "Huyện / quận",
@@ -53,7 +53,7 @@ const copy = {
     disclaimer: "Lưu ý an toàn",
     noWarnings: "Chưa có cảnh báo thời tiết nghiêm trọng.",
     noAlerts: "Chưa có cảnh báo sâu bệnh nổi bật cho dữ liệu hiện tại.",
-    login: "Cần đăng nhập để lưu vị trí vườn và xem cảnh báo theo khu vực.",
+    login: "Cần đăng nhập để lưu vị trí và xem cảnh báo theo khu vườn.",
   },
   en: {
     eyebrow: "Weather & pests",
@@ -78,7 +78,7 @@ const copy = {
     disclaimer: "Safety note",
     noWarnings: "No severe weather warning in the current data.",
     noAlerts: "No major pest alert in the current data.",
-    login: "Please sign in to save locations and load alerts.",
+    login: "Please sign in to save locations and view field alerts.",
   },
 };
 
@@ -94,7 +94,7 @@ const defaultForm = {
 };
 
 function sourceLabel(source?: string) {
-  if (source === "open_meteo") return "Open-Meteo · dữ liệu thật";
+  if (source === "open_meteo") return "Dự báo đã cập nhật · Open-Meteo";
   return source || "Chưa có dữ liệu";
 }
 
@@ -112,22 +112,22 @@ function coordinateText(lat?: number | null, lon?: number | null) {
 
 function WeatherMetric({ icon: Icon, label, value }: { icon: typeof ThermometerSun; label: string; value: string }) {
   return (
-    <div className="rounded-md border border-border-dark bg-app-surface-2 p-4">
-      <div className="flex items-center gap-2 text-muted-on-dark">
+    <div className="rounded-lg border border-line bg-surface-soft p-4">
+      <div className="flex items-center gap-2 text-ink-soft">
         <Icon strokeWidth={1.75} className="h-4 w-4" />
         <span className="text-caption uppercase tracking-[0.12em]">{label}</span>
       </div>
-      <p className="mt-2 text-xl font-semibold text-on-dark-strong">{value}</p>
+      <p className="mt-2 text-xl font-bold text-ink">{value}</p>
     </div>
   );
 }
 
 function WeatherDayCard({ day }: { day: WeatherDay }) {
   return (
-    <div className="rounded-md border border-emerald-100/70 bg-white p-4 text-[#0C1410] shadow-sm">
-      <p className="text-body-sm font-semibold">{new Date(day.date).toLocaleDateString("vi-VN")}</p>
-      <p className="mt-1 text-caption text-[#2F3833]">{day.summary}</p>
-      <div className="mt-3 grid grid-cols-2 gap-2 text-caption text-[#2F3833]">
+    <div className="rounded-lg border border-line bg-surface p-4 text-ink shadow-sm">
+      <p className="text-body-sm font-bold">{new Date(day.date).toLocaleDateString("vi-VN")}</p>
+      <p className="mt-1 text-caption text-ink-soft">{day.summary}</p>
+      <div className="mt-3 grid grid-cols-2 gap-2 text-caption text-ink-soft">
         <span>Nhiệt: {day.temperature_c}°C</span>
         <span>Ẩm: {day.humidity_percent}%</span>
         <span>Mưa: {day.rain_probability_percent}%</span>
@@ -274,13 +274,13 @@ export default function WeatherAlertsPage() {
   const weatherSource = advisory?.weather.source;
 
   return (
-    <div className="space-y-6">
-      <Card variant="dark" padding="lg" className="border-border-dark bg-app-surface text-on-dark">
+    <div className="mx-auto max-w-[1380px] space-y-6">
+      <Card variant="dark" padding="lg" className="field-contours rounded-xl">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
-            <p className="text-overline text-leaf-300">{text.eyebrow}</p>
-            <h2 className="mt-2 text-h2 text-on-dark-strong">{text.title}</h2>
-            <p className="mt-3 max-w-3xl text-body-sm leading-relaxed text-muted-on-dark">{text.intro}</p>
+            <p className="text-overline text-on-forest-muted">{text.eyebrow}</p>
+            <h2 className="mt-2 text-h2 font-bold text-on-forest">{text.title}</h2>
+            <p className="mt-3 max-w-3xl text-body-sm leading-relaxed text-on-forest-muted">{text.intro}</p>
           </div>
           <Badge variant={advisory?.pest_alerts.risk_level === "high" ? "warning" : "success"}>
             {riskLabel(advisory?.pest_alerts.risk_level)}
@@ -289,19 +289,19 @@ export default function WeatherAlertsPage() {
       </Card>
 
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        <Card variant="dark" padding="lg" className="border-border-dark">
-          <div className="mb-5 rounded-md border border-border-dark bg-app-surface-2 p-4">
+        <Card variant="raised" padding="lg" className="rounded-xl">
+          <div className="mb-5 rounded-lg border border-line bg-surface-soft p-4">
             <div className="flex items-start gap-3">
-              <div className="rounded-md bg-leaf-500/15 p-2 text-leaf-300">
+              <div className="rounded-md bg-surface p-2 text-leaf-strong">
                 <Compass className="h-5 w-5" />
               </div>
               <div>
-                <p className="font-semibold text-on-dark-strong">Nguồn vị trí</p>
-                <p className="mt-1 text-body-sm leading-relaxed text-muted-on-dark">
-                  GPS sẽ chính xác nhất. Nếu nhập thủ công, hệ thống sẽ xác định tọa độ từ địa chỉ trước khi lấy dữ liệu thời tiết từ Open-Meteo.
+                <p className="font-bold text-ink">Chọn vị trí khu vườn</p>
+                <p className="mt-1 text-body-sm leading-relaxed text-ink-soft">
+                  Vị trí hiện tại thường cho kết quả sát nhất. Bạn cũng có thể nhập tỉnh, huyện và xã/phường để lưu khu vực trồng.
                 </p>
-                <p className="mt-2 text-caption text-leaf-200">
-                  Tọa độ form: {coordinateText(form.latitude, form.longitude)}
+                <p className="mt-2 text-caption font-semibold text-leaf-strong">
+                  Tọa độ đang chọn: {coordinateText(form.latitude, form.longitude)}
                 </p>
               </div>
             </div>
@@ -331,8 +331,7 @@ export default function WeatherAlertsPage() {
               </Button>
               <Button
                 type="button"
-                variant="secondaryOnLight"
-                className="border-[#B8E9C8] bg-[#F0FAF4] !text-[#0C1410] disabled:border-[#B8E9C8] disabled:bg-[#F0FAF4] disabled:!text-[#0C1410] disabled:!opacity-100 disabled:[&>svg]:!text-[#2F3833]"
+                variant="secondary"
                 disabled={!selectedLocation || loading}
                 onClick={() => selectedLocation && void loadAdvisory(selectedLocation)}
               >
@@ -354,8 +353,8 @@ export default function WeatherAlertsPage() {
                   }}
                   className={`rounded-full border px-3 py-1.5 text-body-sm transition ${
                     selectedLocationId === location.id
-                      ? "border-[#2FA664] bg-[#DCF5E4] text-[#0F4D2C]"
-                      : "border-[#B8E9C8] bg-[#F7F9F8] text-[#2F3833] hover:bg-[#F0FAF4]"
+                      ? "border-leaf/40 bg-surface-soft text-leaf-strong"
+                      : "border-line bg-surface text-ink-soft hover:bg-surface-soft"
                   }`}
                   title={coordinateText(location.latitude, location.longitude)}
                 >
@@ -365,29 +364,29 @@ export default function WeatherAlertsPage() {
             </div>
           ) : null}
 
-          {locationNote ? <p className="mt-4 text-body-sm text-leaf-200">{locationNote}</p> : null}
-          {error ? <p className="mt-4 text-body-sm text-berry-500">{error}</p> : null}
+          {locationNote ? <p className="mt-4 text-body-sm font-medium text-leaf-strong">{locationNote}</p> : null}
+          {error ? <p className="mt-4 text-body-sm text-danger">{error}</p> : null}
 
           {!accessToken ? (
-            <div className="mt-4 rounded-md border border-berry-500/30 bg-berry-500/10 p-4">
-              <p className="text-body-sm text-berry-300">{text.login}</p>
+            <div className="mt-4 rounded-lg border border-danger/25 bg-danger/10 p-4">
+              <p className="text-body-sm text-danger">{text.login}</p>
               <Link
                 href={loginUrl}
-                className="mt-3 inline-flex h-10 items-center justify-center rounded-md bg-leaf-500 px-5 text-body font-medium text-white transition hover:bg-leaf-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500/40"
+                className="mt-3 inline-flex h-10 items-center justify-center rounded-md bg-leaf px-5 text-body font-medium text-on-leaf transition hover:bg-leaf-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/40"
               >
-                {language === "en" ? "Sign in" : "Đăng nhập dashboard"}
+                {language === "en" ? "Sign in" : "Đăng nhập"}
               </Link>
             </div>
           ) : null}
         </Card>
 
-        <Card variant="dark" padding="lg" className="border-border-dark bg-app-surface text-on-dark">
+        <Card variant="default" padding="lg" className="rounded-xl">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-overline text-muted-on-dark">{text.current}</p>
-              <p className="mt-2 text-caption text-leaf-200">{sourceLabel(weatherSource)}</p>
+              <p className="text-overline text-leaf-strong">{text.current}</p>
+              <p className="mt-2 text-caption font-semibold text-leaf-strong">{sourceLabel(weatherSource)}</p>
               {selectedLocation ? (
-                <p className="mt-1 text-caption text-muted-on-dark">
+                <p className="mt-1 text-caption text-ink-soft">
                   {selectedLocation.name} · {coordinateText(selectedLocation.latitude, selectedLocation.longitude)}
                 </p>
               ) : null}
@@ -399,19 +398,19 @@ export default function WeatherAlertsPage() {
 
           {current ? (
             <>
-              <h3 className="mt-4 text-h2 text-on-dark-strong">{current.summary}</h3>
+              <h3 className="mt-4 text-h2 font-bold text-ink">{current.summary}</h3>
               <div className="mt-5 grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
                 <WeatherMetric icon={ThermometerSun} label="Nhiệt độ" value={`${current.temperature_c}°C`} />
                 <WeatherMetric icon={CloudRain} label="Mưa" value={`${current.rain_probability_percent}%`} />
                 <WeatherMetric icon={Sprout} label="Độ ẩm" value={`${current.humidity_percent}%`} />
                 <WeatherMetric icon={Wind} label="Gió" value={`${current.wind_kmh} km/h`} />
               </div>
-              <p className="mt-5 rounded-md border border-border-dark bg-app-surface-2 p-4 text-body-sm leading-relaxed text-muted-on-dark">
+              <p className="mt-5 rounded-lg border border-line bg-surface-soft p-4 text-body-sm leading-relaxed text-ink-soft">
                 {advisory?.weather.message}
               </p>
             </>
           ) : (
-            <p className="mt-3 text-body-sm text-muted-on-dark">
+            <p className="mt-3 text-body-sm text-ink-soft">
               Chưa có dữ liệu. Hãy lấy vị trí hiện tại hoặc nhập địa chỉ rồi bấm lưu.
             </p>
           )}
@@ -421,16 +420,16 @@ export default function WeatherAlertsPage() {
       {advisory ? (
         <>
           <div className="grid gap-6 xl:grid-cols-2">
-            <Card variant="light" padding="lg" className="shadow-sm">
-              <p className="text-overline text-leaf-700">{text.forecast3}</p>
+            <Card variant="default" padding="lg" className="rounded-xl shadow-sm">
+              <p className="text-overline text-leaf-strong">{text.forecast3}</p>
               <div className="mt-4 grid gap-3 md:grid-cols-3">
                 {advisory.weather.forecast_3d.map((day) => (
                   <WeatherDayCard key={day.date} day={day} />
                 ))}
               </div>
             </Card>
-            <Card variant="light" padding="lg" className="shadow-sm">
-              <p className="text-overline text-leaf-700">{text.forecast7}</p>
+            <Card variant="default" padding="lg" className="rounded-xl shadow-sm">
+              <p className="text-overline text-leaf-strong">{text.forecast7}</p>
               <div className="mt-4 grid gap-3 md:grid-cols-2">
                 {advisory.weather.forecast_7d.slice(0, 6).map((day) => (
                   <WeatherDayCard key={day.date} day={day} />
@@ -440,42 +439,42 @@ export default function WeatherAlertsPage() {
           </div>
 
           <div className="grid gap-6 xl:grid-cols-3">
-            <Card variant="dark" padding="lg" className="border-border-dark bg-app-surface text-on-dark">
-              <div className="flex items-center gap-2 text-on-dark-strong">
-                <ShieldAlert strokeWidth={1.75} className="h-5 w-5 text-sun-400" />
-                <h3 className="text-h3">{text.warnings}</h3>
+            <Card variant="warning" padding="lg" className="rounded-xl">
+              <div className="flex items-center gap-2 text-ink">
+                <ShieldAlert strokeWidth={1.75} className="h-5 w-5 text-soil" />
+                <h3 className="text-h3 font-bold">{text.warnings}</h3>
               </div>
-              <ul className="mt-4 space-y-3 text-body-sm leading-relaxed text-muted-on-dark">
+              <ul className="mt-4 space-y-3 text-body-sm leading-relaxed text-ink-soft">
                 {(advisory.weather.warnings.length ? advisory.weather.warnings : [text.noWarnings]).map((item) => (
                   <li key={item}>- {item}</li>
                 ))}
               </ul>
             </Card>
 
-            <Card variant="dark" padding="lg" className="border-border-dark bg-app-surface text-on-dark">
-              <h3 className="text-h3 text-on-dark-strong">{text.pest}</h3>
+            <Card variant="default" padding="lg" className="rounded-xl">
+              <h3 className="text-h3 font-bold text-ink">{text.pest}</h3>
               <div className="mt-4 space-y-3">
                 {advisory.pest_alerts.alerts.length ? (
                   advisory.pest_alerts.alerts.map((alert) => (
-                    <div key={alert.title} className="rounded-md border border-border-dark bg-app-surface-2 p-3">
-                      <p className="font-semibold text-on-dark-strong">{alert.title}</p>
-                      <p className="mt-1 text-body-sm leading-relaxed text-muted-on-dark">{alert.description}</p>
+                    <div key={alert.title} className="rounded-lg border border-line bg-surface-soft p-3">
+                      <p className="font-semibold text-ink">{alert.title}</p>
+                      <p className="mt-1 text-body-sm leading-relaxed text-ink-soft">{alert.description}</p>
                     </div>
                   ))
                 ) : (
-                  <p className="text-body-sm text-muted-on-dark">{text.noAlerts}</p>
+                  <p className="text-body-sm text-ink-soft">{text.noAlerts}</p>
                 )}
               </div>
             </Card>
 
-            <Card variant="dark" padding="lg" className="border-border-dark bg-app-surface text-on-dark">
-              <h3 className="text-h3 text-on-dark-strong">{text.recommendations}</h3>
-              <ul className="mt-4 space-y-3 text-body-sm leading-relaxed text-muted-on-dark">
+            <Card variant="soft" padding="lg" className="rounded-xl">
+              <h3 className="text-h3 font-bold text-ink">{text.recommendations}</h3>
+              <ul className="mt-4 space-y-3 text-body-sm leading-relaxed text-ink-soft">
                 {advisory.recommendations.map((item) => (
                   <li key={item}>- {item}</li>
                 ))}
               </ul>
-              <p className="mt-5 text-caption leading-relaxed text-muted-on-dark">
+              <p className="mt-5 border-t border-line pt-4 text-caption leading-relaxed text-ink-soft">
                 {text.disclaimer}: {advisory.disclaimer}
               </p>
             </Card>

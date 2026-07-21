@@ -1,83 +1,81 @@
-import {
-  ArrowUpRight,
-  BrainCircuit,
-  CloudSun,
-  Database,
-  FileSearch,
-  Leaf,
-  Microscope,
-  ScanLine,
-  Sprout,
-} from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight, BookOpen, CloudSun, History, Leaf, MessageSquareText, ScanSearch, Sprout } from "lucide-react";
 
 import { SectionShell } from "@/components/layout/section-shell";
-import { Card } from "@/components/ui/card";
+import { SurfaceCard } from "@/components/ui/card";
 import { Reveal } from "@/components/ui/reveal";
-import { featureItems } from "@/data/mock/features";
 
-const featureIcons = {
-  cnn: Microscope,
-  yolo: ScanLine,
-  tavily: FileSearch,
-  deepseek: BrainCircuit,
-  weather: CloudSun,
-  history: Database,
-  "crop-plans": Sprout,
-};
+const featureGroups = [
+  {
+    name: "Phân tích lá",
+    caption: "Nhìn rõ dấu hiệu cần chú ý",
+    items: [
+      { title: "Kiểm tra ảnh lá", description: "Xác nhận ảnh đủ rõ và xem các khả năng bệnh kèm độ tin cậy.", href: "/login?next=/dashboard/diagnosis", icon: ScanSearch },
+      { title: "Đối chiếu triệu chứng", description: "Bổ sung quan sát thực tế và xem nguồn tham khảo liên quan.", href: "/login?next=/dashboard/diagnosis", icon: Leaf },
+    ],
+  },
+  {
+    name: "Theo dõi vườn",
+    caption: "Ghi nhận thay đổi theo thời gian",
+    items: [
+      { title: "Thời tiết & cảnh báo", description: "Theo dõi điều kiện tại vị trí vườn và các tín hiệu cần lưu ý.", href: "/login?next=/dashboard/weather-alerts", icon: CloudSun },
+      { title: "Lịch sử kiểm tra", description: "Xem lại ảnh, kết quả và những lần cần chụp lại.", href: "/login?next=/dashboard/history", icon: History },
+      { title: "Lô vườn", description: "Gắn nhật ký chăm sóc và kết quả kiểm tra với từng khu vực trồng.", href: "/login?next=/dashboard/farms", icon: Sprout },
+    ],
+  },
+  {
+    name: "Ra quyết định",
+    caption: "Biến thông tin thành hành động",
+    items: [
+      { title: "Kế hoạch chăm sóc", description: "Sắp xếp việc tưới, bón và theo dõi cây theo từng giai đoạn.", href: "/login?next=/dashboard/crop-plans", icon: Sprout },
+      { title: "Chat tư vấn", description: "Đặt câu hỏi dựa trên kết quả đã lưu hoặc hỏi vấn đề nông nghiệp.", href: "/login?next=/dashboard/chat", icon: MessageSquareText },
+      { title: "Thư viện vật tư", description: "Tra cứu hướng dẫn sử dụng và lưu ý an toàn trước khi áp dụng.", href: "/login?next=/dashboard/input-library", icon: BookOpen },
+    ],
+  },
+];
 
 export function FeaturesSection() {
   return (
     <SectionShell
       id="tinh-nang"
-      eyebrow="Tính năng nổi bật"
-      title="Những công cụ giúp người trồng cây phát hiện sớm vấn đề trên lá và chăm sóc cây có cơ sở hơn."
-      description="Agromind AI kết hợp nhận diện ảnh, mô tả triệu chứng, nguồn tham khảo và lịch sử theo dõi để hỗ trợ người dùng ra quyết định thận trọng hơn trong canh tác."
-      className="relative overflow-hidden bg-white dark:bg-[#04180f]"
+      eyebrow="Bộ công cụ Field Lens"
+      title="Mọi công cụ cần thiết để theo dõi sức khỏe cây từ ảnh lá đến việc chăm sóc"
+      description="Agromind sắp xếp tính năng theo đúng cách bạn làm việc ngoài vườn: quan sát, theo dõi rồi mới quyết định hành động."
+      className="relative overflow-hidden bg-canvas"
     >
-      <div className="pointer-events-none absolute left-0 top-24 -z-10 h-80 w-80 rounded-full bg-leaf-100/70 blur-3xl" />
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {featureItems.map((item, index) => {
-          const Icon = featureIcons[item.id as keyof typeof featureIcons] ?? Leaf;
-          return (
-            <Reveal key={item.id} delay={index * 0.05}>
-              <Card className="group relative h-full overflow-hidden rounded-[32px] border-white/75 bg-white/90 p-6 shadow-[0_18px_60px_rgba(17,64,42,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-float dark:border-white/10 dark:bg-white/10 dark:shadow-[0_18px_60px_rgba(0,0,0,0.28)]">
-                <div className={`absolute inset-0 bg-gradient-to-br ${item.accent} dark:opacity-20`} />
-                <div className="relative">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="inline-flex rounded-full bg-white/90 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-leaf-800 dark:border dark:border-white/10 dark:bg-white/10 dark:text-lime-100">
-                      {item.eyebrow}
-                    </div>
-                    <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-leaf-900 text-lime-100 shadow-sm transition group-hover:scale-105 group-hover:bg-leaf-600">
-                      <Icon size={22} />
-                    </span>
-                  </div>
-                  <h3 className="mt-6 font-display text-2xl font-semibold leading-tight text-ink-900 dark:text-white">
-                    {item.title}
-                  </h3>
-                  <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-emerald-50/75">{item.description}</p>
-                  <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-leaf-700 dark:text-lime-100">
-                    Tìm hiểu tính năng
-                    <ArrowUpRight size={16} />
-                  </div>
-                </div>
-              </Card>
-            </Reveal>
-          );
-        })}
+      <div className="grid gap-5 lg:grid-cols-3">
+        {featureGroups.map((featureGroup, groupIndex) => (
+          <Reveal key={featureGroup.name} delay={groupIndex * 0.06}>
+            <SurfaceCard variant={groupIndex === 0 ? "dark" : "raised"} padding="lg" className="h-full">
+              <div className="border-b border-line pb-5">
+                <p className={groupIndex === 0 ? "text-xs font-semibold uppercase tracking-[0.12em] text-on-forest-muted" : "text-xs font-semibold uppercase tracking-[0.12em] text-leaf-strong"}>
+                  Nhóm {groupIndex + 1}
+                </p>
+                <h3 className={groupIndex === 0 ? "mt-2 font-display text-2xl font-bold text-on-forest" : "mt-2 font-display text-2xl font-bold text-ink"}>{featureGroup.name}</h3>
+                <p className={groupIndex === 0 ? "mt-2 text-sm text-on-forest-muted" : "mt-2 text-sm text-ink-soft"}>{featureGroup.caption}</p>
+              </div>
 
-        <Reveal delay={featureItems.length * 0.05}>
-          <Card className="relative h-full overflow-hidden rounded-[32px] border-amber-200/80 bg-gradient-to-br from-amber-50 via-white to-lime-50 p-6 shadow-[0_18px_60px_rgba(119,78,16,0.08)] dark:border-amber-200/20 dark:from-amber-300/10 dark:via-white/10 dark:to-lime-300/10 xl:col-span-2">
-            <div className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-amber-900 dark:bg-amber-200/10 dark:text-amber-100">
-              Lưu ý an toàn
-            </div>
-            <h3 className="mt-5 max-w-2xl font-display text-2xl font-semibold text-ink-900 dark:text-white">
-              AI hỗ trợ quyết định nhanh hơn, nhưng không thay thế quan sát thực địa.
-            </h3>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-700 dark:text-emerald-50/75">
-              Khi bệnh lan rộng, cây suy nhanh hoặc cần dùng thuốc bảo vệ thực vật, người dùng nên hỏi chuyên gia nông nghiệp địa phương để xử lý an toàn.
-            </p>
-          </Card>
-        </Reveal>
+              <div className="mt-5 space-y-3">
+                {featureGroup.items.map(({ title, description, href, icon: Icon }) => (
+                  <Link key={title} href={href} className={groupIndex === 0 ? "group block rounded-2xl border border-on-forest/10 bg-on-forest/5 p-4 transition duration-180 hover:-translate-y-0.5 hover:bg-on-forest/10" : "group block rounded-2xl border border-line bg-surface p-4 transition duration-180 hover:-translate-y-0.5 hover:bg-surface-soft"}>
+                    <div className="flex items-start gap-3">
+                      <span className={groupIndex === 0 ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-on-forest/10 text-on-forest" : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-soft text-leaf-strong"}>
+                        <Icon size={18} aria-hidden />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className={groupIndex === 0 ? "font-semibold text-on-forest" : "font-semibold text-ink"}>{title}</p>
+                          <ArrowUpRight size={16} className={groupIndex === 0 ? "shrink-0 text-on-forest-muted transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" : "shrink-0 text-ink-soft transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5"} aria-hidden />
+                        </div>
+                        <p className={groupIndex === 0 ? "mt-1 text-sm leading-6 text-on-forest-muted" : "mt-1 text-sm leading-6 text-ink-soft"}>{description}</p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </SurfaceCard>
+          </Reveal>
+        ))}
       </div>
     </SectionShell>
   );

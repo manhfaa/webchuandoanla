@@ -1,10 +1,10 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, Crown, ShieldCheck, Sprout, TrendingUp } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { SurfaceCard } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { PlanTier, PricingPlan } from "@/types";
 
@@ -18,6 +18,13 @@ const PLAN_RANK: Record<PlanTier, number> = {
 function rankOf(id: string): number {
   return PLAN_RANK[id as PlanTier] ?? 0;
 }
+
+const planIcons = {
+  seed: Sprout,
+  grow: TrendingUp,
+  bloom: ShieldCheck,
+  elite: Crown,
+};
 
 export function PricingCard({
   plan,
@@ -37,9 +44,10 @@ export function PricingCard({
 
   const isEmphasized = Boolean(plan.highlight || dark);
   const isTopCurrent = isCurrent && plan.id === "elite";
+  const PlanIcon = planIcons[plan.id as PlanTier] ?? Sprout;
 
   let actionLabel = plan.cta;
-  let actionVariant: "primary" | "secondary" | "outline" | "ghostOnDark" = plan.highlight
+  let actionVariant: "primary" | "secondary" | "outline" | "ghost" = plan.highlight
     ? "secondary"
     : dark
       ? "outline"
@@ -57,35 +65,27 @@ export function PricingCard({
   }
 
   return (
-    <Card
-      glow={Boolean(plan.highlight) && !isCurrent}
+    <SurfaceCard
+      variant={plan.highlight || dark ? "dark" : "default"}
       className={cn(
-        "relative flex h-full flex-col overflow-hidden rounded-lg p-5 lg:p-6",
-        dark
-          ? "border-white/10 bg-white/5 text-white"
-          : "border-white/75 bg-white/90 text-ink dark:border-white/10 dark:bg-white/10 dark:text-white",
-        plan.highlight &&
-          !dark &&
-          "bg-gradient-to-br from-[#0f221a] via-[#153524] to-[#10231c] text-white",
-        isTopCurrent && "border-2 border-leaf-500 shadow-glow",
-        isCurrent && plan.id !== "elite" && "border border-leaf-500/60 ring-1 ring-leaf-500/30",
+        "relative flex h-full flex-col overflow-hidden p-5 lg:p-6",
+        isTopCurrent && "border-2 border-leaf shadow-md",
+        isCurrent && plan.id !== "elite" && "border border-leaf/60 ring-1 ring-leaf/30",
       )}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(232,252,162,0.14),transparent_26%),radial-gradient(circle_at_bottom_left,rgba(120,212,157,0.12),transparent_24%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,var(--mint),transparent_28%)] opacity-20" />
 
       <div className="relative flex flex-1 flex-col">
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-xl">{plan.icon}</span>
+              <span className={cn("flex h-9 w-9 items-center justify-center rounded-xl", isEmphasized ? "bg-on-forest/10 text-on-forest" : "bg-surface-soft text-leaf-strong")}>
+                <PlanIcon size={18} aria-hidden />
+              </span>
               <p
                 className={cn(
-                  "text-xs font-semibold uppercase tracking-[0.28em]",
-                  plan.highlight
-                    ? "text-lime-200/80"
-                    : dark
-                      ? "text-emerald-100/70"
-                      : "text-brand-700 dark:text-lime-100",
+                  "text-xs font-semibold uppercase tracking-wider",
+                  plan.highlight || dark ? "text-on-forest-muted" : "text-ink-soft",
                 )}
               >
                 {plan.name}
@@ -106,7 +106,7 @@ export function PricingCard({
             <h3
               className={cn(
                 "max-w-full break-words font-display text-[1.75rem] font-semibold tracking-tight sm:text-[2rem]",
-                isEmphasized ? "text-white" : "text-ink dark:text-white",
+                isEmphasized ? "text-on-forest" : "text-ink",
               )}
             >
               {plan.price}
@@ -114,7 +114,7 @@ export function PricingCard({
             <p
               className={cn(
                 "mt-3 text-sm leading-7",
-                isEmphasized ? "text-emerald-50/80" : "text-slate-600 dark:text-emerald-50/75",
+                isEmphasized ? "text-on-forest-muted" : "text-ink-soft",
               )}
             >
               {plan.description}
@@ -122,7 +122,7 @@ export function PricingCard({
           </div>
         </div>
 
-        <div className="mt-5 h-px w-full bg-gradient-to-r from-emerald-200/70 via-emerald-100/30 to-transparent" />
+        <div className="mt-5 h-px w-full bg-gradient-to-r from-line via-line/50 to-transparent" />
 
         <div className="mt-5 space-y-3">
           {plan.features.map((feature) => (
@@ -130,13 +130,13 @@ export function PricingCard({
               key={feature}
               className={cn(
                 "flex items-start gap-3 rounded-lg px-3 py-3",
-                isEmphasized ? "bg-white/5" : "bg-emerald-50/60 dark:bg-white/10",
+                isEmphasized ? "bg-on-forest/5" : "bg-surface-soft",
               )}
             >
               <span
                 className={cn(
                   "mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
-                  isEmphasized ? "bg-white/10 text-lime-200" : "bg-brand-100 text-brand-700 dark:bg-white/10 dark:text-lime-100",
+                  isEmphasized ? "bg-on-forest/10 text-on-forest" : "bg-surface text-leaf-strong",
                 )}
               >
                 <Check size={14} />
@@ -144,7 +144,7 @@ export function PricingCard({
               <p
                 className={cn(
                   "text-sm leading-7",
-                  isEmphasized ? "text-emerald-50/90" : "text-slate-700 dark:text-emerald-50/75",
+                  isEmphasized ? "text-on-forest" : "text-ink",
                 )}
               >
                 {feature}
@@ -157,8 +157,10 @@ export function PricingCard({
           {isCurrent ? (
             <div
               className={cn(
-                "flex w-full items-center justify-center gap-2 rounded-md border border-leaf-400/50 py-2.5 text-body-sm font-semibold",
-                isTopCurrent ? "bg-leaf-500/20 text-leaf-100" : "bg-leaf-500/10 text-leaf-200",
+                "flex w-full items-center justify-center gap-2 rounded-md border py-2.5 text-body-sm font-semibold",
+                isTopCurrent
+                  ? "border-leaf/50 bg-leaf/20 text-leaf"
+                  : "border-line bg-surface-soft text-ink-soft",
               )}
             >
               <Check strokeWidth={2.5} className="h-4 w-4 shrink-0" aria-hidden />
@@ -176,6 +178,6 @@ export function PricingCard({
           )}
         </div>
       </div>
-    </Card>
+    </SurfaceCard>
   );
 }

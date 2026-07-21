@@ -21,26 +21,19 @@ export function SectionShell({
   contentClassName?: string;
 }) {
   return (
-    <section
-      id={id}
-      className={cn(
-        "px-4 py-20 transition-colors duration-300 sm:px-6 lg:px-8",
-        "dark:bg-[#04180f] dark:text-emerald-50",
-        className,
-      )}
-    >
+    <section id={id} className={cn("px-4 py-20 sm:px-6 lg:px-8 lg:py-24", className)}>
       <div className="mx-auto max-w-7xl">
-        <Reveal className="mb-10 max-w-3xl">
+        <Reveal className="mb-10 max-w-4xl">
           {eyebrow ? (
-            <div className="mb-4 inline-flex rounded-full bg-brand-100 px-4 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-brand-800 dark:border dark:border-white/10 dark:bg-white/10 dark:text-lime-100">
+            <div className="mb-4 inline-flex rounded-full border border-line bg-surface-soft px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-leaf-strong">
               {eyebrow}
             </div>
           ) : null}
-          <h2 className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl dark:text-white">
+          <h2 className="max-w-3xl font-display text-3xl font-bold tracking-[-0.035em] text-ink sm:text-4xl lg:text-[42px] lg:leading-[1.15]">
             {title}
           </h2>
           {description ? (
-            <p className="mt-4 text-lg leading-8 text-slate-600 dark:text-emerald-50/75">{description}</p>
+            <p className="mt-4 max-w-3xl text-base leading-7 text-ink-soft sm:text-lg sm:leading-8">{description}</p>
           ) : null}
         </Reveal>
         <div className={contentClassName}>{children}</div>
