@@ -22,7 +22,6 @@ export function Footer() {
               {landingNavItems.map((item) => (
                 <a key={item.href} href={item.href} className="block text-sm font-medium text-on-forest-muted transition hover:text-on-forest">{item.label}</a>
               ))}
-              <a href="#thanh-vien" className="block text-sm font-medium text-on-forest-muted transition hover:text-on-forest">Đội ngũ</a>
             </div>
           </div>
 
