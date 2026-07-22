@@ -8,7 +8,7 @@ const cspDirectives = [
   "object-src 'none'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://upload.wikimedia.org https://*.tile.openstreetmap.org https://api.qrserver.com https://qr.sepay.vn",
+  "img-src 'self' data: blob: https://upload.wikimedia.org https://*.tile.openstreetmap.org https://api.qrserver.com https://qr.sepay.vn https://vietqr.app",
   "font-src 'self' data:",
   "connect-src 'self' https://*.onrender.com https://*.vercel.app https://accounts.google.com https://oauth2.googleapis.com http://127.0.0.1:* http://localhost:*",
   "frame-src 'self' https://accounts.google.com",
