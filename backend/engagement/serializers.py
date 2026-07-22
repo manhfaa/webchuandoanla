@@ -85,18 +85,3 @@ class ExpertConsultationSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "created_at", "updated_at")
-
-
-class VerifyTransferSerializer(serializers.Serializer):
-    plan = serializers.ChoiceField(choices=("grow", "bloom", "elite"))
-    amount = serializers.IntegerField(min_value=1000)
-    payer_name = serializers.CharField(max_length=120)
-    bank_name = serializers.CharField(max_length=120)
-    transfer_code = serializers.CharField(max_length=120)
-    contact_name = serializers.CharField(max_length=120)
-    contact_email = serializers.EmailField()
-    contact_phone = serializers.CharField(max_length=30)
-    contact_note = serializers.CharField(max_length=255, required=False, allow_blank=True)
-    recipient_account_name = serializers.CharField(max_length=120, required=False, allow_blank=True)
-    recipient_account_number = serializers.CharField(max_length=50, required=False, allow_blank=True)
-    recipient_bank_name = serializers.CharField(max_length=120, required=False, allow_blank=True)

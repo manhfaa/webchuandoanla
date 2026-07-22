@@ -6,7 +6,7 @@ services:
     rootDir: backend
     buildCommand: pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput
     startCommand: gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 60
-    healthCheckPath: /admin/login/
+    healthCheckPath: /api/health/
     autoDeployTrigger: commit
     envVars:
       - key: PYTHON_VERSION
@@ -29,3 +29,23 @@ services:
         generateValue: true
       - key: SUPABASE_DB_URL
         sync: false
+      - key: SEPAY_WEBHOOK_SECRET
+        sync: false
+      - key: SEPAY_API_KEY
+        sync: false
+      - key: SEPAY_BANK_CODE
+        sync: false
+      - key: SEPAY_BANK_NAME
+        sync: false
+      - key: SEPAY_ACCOUNT_NUMBER
+        sync: false
+      - key: SEPAY_ACCOUNT_NAME
+        sync: false
+      - key: SEPAY_PAYMENT_PREFIX
+        value: AGM
+      - key: SEPAY_WEBHOOK_MAX_AGE_SECONDS
+        value: 300
+      - key: SEPAY_ORDER_TTL_MINUTES
+        value: 30
+      - key: SEPAY_SUBSCRIPTION_DAYS
+        value: 30

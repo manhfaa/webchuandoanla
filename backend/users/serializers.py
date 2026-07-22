@@ -5,12 +5,15 @@ from google.oauth2 import id_token
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from payments.services import expire_user_plan
+
 from .models import UserSetting
 
 User = get_user_model()
 
 
 def build_tokens_for_user(user):
+    expire_user_plan(user)
     refresh = RefreshToken.for_user(user)
     refresh["username"] = user.username
     refresh["email"] = user.email

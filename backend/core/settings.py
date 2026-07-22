@@ -136,8 +136,12 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "users.authentication.ExpiringJWTAuthentication",
     ],
+    "DEFAULT_THROTTLE_RATES": {
+        "payment_orders": "30/hour",
+        "payment_status": "120/minute",
+    },
 }
 
 SIMPLE_JWT = {
@@ -150,6 +154,10 @@ SIMPLE_JWT = {
 # Render/Proxy friendly defaults
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
+SECURE_SSL_REDIRECT = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "3600")) if not DEBUG else 0
 
 CNN_MODEL_PATH = os.getenv("CNN_MODEL_PATH", "").strip()
 CNN_API_URL = os.getenv("CNN_API_URL", "").strip()
@@ -157,7 +165,14 @@ CNN_API_TOKEN = os.getenv("CNN_API_TOKEN", "").strip()
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
 
 # SePay payment gateway
-SEPAY_API_KEY = os.getenv("SEPAY_API_KEY", "")
-SEPAY_BANK_CODE = os.getenv("SEPAY_BANK_CODE", "BIDV")
-SEPAY_ACCOUNT_NUMBER = os.getenv("SEPAY_ACCOUNT_NUMBER", "8807986170")
-SEPAY_ACCOUNT_NAME = os.getenv("SEPAY_ACCOUNT_NAME", "PHAM DUC MANH")
+SEPAY_API_KEY = os.getenv("SEPAY_API_KEY", "").strip()
+SEPAY_WEBHOOK_SECRET = os.getenv("SEPAY_WEBHOOK_SECRET", "").strip()
+SEPAY_WEBHOOK_MAX_AGE_SECONDS = int(os.getenv("SEPAY_WEBHOOK_MAX_AGE_SECONDS", "300"))
+SEPAY_BANK_CODE = os.getenv("SEPAY_BANK_CODE", "").strip()
+SEPAY_BANK_NAME = os.getenv("SEPAY_BANK_NAME", "").strip()
+SEPAY_ACCOUNT_NUMBER = os.getenv("SEPAY_ACCOUNT_NUMBER", "").strip()
+SEPAY_ACCOUNT_NAME = os.getenv("SEPAY_ACCOUNT_NAME", "").strip()
+SEPAY_PAYMENT_PREFIX = os.getenv("SEPAY_PAYMENT_PREFIX", "AGM").strip()
+SEPAY_ORDER_TTL_MINUTES = int(os.getenv("SEPAY_ORDER_TTL_MINUTES", "30"))
+SEPAY_SUBSCRIPTION_DAYS = int(os.getenv("SEPAY_SUBSCRIPTION_DAYS", "30"))
+SEPAY_QR_BASE_URL = os.getenv("SEPAY_QR_BASE_URL", "https://vietqr.app/img").strip()

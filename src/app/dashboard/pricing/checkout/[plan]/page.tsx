@@ -13,9 +13,27 @@ import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/store/session-store";
 
 type OrderData = {
-  order: { plan: string; price: number; transfer_content: string };
+  order: {
+    id: string;
+    plan: string;
+    price: number;
+    amount_received: number;
+    remaining_amount: number;
+    status: string;
+    transfer_content: string;
+    expires_at: string;
+  };
   bank: { name: string; account_number: string; account_name: string };
   qr_url: string;
+};
+
+type OrderStatusData = {
+  order: {
+    status: string;
+    amount_received: number;
+    remaining_amount: number;
+  };
+  current_plan: string;
 };
 
 function copyToClipboard(text: string) {
@@ -58,7 +76,9 @@ export default function CheckoutPlanPage() {
   const [orderError, setOrderError] = useState<string | null>(null);
   const [polling, setPolling] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollingStartedAtRef = useRef(0);
 
   // Tạo order khi mount
   useEffect(() => {
@@ -69,7 +89,7 @@ export default function CheckoutPlanPage() {
 
     async function createOrder() {
       try {
-        const res = await fetch("/api/django/api/payments/create-order/", {
+        const res = await fetch("/api/django/api/payments/orders/", {
           method: "POST",
           headers: {
             "content-type": "application/json",
@@ -103,27 +123,75 @@ export default function CheckoutPlanPage() {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    setPolling(false);
   }, []);
 
   function startPolling() {
+    if (!orderData || polling) return;
+    const orderId = orderData.order.id;
+    setPaymentMessage(null);
     setPolling(true);
-    intervalRef.current = setInterval(async () => {
+    pollingStartedAtRef.current = Date.now();
+
+    async function checkOrder() {
       try {
-        const res = await fetch("/api/django/api/payments/status/", {
+        const res = await fetch(`/api/django/api/payments/orders/${orderId}/`, {
           headers: accessToken ? { authorization: `Bearer ${accessToken}` } : {},
+          cache: "no-store",
         });
-        if (!res.ok) return;
-        const data = await res.json() as { current_plan: string };
-        if (data.current_plan === planParam) {
+        if (!res.ok) {
+          if (Date.now() - pollingStartedAtRef.current > 10 * 60 * 1000) {
+            stopPolling();
+            setPaymentMessage("Chưa thể xác nhận giao dịch. Bạn có thể kiểm tra lại trong lịch sử thanh toán.");
+          }
+          return;
+        }
+        const data = await res.json() as OrderStatusData;
+        setOrderData((current) => current ? {
+          ...current,
+          order: {
+            ...current.order,
+            status: data.order.status,
+            amount_received: data.order.amount_received,
+            remaining_amount: data.order.remaining_amount,
+          },
+        } : current);
+
+        if (data.order.status === "paid") {
           stopPolling();
-          setPlan(planParam as Parameters<typeof setPlan>[0]);
+          setPlan(data.current_plan as Parameters<typeof setPlan>[0]);
           setSuccess(true);
           setTimeout(() => router.push("/dashboard"), 3000);
+          return;
+        }
+        if (data.order.status === "underpaid") {
+          setPaymentMessage(`Hệ thống đã nhận tiền nhưng còn thiếu ${data.order.remaining_amount.toLocaleString("vi-VN")}đ. Hãy chuyển đúng phần còn thiếu với cùng nội dung.`);
+          return;
+        }
+        if (["overpaid", "review"].includes(data.order.status)) {
+          stopPolling();
+          setPaymentMessage("Giao dịch cần được đối soát do số tiền hoặc thời điểm chuyển chưa khớp. Gói chưa được kích hoạt tự động.");
+          return;
+        }
+        if (["expired", "cancelled"].includes(data.order.status)) {
+          stopPolling();
+          setPaymentMessage("Yêu cầu thanh toán đã hết hạn hoặc bị hủy. Vui lòng quay lại bảng giá để tạo yêu cầu mới.");
+          return;
+        }
+        if (Date.now() - pollingStartedAtRef.current > 10 * 60 * 1000) {
+          stopPolling();
+          setPaymentMessage("Chưa nhận được giao dịch sau 10 phút. Bạn có thể kiểm tra lại đơn này sau mà không cần chuyển thêm tiền.");
         }
       } catch {
-        // tiếp tục thử
+        if (Date.now() - pollingStartedAtRef.current > 10 * 60 * 1000) {
+          stopPolling();
+          setPaymentMessage("Kết nối kiểm tra thanh toán bị gián đoạn. Vui lòng thử lại sau.");
+        }
       }
-    }, 2000);
+    }
+
+    void checkOrder();
+    intervalRef.current = setInterval(() => void checkOrder(), 3000);
   }
 
   if (!planInfo) return null;
@@ -217,6 +285,12 @@ export default function CheckoutPlanPage() {
                 <CopyButton text={orderData.order.transfer_content} />
               </span>
             </div>
+            <div className="flex items-center justify-between rounded-lg border border-line bg-surface-soft px-4 py-3">
+              <span className="text-ink-soft">Yêu cầu có hiệu lực đến</span>
+              <span className="font-semibold text-ink">
+                {new Date(orderData.order.expires_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            </div>
           </div>
 
           <div className="mt-4 flex items-start gap-2 rounded-lg border border-sun/30 bg-sun/10 p-4 text-xs leading-6 text-ink-soft">
@@ -241,6 +315,12 @@ export default function CheckoutPlanPage() {
               <p className="text-xs text-ink-soft">Thường mất 5–30 giây sau khi chuyển khoản</p>
             </div>
           )}
+
+          {paymentMessage ? (
+            <div className="mt-4 rounded-lg border border-sun/35 bg-sun/10 px-4 py-3 text-sm leading-6 text-ink">
+              {paymentMessage}
+            </div>
+          ) : null}
         </Card>
 
         {/* Cột phải: Tóm tắt đơn hàng */}
@@ -252,7 +332,7 @@ export default function CheckoutPlanPage() {
           <div className="mt-6 text-center">
             <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-surface-soft text-leaf-strong"><PlanIcon size={22} aria-hidden /></span>
             <h3 className="mt-3 font-display text-2xl font-bold text-ink">Gói {planInfo.name}</h3>
-            <p className="mt-1 text-3xl font-bold text-leaf-strong">{planInfo.priceLabel}</p>
+            <p className="mt-1 text-3xl font-bold text-leaf-strong">{orderData.order.price.toLocaleString("vi-VN")}đ/tháng</p>
             <p className="mt-2 text-sm text-ink-soft">{planInfo.tagline}</p>
           </div>
 
