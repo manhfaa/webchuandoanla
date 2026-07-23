@@ -395,7 +395,10 @@ DEEPSEEK_API_KEY
 DEEPSEEK_MODEL
 TAVILY_API_KEY
 NEXT_PUBLIC_GOOGLE_CLIENT_ID
+NEXT_PUBLIC_CLARITY_PROJECT_ID
 ```
+
+`NEXT_PUBLIC_CLARITY_PROJECT_ID` is the Microsoft Clarity project id (public, from `https://clarity.microsoft.com/projects`). A default id is baked into `src/components/system/clarity-analytics.tsx`; this var only overrides it. Clarity loads in production builds only (skipped in dev/preview). CSP in `next.config.js` already allows `*.clarity.ms` and `c.bing.com`.
 
 Render/backend:
 
