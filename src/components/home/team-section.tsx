@@ -142,14 +142,14 @@ export function TeamSection() {
                 className="grid min-h-[520px] overflow-hidden rounded-[var(--r-2xl)] border border-line-strong bg-surface-raised shadow-lg md:grid-cols-[0.9fr_1.1fr]"
               >
                 <div className="living-veins relative min-h-[320px] overflow-hidden bg-forest sm:min-h-[380px] md:min-h-full">
-                  <AnimatePresence initial={false} mode="wait">
+                  <AnimatePresence initial={false} mode="popLayout">
                     <motion.div
                       key={activeMember.id}
                       className="absolute inset-0"
                       initial={reduceMotion ? false : { opacity: 0, y: 24, scale: 0.985 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={reduceMotion ? undefined : { opacity: 0, y: -12, scale: 0.992 }}
-                      transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+                      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                     >
                       <Image
                         src={activeMember.avatar}
@@ -172,7 +172,7 @@ export function TeamSection() {
                     initial={reduceMotion ? false : { opacity: 0, y: 18 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={reduceMotion ? undefined : { opacity: 0, y: -10 }}
-                    transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+                    transition={{ duration: 0.48, ease: [0.22, 1, 0.36, 1] }}
                   >
                     <p className="text-sm font-semibold leading-6 text-leaf-strong">{activeMember.role}</p>
                     <h3 className="mt-3 max-w-xl font-display text-3xl font-extrabold tracking-[-0.04em] text-ink sm:text-4xl">

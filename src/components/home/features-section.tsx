@@ -12,6 +12,7 @@ const compactFeatures = [
     href: "/login?next=/dashboard/weather-alerts",
     icon: CloudSun,
     className: "lg:col-span-5 bg-forest text-on-forest living-veins",
+    micro: "sun" as const,
   },
   {
     title: "Lịch sử kiểm tra",
@@ -19,6 +20,7 @@ const compactFeatures = [
     href: "/login?next=/dashboard/history",
     icon: History,
     className: "lg:col-span-5 bg-surface-raised text-ink",
+    micro: "stack" as const,
   },
   {
     title: "Chat tư vấn",
@@ -26,6 +28,7 @@ const compactFeatures = [
     href: "/login?next=/dashboard/chat",
     icon: MessageSquareText,
     className: "lg:col-span-4 bg-surface-soft text-ink",
+    micro: "bubble" as const,
   },
   {
     title: "Lô vườn",
@@ -33,6 +36,7 @@ const compactFeatures = [
     href: "/login?next=/dashboard/farms",
     icon: Sprout,
     className: "lg:col-span-4 bg-surface-raised text-ink",
+    micro: "contour" as const,
   },
   {
     title: "Kế hoạch chăm sóc",
@@ -40,6 +44,7 @@ const compactFeatures = [
     href: "/login?next=/dashboard/crop-plans",
     icon: Sprout,
     className: "lg:col-span-4 bg-leaf text-on-leaf",
+    micro: "sprout" as const,
   },
 ];
 
@@ -66,7 +71,7 @@ export function FeaturesSection() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-forest via-forest/30 to-transparent" aria-hidden />
             <div className="relative mt-auto w-full p-6 sm:p-8">
-              <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-on-forest/20 bg-forest/65 backdrop-blur-sm">
+              <span className="fl-feat-focus flex h-12 w-12 items-center justify-center rounded-xl border border-on-forest/20 bg-forest/65 backdrop-blur-sm">
                 <ScanSearch size={22} aria-hidden />
               </span>
               <div className="mt-5 flex items-end justify-between gap-5">
@@ -91,13 +96,16 @@ export function FeaturesSection() {
                 href={feature.href}
                 className={`group relative flex min-h-[207px] h-full flex-col justify-between overflow-hidden rounded-[22px] border p-6 transition duration-180 hover:-translate-y-0.5 hover:shadow-md ${feature.className} ${onForest ? "border-transparent" : "border-line"}`}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${onForest ? "bg-on-forest/10 text-on-forest" : "bg-surface-soft text-leaf-strong"}`}>
+                {feature.micro === "sun" ? <span className="fl-feat-sun-layer" aria-hidden /> : null}
+                <div className="relative flex items-start justify-between gap-4">
+                  <span
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl ${onForest ? "bg-on-forest/10 text-on-forest" : "bg-surface-soft text-leaf-strong"} ${feature.micro === "stack" ? "fl-feat-stack" : ""}`}
+                  >
                     <Icon size={20} aria-hidden />
                   </span>
                   <ArrowUpRight size={18} className="transition duration-180 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden />
                 </div>
-                <div>
+                <div className="relative">
                   <h3 className="font-display text-2xl font-bold tracking-[-0.03em]">{feature.title}</h3>
                   <p className={`mt-2 text-sm leading-6 ${onForest ? "text-on-forest-muted" : "text-ink-soft"}`}>{feature.description}</p>
                 </div>
@@ -113,15 +121,18 @@ export function FeaturesSection() {
             <Reveal key={feature.title} delay={0.08 + index * 0.045} className={feature.className.split(" ")[0]}>
               <Link
                 href={feature.href}
-                className={`group flex min-h-[236px] h-full flex-col justify-between rounded-[22px] border p-6 transition duration-180 hover:-translate-y-0.5 hover:shadow-md ${feature.className} ${onLeaf ? "border-transparent" : "border-line"}`}
+                className={`group relative flex min-h-[236px] h-full flex-col justify-between overflow-hidden rounded-[22px] border p-6 transition duration-180 hover:-translate-y-0.5 hover:shadow-md ${feature.className} ${onLeaf ? "border-transparent" : "border-line"}`}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${onLeaf ? "bg-on-leaf/10 text-on-leaf" : "bg-surface text-leaf-strong"}`}>
+                {feature.micro === "contour" ? <span className="fl-feat-contour field-contours" aria-hidden /> : null}
+                <div className="relative flex items-start justify-between gap-4">
+                  <span
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl ${onLeaf ? "bg-on-leaf/10 text-on-leaf" : "bg-surface text-leaf-strong"} ${feature.micro === "bubble" ? "fl-feat-bubble" : ""} ${feature.micro === "sprout" ? "fl-feat-sprout" : ""}`}
+                  >
                     <Icon size={20} aria-hidden />
                   </span>
                   <ArrowUpRight size={18} className="transition duration-180 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden />
                 </div>
-                <div>
+                <div className="relative">
                   <h3 className="font-display text-xl font-bold tracking-[-0.025em]">{feature.title}</h3>
                   <p className={`mt-2 text-sm leading-6 ${onLeaf ? "text-on-leaf/80" : "text-ink-soft"}`}>{feature.description}</p>
                 </div>

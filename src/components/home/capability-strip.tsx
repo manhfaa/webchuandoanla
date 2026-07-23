@@ -26,7 +26,7 @@ const capabilities = [
 
 export function CapabilityStrip() {
   return (
-    <section className="border-y border-line bg-surface px-4 sm:px-6 lg:px-8" aria-label="Khả năng hiện có của Agromind AI">
+    <section className="section-grid border-y border-line bg-surface px-4 sm:px-6 lg:px-8" aria-label="Khả năng hiện có của Agromind AI">
       <Reveal className="mx-auto max-w-7xl">
         <div className="grid sm:grid-cols-3">
           {capabilities.map(({ icon: Icon, value, label, detail }) => (

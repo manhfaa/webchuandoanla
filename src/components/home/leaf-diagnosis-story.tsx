@@ -68,15 +68,19 @@ function StoryStage({ stage, index, progress, reduceMotion }: StoryStageProps) {
     [start, peak, end],
     index === 0 ? [1, 1, 0.992] : index === stages.length - 1 ? [0.992, 1, 1] : [0.992, 1, 0.992],
   );
+  const iconScale = useTransform(progress, [start, peak, end], [0.88, 1, 0.88]);
 
   return (
     <motion.article
       className="relative grid gap-4 rounded-[var(--r-lg)] border border-line bg-surface/92 p-5 shadow-sm backdrop-blur-sm max-lg:!translate-y-0 max-lg:!scale-100 max-lg:!opacity-100 sm:grid-cols-[48px_minmax(0,1fr)] lg:ml-0 lg:border-transparent lg:bg-transparent lg:p-4 lg:pl-0 lg:shadow-none lg:backdrop-blur-none lg:will-change-transform"
       style={reduceMotion ? undefined : { opacity, y, scale }}
     >
-      <span className="relative z-10 flex h-12 w-12 items-center justify-center rounded-[var(--r-md)] border border-line-strong bg-surface-raised text-leaf-strong">
+      <motion.span
+        className="relative z-10 flex h-12 w-12 items-center justify-center rounded-[var(--r-md)] border border-line-strong bg-surface-raised text-leaf-strong"
+        style={reduceMotion ? undefined : { scale: iconScale }}
+      >
         <Icon size={20} strokeWidth={1.8} aria-hidden />
-      </span>
+      </motion.span>
       <div>
         <p className="text-sm font-semibold text-leaf-strong">{stage.question}</p>
         <h3 className="mt-1 font-display text-xl font-extrabold tracking-[-0.025em] text-ink sm:text-2xl">{stage.title}</h3>
@@ -84,6 +88,20 @@ function StoryStage({ stage, index, progress, reduceMotion }: StoryStageProps) {
         <p className="mt-2 text-xs font-semibold leading-5 text-ink">{stage.detail}</p>
       </div>
     </motion.article>
+  );
+}
+
+function VeinDot({ index, progress, reduceMotion }: { index: number; progress: MotionValue<number>; reduceMotion: boolean }) {
+  const [start, peak, end] = ranges[index];
+  const scale = useTransform(progress, [start, peak, end], [0.6, 1.15, 0.75]);
+  const opacity = useTransform(progress, [start, peak, end], [0.35, 1, 0.55]);
+
+  return (
+    <motion.span
+      className="absolute left-6 hidden h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-leaf shadow-[0_0_0_4px_color-mix(in_srgb,var(--leaf)_18%,transparent)] lg:block"
+      style={{ top: `${peak * 100}%`, ...(reduceMotion ? { opacity: 1 } : { scale, opacity }) }}
+      aria-hidden
+    />
   );
 }
 
@@ -177,11 +195,28 @@ export function LeafDiagnosisStory() {
             </div>
 
             <div className="relative">
-              <motion.div
-                className="absolute bottom-8 left-6 top-8 hidden w-px origin-top bg-leaf lg:block"
-                style={reduceMotion ? { scaleY: 1 } : { scaleY: pathScale }}
-                aria-hidden
-              />
+              {/* Desktop: gân lá vẽ dần theo scroll, có chấm nhánh tới từng bước */}
+              <svg
+                className="absolute bottom-8 left-6 top-8 hidden w-3 -translate-x-1/2 overflow-visible lg:block"
+                viewBox="0 0 2 100"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                <motion.path
+                  d="M1 0 L1 100"
+                  fill="none"
+                  stroke="var(--leaf)"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  style={reduceMotion ? { pathLength: 1 } : { pathLength: pathScale }}
+                />
+              </svg>
+              {stages.map((_, index) => (
+                <VeinDot key={`dot-${index}`} index={index} progress={smoothProgress} reduceMotion={Boolean(reduceMotion)} />
+              ))}
+
+              {/* Mobile: timeline dọc đơn giản, không scroll-scrub */}
+              <div className="absolute bottom-6 left-[44px] top-6 w-px bg-gradient-to-b from-leaf/15 via-leaf to-leaf/15 lg:hidden" aria-hidden="true" />
 
               <div className="grid gap-3 lg:min-h-[500px] lg:content-center">
                 {stages.map((stage, index) => (

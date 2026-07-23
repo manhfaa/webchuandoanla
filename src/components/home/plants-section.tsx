@@ -151,9 +151,18 @@ export function PlantsSection() {
                       sizes={isWide
                         ? "(min-width: 1024px) 58vw, (min-width: 640px) 520px, 84vw"
                         : "(min-width: 1024px) 40vw, (min-width: 640px) 520px, 84vw"}
-                      className="object-cover transition duration-700 group-hover:scale-[1.035] motion-reduce:transition-none"
+                      className="object-cover transition duration-700 group-hover:scale-[1.04] motion-reduce:transition-none"
                     />
-                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-forest/25 to-transparent" aria-hidden />
+                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-forest/25 to-transparent transition-[background] duration-260 group-hover:from-forest/50" aria-hidden />
+                    <svg
+                      className="fl-plant-vein pointer-events-none right-3 top-3 h-9 w-9 text-mint"
+                      viewBox="0 0 40 40"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path d="M6 34 C10 22 18 12 34 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.8" />
+                      <path d="M14 26 L20 20" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
+                    </svg>
                   </div>
 
                   <div className="flex min-h-0 flex-1 flex-col p-5 sm:p-6">

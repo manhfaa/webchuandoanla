@@ -6,6 +6,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Leaf, ScanSearch, Sparkles } from "lucide-react";
 
+import { LeafScanOverlay } from "@/components/home/leaf-scan-overlay";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -440,6 +441,7 @@ export function LeafLens() {
                 src="/plant-leaves/agromind-hero-tomato.png"
                 alt=""
                 fill
+                loading="eager"
                 sizes="(min-width: 1024px) 52vw, 100vw"
                 data-leaf-focus-detail
                 className="object-cover object-center"
@@ -451,6 +453,8 @@ export function LeafLens() {
               className="pointer-events-none absolute inset-x-0 top-0 h-[14%] border-b border-mint/60 bg-gradient-to-b from-transparent via-mint/10 to-mint/5"
               aria-hidden
             />
+
+            <LeafScanOverlay />
 
             <div
               data-leaf-active-border
