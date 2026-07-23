@@ -86,6 +86,8 @@ export function CameraFrame({
               src="/illustrations/scan-panel.svg"
               alt="Khung xem trước ảnh lá cây"
               fill
+              priority
+              loading="eager"
               className="object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-forest/90 via-transparent to-transparent" />
@@ -154,7 +156,7 @@ export function CameraFrame({
         {hasBlockingMessage ? (
           <div className="absolute inset-x-6 bottom-6 rounded-lg border border-sun/40 bg-forest/90 p-5 text-on-forest backdrop-blur">
             <div className="flex items-start gap-3">
-              <div className="rounded-md bg-sun/20 p-2 text-sun">
+              <div className="rounded-md bg-sun-soft p-2 text-sun">
                 <CircleAlert size={18} />
               </div>
               <div className="flex-1">

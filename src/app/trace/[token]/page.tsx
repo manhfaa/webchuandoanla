@@ -44,7 +44,7 @@ export default function PublicTraceabilityPage() {
   }, [params.token]);
 
   return (
-    <main id="main-content" className="field-contours min-h-screen bg-canvas px-4 py-8 text-ink sm:px-6 lg:px-8">
+    <main id="main-content" className="field-contours min-h-[100dvh] bg-canvas px-4 py-8 text-ink sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl space-y-6">
         <Link href="/" className="inline-flex items-center gap-2 text-body-sm font-semibold text-leaf-700 no-underline">
           <Leaf strokeWidth={1.75} className="h-4 w-4" />

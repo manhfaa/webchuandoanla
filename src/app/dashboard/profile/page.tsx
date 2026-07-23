@@ -45,7 +45,7 @@ export default function DashboardProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1380px] space-y-6">
+    <div className="fl-stagger mx-auto max-w-[1380px] space-y-6">
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <Card variant="dark" padding="lg" className="field-contours rounded-xl">
           <div className="flex items-start gap-4">

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Be_Vietnam_Pro } from "next/font/google";
+import { Be_Vietnam_Pro, Bricolage_Grotesque } from "next/font/google";
 
 import { BackendWakeup } from "@/components/system/backend-wakeup";
 import { brand } from "@/constants/brand";
@@ -11,6 +11,13 @@ const beVietnamPro = Be_Vietnam_Pro({
   subsets: ["latin", "vietnamese"],
   weight: ["400", "500", "600", "700", "800"],
   variable: "--font-be-vietnam",
+  display: "swap",
+});
+
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin", "vietnamese"],
+  weight: ["600", "700", "800"],
+  variable: "--font-bricolage",
   display: "swap",
 });
 
@@ -29,12 +36,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" suppressHydrationWarning>
-      <body className={`${beVietnamPro.variable} font-sans antialiased`}>
+    <html lang="vi" suppressHydrationWarning data-scroll-behavior="smooth">
+      <body className={`${beVietnamPro.variable} ${bricolage.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="data-theme"
           defaultTheme="system"
           enableSystem
+          enableColorScheme
+          disableTransitionOnChange
         >
           <a
             href="#main-content"

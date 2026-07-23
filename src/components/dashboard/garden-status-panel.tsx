@@ -111,7 +111,7 @@ export function GardenStatusPanel() {
             const Icon = action.icon;
             return (
               <Link key={action.title} href={action.href} className="group flex min-h-[72px] items-center gap-3 rounded-lg border border-line bg-surface p-3 transition duration-180 hover:-translate-y-px hover:border-leaf/35 hover:shadow-sm">
-                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${action.tone === "watch" ? "bg-sun/20 text-soil" : action.tone === "healthy" ? "bg-surface-soft text-leaf-strong" : "bg-canvas text-ink-soft"}`}>
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${action.tone === "watch" ? "bg-sun-soft text-warning-ink" : action.tone === "healthy" ? "bg-success-soft text-success-ink" : "bg-canvas text-ink-soft"}`}>
                   <Icon size={17} aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1">

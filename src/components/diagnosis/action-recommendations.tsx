@@ -36,7 +36,7 @@ export function ActionRecommendations({ plan }: { plan?: ActionPlan | null }) {
         <StatusBadge status={meta.status} label={meta.label} />
       </div>
 
-      {plan.warning ? <div className="mt-5 rounded-lg border border-danger/25 bg-danger/10 px-4 py-3 text-sm leading-7 text-danger">{plan.warning}</div> : null}
+      {plan.warning ? <div className="mt-5 rounded-lg border border-danger/30 bg-danger-soft px-4 py-3 text-sm leading-7 text-danger-ink">{plan.warning}</div> : null}
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         <ListBlock title="Việc cần làm ngay" items={plan.immediate_actions ?? []} emphasized />

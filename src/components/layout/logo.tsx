@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { cn } from "@/lib/utils";
@@ -21,11 +22,12 @@ export function Logo({
       href={href}
       className={cn("inline-flex min-w-0 items-center gap-3", compact && "lg:gap-2", className)}
     >
-      <img
+      <Image
         src="/logos/agromind_app_icon_animated_128.gif"
         alt="Agromind AI logo"
         width={44}
         height={44}
+        unoptimized
         className="h-11 w-11 shrink-0 rounded-lg object-cover"
       />
       <span className={cn("flex min-w-0 flex-col", compact && "lg:sr-only")}>

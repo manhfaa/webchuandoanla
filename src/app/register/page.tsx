@@ -89,7 +89,7 @@ export default function RegisterPage() {
         />
 
         {localError || error ? (
-          <div role="alert" className="rounded-md border border-danger/25 bg-danger/10 px-4 py-3 text-sm font-medium text-danger">
+          <div role="alert" className="rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-sm font-medium text-danger-ink">
             {localError || error}
           </div>
         ) : null}

@@ -72,8 +72,7 @@ def load_bundle() -> dict[str, Any]:
     config = checkpoint.get("config", {})
 
     # The new training pipeline saves a standard torchvision ConvNeXt checkpoint.
-    # Keep the old branch so local environments with the previous checkpoint do not
-    # fail unexpectedly while the Space is being updated.
+    # Keep the legacy branch for older development checkpoints.
     new_state_dict = checkpoint.get("model_state_dict")
     class_to_index = checkpoint.get("class_to_index")
     if new_state_dict and class_to_index:
@@ -252,8 +251,7 @@ app = FastAPI(title="Agromind CNN API")
 
 @app.on_event("startup")
 def warm_model() -> None:
-    # Do not load both large models during container startup on the free CPU
-    # runtime. They are cached and loaded lazily by the first real request.
+    # Free CPU Space memory is tight. Load and cache models on first request.
     return None
 
 

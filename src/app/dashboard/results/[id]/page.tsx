@@ -124,7 +124,7 @@ export default function ResultDetailPage() {
   const sourceLabel = record.inputMethod === "capture" ? "Ảnh chụp" : record.inputMethod === "upload" ? "Ảnh tải lên" : "Ảnh đã chọn";
 
   return (
-    <div className="mx-auto max-w-[1320px] space-y-6">
+    <div className="fl-stagger mx-auto max-w-[1320px] space-y-6">
       <Card variant="raised" padding="lg" className="rounded-xl">
         <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
           <div className="relative min-h-[320px] overflow-hidden rounded-xl border border-line bg-surface-soft sm:min-h-[430px]">
@@ -150,7 +150,7 @@ export default function ResultDetailPage() {
               <div className="col-span-2 sm:col-span-1"><p className="text-xs font-medium text-ink-soft">Trạng thái</p><p className="mt-1 text-sm font-bold text-ink">{record.classificationReady ? "Đã có gợi ý" : refreshState === "error" ? "Cần thử lại" : "Đang xử lý"}</p></div>
             </div>
 
-            {lowConfidence ? <div className="mt-4 rounded-lg border border-sun/35 bg-sun/10 px-4 py-3 text-sm leading-7 text-ink-soft">Độ tin cậy dưới 70%. Nên chụp thêm ảnh rõ hơn hoặc hỏi chuyên gia trước khi xử lý ngoài vườn.</div> : null}
+            {lowConfidence ? <div className="mt-4 rounded-lg border border-sun/35 bg-sun-soft px-4 py-3 text-sm leading-7 text-ink">Độ tin cậy dưới 70%. Nên chụp thêm ảnh rõ hơn hoặc hỏi chuyên gia trước khi xử lý ngoài vườn.</div> : null}
 
             <div className="mt-6 flex flex-wrap gap-3">
               <Button onClick={() => {
@@ -186,7 +186,7 @@ export default function ResultDetailPage() {
           <h3 className="mt-2 text-h2 font-bold text-ink">Thông tin có thể liên quan</h3>
           <p className="mt-2 text-sm leading-7 text-ink-soft">Đọc kỹ hướng dẫn và hỏi người có chuyên môn trước khi sử dụng bất kỳ sản phẩm nào.</p>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
-            {relatedInputs.map((item) => <div key={item.id} className="rounded-lg border border-line bg-surface p-4"><p className="text-sm font-bold text-ink">{item.name}</p><p className="mt-2 text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">{inputCategoryLabel(item.category)}</p><p className="mt-3 text-sm leading-6 text-ink-soft">{item.usage}</p>{item.warning ? <p className="mt-3 text-xs leading-6 text-soil">{item.warning}</p> : null}</div>)}
+            {relatedInputs.map((item) => <div key={item.id} className="rounded-lg border border-line bg-surface p-4"><p className="text-sm font-bold text-ink">{item.name}</p><p className="mt-2 text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">{inputCategoryLabel(item.category)}</p><p className="mt-3 text-sm leading-6 text-ink-soft">{item.usage}</p>{item.warning ? <p className="mt-3 text-xs leading-6 text-warning-ink">{item.warning}</p> : null}</div>)}
           </div>
         </Card>
       ) : null}

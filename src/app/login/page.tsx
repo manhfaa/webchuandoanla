@@ -139,7 +139,7 @@ export default function LoginPage() {
           <div className="rounded-lg border border-line bg-surface-soft p-4">
             <p className="text-sm font-semibold text-ink">Tiếp tục nhanh bằng Google</p>
             <div ref={googleButtonRef} className="mt-3 min-h-11 w-full overflow-hidden rounded-md" />
-            {googleError ? <p role="alert" className="mt-3 text-xs leading-6 text-danger">{googleError}</p> : null}
+            {googleError ? <p role="alert" className="mt-3 text-xs leading-6 text-danger-ink">{googleError}</p> : null}
             <div className="mt-5 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
               <span className="h-px flex-1 bg-line" aria-hidden />
               Hoặc dùng email
@@ -173,7 +173,7 @@ export default function LoginPage() {
         />
 
         {error ? (
-          <div role="alert" className="rounded-md border border-danger/25 bg-danger/10 px-4 py-3 text-sm font-medium text-danger">
+          <div role="alert" className="rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-sm font-medium text-danger-ink">
             {error}
           </div>
         ) : null}

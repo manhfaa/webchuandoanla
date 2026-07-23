@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { Leaf, Menu, X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { landingNavItems } from "@/constants/navigation";
@@ -14,13 +14,25 @@ import { Logo } from "./logo";
 export function Navbar() {
   const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [open]);
+
   return (
-    <header className="fixed inset-x-0 top-0 z-50 px-4 pt-4 sm:px-6 lg:px-8">
+    <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <div className="flex h-14 items-center justify-between rounded-2xl border border-line bg-surface/90 px-3 shadow-sm backdrop-blur-xl md:h-16 md:px-4">
+        <div className="relative flex h-14 items-center justify-between overflow-hidden rounded-2xl border border-line bg-surface/92 px-3 shadow-sm backdrop-blur-xl md:h-16 md:px-4">
+          <span className="pointer-events-none absolute inset-x-16 bottom-0 h-px bg-gradient-to-r from-transparent via-leaf/45 to-transparent" aria-hidden />
           <Logo showTagline={false} />
 
-          <nav className="hidden items-center gap-6 lg:flex">
+          <nav className="hidden items-center gap-5 lg:flex xl:gap-6">
             {landingNavItems.map((item) => (
               <a
                 key={item.href}
@@ -33,7 +45,7 @@ export function Navbar() {
 
             <Link
               href="/login"
-              className="text-sm font-medium text-ink transition hover:text-leaf-strong"
+              className="text-sm font-semibold text-ink transition hover:text-leaf-strong"
             >
               Đăng nhập
             </Link>
@@ -41,7 +53,8 @@ export function Navbar() {
 
           <div className="hidden items-center gap-3 lg:flex">
             <ThemeToggle />
-              <Link href="/login?next=/dashboard/diagnosis" className={buttonVariants({ variant: "primary" })}>
+            <Link href="/login?next=/dashboard/diagnosis" className={cn(buttonVariants({ variant: "primary" }), "chlorophyll-button")}>
+              <Leaf size={16} aria-hidden />
               Kiểm tra lá
             </Link>
           </div>
@@ -53,6 +66,8 @@ export function Navbar() {
               size="iconSm"
               type="button"
               aria-label={open ? "Đóng menu" : "Mở menu"}
+              aria-expanded={open}
+              aria-controls="mobile-navigation"
               onClick={() => setOpen((current) => !current)}
             >
               {open ? <X size={18} /> : <Menu size={18} />}
@@ -61,7 +76,7 @@ export function Navbar() {
         </div>
 
         {open ? (
-          <div className="mt-3 rounded-2xl border border-line bg-surface/95 p-4 shadow-sm backdrop-blur-xl lg:hidden">
+          <div id="mobile-navigation" className="mt-3 rounded-[var(--r-lg)] border border-line bg-surface/95 p-4 shadow-sm backdrop-blur-xl lg:hidden">
             <div className="flex flex-col gap-3">
               {landingNavItems.map((item) => (
                 <a

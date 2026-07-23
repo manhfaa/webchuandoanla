@@ -1146,11 +1146,11 @@ export default function DashboardDiagnosisPage() {
                   setResearchError(null);
                 }}
                 rows={7}
-                className="mt-3 min-h-[180px] w-full resize-none rounded-md border border-line bg-surface-soft px-4 py-3 text-sm leading-7 text-ink outline-none transition placeholder:text-ink-soft focus:border-leaf focus:bg-surface focus:ring-2 focus:ring-leaf/20"
+                className="mt-3 min-h-[180px] w-full resize-none rounded-md border border-line bg-surface-soft px-4 py-3 text-sm leading-7 text-ink outline-none transition placeholder:text-ink-muted focus:border-leaf focus:bg-surface focus:ring-2 focus:ring-leaf/20"
                 placeholder="Ví dụ: lá có đốm nâu lan từ mép, mặt dưới hơi mốc trắng, cây mới mưa nhiều 3 ngày..."
               />
               {researchError ? (
-                <div className="mt-3 rounded-md border border-danger/25 bg-danger/10 px-4 py-3 text-sm leading-6 text-danger">
+                <div className="mt-3 rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-sm leading-6 text-danger-ink">
                   {researchError}
                 </div>
               ) : null}
@@ -1183,7 +1183,7 @@ export default function DashboardDiagnosisPage() {
       {status === "invalid-image" ? (
         <Card variant="warning" padding="lg" className="rounded-xl">
           <div className="flex items-start gap-4">
-            <div className="rounded-md bg-surface p-3 text-soil">
+            <div className="rounded-md bg-surface p-3 text-warning-ink">
               <AlertTriangle size={20} />
             </div>
             <div>

@@ -76,9 +76,10 @@ export function UploadPanel({
         onDragOver={(event) => event.preventDefault()}
         onDragLeave={() => setDragActive(false)}
         onDrop={handleDrop}
+        data-scanning={busy || undefined}
         className={cn(
-          "group mt-6 flex min-h-[250px] w-full flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-10 text-center transition duration-180 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/35 disabled:cursor-not-allowed disabled:opacity-60",
-          dragActive ? "border-leaf bg-surface-soft" : "border-line bg-canvas hover:border-leaf/45 hover:bg-surface-soft",
+          "fl-lens-frame group mt-6 flex min-h-[250px] w-full flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-10 text-center transition duration-180 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/35 disabled:cursor-not-allowed disabled:opacity-70",
+          dragActive ? "border-leaf bg-surface-soft shadow-glow" : "border-line bg-canvas hover:border-leaf/45 hover:bg-surface-soft",
         )}
       >
         <span className="flex h-14 w-14 items-center justify-center rounded-lg bg-surface text-leaf-strong shadow-sm transition group-hover:-translate-y-1">
@@ -90,7 +91,7 @@ export function UploadPanel({
       </button>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
-        <button type="button" onClick={openCapture} disabled={busy} className="flex min-h-12 items-center justify-center gap-2 rounded-md border border-line bg-surface px-5 text-sm font-semibold text-ink transition hover:bg-surface-soft disabled:opacity-60">
+        <button type="button" onClick={openCapture} disabled={busy} className="flex min-h-12 items-center justify-center gap-2 rounded-md border border-line bg-surface px-5 text-sm font-semibold text-ink transition hover:bg-surface-soft disabled:opacity-70">
           <Camera size={18} className="text-leaf-strong" aria-hidden /> {cameraSupported ? "Mở camera để chụp" : "Chụp ảnh từ thiết bị"}
         </button>
         <Button type="button" size="lg" loading={busy} disabled={busy} onClick={onStart} className="w-full sm:w-auto">

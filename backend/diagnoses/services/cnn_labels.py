@@ -114,10 +114,8 @@ def translate_prediction(prediction: dict[str, Any]) -> dict[str, Any]:
     class_name = str(prediction.get("class_name") or "")
     plant_en, disease_en = split_class_name(class_name)
 
-    plant_source = str(prediction.get("plant_name") or plant_en)
-    disease_source = str(prediction.get("disease_name") or disease_en)
-    plant_source = clean_model_label(plant_source)
-    disease_source = clean_model_label(disease_source)
+    plant_source = clean_model_label(str(prediction.get("plant_name") or plant_en))
+    disease_source = clean_model_label(str(prediction.get("disease_name") or disease_en))
 
     class_translation = CLASS_TRANSLATIONS.get(class_name) or _normalized_lookup(CLASS_TRANSLATIONS, class_name)
     if class_translation:
@@ -150,7 +148,6 @@ def translate_result(result: dict[str, Any]) -> dict[str, Any]:
         translated["plant_name_en"] = top_predictions[0].get("plant_name_en", "")
         translated["disease_name_en"] = top_predictions[0].get("disease_name_en", "")
     else:
-        best = translate_prediction(translated)
-        translated.update(best)
+        translated.update(translate_prediction(translated))
 
     return translated

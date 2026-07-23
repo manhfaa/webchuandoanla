@@ -1,5 +1,7 @@
 "use client";
 
+import type { CSSProperties } from "react";
+
 import { ExternalLink, Leaf, LockKeyhole, Sparkles } from "lucide-react";
 
 import { Badge, StatusBadge } from "@/components/ui/badge";
@@ -104,7 +106,7 @@ export function DiagnosisResultCard({
 
       <div className="mt-6 grid gap-5 xl:grid-cols-[0.86fr_1.14fr]">
         <div className="space-y-4">
-          {!detailsOnly ? <div className="rounded-xl bg-forest p-6 text-on-forest">
+          {!detailsOnly ? <div className="fl-rise field-contours relative overflow-hidden rounded-xl bg-forest p-6 text-on-forest">
             <Badge className="bg-on-forest/10 text-on-forest">{record.plant || "Chưa xác định cây"}</Badge>
             <p className="mt-6 text-overline text-on-forest-muted">Khả năng cao nhất</p>
             <h3 className="mt-2 font-display text-[30px] font-bold leading-tight tracking-[-0.03em] text-on-forest">{record.disease || "Chưa có gợi ý bệnh"}</h3>
@@ -133,8 +135,8 @@ export function DiagnosisResultCard({
           <div className="rounded-xl border border-line bg-surface p-5">
             <p className="flex items-center gap-2 text-sm font-bold text-ink"><Sparkles size={16} className="text-leaf-strong" aria-hidden /> {detailsOnly ? "Thông tin đã đối chiếu" : "Giải thích và việc nên làm"}</p>
             <div className="mt-5 space-y-5">
-              {recommendationSections.map((section) => (
-                <section key={section.title}>
+              {recommendationSections.map((section, sectionIndex) => (
+                <section key={section.title} className="fl-rise" style={{ "--fl-i": sectionIndex + 1 } as CSSProperties}>
                   <h4 className="text-sm font-bold text-ink">{customerTitle(section.title)}</h4>
                   <ul className="mt-2 space-y-2">
                     {section.items.slice(0, locked ? 1 : section.items.length).filter((item) => customerText(item).trim()).map((item) => (

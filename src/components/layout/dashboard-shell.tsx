@@ -24,6 +24,7 @@ const PAGE_TITLES_VI: Record<string, string> = {
   "/dashboard/pricing":        "Gói dịch vụ",
   "/dashboard/profile":        "Hồ sơ người dùng",
   "/dashboard/crop-plans":     "Kế hoạch trồng cây",
+  "/dashboard/crop-plans/new": "Tạo kế hoạch trồng cây",
 };
 
 const PAGE_TITLES_EN: Record<string, string> = {
@@ -37,6 +38,7 @@ const PAGE_TITLES_EN: Record<string, string> = {
   "/dashboard/pricing":        "Plans",
   "/dashboard/profile":        "User profile",
   "/dashboard/crop-plans":     "Crop plans",
+  "/dashboard/crop-plans/new": "Create crop plan",
 };
 
 const PAGE_DESCRIPTIONS_VI: Record<string, string> = {
@@ -50,6 +52,7 @@ const PAGE_DESCRIPTIONS_VI: Record<string, string> = {
   "/dashboard/pricing": "Chọn mức sử dụng phù hợp với nhu cầu theo dõi của bạn.",
   "/dashboard/profile": "Quản lý thông tin cá nhân và tùy chọn tài khoản.",
   "/dashboard/crop-plans": "Lập và theo dõi các công việc chăm sóc theo từng giai đoạn.",
+  "/dashboard/crop-plans/new": "Chọn cây, vị trí và quy mô để tạo lịch chăm sóc.",
 };
 
 const PAGE_DESCRIPTIONS_EN: Record<string, string> = {
@@ -63,6 +66,7 @@ const PAGE_DESCRIPTIONS_EN: Record<string, string> = {
   "/dashboard/pricing": "Choose the usage level that fits your needs.",
   "/dashboard/profile": "Manage your personal details and account preferences.",
   "/dashboard/crop-plans": "Plan and track care tasks by growing stage.",
+  "/dashboard/crop-plans/new": "Choose a crop, location, and scale to create a care schedule.",
 };
 
 function getPageTitle(pathname: string, lang: "vi" | "en"): string {
@@ -85,6 +89,11 @@ function getPageDescription(pathname: string, lang: "vi" | "en"): string {
   if (map[pathname]) return map[pathname];
   if (pathname.startsWith("/dashboard/results")) {
     return lang === "en" ? "Review the result, supporting details, and recommended next steps." : "Xem kết luận, cơ sở gợi ý và việc nên làm tiếp theo.";
+  }
+  if (pathname.startsWith("/dashboard/pricing/checkout")) {
+    return lang === "en"
+      ? "Review the selected plan before creating a payment request."
+      : "Kiểm tra gói đã chọn trước khi tạo yêu cầu thanh toán.";
   }
   if (pathname.startsWith("/dashboard/crop-plans/")) {
     return lang === "en" ? "Follow the plan and update completed care tasks." : "Theo dõi kế hoạch và cập nhật các việc chăm sóc đã hoàn thành.";
@@ -122,7 +131,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   if (!mounted || !initialized || !isAuthenticated) {
     return (
-      <div className="field-contours flex min-h-screen items-center justify-center bg-canvas px-5 text-ink">
+      <div className="field-contours flex min-h-[100dvh] items-center justify-center bg-canvas px-5 text-ink">
         <div className="w-full max-w-sm rounded-xl border border-line bg-surface p-7 text-center shadow-lg">
           <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-surface-soft text-leaf-strong">
             <Sprout size={23} aria-hidden />
@@ -136,13 +145,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-canvas text-ink">
+    <div className="min-h-[100dvh] bg-canvas text-ink">
       <Toaster richColors position="top-center" theme={resolvedTheme === "dark" ? "dark" : "light"} closeButton />
       <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
-      <div className="flex min-h-screen flex-col lg:pl-[252px]">
+      <div className="flex min-h-[100dvh] flex-col lg:pl-[252px]">
         <WorkspaceHeader
           pageTitle={pageTitle}
           pageDescription={pageDescription}
+          mobileNavOpen={mobileOpen}
           onOpenMobileNav={() => setMobileOpen(true)}
         />
         <main

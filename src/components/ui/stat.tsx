@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 
+import { CountUp } from "@/components/ui/count-up";
 import { cn } from "@/lib/utils";
 
 export function MetricCard({
@@ -33,11 +34,11 @@ export function MetricCard({
       icon: "bg-on-forest/10 text-on-forest",
     },
     warning: {
-      card: "border-sun/30 bg-sun/10",
+      card: "border-sun/30 bg-sun-soft",
       label: "text-ink-soft",
       value: "text-ink",
       helper: "text-ink-soft",
-      icon: "bg-sun/20 text-soil",
+      icon: "bg-sun-soft text-warning-ink",
     },
   }[tone];
 
@@ -59,7 +60,7 @@ export function MetricCard({
       </div>
       <div>
         <p className={cn("font-display text-[36px] font-bold leading-none tracking-[-0.035em]", toneClasses.value)}>
-          {value}
+          <CountUp value={value} />
         </p>
         {helper ? (
           <p className={cn("mt-2 line-clamp-2 text-xs font-medium", toneClasses.helper)}>{helper}</p>

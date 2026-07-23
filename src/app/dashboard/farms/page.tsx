@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarDays, ExternalLink, QrCode, Sprout, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -140,22 +140,18 @@ export default function FarmsPage() {
     [plots, selectedPlotId],
   );
 
-  async function refreshPlots(nextSelectedId?: number) {
+  const refreshPlots = useCallback(async (nextSelectedId?: number) => {
     if (!accessToken) return;
     const data = await fetchFarmPlots(accessToken);
     setPlots(data);
-    if (nextSelectedId) {
-      setSelectedPlotId(nextSelectedId);
-    } else if (!selectedPlotId && data[0]) {
-      setSelectedPlotId(data[0].id);
-    }
-  }
+    setSelectedPlotId((current) => nextSelectedId ?? current ?? data[0]?.id ?? null);
+  }, [accessToken]);
 
   useEffect(() => {
     void refreshPlots().catch((err) => {
       setError(err instanceof Error ? err.message : "Không tải được lô vườn.");
     });
-  }, [accessToken]);
+  }, [refreshPlots]);
 
   async function handleCreatePlot(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -244,7 +240,7 @@ export default function FarmsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1380px] space-y-6">
+    <div className="fl-stagger mx-auto max-w-[1380px] space-y-6">
       <Card variant="dark" padding="lg" className="field-contours rounded-xl">
         <p className="text-overline text-on-forest-muted">{text.eyebrow}</p>
         <h2 className="mt-2 text-h2 font-bold text-on-forest">{text.title}</h2>
@@ -279,7 +275,7 @@ export default function FarmsPage() {
                 <button
                   type="button"
                   onClick={() => void handleDeleteSelected()}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-md border border-danger/30 px-3 text-caption font-semibold text-danger transition hover:bg-danger/10"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-md border border-danger/30 px-3 text-caption font-semibold text-danger-ink transition hover:bg-danger-soft"
                 >
                   <Trash2 strokeWidth={1.75} className="h-3.5 w-3.5" />
                   Xóa
@@ -303,8 +299,8 @@ export default function FarmsPage() {
                 <p className="text-body-sm text-ink-soft">{text.noPlot}</p>
               )}
             </div>
-            {!accessToken ? <p className="mt-4 text-body-sm text-danger">{text.login}</p> : null}
-            {error ? <p className="mt-4 text-body-sm text-danger">{error}</p> : null}
+            {!accessToken ? <p className="mt-4 text-body-sm text-danger-ink">{text.login}</p> : null}
+            {error ? <p className="mt-4 text-body-sm text-danger-ink">{error}</p> : null}
           </Card>
         </div>
 
@@ -372,7 +368,7 @@ export default function FarmsPage() {
             {traceability ? (
               <div className="mt-5 grid gap-4 md:grid-cols-[220px_1fr]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={traceability.qr_image_url} alt="QR truy xuất" className="h-[220px] w-[220px] rounded-md bg-paper p-2" />
+                <img src={traceability.qr_image_url} alt="QR truy xuất" className="h-[220px] w-[220px] rounded-md bg-qr-paper p-2" />
                 <div>
                   <p className="font-semibold text-ink">{traceability.product_name}</p>
                   <p className="mt-2 break-all text-body-sm leading-relaxed text-ink-soft">{traceability.public_url}</p>

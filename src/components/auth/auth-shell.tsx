@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Leaf, ShieldCheck } from "lucide-react";
 
@@ -15,12 +16,21 @@ interface AuthShellProps {
 
 export function AuthShell({ eyebrow, title, description, asideTitle, asideDescription, children }: AuthShellProps) {
   return (
-    <main id="main-content" className="field-contours min-h-screen bg-canvas px-4 py-4 text-ink sm:px-6 sm:py-6">
-      <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-6xl flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-lg sm:min-h-[calc(100vh-3rem)] lg:grid lg:grid-cols-[0.9fr_1.1fr]">
+    <main id="main-content" className="field-contours min-h-[100dvh] bg-canvas px-4 py-4 text-ink sm:px-6 sm:py-6">
+      <div className="mx-auto flex min-h-[calc(100dvh-2rem)] max-w-6xl flex-col overflow-hidden rounded-[var(--r-xl)] border border-line bg-surface shadow-lg sm:min-h-[calc(100dvh-3rem)] lg:grid lg:grid-cols-[0.9fr_1.1fr]">
         <aside className="relative hidden overflow-hidden bg-forest p-9 text-on-forest lg:flex lg:flex-col lg:justify-between xl:p-12">
-          <div className="pointer-events-none absolute -right-32 top-10 h-[420px] w-[420px] rounded-full border border-on-forest/10" aria-hidden />
-          <div className="pointer-events-none absolute -right-20 top-28 h-[320px] w-[320px] rounded-full border border-on-forest/10" aria-hidden />
-          <Logo dark showTagline={false} />
+          <Image
+            src="/plant-leaves/agromind-auth-leaf.png"
+            alt=""
+            fill
+            priority
+            loading="eager"
+            sizes="45vw"
+            className="object-cover"
+            aria-hidden
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-forest/68 via-forest/58 to-forest/88" aria-hidden />
+          <div className="relative"><Logo dark showTagline={false} /></div>
 
           <div className="relative max-w-md">
             <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-on-forest/10 text-on-forest">

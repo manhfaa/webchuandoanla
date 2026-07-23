@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useEffect } from "react";
 
 import { HealthMetricsPanel } from "@/components/dashboard/health-metrics-panel";
@@ -31,18 +32,26 @@ export default function DashboardOverviewPage() {
 
   return (
     <div className="mx-auto max-w-[1480px] space-y-8">
-      <GardenStatusPanel />
+      <div className="fl-rise">
+        <GardenStatusPanel />
+      </div>
 
-      <OverviewStatGrid />
+      <div className="fl-rise" style={{ "--fl-i": 1 } as CSSProperties}>
+        <OverviewStatGrid />
+      </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+      <div className="fl-rise grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]" style={{ "--fl-i": 2 } as CSSProperties}>
         <RecentDiagnosisPanel />
         <HealthMetricsPanel />
       </div>
 
-      <QuickAccessPanel />
+      <div className="fl-rise" style={{ "--fl-i": 3 } as CSSProperties}>
+        <QuickAccessPanel />
+      </div>
 
-      <UpgradeBanner currentPlan={user?.currentPlan ?? "seed"} />
+      <div className="fl-rise" style={{ "--fl-i": 4 } as CSSProperties}>
+        <UpgradeBanner currentPlan={user?.currentPlan ?? "seed"} />
+      </div>
     </div>
   );
 }

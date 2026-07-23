@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  darkMode: "class",
+  darkMode: ["selector", '[data-theme="dark"]'],
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -12,14 +12,18 @@ const config: Config = {
       colors: {
         canvas: "var(--canvas)",
         paper: "var(--paper)",
+        "qr-paper": "var(--qr-paper)",
         surface: {
           DEFAULT: "var(--surface)",
           raised: "var(--surface-raised)",
           soft: "var(--surface-soft)",
+          overlay: "var(--surface-overlay)",
         },
         ink: {
           DEFAULT: "var(--ink)",
+          strong: "var(--ink-strong)",
           soft: "var(--ink-soft)",
+          muted: "var(--ink-muted)",
           50: "var(--canvas)",
           100: "var(--surface-soft)",
           300: "var(--line)",
@@ -31,6 +35,7 @@ const config: Config = {
           950: "var(--ink)",
         },
         line: "var(--line)",
+        "line-strong": "var(--line-strong)",
         forest: "var(--forest)",
         "on-forest": "var(--on-forest)",
         "on-forest-muted": "var(--on-forest-muted)",
@@ -53,9 +58,17 @@ const config: Config = {
         },
         mint: "var(--mint)",
         sun: "var(--sun)",
+        "sun-soft": "var(--sun-soft)",
+        "warning-ink": "var(--warning-ink)",
         soil: "var(--soil)",
         danger: "var(--danger)",
+        "danger-soft": "var(--danger-soft)",
+        "danger-ink": "var(--danger-ink)",
         info: "var(--info)",
+        "info-soft": "var(--info-soft)",
+        "info-ink": "var(--info-ink)",
+        "success-soft": "var(--success-soft)",
+        "success-ink": "var(--success-ink)",
 
         // Legacy colors mapped to new tokens for gradual migration
         app: {
@@ -147,7 +160,7 @@ const config: Config = {
           "radial-gradient(ellipse 80% 60% at 70% 20%, rgba(35, 133, 84, 0.1), transparent 55%)",
       },
       fontFamily: {
-        display: ["var(--font-be-vietnam)", "system-ui", "sans-serif"],
+        display: ["var(--font-bricolage)", "var(--font-be-vietnam)", "system-ui", "sans-serif"],
         sans: ["var(--font-be-vietnam)", "system-ui", "sans-serif"],
       },
       transitionDuration: {

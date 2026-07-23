@@ -109,7 +109,7 @@ export default function CropPlanDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1420px] space-y-6">
+    <div className="fl-stagger mx-auto max-w-[1420px] space-y-6">
       <Card variant="raised" padding="lg" className="field-contours rounded-xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>

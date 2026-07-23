@@ -10,17 +10,26 @@
   }
 
   html {
+    position: relative;
     scroll-behavior: smooth;
   }
 
-  body {
-    min-height: 100vh;
+body {
+    min-height: 100dvh;
     background-color: var(--canvas);
     color: var(--ink);
     font-size: 14px;
     line-height: 1.6;
     font-feature-settings: "kern" 1, "liga" 1;
     transition: background-color 180ms ease-out, color 180ms ease-out;
+}
+
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -95,12 +104,13 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(5, 26, 16, 0.06);
+  background: color-mix(in srgb, var(--canvas) 88%, var(--ink) 12%);
 }
 
 ::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: rgba(47, 166, 100, 0.35);
+  border: 2px solid var(--canvas);
+  background: color-mix(in srgb, var(--leaf) 54%, transparent);
 }
 
 .section-grid {
@@ -117,8 +127,48 @@
     repeating-radial-gradient(ellipse at 82% 18%, transparent 0 30px, color-mix(in srgb, var(--line) 35%, transparent) 31px 32px);
 }
 
+.living-veins {
+  background-image:
+    linear-gradient(112deg, transparent 0 46%, color-mix(in srgb, var(--leaf) 18%, transparent) 46.2% 46.6%, transparent 46.8%),
+    linear-gradient(28deg, transparent 0 52%, color-mix(in srgb, var(--line-strong) 28%, transparent) 52.2% 52.5%, transparent 52.7%),
+    radial-gradient(ellipse at 14% 18%, color-mix(in srgb, var(--mint) 38%, transparent), transparent 42%);
+}
+
+.chlorophyll-button {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.chlorophyll-button::before {
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  content: "";
+  background: radial-gradient(circle at var(--button-x, 50%) var(--button-y, 50%), color-mix(in srgb, var(--mint) 42%, transparent), transparent 38%);
+  opacity: 0;
+  transition: opacity var(--d-base) var(--ease-out);
+}
+
+.chlorophyll-button:hover::before,
+.chlorophyll-button:focus-visible::before {
+  opacity: 1;
+}
+
+.vein-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line-strong) 18%, var(--leaf) 50%, var(--line-strong) 82%, transparent);
+}
+
 .text-gradient {
   background: linear-gradient(120deg, var(--forest) 0%, var(--leaf-strong) 52%, var(--leaf) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+[data-theme="dark"] .text-gradient {
+  background: linear-gradient(120deg, var(--ink) 0%, var(--leaf-strong) 54%, var(--leaf) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -131,6 +181,169 @@
   z-index: 0;
 }
 
+[data-theme="dark"] .leaflet-container {
+  background: var(--surface-soft);
+}
+
+[data-theme="dark"] .leaflet-popup-content-wrapper,
+[data-theme="dark"] .leaflet-popup-tip,
+[data-theme="dark"] .leaflet-bar a,
+[data-theme="dark"] .leaflet-control-layers {
+  border-color: var(--line);
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .leaflet-bar a:hover,
+[data-theme="dark"] .leaflet-bar a:focus {
+  background: var(--surface-overlay);
+  color: var(--ink-strong);
+}
+
+[data-theme="dark"] .leaflet-control-attribution {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  color: var(--ink-soft);
+}
+
+[data-theme="dark"] .leaflet-control-attribution a,
+[data-theme="dark"] .leaflet-popup-content a {
+  color: var(--leaf-strong);
+}
+
+/* ── Motion system: Field Lens ── */
+
+@keyframes fl-shimmer {
+  0% { background-position: -160% 0; }
+  100% { background-position: 260% 0; }
+}
+
+@keyframes fl-rise-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fl-pulse-ring {
+  0% { box-shadow: 0 0 0 0 var(--ring-leaf); }
+  70% { box-shadow: 0 0 0 9px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@keyframes fl-rail-grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes fl-rail-grow-y {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes fl-check-pop {
+  0% { opacity: 0; transform: scale(0.5); }
+  60% { opacity: 1; transform: scale(1.12); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fl-lens-scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(320%); }
+}
+
+@keyframes fl-meter-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@layer components {
+  .fl-skeleton {
+    position: relative;
+    overflow: hidden;
+    background:
+      linear-gradient(100deg, transparent 32%, color-mix(in srgb, var(--surface-raised) 72%, transparent) 50%, transparent 68%),
+      var(--surface-soft);
+    background-size: 220% 100%, auto;
+    background-repeat: no-repeat;
+    animation: fl-shimmer 1.7s var(--ease-out) infinite;
+  }
+
+  .fl-rise {
+    animation: fl-rise-in 0.55s var(--ease-out) both;
+    animation-delay: calc(var(--fl-i, 0) * 70ms);
+  }
+
+  .fl-stagger > * {
+    animation: fl-rise-in 0.55s var(--ease-out) both;
+  }
+
+  .fl-stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .fl-stagger > *:nth-child(2) { animation-delay: 70ms; }
+  .fl-stagger > *:nth-child(3) { animation-delay: 140ms; }
+  .fl-stagger > *:nth-child(4) { animation-delay: 210ms; }
+  .fl-stagger > *:nth-child(5) { animation-delay: 280ms; }
+  .fl-stagger > *:nth-child(n+6) { animation-delay: 350ms; }
+
+  .fl-pulse {
+    animation: fl-pulse-ring 1.6s var(--ease-out) infinite;
+  }
+
+  .fl-check {
+    animation: fl-check-pop 0.4s var(--ease-spring) both;
+  }
+
+  .fl-rail-x {
+    transform-origin: left center;
+    animation: fl-rail-grow-x 0.6s var(--ease-out) both;
+  }
+
+  .fl-rail-y {
+    transform-origin: center top;
+    animation: fl-rail-grow-y 0.6s var(--ease-out) both;
+  }
+
+  .fl-meter {
+    transform-origin: left center;
+    animation: fl-meter-fill 0.9s var(--ease-out) both;
+    animation-delay: 0.15s;
+  }
+
+  .fl-lens-frame {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .fl-lens-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 1;
+    height: 34%;
+    background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--mint) 32%, transparent) 55%, color-mix(in srgb, var(--leaf) 26%, transparent));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--d-base) var(--ease-out);
+  }
+
+  .fl-lens-frame[data-scanning="true"]::after {
+    opacity: 1;
+    animation: fl-lens-scan 1.5s linear infinite;
+  }
+
+  .paper-grain {
+    position: relative;
+  }
+
+  .paper-grain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -139,6 +352,14 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .workspace-header,
+  [class*="backdrop-blur"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 }
 
@@ -161,6 +382,24 @@
 }
 
 @layer components {
+  .team-roster-scroll {
+    scrollbar-color: var(--leaf) transparent;
+    scrollbar-width: thin;
+  }
+
+  .team-roster-scroll::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .team-roster-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .team-roster-scroll::-webkit-scrollbar-thumb {
+    border-radius: var(--r-pill);
+    background: var(--leaf);
+  }
+
   a:where(.no-underline-hover) {
     text-decoration: none;
   }

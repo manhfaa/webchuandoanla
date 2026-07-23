@@ -6,8 +6,8 @@ import { Card } from "@/components/ui/card";
 
 const planStatusTone: Record<string, string> = {
   active: "bg-surface-soft text-leaf-strong",
-  completed: "bg-info/10 text-info",
-  needs_review: "bg-sun/20 text-soil",
+  completed: "bg-info-soft text-info-ink",
+  needs_review: "bg-sun-soft text-warning-ink",
   paused: "bg-surface-soft text-ink-soft",
   draft: "bg-surface-soft text-leaf-strong",
   archived: "bg-surface-soft text-ink-soft",

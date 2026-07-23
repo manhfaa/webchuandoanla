@@ -14,8 +14,8 @@ interface StateProps {
 
 export function EmptyState({ title, description, icon: Icon = Sprout, action, className }: StateProps) {
   return (
-    <div className={cn("flex min-h-[240px] flex-col items-center justify-center rounded-lg border border-dashed border-line bg-surface-soft px-6 py-10 text-center", className)}>
-      <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-surface text-leaf-strong shadow-sm">
+    <div className={cn("paper-grain relative flex min-h-[240px] flex-col items-center justify-center overflow-hidden rounded-lg border border-dashed border-line-strong/60 bg-surface-soft px-6 py-10 text-center", className)}>
+      <span className="fl-rise flex h-12 w-12 items-center justify-center rounded-lg bg-surface text-leaf-strong shadow-sm">
         <Icon size={22} aria-hidden />
       </span>
       <h3 className="mt-4 text-lg font-bold tracking-[-0.02em] text-ink">{title}</h3>
@@ -37,8 +37,8 @@ export function LoadingState({ title = "Đang tải dữ liệu", description = 
 
 export function ErrorState({ title = "Chưa tải được dữ liệu", description, action, onRetry, className }: StateProps & { onRetry?: () => void }) {
   return (
-    <div className={cn("flex min-h-[220px] flex-col items-center justify-center rounded-lg border border-danger/25 bg-danger/10 px-6 py-10 text-center", className)} role="alert">
-      <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-surface text-danger">
+    <div className={cn("flex min-h-[220px] flex-col items-center justify-center rounded-lg border border-danger/30 bg-danger-soft px-6 py-10 text-center", className)} role="alert">
+      <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-surface text-danger-ink">
         <AlertCircle size={21} aria-hidden />
       </span>
       <h3 className="mt-4 text-base font-bold text-ink">{title}</h3>

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { FlaskConical, Leaf, Search, ShieldAlert } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -78,7 +78,7 @@ function InputCard({ item, language }: { item: AgriculturalInput; language: "vi"
           <Badge key={disease} variant="brand">{disease}</Badge>
         ))}
       </div>
-      {item.warning ? <p className="mt-4 text-body-sm leading-relaxed text-danger">{item.warning}</p> : null}
+      {item.warning ? <p className="mt-4 text-body-sm leading-relaxed text-danger-ink">{item.warning}</p> : null}
       {item.safety_notes.length ? (
         <ul className="mt-4 space-y-1 text-caption leading-relaxed text-ink-soft">
           {item.safety_notes.map((note) => (
@@ -120,13 +120,23 @@ export default function InputLibraryPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function load() {
+  const load = useCallback(async ({
+    nextQuery,
+    nextCategory,
+    nextCrop,
+    nextDisease,
+  }: {
+    nextQuery: string;
+    nextCategory: string;
+    nextCrop: string;
+    nextDisease: string;
+  }) => {
     setLoading(true);
     setError(null);
     try {
       const [libraryData, symptomData] = await Promise.all([
-        fetchInputLibrary({ q: query, category, crop, disease }),
-        fetchNutritionSymptoms(query || crop || disease),
+        fetchInputLibrary({ q: nextQuery, category: nextCategory, crop: nextCrop, disease: nextDisease }),
+        fetchNutritionSymptoms(nextQuery || nextCrop || nextDisease),
       ]);
       setItems(libraryData);
       setSymptoms(symptomData);
@@ -135,19 +145,24 @@ export default function InputLibraryPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
-    void load();
-  }, []);
+    void load({ nextQuery: "", nextCategory: "", nextCrop: "", nextDisease: "" });
+  }, [load]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void load();
+    void load({
+      nextQuery: query,
+      nextCategory: category,
+      nextCrop: crop,
+      nextDisease: disease,
+    });
   }
 
   return (
-    <div className="mx-auto max-w-[1380px] space-y-6">
+    <div className="fl-stagger mx-auto max-w-[1380px] space-y-6">
       <Card variant="dark" padding="lg" className="field-contours rounded-xl">
         <p className="text-overline text-on-forest-muted">{text.eyebrow}</p>
         <h2 className="mt-2 text-h2 font-bold text-on-forest">{text.title}</h2>
@@ -180,7 +195,7 @@ export default function InputLibraryPage() {
           </div>
         </form>
         {error ? (
-          <p className="mt-4 text-body-sm text-danger">
+          <p className="mt-4 text-body-sm text-danger-ink">
             Không tìm thấy vật tư phù hợp. Thử từ khoá khác hoặc kiểm tra kết nối.
           </p>
         ) : null}
@@ -205,7 +220,7 @@ export default function InputLibraryPage() {
 
         <Card variant="soft" padding="lg" className="rounded-xl">
           <div className="flex items-center gap-2">
-            <ShieldAlert strokeWidth={1.75} className="h-5 w-5 text-soil" />
+            <ShieldAlert strokeWidth={1.75} className="h-5 w-5 text-warning-ink" />
             <h3 className="text-h3 font-bold text-ink">{text.symptoms}</h3>
           </div>
           <div className="mt-5 space-y-3">

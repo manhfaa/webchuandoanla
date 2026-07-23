@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CloudRain,
   Compass,
@@ -151,13 +151,18 @@ export default function WeatherAlertsPage() {
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [locationNote, setLocationNote] = useState<string | null>(null);
+  const cropTypeRef = useRef(form.crop_type);
+
+  useEffect(() => {
+    cropTypeRef.current = form.crop_type;
+  }, [form.crop_type]);
 
   const selectedLocation = useMemo(
     () => locations.find((location) => location.id === selectedLocationId) ?? locations[0] ?? null,
     [locations, selectedLocationId],
   );
 
-  function applyLocationToForm(location: FarmLocation) {
+  const applyLocationToForm = useCallback((location: FarmLocation) => {
     setForm({
       name: location.name || defaultForm.name,
       province: location.province || "",
@@ -168,9 +173,9 @@ export default function WeatherAlertsPage() {
       latitude: location.latitude ?? null,
       longitude: location.longitude ?? null,
     });
-  }
+  }, []);
 
-  async function loadLocations() {
+  const loadLocations = useCallback(async () => {
     if (!accessToken) return;
     const data = await fetchFarmLocations(accessToken);
     setLocations(data);
@@ -178,14 +183,14 @@ export default function WeatherAlertsPage() {
       setSelectedLocationId(data[0].id);
       applyLocationToForm(data[0]);
     }
-  }
+  }, [accessToken, applyLocationToForm]);
 
-  async function loadAdvisory(location: FarmLocation) {
+  const loadAdvisory = useCallback(async (location: FarmLocation) => {
     if (!accessToken) return;
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchFarmAdvisory(accessToken, location.id, location.crop_type || form.crop_type);
+      const data = await fetchFarmAdvisory(accessToken, location.id, location.crop_type || cropTypeRef.current);
       setAdvisory(data);
     } catch (err) {
       setAdvisory(null);
@@ -193,7 +198,7 @@ export default function WeatherAlertsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [accessToken]);
 
   function handleUseCurrentLocation() {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -234,13 +239,13 @@ export default function WeatherAlertsPage() {
     void loadLocations().catch((err) => {
       setError(err instanceof Error ? err.message : "Không tải được vị trí canh tác.");
     });
-  }, [accessToken]);
+  }, [loadLocations]);
 
   useEffect(() => {
     if (selectedLocation) {
       void loadAdvisory(selectedLocation);
     }
-  }, [selectedLocationId]);
+  }, [loadAdvisory, selectedLocation]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -274,7 +279,7 @@ export default function WeatherAlertsPage() {
   const weatherSource = advisory?.weather.source;
 
   return (
-    <div className="mx-auto max-w-[1380px] space-y-6">
+    <div className="fl-stagger mx-auto max-w-[1380px] space-y-6">
       <Card variant="dark" padding="lg" className="field-contours rounded-xl">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
@@ -365,11 +370,11 @@ export default function WeatherAlertsPage() {
           ) : null}
 
           {locationNote ? <p className="mt-4 text-body-sm font-medium text-leaf-strong">{locationNote}</p> : null}
-          {error ? <p className="mt-4 text-body-sm text-danger">{error}</p> : null}
+          {error ? <p className="mt-4 text-body-sm text-danger-ink">{error}</p> : null}
 
           {!accessToken ? (
-            <div className="mt-4 rounded-lg border border-danger/25 bg-danger/10 p-4">
-              <p className="text-body-sm text-danger">{text.login}</p>
+            <div className="mt-4 rounded-lg border border-danger/30 bg-danger-soft p-4">
+              <p className="text-body-sm text-danger-ink">{text.login}</p>
               <Link
                 href={loginUrl}
                 className="mt-3 inline-flex h-10 items-center justify-center rounded-md bg-leaf px-5 text-body font-medium text-on-leaf transition hover:bg-leaf-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/40"
@@ -441,7 +446,7 @@ export default function WeatherAlertsPage() {
           <div className="grid gap-6 xl:grid-cols-3">
             <Card variant="warning" padding="lg" className="rounded-xl">
               <div className="flex items-center gap-2 text-ink">
-                <ShieldAlert strokeWidth={1.75} className="h-5 w-5 text-soil" />
+                <ShieldAlert strokeWidth={1.75} className="h-5 w-5 text-warning-ink" />
                 <h3 className="text-h3 font-bold">{text.warnings}</h3>
               </div>
               <ul className="mt-4 space-y-3 text-body-sm leading-relaxed text-ink-soft">

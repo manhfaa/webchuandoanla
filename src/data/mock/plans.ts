@@ -6,7 +6,7 @@ export const pricingPlans: PricingPlan[] = [
     name: "Seed",
     icon: "🌱",
     price: "Miễn phí",
-    description: "Bắt đầu khám phá — kiểm tra lá cây, lưu lịch sử ngắn, chat AI cơ bản.",
+    description: "Bắt đầu khám phá với lượt kiểm tra lá, lịch sử ngắn và chat AI cơ bản.",
     cta: "Dùng miễn phí",
     features: [
       "Kiểm tra ảnh lá cây (5 lần/ngày)",
@@ -20,7 +20,7 @@ export const pricingPlans: PricingPlan[] = [
     name: "Grow",
     icon: "🌿",
     price: "9.000đ/tháng",
-    description: "Phát triển đều đặn — tần suất cao hơn, lịch sử dài hơn, bắt đầu lập kế hoạch.",
+    description: "Tăng tần suất kiểm tra, lưu lịch sử lâu hơn và bắt đầu lập kế hoạch.",
     cta: "Nâng cấp Grow",
     features: [
       "Kiểm tra ảnh lá cây (30 lần/ngày)",
@@ -34,7 +34,7 @@ export const pricingPlans: PricingPlan[] = [
     name: "Bloom",
     icon: "🌳",
     price: "39.000đ/tháng",
-    description: "Theo dõi toàn diện — mở rộng lượt kiểm tra, tư vấn nông nghiệp và ưu tiên xử lý.",
+    description: "Theo dõi toàn diện với lượt kiểm tra mở rộng và tư vấn nông nghiệp nâng cao.",
     cta: "Nâng cấp Bloom",
     highlight: true,
     badge: "Phổ biến nhất",
@@ -53,7 +53,7 @@ export const pricingPlans: PricingPlan[] = [
     name: "Elite",
     icon: "👑",
     price: "99.000đ/tháng",
-    description: "Dành cho nhu cầu chuyên sâu — xuất báo cáo, tích hợp nâng cao và hỗ trợ ưu tiên.",
+    description: "Dành cho nhu cầu chuyên sâu, xuất báo cáo, tích hợp nâng cao và hỗ trợ ưu tiên.",
     cta: "Nâng cấp Elite",
     features: [
       "Tất cả tính năng Bloom",

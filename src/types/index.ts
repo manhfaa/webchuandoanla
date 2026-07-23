@@ -32,7 +32,6 @@ export interface FeatureItem {
   title: string;
   description: string;
   eyebrow: string;
-  accent: string;
 }
 
 export interface TeamMember {
@@ -50,7 +49,6 @@ export interface SupportedPlant {
   name: PlantType;
   latinLabel: string;
   insight: string;
-  accent: string;
   image: string;
   imageAlt: string;
   imageCredit: string;

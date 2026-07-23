@@ -83,7 +83,7 @@ export default function DashboardChatPage() {
   const handleVoice = () => voice.listening ? voice.stop() : voice.start();
 
   return (
-    <div className="mx-auto max-w-[1380px] space-y-6">
+    <div className="fl-stagger mx-auto max-w-[1380px] space-y-6">
       <Card variant="raised" padding="lg" className="rounded-xl">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div>
@@ -141,7 +141,7 @@ export default function DashboardChatPage() {
           <aside className="space-y-4">
             <QuickPrompts prompts={activePrompts} onSelect={handlePrompt} />
             <Card variant="warning" padding="lg" className="rounded-xl">
-              <div className="flex items-start gap-3"><ShieldCheck size={19} className="mt-0.5 shrink-0 text-soil" aria-hidden /><div><h3 className="text-sm font-bold text-ink">Đây là trợ lý kiến thức</h3><p className="mt-2 text-sm leading-7 text-ink-soft">Hiện tại đây chưa phải cuộc trò chuyện trực tiếp với chuyên gia con người. Hãy hỏi chuyên gia địa phương khi cần quyết định dùng thuốc hoặc xử lý diện rộng.</p></div></div>
+              <div className="flex items-start gap-3"><ShieldCheck size={19} className="mt-0.5 shrink-0 text-warning-ink" aria-hidden /><div><h3 className="text-sm font-bold text-ink">Đây là trợ lý kiến thức</h3><p className="mt-2 text-sm leading-7 text-ink-soft">Hiện tại đây chưa phải cuộc trò chuyện trực tiếp với chuyên gia con người. Hãy hỏi chuyên gia địa phương khi cần quyết định dùng thuốc hoặc xử lý diện rộng.</p></div></div>
             </Card>
           </aside>
         </div>

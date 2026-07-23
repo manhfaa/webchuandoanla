@@ -8,48 +8,37 @@ const capabilities = [
     icon: Layers3,
     value: String(supportedPlants.length),
     label: "nhóm cây đang hỗ trợ",
-    detail: "Ưu tiên các cây quen thuộc với người trồng Việt Nam.",
+    detail: "Danh sách được mở rộng theo dữ liệu mô hình hiện có.",
   },
   {
     icon: ScanSearch,
     value: "Top 5",
     label: "khả năng được xếp hạng",
-    detail: "Hiển thị độ tin cậy thay vì chỉ đưa ra một nhãn.",
+    detail: "Mỗi khả năng đi cùng mức độ tin cậy để bạn so sánh.",
   },
   {
     icon: ExternalLink,
     value: "Nguồn mở",
-    label: "để bạn tự kiểm tra",
-    detail: "Liên kết tham khảo xuất hiện khi đối chiếu triệu chứng.",
+    label: "khi đối chiếu triệu chứng",
+    detail: "Liên kết tham khảo được giữ lại để bạn tự kiểm tra.",
   },
 ];
 
 export function CapabilityStrip() {
   return (
-    <section className="relative z-10 px-4 sm:px-6 lg:px-8" aria-label="Thông tin nổi bật về Agromind AI">
+    <section className="border-y border-line bg-surface px-4 sm:px-6 lg:px-8" aria-label="Khả năng hiện có của Agromind AI">
       <Reveal className="mx-auto max-w-7xl">
-        <div className="grid overflow-hidden rounded-xl border border-line bg-surface-raised shadow-lg sm:grid-cols-3">
-          {capabilities.map(({ icon: Icon, value, label, detail }, index) => (
-            <div
-              key={label}
-              className="group relative flex min-w-0 gap-4 border-t border-line p-5 first:border-t-0 sm:border-l sm:border-t-0 sm:p-6 sm:first:border-l-0"
-            >
-              <span
-                className={
-                  index === 1
-                    ? "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info"
-                    : index === 2
-                      ? "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sun/15 text-soil"
-                      : "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-soft text-leaf-strong"
-                }
-              >
+        <div className="grid sm:grid-cols-3">
+          {capabilities.map(({ icon: Icon, value, label, detail }) => (
+            <div key={label} className="flex gap-4 border-t border-line py-6 first:border-t-0 sm:border-l sm:border-t-0 sm:px-6 sm:first:border-l-0 sm:first:pl-0 sm:last:pr-0 lg:py-8">
+              <span className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-soft text-leaf-strong">
                 <Icon size={20} aria-hidden />
               </span>
               <div className="min-w-0">
-                <p className="font-display text-xl font-extrabold tracking-[-0.025em] text-ink">
+                <p className="font-display text-xl font-extrabold tracking-[-0.03em] text-ink">
                   {value} <span className="text-base font-bold">{label}</span>
                 </p>
-                <p className="mt-1 text-xs font-medium leading-5 text-ink-soft">{detail}</p>
+                <p className="mt-1 max-w-[30ch] text-xs font-medium leading-5 text-ink-soft">{detail}</p>
               </div>
             </div>
           ))}

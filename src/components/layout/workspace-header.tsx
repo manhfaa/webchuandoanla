@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Crown, LogOut, Menu, ScanSearch } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import type { PlanTier } from "@/types";
 interface WorkspaceHeaderProps {
   pageTitle: string;
   pageDescription?: string;
+  mobileNavOpen?: boolean;
   onOpenMobileNav?: () => void;
 }
 
@@ -24,19 +26,27 @@ function planBadgeVariant(plan: PlanTier) {
   return "muted" as const;
 }
 
-export function WorkspaceHeader({ pageTitle, pageDescription, onOpenMobileNav }: WorkspaceHeaderProps) {
+export function WorkspaceHeader({ pageTitle, pageDescription, mobileNavOpen = false, onOpenMobileNav }: WorkspaceHeaderProps) {
   const router = useRouter();
   const { user, logout } = useSessionStore();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setScrolled(window.scrollY > 4);
+    sync();
+    window.addEventListener("scroll", sync, { passive: true });
+    return () => window.removeEventListener("scroll", sync);
+  }, []);
   const plan = normalizePlan(user?.currentPlan);
   const planInfo = PLANS[plan];
   const displayName = normalizeUserDisplayName(user?.name);
   const initials = displayName[0]?.toUpperCase() ?? "U";
 
   return (
-    <header className="workspace-header sticky top-0 z-30 flex min-h-[72px] shrink-0 items-center px-4 sm:px-6 lg:px-8">
+    <header className={`workspace-header sticky top-0 z-30 flex min-h-[72px] shrink-0 items-center px-4 transition-shadow duration-260 sm:px-6 lg:px-8 ${scrolled ? "shadow-md" : ""}`}>
       <div className="flex w-full min-w-0 items-center gap-3">
         {onOpenMobileNav ? (
-          <button type="button" onClick={onOpenMobileNav} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-ink-soft transition hover:bg-surface-soft hover:text-ink lg:hidden" aria-label="Mở menu điều hướng">
+          <button id="workspace-mobile-nav-trigger" type="button" onClick={onOpenMobileNav} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-ink-soft transition hover:bg-surface-soft hover:text-ink lg:hidden" aria-label="Mở menu điều hướng" aria-expanded={mobileNavOpen} aria-controls="workspace-sidebar">
             <Menu size={19} aria-hidden />
           </button>
         ) : null}
@@ -58,7 +68,7 @@ export function WorkspaceHeader({ pageTitle, pageDescription, onOpenMobileNav }:
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-soft text-xs font-bold text-leaf-strong">{initials}</span>
             <span className="hidden max-w-[140px] truncate text-xs font-semibold text-ink xl:block">{displayName}</span>
           </Link>
-          <button type="button" onClick={() => { logout(); router.push("/login"); }} className="flex h-10 w-10 items-center justify-center rounded-xl text-ink-soft transition hover:bg-danger/10 hover:text-danger" aria-label="Đăng xuất">
+          <button type="button" onClick={() => { logout(); router.push("/login"); }} className="flex h-10 w-10 items-center justify-center rounded-xl text-ink-soft transition hover:bg-danger-soft hover:text-danger-ink" aria-label="Đăng xuất">
             <LogOut size={17} aria-hidden />
           </button>
         </div>

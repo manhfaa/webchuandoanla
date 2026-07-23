@@ -5,6 +5,7 @@ import { CheckCircle2, CircleDashed, Clock3, PauseCircle, TriangleAlert } from "
 import type { CropPlanStep, CropPlanStepStatus } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { getCropPhaseLabel } from "@/lib/crop-plan-labels";
 import { cn } from "@/lib/utils";
 
 const statusMeta: Record<
@@ -74,7 +75,7 @@ export function CropPlanTimeline({
             {showPhase ? (
               <div className="mb-4 flex items-center gap-3">
                 <span className="rounded-full bg-surface-soft px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-leaf-strong">
-                  {step.phase_key}
+                  {getCropPhaseLabel(step.phase_key)}
                 </span>
               </div>
             ) : null}

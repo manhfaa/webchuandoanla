@@ -38,18 +38,18 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             id={id}
             className={cn(
               "h-11 w-full rounded-md px-3.5",
-              "bg-surface",
+              "bg-surface-soft focus:bg-surface",
               "border",
               error
                 ? "border-danger focus:ring-2 focus:ring-danger/25"
                 : "border-line",
               "text-[15px]",
               "text-ink",
-              "placeholder:text-ink-soft",
+              "placeholder:text-ink-muted",
               "[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_var(--canvas)] [&:-webkit-autofill]:[-webkit-text-fill-color:var(--ink)]",
               "outline-none transition-all duration-180",
               "focus:border-leaf focus:shadow-focus",
-              "disabled:cursor-not-allowed disabled:opacity-50",
+              "disabled:cursor-not-allowed disabled:bg-surface-soft disabled:opacity-70",
               icon ? "pl-10" : "",
               suffix ? "pr-12" : "",
               className,
@@ -57,7 +57,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
         </div>
-        {error ? <p className="text-xs text-danger">{error}</p> : null}
+        {error ? <p className="text-xs text-danger-ink">{error}</p> : null}
         {hint && !error ? <p className="text-xs text-ink-soft">{hint}</p> : null}
       </div>
     );

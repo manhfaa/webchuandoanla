@@ -8,7 +8,8 @@ import { ArrowRight, CalendarRange, Filter, History, Leaf, SearchX } from "lucid
 import { Badge, StatusBadge, type StatusBadgeState } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
+import { ListSkeleton } from "@/components/ui/skeleton";
+import { EmptyState, ErrorState } from "@/components/ui/states";
 import { fetchDiagnosisRecords } from "@/lib/diagnoses-client";
 import { toUserFacingText } from "@/lib/user-facing-copy";
 import { formatConfidence, formatDate } from "@/lib/utils";
@@ -78,7 +79,7 @@ export default function DashboardHistoryPage() {
   };
 
   return (
-    <div className="mx-auto max-w-[1320px] space-y-6">
+    <div className="fl-stagger mx-auto max-w-[1320px] space-y-6">
       <Card variant="raised" padding="lg" className="rounded-xl">
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
           <div>
@@ -111,7 +112,7 @@ export default function DashboardHistoryPage() {
         </div>
       </Card>
 
-      {loading ? <LoadingState title="Đang tải lịch sử kiểm tra" description="Agromind AI đang lấy các kết quả đã lưu trong tài khoản của bạn." /> : null}
+      {loading ? <ListSkeleton count={4} itemClassName="h-[128px]" /> : null}
       {!loading && error ? <ErrorState title="Chưa tải được lịch sử" description={error} onRetry={() => window.location.reload()} /> : null}
 
       {!loading && !error && filtered.length ? (

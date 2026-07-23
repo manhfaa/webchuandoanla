@@ -3,11 +3,11 @@ import { Navbar } from "@/components/layout/navbar";
 import { CapabilityStrip } from "@/components/home/capability-strip";
 import { FeaturesSection } from "@/components/home/features-section";
 import { HeroSection } from "@/components/home/hero-section";
+import { LeafDiagnosisStory } from "@/components/home/leaf-diagnosis-story";
 import { MissionSection } from "@/components/home/mission-section";
 import { PlantsSection } from "@/components/home/plants-section";
 import { PricingPreviewSection } from "@/components/home/pricing-preview-section";
 import { TeamSection } from "@/components/home/team-section";
-import { WorkflowSection } from "@/components/home/workflow-section";
 import { AppShell } from "@/components/layout/layout-components";
 
 export default function HomePage() {
@@ -17,7 +17,7 @@ export default function HomePage() {
       <main id="main-content">
         <HeroSection />
         <CapabilityStrip />
-        <WorkflowSection />
+        <LeafDiagnosisStory />
         <FeaturesSection />
         <PlantsSection />
         <MissionSection />

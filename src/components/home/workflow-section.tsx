@@ -1,112 +1,88 @@
-import { ArrowRight, Camera, CheckCircle2, ClipboardCheck, ScanSearch } from "lucide-react";
+import Image from "next/image";
+import { Camera, CheckCircle2, ClipboardCheck, ScanSearch } from "lucide-react";
 
-import { SectionShell } from "@/components/layout/section-shell";
 import { Reveal } from "@/components/ui/reveal";
-import { cn } from "@/lib/utils";
 
 const stages = [
   {
-    step: "01",
-    question: "Ảnh có đủ rõ không?",
     title: "Chụp lá",
-    description: "Tải ảnh có sẵn hoặc chụp trực tiếp. Hướng dẫn trên màn hình giúp bạn lấy ảnh đủ sáng và rõ vùng lá.",
-    detail: "Kiểm tra vùng lá trước khi phân tích",
+    question: "Ảnh có đủ rõ không?",
+    description: "Chụp một chiếc lá chính, đủ sáng và không bị vật khác che khuất.",
+    detail: "Ảnh được kiểm tra trước khi phân tích.",
     icon: Camera,
   },
   {
-    step: "02",
-    question: "Lá có dấu hiệu gì?",
-    title: "Phân tích ảnh",
-    description: "Hệ thống xếp hạng những khả năng cần chú ý và hiển thị độ tin cậy thay vì chỉ đưa ra một nhãn duy nhất.",
-    detail: "Hiển thị 5 khả năng được ưu tiên",
+    title: "Phân tích",
+    question: "Lá đang có dấu hiệu gì?",
+    description: "Các khả năng được xếp hạng cùng độ tin cậy thay vì chỉ đưa ra một nhãn.",
+    detail: "Năm khả năng nổi bật được trình bày rõ.",
     icon: ScanSearch,
   },
   {
-    step: "03",
-    question: "Mô tả có phù hợp?",
-    title: "Đối chiếu triệu chứng",
-    description: "Bổ sung điều bạn quan sát được để hệ thống tìm nguồn liên quan và kiểm tra mức độ phù hợp của mô tả.",
-    detail: "Nguồn tham khảo có thể mở lại",
+    title: "Đối chiếu",
+    question: "Triệu chứng có phù hợp không?",
+    description: "Mô tả thực tế của bạn được so sánh với nguồn tham khảo có thể mở lại.",
+    detail: "Bạn luôn biết nguồn thông tin đến từ đâu.",
     icon: ClipboardCheck,
   },
   {
-    step: "04",
-    question: "Cần làm gì tiếp?",
-    title: "Theo dõi và hành động",
-    description: "Kết quả và khuyến nghị được lưu lại để bạn chụp lại, so sánh và theo dõi cây theo thời gian.",
-    detail: "Lưu lịch sử theo tài khoản",
+    title: "Theo dõi",
+    question: "Việc nào cần làm tiếp?",
+    description: "Kết quả và khuyến nghị được lưu để bạn chụp lại và so sánh theo thời gian.",
+    detail: "Mỗi lần kiểm tra trở thành một mốc chăm sóc.",
     icon: CheckCircle2,
   },
 ];
 
-const nodeStyles = [
-  "bg-on-forest text-forest",
-  "bg-info text-on-forest",
-  "bg-sun text-forest",
-  "bg-on-forest text-forest",
-];
-
 export function WorkflowSection() {
   return (
-    <SectionShell
-      id="quy-trinh"
-      eyebrow="Cách Agromind hỗ trợ bạn"
-      title="Từ một ảnh lá đến việc cần làm, trong bốn bước rõ ràng"
-      description="Mỗi giai đoạn trả lời một câu hỏi thực tế để bạn hiểu kết quả và biết nên theo dõi cây như thế nào."
-      className="relative overflow-hidden bg-surface"
-    >
-      <Reveal>
-        <div className="field-contours relative overflow-hidden rounded-2xl bg-forest p-5 shadow-lg sm:p-7 lg:p-8">
-          <div className="mb-7 flex flex-col gap-3 border-b border-on-forest/15 pb-6 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-on-forest-muted">Luồng kiểm tra Agromind</p>
-              <p className="mt-2 max-w-2xl font-display text-xl font-bold tracking-[-0.02em] text-on-forest sm:text-2xl">
-                Tập trung vào điều cần quan sát và việc nên làm ở từng bước.
+    <section id="quy-trinh" className="section-grid relative overflow-hidden bg-canvas px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+      <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:gap-14">
+        <Reveal className="lg:sticky lg:top-24 lg:self-start">
+          <div className="overflow-hidden rounded-[22px] bg-forest text-on-forest shadow-lg">
+            <div className="relative aspect-[16/9] overflow-hidden">
+              <Image
+                src="/plant-leaves/story-grape-leaf.png"
+                alt="Lá nho có phấn trắng và đốm nâu trên giàn"
+                fill
+                sizes="(min-width: 1024px) 40vw, 100vw"
+                className="object-cover object-center"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-forest via-forest/10 to-transparent" aria-hidden />
+            </div>
+            <div className="p-6 sm:p-8">
+              <h2 className="font-display text-3xl font-extrabold leading-[1.12] tracking-[-0.04em] sm:text-4xl">
+                Một đường sinh mạch từ ảnh lá đến hành động.
+              </h2>
+              <p className="mt-4 max-w-[48ch] text-sm font-medium leading-7 text-on-forest-muted sm:text-base">
+                Mỗi giai đoạn trả lời đúng một câu hỏi để kết quả dễ hiểu và có thể theo dõi ngoài vườn.
               </p>
             </div>
-            <span className="w-fit rounded-full border border-on-forest/15 bg-on-forest/10 px-3 py-1.5 text-xs font-semibold text-on-forest-muted">
-              4 giai đoạn dễ theo dõi
-            </span>
           </div>
+        </Reveal>
 
-          <div className="relative grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="absolute left-[12%] right-[12%] top-7 hidden h-px bg-on-forest/20 lg:block" aria-hidden />
-
-            {stages.map((stage, index) => {
-              const Icon = stage.icon;
-              return (
-                <Reveal key={stage.step} delay={index * 0.055} className="relative min-w-0">
-                  <article className="group relative flex h-full min-w-0 flex-col rounded-xl border border-on-forest/15 bg-on-forest/[0.065] p-5 backdrop-blur-sm transition duration-180 hover:-translate-y-1 hover:border-mint/45 hover:bg-on-forest/10">
-                    <div className="relative z-10 flex items-center justify-between gap-3">
-                      <span className={cn("flex h-14 min-w-14 items-center justify-center rounded-xl font-display text-xl font-extrabold tabular-nums shadow-sm", nodeStyles[index])}>
-                        {stage.step}
-                      </span>
-                      <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-on-forest/15 bg-forest/70 text-on-forest transition duration-180 group-hover:rotate-3 group-hover:scale-105">
-                        <Icon size={20} aria-hidden />
-                      </span>
-                    </div>
-
-                    <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.12em] text-on-forest-muted">{stage.question}</p>
-                    <h3 className="mt-2 font-display text-xl font-bold tracking-[-0.025em] text-on-forest">{stage.title}</h3>
-                    <p className="mt-3 flex-1 text-sm font-medium leading-7 text-on-forest-muted">{stage.description}</p>
-
-                    <div className="mt-5 flex items-start gap-2 border-t border-on-forest/15 pt-4 text-xs font-semibold leading-5 text-on-forest">
-                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-on-forest-muted" aria-hidden />
-                      <span>{stage.detail}</span>
-                    </div>
-
-                    {index < stages.length - 1 ? (
-                      <span className="absolute -right-3 top-6 z-20 hidden h-7 w-7 items-center justify-center rounded-full border border-on-forest/15 bg-forest text-on-forest-muted lg:flex" aria-hidden>
-                        <ArrowRight size={14} />
-                      </span>
-                    ) : null}
-                  </article>
-                </Reveal>
-              );
-            })}
-          </div>
+        <div className="relative pl-4 sm:pl-8">
+          <div className="absolute bottom-10 left-[25px] top-10 w-px bg-gradient-to-b from-leaf/15 via-leaf to-leaf/15 sm:left-[41px]" aria-hidden />
+          {stages.map((stage, index) => {
+            const Icon = stage.icon;
+            return (
+              <Reveal key={stage.title} delay={index * 0.07}>
+                <article className="group relative grid gap-4 border-b border-line py-8 first:pt-2 last:border-b-0 sm:grid-cols-[64px_minmax(0,1fr)] sm:gap-6">
+                  <span className="relative z-10 flex h-12 w-12 items-center justify-center rounded-xl border border-line-strong bg-surface-raised text-leaf-strong shadow-sm transition duration-180 group-hover:-translate-y-0.5 group-hover:border-leaf/45 group-hover:bg-surface-soft sm:h-16 sm:w-16">
+                    <Icon size={22} aria-hidden />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-leaf-strong">{stage.question}</p>
+                    <h3 className="mt-2 font-display text-2xl font-extrabold tracking-[-0.03em] text-ink sm:text-3xl">{stage.title}</h3>
+                    <p className="mt-3 max-w-[54ch] text-sm leading-7 text-ink-soft sm:text-base">{stage.description}</p>
+                    <p className="mt-4 border-l-2 border-leaf/45 pl-3 text-xs font-semibold leading-5 text-ink">{stage.detail}</p>
+                  </div>
+                </article>
+              </Reveal>
+            );
+          })}
         </div>
-      </Reveal>
-    </SectionShell>
+      </div>
+    </section>
   );
 }

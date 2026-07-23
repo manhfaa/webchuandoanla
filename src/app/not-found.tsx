@@ -4,7 +4,7 @@ import { buttonVariants } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
-    <main className="field-contours flex min-h-screen items-center justify-center bg-canvas px-4">
+    <main className="field-contours flex min-h-[100dvh] items-center justify-center bg-canvas px-4">
       <div className="max-w-xl rounded-xl border border-line bg-surface-raised p-10 text-center shadow-lg">
         <p className="text-sm font-semibold uppercase tracking-[0.28em] text-brand-700">404</p>
         <h1 className="mt-4 font-display text-4xl font-semibold text-ink">

@@ -16,11 +16,11 @@ export function ConfidenceMeter({ score, tone = "default", className }: Confiden
   if (percentage < 50) {
     label = "Độ tin cậy thấp";
     barColor = "bg-danger";
-    trackColor = "bg-danger/15";
+    trackColor = "bg-danger-soft";
   } else if (percentage < 80) {
     label = "Độ tin cậy khá";
     barColor = "bg-sun";
-    trackColor = "bg-sun/15";
+    trackColor = "bg-sun-soft";
   }
 
   return (
@@ -31,7 +31,7 @@ export function ConfidenceMeter({ score, tone = "default", className }: Confiden
       </div>
       <div className={cn("h-2 w-full overflow-hidden rounded-full", trackColor)}>
         <div
-          className={cn("h-full rounded-full transition-all duration-1000 ease-out", barColor)}
+          className={cn("fl-meter h-full rounded-full", barColor)}
           style={{ width: `${percentage}%` }}
         />
       </div>

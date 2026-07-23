@@ -17,14 +17,14 @@ export type BadgeVariant =
   | "dot";
 
 const variantStyles: Record<BadgeVariant, string> = {
-  default: "bg-surface-soft text-leaf-strong",
-  success: "bg-surface-soft text-leaf-strong",
-  warning: "bg-sun/20 text-soil",
-  danger: "bg-danger/10 text-danger",
-  info: "bg-info/10 text-info",
+  default: "bg-success-soft text-success-ink",
+  success: "bg-success-soft text-success-ink",
+  warning: "bg-sun-soft text-warning-ink",
+  danger: "bg-danger-soft text-danger-ink",
+  info: "bg-info-soft text-info-ink",
   muted: "bg-surface-soft text-ink-soft border border-line",
-  elite: "bg-sun/20 text-soil",
-  brand: "bg-surface-soft text-leaf-strong",
+  elite: "bg-sun-soft text-warning-ink",
+  brand: "bg-success-soft text-success-ink",
   locked: "bg-surface-soft text-ink-soft border border-line",
   dark: "bg-surface-soft text-ink-soft border border-line",
   status: "bg-surface-soft text-ink-soft border border-line",
@@ -66,15 +66,15 @@ export function StatusBadge({
 }) {
   const config = {
     healthy: {
-      color: "bg-surface-soft text-leaf-strong",
+      color: "bg-success-soft text-success-ink",
       icon: CheckCircle2,
     },
     watch: {
-      color: "bg-sun/20 text-soil",
+      color: "bg-sun-soft text-warning-ink",
       icon: AlertCircle,
     },
     urgent: {
-      color: "bg-danger/10 text-danger",
+      color: "bg-danger-soft text-danger-ink",
       icon: ShieldAlert,
     },
     neutral: {
@@ -82,7 +82,7 @@ export function StatusBadge({
       icon: Info,
     },
     processing: {
-      color: "bg-info/10 text-info",
+      color: "bg-info-soft text-info-ink",
       icon: Clock,
     },
   }[status];

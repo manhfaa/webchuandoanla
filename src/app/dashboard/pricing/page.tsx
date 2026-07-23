@@ -28,7 +28,7 @@ export default function DashboardPricingPage() {
   const currentPlanInfo = PLANS[currentPlan];
 
   return (
-    <div className="mx-auto max-w-[1480px] space-y-8">
+    <div className="fl-stagger mx-auto max-w-[1480px] space-y-8">
       <Card variant="dark" padding="lg" className="field-contours overflow-hidden rounded-xl">
         <div className="grid gap-7 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div>

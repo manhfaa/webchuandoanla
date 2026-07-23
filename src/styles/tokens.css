@@ -1,44 +1,57 @@
 /**
- * Agromind AI design tokens — single source for all colors, radii, motion.
+ * Agromind AI design tokens: single source for all colors, radii, motion.
  */
 :root {
   /* Light theme */
-  --canvas: #F7F5EE;
-  --surface: #FFFEFA;
-  --surface-raised: #FFFFFF;
-  --paper: #FFFFFF;
-  --surface-soft: #EAF4EC;
+  --canvas: #F2F7F1;
+  --surface: #FBFEFA;
+  --surface-raised: #FDFEFC;
+  --surface-soft: #E7F1E9;
+  --surface-overlay: #EFF6F0;
+  --paper: var(--surface-raised);
+  --qr-paper: #FFFFFF;
 
-  --ink: #13251A;
-  --ink-soft: #5C6D62;
-  --line: #DCE8DD;
+  --ink: #10251A;
+  --ink-strong: #071B10;
+  --ink-soft: #586C5E;
+  --ink-muted: #6C7D70;
+  --line: #D7E6DA;
+  --line-strong: #B8D5BF;
 
-  --forest: #0B2B1D;
-  --on-forest: #F4FFF7;
-  --on-forest-muted: #C5D7CA;
-  --leaf: #238554;
-  --leaf-strong: #17683F;
-  --on-leaf: #FFFFFF;
-  --mint: #BFE8CD;
+  --forest: #0B281A;
+  --on-forest: #EFF9F1;
+  --on-forest-muted: #BED2C4;
+  --leaf: #238B57;
+  --leaf-strong: #166A40;
+  --on-leaf: #F7FFF9;
+  --mint: #B8DFC2;
 
   --sun: #EAB64B;
+  --sun-soft: rgba(234, 182, 75, 0.16);
+  --warning-ink: #654A05;
   --soil: #77563C;
   --danger: #C9513E;
+  --danger-soft: rgba(201, 81, 62, 0.12);
+  --danger-ink: #A63E2F;
   --on-danger: #FFFFFF;
   --info: #2F6FA9;
+  --info-soft: rgba(47, 111, 169, 0.12);
+  --info-ink: #235987;
+  --success-soft: rgba(35, 133, 84, 0.12);
+  --success-ink: #17683F;
 
   /* ── Radii ── */
-  --r-sm:   6px;
+  --r-sm:   10px;
   --r-md:   12px;
-  --r-lg:   16px;
-  --r-xl:   24px;
-  --r-2xl:  28px;
+  --r-lg:   18px;
+  --r-xl:   20px;
+  --r-2xl:  24px;
   --r-pill: 9999px;
 
   /* ── Elevation ── */
-  --shadow-sm:    0 1px 2px rgba(0, 0, 0, 0.08);
-  --shadow-md:    0 4px 12px rgba(0, 0, 0, 0.1);
-  --shadow-lg:    0 16px 42px rgba(16, 49, 29, 0.08);
+  --shadow-sm:    0 1px 2px rgba(11, 40, 26, 0.07);
+  --shadow-md:    0 8px 24px rgba(11, 40, 26, 0.09);
+  --shadow-lg:    0 24px 64px rgba(11, 40, 26, 0.12);
   --shadow-focus: 0 0 0 3px rgba(35, 133, 84, 0.25);
   --shadow-glow:  var(--shadow-focus);
 
@@ -56,31 +69,48 @@
 
 [data-theme="dark"] {
   /* Dark theme */
-  --canvas: #07170F;
-  --surface: #0D2418;
-  --surface-raised: #123321;
-  --paper: #FFFFFF;
-  --surface-soft: #173C29;
+  --canvas: #06160D;
+  --surface: #0B2416;
+  --surface-raised: #10321F;
+  --surface-soft: #153A25;
+  --surface-overlay: #19462D;
+  --paper: var(--surface-raised);
+  --qr-paper: #FFFFFF;
 
-  --ink: #F2F8F3;
+  --ink: #EFF7F0;
+  --ink-strong: #F7FCF8;
   --ink-soft: #A5B9AA;
-  --line: rgba(213, 245, 223, 0.12);
+  --ink-muted: #8FA394;
+  --line: rgba(215, 245, 223, 0.14);
+  --line-strong: rgba(215, 245, 223, 0.26);
 
-  --forest: #0B2B1D;
-  --on-forest: #F4FFF7;
-  --on-forest-muted: #B9CCBF;
-  --leaf: #2FA664; /* Sáng vừa đủ, không neon */
-  --leaf-strong: #3FBB77;
-  --on-leaf: #07170F;
-  --mint: #154D31;
+  --forest: #082418;
+  --on-forest: #F1FAF3;
+  --on-forest-muted: #B7CCBD;
+  --leaf: #53CC83;
+  --leaf-strong: #79DDA0;
+  --on-leaf: #06170E;
+  --mint: #1D5939;
 
-  --sun: #EAB64B;
+  --sun: #F4C95D;
+  --sun-soft: rgba(244, 201, 93, 0.16);
+  --warning-ink: #F4D77B;
   --soil: #936F52;
-  --danger: #E46651;
+  --danger: #F07862;
+  --danger-soft: rgba(240, 120, 98, 0.16);
+  --danger-ink: #FF9B88;
   --on-danger: #07170F;
-  --info: #468AD2;
+  --info: #72B8F0;
+  --info-soft: rgba(114, 184, 240, 0.16);
+  --info-ink: #9AD0F8;
+  --success-soft: rgba(83, 201, 130, 0.16);
+  --success-ink: #8BE5AB;
 
-  --shadow-lg: 0 16px 42px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.24);
+  --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.32);
+  --shadow-focus: 0 0 0 3px rgba(83, 201, 130, 0.28);
+  --ring-leaf: rgba(83, 201, 130, 0.42);
 
   color-scheme: dark;
 }

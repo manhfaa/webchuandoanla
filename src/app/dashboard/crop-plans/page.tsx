@@ -7,7 +7,8 @@ import { Leaf, Plus, Sprout, TriangleAlert } from "lucide-react";
 import { CropPlanListCard } from "@/components/crop-plans/crop-plan-list-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
+import { ListSkeleton } from "@/components/ui/skeleton";
+import { EmptyState, ErrorState } from "@/components/ui/states";
 import { fetchCropPlans, fetchReminders } from "@/lib/crop-plans-client";
 import { useSessionStore } from "@/store/session-store";
 import type { CropPlan, ReminderItem } from "@/types";
@@ -27,6 +28,7 @@ export default function CropPlansPage() {
     void (async () => {
       try {
         setLoading(true);
+        setError(null);
         const [planData, reminderData] = await Promise.all([
           fetchCropPlans(accessToken),
           fetchReminders(accessToken, "today"),
@@ -47,7 +49,7 @@ export default function CropPlansPage() {
   );
 
   return (
-    <div className="mx-auto max-w-[1320px] space-y-6">
+    <div className="fl-stagger mx-auto max-w-[1320px] space-y-6">
       <Card variant="raised" padding="lg" className="field-contours rounded-xl">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -94,9 +96,9 @@ export default function CropPlansPage() {
 
       {error ? <ErrorState title="Chưa tải được kế hoạch" description={error} onRetry={() => window.location.reload()} /> : null}
 
-      {loading ? <LoadingState title="Đang tải kế hoạch trồng" description="Agromind AI đang lấy tiến độ và nhắc việc của bạn." /> : null}
+      {loading ? <ListSkeleton count={3} itemClassName="h-[220px]" /> : null}
 
-      {!loading && !plans.length ? (
+      {!loading && !error && !plans.length ? (
         <EmptyState title="Chưa có kế hoạch trồng nào" description="Tạo kế hoạch đầu tiên để theo dõi mùa vụ, nhắc việc và thời tiết cho từng bước chăm cây." icon={Leaf} action={<Link href="/dashboard/crop-plans/new" className="no-underline"><Button><Sprout strokeWidth={1.75} className="h-4 w-4" aria-hidden /> Tạo kế hoạch mới</Button></Link>} />
       ) : null}
 
@@ -111,7 +113,7 @@ export default function CropPlansPage() {
       {reminders.length ? (
         <Card variant="warning" className="rounded-lg">
           <div className="flex items-start gap-3">
-            <span className="rounded-md bg-sun/20 p-3 text-soil">
+            <span className="rounded-md bg-sun-soft p-3 text-warning-ink">
               <TriangleAlert strokeWidth={1.75} className="h-5 w-5" aria-hidden />
             </span>
             <div>

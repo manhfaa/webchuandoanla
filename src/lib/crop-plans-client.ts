@@ -168,7 +168,7 @@ export function saveCropPlanStepNote(
 export function fetchReminders(accessToken: string | null, filter?: string) {
   const query = filter ? `?filter=${encodeURIComponent(filter)}` : "";
   return djangoCropFetch<ReminderItem[]>(
-    `/api/crop-plans/reminders/${query}`,
+    `/api/crop-plans/reminders${query}`,
     { method: "GET" },
     accessToken,
   );
@@ -184,4 +184,3 @@ export function markReminderRead(accessToken: string | null, reminderId: number 
     accessToken,
   );
 }
-

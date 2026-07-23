@@ -13,12 +13,12 @@ export function ActionCard({ title, priority, time, onClick, className }: Action
   const priorityConfig = {
     high: {
       borderColor: "border-danger/30",
-      iconColor: "text-danger",
+      iconColor: "text-danger-ink",
       Icon: AlertCircle,
     },
     medium: {
       borderColor: "border-sun/40",
-      iconColor: "text-sun",
+      iconColor: "text-warning-ink",
       Icon: Clock,
     },
     low: {

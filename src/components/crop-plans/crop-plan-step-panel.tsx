@@ -90,9 +90,9 @@ export function CropPlanStepPanel({
           <p className="mt-2 text-sm leading-7 text-ink-soft">{step.completion_condition}</p>
         </div>
 
-        <div className="rounded-lg border border-sun/30 bg-sun/10 p-4">
+        <div className="rounded-lg border border-sun/30 bg-sun-soft p-4">
           <div className="flex items-center gap-2 text-sm font-bold text-ink">
-            <TriangleAlert size={16} className="text-soil" />
+            <TriangleAlert size={16} className="text-warning-ink" />
             Lưu ý rủi ro
           </div>
           <ul className="mt-3 space-y-2 text-sm leading-7 text-ink-soft">

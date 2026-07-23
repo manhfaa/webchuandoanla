@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 import { AlertTriangle, CheckCircle2, Clock3, ImagePlus, ScanSearch } from "lucide-react";
 
 import { StatusBadge, type StatusBadgeState } from "@/components/ui/badge";
@@ -42,16 +44,42 @@ export function AIProcessStepper({ steps }: { steps: StepItem[] }) {
           const Icon = getStepIcon(step);
           const meta = getStateMeta(step.state);
           const active = step.state === "success" || step.state === "processing";
+          const railFill =
+            step.state === "success"
+              ? "w-full bg-leaf"
+              : step.state === "warning"
+                ? "w-full bg-danger"
+                : step.state === "processing"
+                  ? "w-1/2 bg-leaf"
+                  : null;
 
           return (
-            <Card key={step.key} variant={active ? "soft" : "default"} padding="sm" className={cn("relative min-h-[216px] overflow-hidden rounded-lg", step.state === "warning" && "border-danger/25 bg-danger/10")}>
+            <Card
+              key={step.key}
+              variant={active ? "soft" : "default"}
+              padding="sm"
+              className={cn("fl-rise relative min-h-[216px] overflow-hidden rounded-lg", step.state === "warning" && "border-danger/30 bg-danger-soft")}
+              style={{ "--fl-i": index } as CSSProperties}
+            >
               <div className="flex items-center justify-between gap-3">
-                <span className={cn("flex h-10 w-10 items-center justify-center rounded-md", active ? "bg-surface text-leaf-strong" : "bg-surface-soft text-ink-soft", step.state === "warning" && "bg-surface text-danger")}>
-                  <Icon size={18} aria-hidden />
+                <span
+                  className={cn(
+                    "flex h-10 w-10 items-center justify-center rounded-md transition-colors duration-260",
+                    active ? "bg-surface text-leaf-strong" : "bg-surface-soft text-ink-soft",
+                    step.state === "warning" && "bg-surface text-danger-ink",
+                    step.state === "processing" && "fl-pulse",
+                  )}
+                >
+                  <span key={step.state} className={cn(step.state === "success" && "fl-check", "flex items-center justify-center")}>
+                    <Icon size={18} aria-hidden />
+                  </span>
                 </span>
                 <StatusBadge status={meta.status} label={meta.label} />
               </div>
-              <p className="mt-5 text-overline text-leaf-strong">Bước {index + 1}</p>
+              <div className="mt-4 h-[3px] w-full overflow-hidden rounded-full bg-line/70" aria-hidden>
+                {railFill ? <span key={step.state} className={cn("block h-full rounded-full", railFill, "fl-rail-x")} /> : null}
+              </div>
+              <p className="mt-4 text-overline text-leaf-strong">Bước {index + 1}</p>
               <h3 className="mt-2 text-base font-bold text-ink">{step.title}</h3>
               <p className="mt-2 text-sm leading-6 text-ink-soft">{step.description}</p>
               <p className="mt-4 border-t border-line pt-3 text-xs font-medium leading-6 text-ink-soft">{step.detail}</p>

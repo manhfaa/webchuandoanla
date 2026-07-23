@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 export function AppShell({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn("min-h-screen bg-canvas bg-dashboard-mesh text-ink", className)}>
+    <div className={cn("min-h-[100dvh] bg-canvas bg-dashboard-mesh text-ink", className)}>
       {children}
     </div>
   );

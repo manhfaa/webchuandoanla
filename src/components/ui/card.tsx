@@ -10,7 +10,7 @@ const variantClass: Record<CardVariant, string> = {
   soft: "bg-surface-soft border border-transparent",
   raised: "bg-surface-raised border border-line shadow-lg",
   dark: "bg-forest border border-transparent text-on-forest",
-  warning: "bg-sun/10 border border-sun/20",
+  warning: "bg-sun-soft border border-sun/30 text-ink",
   light: "bg-surface-raised border border-line text-ink",
   darkNested: "bg-surface-soft border border-line text-ink",
 };
@@ -42,7 +42,7 @@ export function SurfaceCard({
         "rounded-lg transition duration-180 ease-out",
         variantClass[variant],
         paddingClass[padding],
-        interactive && "hover:-translate-y-1 hover:shadow-md cursor-pointer",
+        interactive && "cursor-pointer hover:-translate-y-1 hover:border-line-strong hover:shadow-md",
         className,
       )}
       {...props}

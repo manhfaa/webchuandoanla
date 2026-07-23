@@ -22,7 +22,7 @@ export function ChatComposer({ label, value, onChange, onSubmit, placeholder, di
     <Card variant="default" padding="sm" className="rounded-xl">
       <form className="space-y-3" onSubmit={onSubmit}>
         <label className="block text-sm font-bold text-ink">{label}</label>
-        <textarea value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} disabled={disabled} className="min-h-[112px] w-full resize-none rounded-md border border-line bg-surface-soft px-4 py-3 text-sm leading-7 text-ink outline-none transition placeholder:text-ink-soft focus:border-leaf focus:bg-surface focus:ring-2 focus:ring-leaf/20 disabled:cursor-not-allowed disabled:opacity-60" />
+        <textarea value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} disabled={disabled} className="min-h-[112px] w-full resize-none rounded-md border border-line bg-surface-soft px-4 py-3 text-sm leading-7 text-ink outline-none transition placeholder:text-ink-muted focus:border-leaf focus:bg-surface focus:ring-2 focus:ring-leaf/20 disabled:cursor-not-allowed disabled:opacity-70" />
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           {helperText ? <p className="max-w-lg text-xs leading-6 text-ink-soft">{helperText}</p> : <div />}
           <div className="flex shrink-0 items-center justify-end gap-2">

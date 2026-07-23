@@ -26,8 +26,6 @@ def main() -> None:
     username = api.whoami()["name"]
     repo_id = os.getenv("HF_SPACE_ID") or f"{username}/agromind-cnn-api"
 
-    # Reuse the existing Space. Creating a new Docker Space on the free plan
-    # returns 402 even when the target repository already exists.
     try:
         api.repo_info(repo_id=repo_id, repo_type="space")
     except Exception as exc:

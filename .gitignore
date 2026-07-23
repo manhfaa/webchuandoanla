@@ -19,5 +19,8 @@ backend/.env
 .pydeps-local
 *.pth
 hf_space/best_model.pth
+dashboard-prod.png
+design-review/
+tsconfig.tsbuildinfo
 
 .vercel

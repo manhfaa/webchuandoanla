@@ -22,7 +22,9 @@ export function CropPlanProgress({
   const current = plan.steps.find((step) => step.status === "current") ?? plan.steps[0];
   const delayed = plan.steps.filter((step) => step.status === "delayed").length;
   const progress = plan.steps.length ? Math.round((completed / plan.steps.length) * 100) : 0;
-  const todayCount = reminders.filter((item) => item.deep_link.includes(`/crop-plans/${plan.id}`)).length;
+  const scheduledReminderCount = reminders.filter((item) =>
+    item.deep_link.includes(`/crop-plans/${plan.id}`),
+  ).length;
 
   const metrics = [
     {
@@ -39,8 +41,8 @@ export function CropPlanProgress({
     },
     {
       label: "Nhắc việc liên quan",
-      value: `${todayCount}`,
-      note: "Thông báo đang chờ xử lý",
+      value: `${scheduledReminderCount}`,
+      note: "Nhắc việc cho toàn bộ vụ trồng",
       icon: CalendarClock,
     },
     {

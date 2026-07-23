@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchCropCatalog, fetchCropLocations, previewCropPlan, createCropPlan } from "@/lib/crop-plans-client";
+import { getSuitabilityLabel } from "@/lib/crop-plan-labels";
 import { useSessionStore } from "@/store/session-store";
 
 import { LocationMapPicker } from "./location-map-picker";
@@ -147,7 +148,7 @@ export function CropPlanCreateWizard() {
   }
 
   return (
-    <div className="mx-auto max-w-[1320px] space-y-6">
+    <div className="fl-stagger mx-auto max-w-[1320px] space-y-6">
       <Card variant="raised" padding="lg" className="field-contours rounded-xl">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -184,7 +185,7 @@ export function CropPlanCreateWizard() {
       </Card>
 
       {error ? (
-        <Card className="rounded-lg border-danger/25 bg-danger/10 text-sm leading-7 text-danger">
+        <Card className="rounded-lg border-danger/30 bg-danger-soft text-sm leading-7 text-danger-ink">
           {error}
         </Card>
       ) : null}
@@ -478,12 +479,12 @@ export function CropPlanCreateWizard() {
               </div>
               <div className="mt-5 space-y-3 text-sm leading-7 text-ink-soft">
                 <p>- Bắt đầu đề xuất: {preview.summary.recommended_start_date}</p>
-                <p>- Mức phù hợp: {preview.summary.suitability_level}</p>
+                <p>- Mức phù hợp: {getSuitabilityLabel(preview.summary.suitability_level)}</p>
                 <p>- Phân tích: {preview.summary.reasoning_summary}</p>
               </div>
               <div className="mt-5 grid gap-3">
                 {preview.summary.key_warnings.map((warning) => (
-                  <div key={warning} className="rounded-md border border-sun/30 bg-sun/10 px-4 py-3 text-sm text-ink-soft">
+                  <div key={warning} className="rounded-md border border-sun/30 bg-sun-soft px-4 py-3 text-sm text-ink">
                     {warning}
                   </div>
                 ))}
