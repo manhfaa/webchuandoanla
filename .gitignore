@@ -4,7 +4,8 @@ out
 dist
 .vercel
 .env
-.env*.local
+.env.*
+!**/.env.example
 .tmp
 moduleyolola
 *.log
@@ -18,6 +19,15 @@ backend/.env
 .pydeps
 .pydeps-local
 *.pth
+*.pem
+*.key
+*.p12
+*.pfx
+.npmrc
+.pypirc
+.netrc
+credentials*.json
+service-account*.json
 hf_space/best_model.pth
 dashboard-prod.png
 design-review/

@@ -1,35 +1,10 @@
 from django.db import migrations
-from django.contrib.auth.hashers import make_password
 
 
-ADMIN_EMAIL = "admin@agromindai.vn"
-ADMIN_PASSWORD = "Admin@12345"
-
-
-def promote_render_admin(apps, schema_editor):
-    User = apps.get_model("users", "User")
-
-    user = User.objects.filter(email__iexact=ADMIN_EMAIL).first()
-    if user is None:
-        user = User.objects.filter(username="admin").first()
-    if user is None:
-        username = "admin"
-        suffix = 1
-        while User.objects.filter(username=username).exists():
-            username = f"admin_{suffix}"
-            suffix += 1
-        user = User(username=username, email=ADMIN_EMAIL)
-
-    user.username = "admin"
-    user.full_name = "Admin Agromind AI"
-
-    user.email = ADMIN_EMAIL
-    user.password = make_password(ADMIN_PASSWORD)
-    user.is_staff = True
-    user.is_superuser = True
-    user.is_active = True
-    user.current_plan = "elite"
-    user.save()
+def skip_insecure_admin_bootstrap(apps, schema_editor):
+    # Administrator credentials must never be embedded in a migration.
+    # Use `manage.py provision_admin` with deployment environment variables.
+    return None
 
 
 class Migration(migrations.Migration):
@@ -38,5 +13,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(promote_render_admin, migrations.RunPython.noop),
+        migrations.RunPython(skip_insecure_admin_bootstrap, migrations.RunPython.noop),
     ]

@@ -179,16 +179,11 @@ URL local:
 - Trang chẩn đoán: http://127.0.0.1:3000/dashboard/diagnosis
 - Backend admin: http://127.0.0.1:8000/admin/login/
 
-## Tài khoản demo
+## Tài khoản đăng nhập
 
-Giao diện có tài khoản gợi ý:
+Đăng ký tài khoản người dùng tại `/register`. Không lưu hoặc công khai thông tin đăng nhập thật trong mã nguồn và tài liệu.
 
-```text
-Email: demo@agromindai.vn
-Password: Demo@12345
-```
-
-Nếu tài khoản chưa có trong database local, đăng ký tài khoản mới tại `/register` hoặc tạo bằng Django admin/shell.
+Để cấp tài khoản quản trị khi triển khai, cấu hình `DJANGO_SUPERUSER_USERNAME`, `DJANGO_SUPERUSER_EMAIL` và `DJANGO_SUPERUSER_PASSWORD` trong biến môi trường của Render. Lệnh `python manage.py provision_admin` sẽ tạo hoặc cập nhật tài khoản mà không ghi mật khẩu vào Git hay log triển khai.
 
 ## CNN model
 

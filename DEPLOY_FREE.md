@@ -18,7 +18,7 @@ Do not deploy the frontend as a Render web service if the goal is to stay free. 
 Keep this value for Render:
 
 ```env
-SUPABASE_DB_URL=postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
+SUPABASE_DB_URL=<paste the complete Supabase connection string here>
 ```
 
 ## 2. Deploy Django backend on Render
@@ -56,7 +56,12 @@ CORS_ALLOWED_ORIGIN_REGEXES=^https://.*\.vercel\.app$
 CSRF_TRUSTED_ORIGINS=https://webchuandoanla-backend.onrender.com,https://*.vercel.app
 SECRET_KEY=<generate a strong secret>
 SUPABASE_DB_URL=<your Supabase Postgres connection string>
+DJANGO_SUPERUSER_USERNAME=<set in Render only>
+DJANGO_SUPERUSER_EMAIL=<set in Render only>
+DJANGO_SUPERUSER_PASSWORD=<set in Render only>
 ```
+
+The build runs `python manage.py provision_admin`. It skips provisioning when all three administrator variables are empty and fails safely when only part of the configuration is present. Never put administrator credentials in a migration, source file, or deployment log.
 
 After the backend deploys, verify:
 
