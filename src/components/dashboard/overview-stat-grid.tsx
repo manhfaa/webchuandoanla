@@ -3,6 +3,7 @@
 import { Activity, AlertTriangle, Leaf, TrendingUp } from "lucide-react";
 
 import { Stat } from "@/components/ui/stat";
+import { useTr } from "@/lib/use-tr";
 import { useDiagnosisStore } from "@/store/diagnosis-store";
 
 function percent(value: number) {
@@ -10,6 +11,7 @@ function percent(value: number) {
 }
 
 export function OverviewStatGrid() {
+  const tr = useTr();
   const { records } = useDiagnosisStore();
   const total = records.length;
   const classified = records.filter((item) => item.classificationReady).length;
@@ -30,33 +32,33 @@ export function OverviewStatGrid() {
   const stats = [
     {
       id: "total",
-      label: "Tổng lượt kiểm tra",
+      label: tr("Tổng lượt kiểm tra", "Total checks"),
       value: String(total),
-      helper: total ? `${last7Days} lượt trong 7 ngày gần đây` : "Chưa có lần kiểm tra nào",
+      helper: total ? tr(`${last7Days} lượt trong 7 ngày gần đây`, `${last7Days} checks in the last 7 days`) : tr("Chưa có lần kiểm tra nào", "No checks yet"),
       icon: Activity,
       tone: "brand" as const,
     },
     {
       id: "leaf",
-      label: "Ảnh lá hợp lệ",
+      label: tr("Ảnh lá hợp lệ", "Valid leaf images"),
       value: total ? percent(verifiedLeaves / total) : "0%",
-      helper: total ? `${verifiedLeaves}/${total} ảnh đạt yêu cầu đầu vào` : "Tải ảnh rõ để bắt đầu",
+      helper: total ? tr(`${verifiedLeaves}/${total} ảnh đạt yêu cầu đầu vào`, `${verifiedLeaves}/${total} images met input requirements`) : tr("Tải ảnh rõ để bắt đầu", "Upload a clear image to start"),
       icon: Leaf,
       tone: "default" as const,
     },
     {
       id: "confidence",
-      label: "Độ tin cậy trung bình",
+      label: tr("Độ tin cậy trung bình", "Average confidence"),
       value: percent(avgConfidence),
-      helper: classified ? `Tính từ ${classified} kết quả đã phân tích` : "Chưa đủ dữ liệu để tính",
+      helper: classified ? tr(`Tính từ ${classified} kết quả đã phân tích`, `Based on ${classified} analyzed results`) : tr("Chưa đủ dữ liệu để tính", "Not enough data to calculate"),
       icon: TrendingUp,
       tone: "default" as const,
     },
     {
       id: "review",
-      label: "Cần theo dõi",
+      label: tr("Cần theo dõi", "Needs monitoring"),
       value: String(needsReview),
-      helper: needsReview ? "Nên xem lại hoặc chụp thêm ảnh" : "Chưa có kết quả cần chú ý",
+      helper: needsReview ? tr("Nên xem lại hoặc chụp thêm ảnh", "Consider reviewing or taking more images") : tr("Chưa có kết quả cần chú ý", "No results need attention"),
       icon: AlertTriangle,
       tone: needsReview ? ("warning" as const) : ("default" as const),
     },

@@ -1,11 +1,16 @@
+"use client";
+
 import type { CSSProperties } from "react";
 
 import { AlertTriangle, CheckCircle2, Clock3, ImagePlus, ScanSearch } from "lucide-react";
 
 import { StatusBadge, type StatusBadgeState } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
 import type { DiagnosisStepKey, DiagnosisStepState } from "@/types";
+
+type Tr = (vi: string, en: string) => string;
 
 export interface StepItem {
   key: DiagnosisStepKey;
@@ -15,13 +20,13 @@ export interface StepItem {
   detail: string;
 }
 
-function getStateMeta(state: DiagnosisStepState): { label: string; status: StatusBadgeState } {
-  if (state === "success") return { label: "Hoàn tất", status: "healthy" };
-  if (state === "warning") return { label: "Cần thử lại", status: "urgent" };
-  if (state === "processing") return { label: "Đang thực hiện", status: "processing" };
-  if (state === "queued") return { label: "Đang chờ", status: "neutral" };
-  if (state === "locked") return { label: "Chưa thể tiếp tục", status: "neutral" };
-  return { label: "Chưa bắt đầu", status: "neutral" };
+function getStateMeta(state: DiagnosisStepState, tr: Tr): { label: string; status: StatusBadgeState } {
+  if (state === "success") return { label: tr("Hoàn tất", "Done"), status: "healthy" };
+  if (state === "warning") return { label: tr("Cần thử lại", "Try again"), status: "urgent" };
+  if (state === "processing") return { label: tr("Đang thực hiện", "In progress"), status: "processing" };
+  if (state === "queued") return { label: tr("Đang chờ", "Waiting"), status: "neutral" };
+  if (state === "locked") return { label: tr("Chưa thể tiếp tục", "Cannot continue yet"), status: "neutral" };
+  return { label: tr("Chưa bắt đầu", "Not started"), status: "neutral" };
 }
 
 function getStepIcon(step: StepItem) {
@@ -33,16 +38,17 @@ function getStepIcon(step: StepItem) {
 }
 
 export function AIProcessStepper({ steps }: { steps: StepItem[] }) {
+  const tr = useTr();
   return (
     <section>
       <div className="mb-4">
-        <p className="text-overline text-leaf-strong">Tiến trình kiểm tra</p>
-        <h2 className="mt-2 text-h2 font-bold text-ink">Từ ảnh lá đến việc nên làm</h2>
+        <p className="text-overline text-leaf-strong">{tr("Tiến trình kiểm tra", "Check progress")}</p>
+        <h2 className="mt-2 text-h2 font-bold text-ink">{tr("Từ ảnh lá đến việc nên làm", "From leaf photo to what to do")}</h2>
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {steps.map((step, index) => {
           const Icon = getStepIcon(step);
-          const meta = getStateMeta(step.state);
+          const meta = getStateMeta(step.state, tr);
           const active = step.state === "success" || step.state === "processing";
           const railFill =
             step.state === "success"
@@ -79,7 +85,7 @@ export function AIProcessStepper({ steps }: { steps: StepItem[] }) {
               <div className="mt-4 h-[3px] w-full overflow-hidden rounded-full bg-line/70" aria-hidden>
                 {railFill ? <span key={step.state} className={cn("block h-full rounded-full", railFill, "fl-rail-x")} /> : null}
               </div>
-              <p className="mt-4 text-overline text-leaf-strong">Bước {index + 1}</p>
+              <p className="mt-4 text-overline text-leaf-strong">{tr(`Bước ${index + 1}`, `Step ${index + 1}`)}</p>
               <h3 className="mt-2 text-base font-bold text-ink">{step.title}</h3>
               <p className="mt-2 text-sm leading-6 text-ink-soft">{step.description}</p>
               <p className="mt-4 border-t border-line pt-3 text-xs font-medium leading-6 text-ink-soft">{step.detail}</p>

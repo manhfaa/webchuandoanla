@@ -1,9 +1,12 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Leaf, ShieldCheck } from "lucide-react";
 
 import { Logo } from "@/components/layout/logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { useTr } from "@/lib/use-tr";
 
 interface AuthShellProps {
   eyebrow: string;
@@ -15,6 +18,7 @@ interface AuthShellProps {
 }
 
 export function AuthShell({ eyebrow, title, description, asideTitle, asideDescription, children }: AuthShellProps) {
+  const tr = useTr();
   return (
     <main id="main-content" className="field-contours min-h-[100dvh] bg-canvas px-4 py-4 text-ink sm:px-6 sm:py-6">
       <div className="mx-auto flex min-h-[calc(100dvh-2rem)] max-w-6xl flex-col overflow-hidden rounded-[var(--r-xl)] border border-line bg-surface shadow-lg sm:min-h-[calc(100dvh-3rem)] lg:grid lg:grid-cols-[0.9fr_1.1fr]">
@@ -42,7 +46,7 @@ export function AuthShell({ eyebrow, title, description, asideTitle, asideDescri
 
           <div className="relative flex items-start gap-3 border-t border-on-forest/10 pt-6 text-sm leading-6 text-on-forest-muted">
             <ShieldCheck size={18} className="mt-0.5 shrink-0 text-on-forest" aria-hidden />
-            <p>Kết quả AI mang tính tham khảo. Khi cây bệnh lan nhanh hoặc cần dùng thuốc, hãy hỏi thêm chuyên gia nông nghiệp địa phương.</p>
+            <p>{tr("Kết quả AI mang tính tham khảo. Khi cây bệnh lan nhanh hoặc cần dùng thuốc, hãy hỏi thêm chuyên gia nông nghiệp địa phương.", "AI results are for reference only. When a disease spreads quickly or pesticides are needed, consult a local agricultural expert.")}</p>
           </div>
         </aside>
 
@@ -52,7 +56,7 @@ export function AuthShell({ eyebrow, title, description, asideTitle, asideDescri
               <Logo showTagline={false} />
             </div>
             <Link href="/" className="hidden min-h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold text-ink-soft transition hover:bg-surface-soft hover:text-ink sm:inline-flex">
-              <ArrowLeft size={16} aria-hidden /> Quay lại trang chủ
+              <ArrowLeft size={16} aria-hidden /> {tr("Quay lại trang chủ", "Back to home")}
             </Link>
             <ThemeToggle className="border border-line bg-surface" />
           </div>

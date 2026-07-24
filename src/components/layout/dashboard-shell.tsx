@@ -9,6 +9,7 @@ import { Toaster } from "sonner";
 import { UpgradeModal } from "@/components/pricing/upgrade-modal";
 import { useSessionStore } from "@/store/session-store";
 import { useLanguageStore } from "@/store/language-store";
+import { useTr } from "@/lib/use-tr";
 
 import { Sidebar } from "./sidebar";
 import { WorkspaceHeader } from "./workspace-header";
@@ -104,6 +105,7 @@ function getPageDescription(pathname: string, lang: "vi" | "en"): string {
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { initialized, hydrate, isAuthenticated } = useSessionStore();
   const { language } = useLanguageStore();
+  const tr = useTr();
   const { resolvedTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
@@ -136,8 +138,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-surface-soft text-leaf-strong">
             <Sprout size={23} aria-hidden />
           </span>
-          <h1 className="mt-4 font-display text-lg font-bold tracking-[-0.025em]">Đang mở không gian làm việc</h1>
-          <p className="mt-2 text-sm text-ink-soft">Agromind AI đang kiểm tra phiên đăng nhập và dữ liệu của bạn.</p>
+          <h1 className="mt-4 font-display text-lg font-bold tracking-[-0.025em]">{tr("Đang mở không gian làm việc", "Opening your workspace")}</h1>
+          <p className="mt-2 text-sm text-ink-soft">{tr("Agromind AI đang kiểm tra phiên đăng nhập và dữ liệu của bạn.", "Agromind AI is checking your session and data.")}</p>
           <LoaderCircle className="mx-auto mt-5 h-5 w-5 animate-spin text-leaf" aria-hidden />
         </div>
       </div>

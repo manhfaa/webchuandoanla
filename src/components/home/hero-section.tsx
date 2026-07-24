@@ -1,3 +1,5 @@
+"use client";
+
 import type { CSSProperties } from "react";
 
 import Link from "next/link";
@@ -7,9 +9,11 @@ import { LeafFieldBackground } from "@/components/home/leaf-field-background";
 import { LeafLens } from "@/components/home/leaf-lens";
 import { buttonVariants } from "@/components/ui/button";
 import { Reveal } from "@/components/ui/reveal";
+import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
 
 export function HeroSection() {
+  const tr = useTr();
   return (
     <section
       id="top"
@@ -22,21 +26,21 @@ export function HeroSection() {
             <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-leaf/20 bg-surface-soft">
               <Leaf size={15} aria-hidden />
             </span>
-            Trợ lý sức khỏe cây trồng
+            {tr("Trợ lý sức khỏe cây trồng", "Plant health assistant")}
           </div>
 
           <h1
             className="fl-rise mt-6 max-w-[680px] font-display text-[42px] font-extrabold leading-[1.06] tracking-[-0.05em] text-ink sm:text-[50px] lg:text-[52px] xl:text-[56px]"
             style={{ "--fl-i": 1 } as CSSProperties}
           >
-            Nhìn dấu hiệu trên lá. Hành động trước khi bệnh lan rộng.
+            {tr("Nhìn dấu hiệu trên lá. Hành động trước khi bệnh lan rộng.", "Read the signs on the leaf. Act before disease spreads.")}
           </h1>
 
           <p
             className="fl-rise mt-6 max-w-[560px] text-base font-medium leading-7 text-ink-soft sm:text-lg sm:leading-8"
             style={{ "--fl-i": 1.5 } as CSSProperties}
           >
-            Tải ảnh lá để nhận gợi ý bệnh, đối chiếu triệu chứng và biết việc cần làm tiếp theo.
+            {tr("Tải ảnh lá để nhận gợi ý bệnh, đối chiếu triệu chứng và biết việc cần làm tiếp theo.", "Upload a leaf photo to get disease suggestions, cross-check symptoms and know what to do next.")}
           </p>
 
           <div className="fl-rise mt-8 flex flex-col gap-3 sm:flex-row sm:items-center" style={{ "--fl-i": 1.5 } as CSSProperties}>
@@ -44,11 +48,11 @@ export function HeroSection() {
               href="/login?next=/dashboard/diagnosis"
               className={cn(buttonVariants({ variant: "primary", size: "lg" }), "chlorophyll-button min-w-[156px]")}
             >
-              Kiểm tra lá
+              {tr("Kiểm tra lá", "Check a leaf")}
               <ArrowRight size={18} aria-hidden />
             </Link>
             <a href="#quy-trinh" className={buttonVariants({ variant: "secondary", size: "lg" })}>
-              Xem quy trình
+              {tr("Xem quy trình", "See how it works")}
               <ArrowDownRight size={18} aria-hidden />
             </a>
           </div>

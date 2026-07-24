@@ -7,12 +7,15 @@ import { useEffect, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { landingNavItems } from "@/constants/navigation";
 import { cn } from "@/lib/utils";
+import { useTr } from "@/lib/use-tr";
+import { LanguageToggle } from "@/components/layout/language-toggle";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 import { Logo } from "./logo";
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
+  const tr = useTr();
 
   useEffect(() => {
     if (!open) return;
@@ -39,7 +42,7 @@ export function Navbar() {
                 href={item.href}
                 className="text-sm font-medium text-ink-soft transition hover:text-leaf-strong"
               >
-                {item.label}
+                {tr(item.label, item.labelEn)}
               </a>
             ))}
 
@@ -47,25 +50,27 @@ export function Navbar() {
               href="/login"
               className="text-sm font-semibold text-ink transition hover:text-leaf-strong"
             >
-              Đăng nhập
+              {tr("Đăng nhập", "Log in")}
             </Link>
           </nav>
 
           <div className="hidden items-center gap-3 lg:flex">
+            <LanguageToggle />
             <ThemeToggle />
             <Link href="/login?next=/dashboard/diagnosis" className={cn(buttonVariants({ variant: "primary" }), "chlorophyll-button")}>
               <Leaf size={16} aria-hidden />
-              Kiểm tra lá
+              {tr("Kiểm tra lá", "Check a leaf")}
             </Link>
           </div>
 
           <div className="flex items-center gap-2 lg:hidden">
+            <LanguageToggle />
             <ThemeToggle />
             <Button
               variant="ghost"
               size="iconSm"
               type="button"
-              aria-label={open ? "Đóng menu" : "Mở menu"}
+              aria-label={open ? tr("Đóng menu", "Close menu") : tr("Mở menu", "Open menu")}
               aria-expanded={open}
               aria-controls="mobile-navigation"
               onClick={() => setOpen((current) => !current)}
@@ -85,7 +90,7 @@ export function Navbar() {
                   className="rounded-xl px-3 py-2 text-sm font-medium text-ink transition hover:bg-surface-soft hover:text-leaf-strong"
                   onClick={() => setOpen(false)}
                 >
-                  {item.label}
+                  {tr(item.label, item.labelEn)}
                 </a>
               ))}
 
@@ -94,7 +99,7 @@ export function Navbar() {
                 className="rounded-xl px-3 py-2 text-sm font-medium text-ink transition hover:bg-surface-soft hover:text-leaf-strong"
                 onClick={() => setOpen(false)}
               >
-                Đăng nhập
+                {tr("Đăng nhập", "Log in")}
               </Link>
 
               <Link
@@ -102,7 +107,7 @@ export function Navbar() {
                 className={cn(buttonVariants({ variant: "primary" }), "w-full mt-2")}
                 onClick={() => setOpen(false)}
               >
-                Kiểm tra lá
+                {tr("Kiểm tra lá", "Check a leaf")}
               </Link>
             </div>
           </div>

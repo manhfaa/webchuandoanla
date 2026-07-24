@@ -1,8 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowUpRight, CalendarDays, MapPin, Sprout } from "lucide-react";
 
 import type { CropPlan } from "@/types";
 import { Card } from "@/components/ui/card";
+import { useTr } from "@/lib/use-tr";
 
 const planStatusTone: Record<string, string> = {
   active: "bg-surface-soft text-leaf-strong",
@@ -14,6 +17,7 @@ const planStatusTone: Record<string, string> = {
 };
 
 export function CropPlanListCard({ plan }: { plan: CropPlan }) {
+  const tr = useTr();
   const nextStep = plan.steps.find((step) => step.status === "current") ?? plan.steps[0];
 
   return (
@@ -45,24 +49,24 @@ export function CropPlanListCard({ plan }: { plan: CropPlan }) {
           <div className="rounded-lg border border-line bg-surface-soft px-4 py-3">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">
               <MapPin size={14} />
-              Vị trí
+              {tr("Vị trí", "Location")}
             </div>
             <p className="mt-2 text-sm font-semibold text-ink">{plan.location.name}</p>
           </div>
           <div className="rounded-lg border border-line bg-surface-soft px-4 py-3">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">
               <CalendarDays size={14} />
-              Bắt đầu đề xuất
+              {tr("Bắt đầu đề xuất", "Recommended start")}
             </div>
             <p className="mt-2 text-sm font-semibold text-ink">{plan.recommended_start_date ?? plan.planned_start_date}</p>
           </div>
           <div className="rounded-lg border border-line bg-surface-soft px-4 py-3">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">
               <Sprout size={14} />
-              Bước tiếp theo
+              {tr("Bước tiếp theo", "Next step")}
             </div>
             <p className="mt-2 text-sm font-semibold text-ink">
-              {nextStep ? `${nextStep.step_number}. ${nextStep.title}` : "Đang cập nhật"}
+              {nextStep ? `${nextStep.step_number}. ${nextStep.title}` : tr("Đang cập nhật", "Updating")}
             </p>
           </div>
         </div>

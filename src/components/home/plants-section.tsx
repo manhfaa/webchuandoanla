@@ -9,11 +9,13 @@ import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
 
 import { Reveal } from "@/components/ui/reveal";
 import { supportedPlants } from "@/data/mock/plants";
+import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
 
 const priorityPlantIds = ["tomato", "pepper", "grape", "corn", "potato", "squash"];
 
 export function PlantsSection() {
+  const tr = useTr();
   const [filter, setFilter] = useState<"priority" | "all">("priority");
   const sectionRef = useRef<HTMLElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -70,22 +72,25 @@ export function PlantsSection() {
     <section
       ref={sectionRef}
       id="cay-trong"
-      aria-label="Cây trồng Agromind đang hỗ trợ"
+      aria-label={tr("Cây trồng Agromind đang hỗ trợ", "Crops Agromind currently supports")}
       className="living-veins relative scroll-mt-20 bg-canvas lg:min-h-[100dvh] lg:overflow-hidden"
     >
       <div className="flex min-h-[100dvh] flex-col justify-center py-20 sm:py-24 lg:py-20">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           <Reveal>
             <h2 className="max-w-3xl font-display text-3xl font-bold tracking-[-0.035em] text-ink sm:text-4xl lg:text-[40px] lg:leading-[1.15]">
-              Nhận biết dấu hiệu trên những cây quen thuộc
+              {tr("Nhận biết dấu hiệu trên những cây quen thuộc", "Spot the signs on familiar crops")}
             </h2>
             <p className="mt-4 max-w-3xl text-base leading-7 text-ink-soft sm:text-lg sm:leading-8">
-              Bắt đầu từ các nhóm cây gần với nhu cầu canh tác tại Việt Nam, sau đó mở rộng khi cần.
+              {tr(
+                "Bắt đầu từ các nhóm cây gần với nhu cầu canh tác tại Việt Nam, sau đó mở rộng khi cần.",
+                "Starting with crop groups close to farming needs in Vietnam, then expanding as needed.",
+              )}
             </p>
           </Reveal>
 
           <Reveal className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="inline-flex w-fit rounded-[var(--r-md)] border border-line-strong bg-surface/90 p-1 shadow-sm backdrop-blur" role="group" aria-label="Lọc cây trồng">
+            <div className="inline-flex w-fit rounded-[var(--r-md)] border border-line-strong bg-surface/90 p-1 shadow-sm backdrop-blur" role="group" aria-label={tr("Lọc cây trồng", "Filter crops")}>
               <button
                 type="button"
                 onClick={() => setFilter("priority")}
@@ -97,7 +102,7 @@ export function PlantsSection() {
                     : "text-ink-soft hover:bg-surface-soft hover:text-ink",
                 )}
               >
-                Cây phổ biến
+                {tr("Cây phổ biến", "Popular crops")}
               </button>
               <button
                 type="button"
@@ -110,10 +115,10 @@ export function PlantsSection() {
                     : "text-ink-soft hover:bg-surface-soft hover:text-ink",
                 )}
               >
-                Tất cả {supportedPlants.length} nhóm
+                {tr(`Tất cả ${supportedPlants.length} nhóm`, `All ${supportedPlants.length} groups`)}
               </button>
             </div>
-            <p className="text-sm leading-6 text-ink-soft">Mỗi ảnh đều dẫn tới nguồn tham khảo gốc.</p>
+            <p className="text-sm leading-6 text-ink-soft">{tr("Mỗi ảnh đều dẫn tới nguồn tham khảo gốc.", "Every image links back to its original reference.")}</p>
           </Reveal>
         </div>
 
@@ -175,7 +180,7 @@ export function PlantsSection() {
                       rel="noreferrer"
                       className="mt-auto inline-flex min-h-11 items-center gap-2 self-start pt-3 text-xs font-semibold text-leaf-strong transition hover:text-ink"
                     >
-                      Mở ảnh tham khảo
+                      {tr("Mở ảnh tham khảo", "Open reference image")}
                       <ArrowUpRight size={14} aria-hidden />
                     </a>
                   </div>
@@ -186,7 +191,7 @@ export function PlantsSection() {
         </div>
 
         <span className="sr-only" aria-live="polite">
-          Đang hiển thị {visiblePlants.length} nhóm cây.
+          {tr(`Đang hiển thị ${visiblePlants.length} nhóm cây.`, `Showing ${visiblePlants.length} crop groups.`)}
         </span>
       </div>
     </section>

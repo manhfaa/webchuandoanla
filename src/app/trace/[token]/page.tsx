@@ -9,21 +9,23 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ErrorState, LoadingState } from "@/components/ui/states";
 import { fetchPublicTraceability, type PublicTraceability } from "@/lib/farmops-client";
+import { useTr } from "@/lib/use-tr";
 
-function activityLabel(type: string) {
+function activityLabel(type: string, tr: (vi: string, en: string) => string) {
   const labels: Record<string, string> = {
-    watering: "Tưới nước",
-    fertilizing: "Bón phân",
-    pesticide: "Phun thuốc",
-    disease_check: "Kiểm tra sâu bệnh",
-    pruning: "Tỉa cành",
-    harvest: "Thu hoạch",
-    note: "Ghi chú",
+    watering: tr("Tưới nước", "Watering"),
+    fertilizing: tr("Bón phân", "Fertilizing"),
+    pesticide: tr("Phun thuốc", "Spraying pesticide"),
+    disease_check: tr("Kiểm tra sâu bệnh", "Pest & disease check"),
+    pruning: tr("Tỉa cành", "Pruning"),
+    harvest: tr("Thu hoạch", "Harvest"),
+    note: tr("Ghi chú", "Note"),
   };
   return labels[type] ?? type;
 }
 
 export default function PublicTraceabilityPage() {
+  const tr = useTr();
   const params = useParams<{ token: string }>();
   const [data, setData] = useState<PublicTraceability | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export default function PublicTraceabilityPage() {
         setLoading(true);
         setData(await fetchPublicTraceability(params.token));
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Không tìm thấy trang truy xuất.");
+        setError(err instanceof Error ? err.message : tr("Không tìm thấy trang truy xuất.", "Traceability page not found."));
       } finally {
         setLoading(false);
       }
@@ -53,38 +55,38 @@ export default function PublicTraceabilityPage() {
 
         <Card variant="light" padding="lg" className="shadow-sm">
           {loading ? (
-            <LoadingState title="Đang mở nhật ký canh tác" description="Thông tin công khai đang được tải." />
+            <LoadingState title={tr("Đang mở nhật ký canh tác", "Opening the farming log")} description={tr("Thông tin công khai đang được tải.", "Public information is loading.")} />
           ) : error ? (
-            <ErrorState title="Chưa mở được nhật ký" description={error} />
+            <ErrorState title={tr("Chưa mở được nhật ký", "Could not open the log")} description={error} />
           ) : data ? (
             <>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="text-overline text-leaf-700">QR truy xuất nguồn gốc</p>
+                  <p className="text-overline text-leaf-700">{tr("QR truy xuất nguồn gốc", "Origin traceability QR")}</p>
                   <h1 className="mt-2 text-h1 text-ink-900">{data.product_name}</h1>
                   <p className="mt-3 text-body text-ink-500">
-                    {data.crop_type} · {data.plot_name} · {data.region || "Chưa ghi vùng canh tác"}
+                    {data.crop_type} · {data.plot_name} · {data.region || tr("Chưa ghi vùng canh tác", "Growing region not recorded")}
                   </p>
                 </div>
                 <Badge variant="success">
                   <ShieldCheck strokeWidth={1.75} className="h-4 w-4" />
-                  Công khai
+                  {tr("Công khai", "Public")}
                 </Badge>
               </div>
 
               <div className="mt-6 grid gap-4 md:grid-cols-3">
                 <div className="rounded-md border border-line bg-surface-soft p-4">
-                  <p className="text-caption uppercase tracking-[0.14em] text-leaf-700">Ngày xuống giống</p>
+                  <p className="text-caption uppercase tracking-[0.14em] text-leaf-700">{tr("Ngày xuống giống", "Planting date")}</p>
                   <p className="mt-2 text-xl font-semibold text-ink-900">
-                    {data.planting_start_date ? new Date(data.planting_start_date).toLocaleDateString("vi-VN") : "Chưa ghi"}
+                    {data.planting_start_date ? new Date(data.planting_start_date).toLocaleDateString("vi-VN") : tr("Chưa ghi", "Not recorded")}
                   </p>
                 </div>
                 <div className="rounded-md border border-line bg-surface-soft p-4">
-                  <p className="text-caption uppercase tracking-[0.14em] text-leaf-700">Giai đoạn</p>
-                  <p className="mt-2 text-xl font-semibold text-ink-900">{data.growth_stage || "Đang theo dõi"}</p>
+                  <p className="text-caption uppercase tracking-[0.14em] text-leaf-700">{tr("Giai đoạn", "Stage")}</p>
+                  <p className="mt-2 text-xl font-semibold text-ink-900">{data.growth_stage || tr("Đang theo dõi", "Being monitored")}</p>
                 </div>
                 <div className="rounded-md border border-line bg-surface-soft p-4">
-                  <p className="text-caption uppercase tracking-[0.14em] text-leaf-700">Ngày công khai</p>
+                  <p className="text-caption uppercase tracking-[0.14em] text-leaf-700">{tr("Ngày công khai", "Published date")}</p>
                   <p className="mt-2 text-xl font-semibold text-ink-900">
                     {new Date(data.created_at).toLocaleDateString("vi-VN")}
                   </p>
@@ -98,14 +100,14 @@ export default function PublicTraceabilityPage() {
           <Card variant="light" padding="lg" className="shadow-sm">
             <div className="flex items-center gap-2">
               <CalendarDays strokeWidth={1.75} className="h-5 w-5 text-leaf-700" />
-              <h2 className="text-h2 text-ink-900">Dòng thời gian chăm sóc</h2>
+              <h2 className="text-h2 text-ink-900">{tr("Dòng thời gian chăm sóc", "Care timeline")}</h2>
             </div>
             <div className="mt-5 space-y-3">
               {data.logs.length ? (
                 data.logs.map((log) => (
                   <div key={log.id} className="rounded-md border border-line bg-surface p-4">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="muted">{activityLabel(log.activity_type)}</Badge>
+                      <Badge variant="muted">{activityLabel(log.activity_type, tr)}</Badge>
                       <span className="text-caption text-ink-500">{new Date(log.activity_date).toLocaleDateString("vi-VN")}</span>
                     </div>
                     <p className="mt-3 font-semibold text-ink-900">{log.title}</p>
@@ -113,7 +115,7 @@ export default function PublicTraceabilityPage() {
                   </div>
                 ))
               ) : (
-                <p className="text-body-sm text-ink-500">Chủ vườn chưa công khai nhật ký chăm sóc.</p>
+                <p className="text-body-sm text-ink-500">{tr("Chủ vườn chưa công khai nhật ký chăm sóc.", "The grower has not published a care log yet.")}</p>
               )}
             </div>
             <p className="mt-6 text-caption leading-relaxed text-ink-500">{data.disclaimer}</p>

@@ -19,6 +19,7 @@ import { compressImage } from "@/lib/image-compression";
 import { createPreviewDataUrl, detectLeafInImage, type LeafDetectionResult } from "@/lib/leaf-detector";
 import { addOfflineDiagnosis, clearOfflineDiagnosis, getOfflineQueue } from "@/lib/offline-queue";
 import { formatConfidence } from "@/lib/utils";
+import { useTr } from "@/lib/use-tr";
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useVoiceInput } from "@/hooks/use-voice-input";
 import {
@@ -565,6 +566,7 @@ function applyCnnResult(
 }
 
 export default function DashboardDiagnosisPage() {
+  const tr = useTr();
   const { user, accessToken } = useSessionStore();
   const { addGeneratedRecord } = useDiagnosisStore();
   const [status, setStatus] = useState<DiagnosisStatus>("idle");
@@ -771,48 +773,57 @@ export default function DashboardDiagnosisPage() {
     return [
       {
         key: "upload",
-        title: "Tải ảnh",
-        description: "Chọn hoặc chụp một ảnh lá rõ để bắt đầu.",
+        title: tr("Tải ảnh", "Upload image"),
+        description: tr("Chọn hoặc chụp một ảnh lá rõ để bắt đầu.", "Choose or capture a clear leaf photo to begin."),
         state: uploadState,
-        detail: previewUrl ? "Ảnh đã sẵn sàng cho bước kiểm tra đầu vào." : "Ưu tiên một chiếc lá chính, đủ sáng và không bị che.",
+        detail: previewUrl
+          ? tr("Ảnh đã sẵn sàng cho bước kiểm tra đầu vào.", "The image is ready for the input check step.")
+          : tr("Ưu tiên một chiếc lá chính, đủ sáng và không bị che.", "Prefer one main leaf, well lit and unobstructed."),
       },
       {
         key: "yolo",
-        title: "Xác nhận ảnh lá",
-        description: "Hệ thống xem ảnh bạn gửi có đúng là lá cây hay không.",
+        title: tr("Xác nhận ảnh lá", "Confirm leaf image"),
+        description: tr("Hệ thống xem ảnh bạn gửi có đúng là lá cây hay không.", "The system checks whether your image is really a plant leaf."),
         state: checkState,
         detail:
           status === "invalid-image"
-            ? leafAnalysis?.reason ?? "Ảnh này chưa đủ điều kiện để xác nhận là lá cây."
+            ? leafAnalysis?.reason ?? tr("Ảnh này chưa đủ điều kiện để xác nhận là lá cây.", "This image does not yet qualify as a plant leaf.")
             : status === "success" || status === "symptom-review"
-              ? `Ảnh đã được xác nhận là lá cây với độ tin cậy ${formatConfidence(
-                  leafAnalysis?.confidence ?? 0,
-                )}.`
+              ? tr(
+                  `Ảnh đã được xác nhận là lá cây với độ tin cậy ${formatConfidence(
+                    leafAnalysis?.confidence ?? 0,
+                  )}.`,
+                  `The image was confirmed as a leaf with ${formatConfidence(
+                    leafAnalysis?.confidence ?? 0,
+                  )} confidence.`,
+                )
               : status === "scanning"
-                ? "Đang kiểm tra nội dung ảnh..."
-                : "Chọn ảnh để bắt đầu.",
+                ? tr("Đang kiểm tra nội dung ảnh...", "Checking the image content...")
+                : tr("Chọn ảnh để bắt đầu.", "Choose an image to begin."),
       },
       {
         key: "roadmap",
-        title: "Thêm triệu chứng",
-        description: "Mô tả dấu hiệu quan sát được hoặc bỏ qua nếu chưa rõ.",
+        title: tr("Thêm triệu chứng", "Add symptoms"),
+        description: tr("Mô tả dấu hiệu quan sát được hoặc bỏ qua nếu chưa rõ.", "Describe observed signs or skip if unclear."),
         state: symptomState,
         detail:
           status === "success"
-            ? "Thông tin đã được hoàn tất và lưu vào lịch sử của bạn."
+            ? tr("Thông tin đã được hoàn tất và lưu vào lịch sử của bạn.", "The information is complete and saved to your history.")
             : status === "symptom-review"
-              ? "Bạn có thể bổ sung mô tả để đối chiếu hoặc tiếp tục không cần triệu chứng."
-              : "Bước này xuất hiện sau khi ảnh lá được xác nhận.",
+              ? tr("Bạn có thể bổ sung mô tả để đối chiếu hoặc tiếp tục không cần triệu chứng.", "You can add a description to cross-check or continue without symptoms.")
+              : tr("Bước này xuất hiện sau khi ảnh lá được xác nhận.", "This step appears after the leaf image is confirmed."),
       },
       {
         key: "rag",
-        title: "Xem kết quả",
-        description: "Nhận gợi ý, độ tin cậy và việc nên làm tiếp theo.",
+        title: tr("Xem kết quả", "View result"),
+        description: tr("Nhận gợi ý, độ tin cậy và việc nên làm tiếp theo.", "Get suggestions, confidence, and what to do next."),
         state: resultState,
-        detail: status === "success" ? "Kết quả đã sẵn sàng để xem và theo dõi lại sau." : "Hoàn tất các bước trước để xem kết quả.",
+        detail: status === "success"
+          ? tr("Kết quả đã sẵn sàng để xem và theo dõi lại sau.", "The result is ready to view and follow up on later.")
+          : tr("Hoàn tất các bước trước để xem kết quả.", "Complete the previous steps to view the result."),
       },
     ];
-  }, [leafAnalysis, previewUrl, status]);
+  }, [leafAnalysis, previewUrl, status, tr]);
 
   async function applySelectedFile(file: File, method: DiagnosisInputMethod) {
     try {
@@ -1020,9 +1031,9 @@ export default function DashboardDiagnosisPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Badge variant="brand">Gói hiện tại: {currentPlan.toUpperCase()}</Badge>
-        <Badge variant={online ? "success" : "warning"}>{online ? "Đang online" : "Mất mạng"}</Badge>
-        {offlineCount ? <Badge variant="warning">{offlineCount} ảnh đang chờ gửi lại</Badge> : null}
+        <Badge variant="brand">{tr("Gói hiện tại", "Current plan")}: {currentPlan.toUpperCase()}</Badge>
+        <Badge variant={online ? "success" : "warning"}>{online ? tr("Đang online", "Online") : tr("Mất mạng", "Offline")}</Badge>
+        {offlineCount ? <Badge variant="warning">{tr(`${offlineCount} ảnh đang chờ gửi lại`, `${offlineCount} images waiting to resend`)}</Badge> : null}
         <Button
           variant="secondary"
           onClick={() => {
@@ -1034,20 +1045,20 @@ export default function DashboardDiagnosisPage() {
           }}
           disabled={!voice.supported}
         >
-          {voice.listening ? "Dừng ghi âm" : "Nói ghi chú"}
+          {voice.listening ? tr("Dừng ghi âm", "Stop recording") : tr("Nói ghi chú", "Voice note")}
         </Button>
         {selectedRecord && status === "success" ? (
           <Link
             href={`/dashboard/results/${selectedRecord.id}`}
             className={buttonVariants({ variant: "primary" })}
           >
-            Xem kết quả
+            {tr("Xem kết quả", "View result")}
           </Link>
         ) : null}
         {selectedRecord && status === "success" ? (
           <Link href="/dashboard/chat" className={buttonVariants({ variant: "secondary" })}>
             <MessageSquareText size={16} />
-            Mở chat
+            {tr("Mở chat", "Open chat")}
           </Link>
         ) : null}
       </div>
@@ -1056,19 +1067,19 @@ export default function DashboardDiagnosisPage() {
         <div className="grid gap-4 md:grid-cols-[1fr_1.1fr]">
           <div>
             <p className="text-overline text-leaf-strong">
-              Hướng dẫn chụp ảnh rõ nét
+              {tr("Hướng dẫn chụp ảnh rõ nét", "Tips for a sharp photo")}
             </p>
             <div className="mt-3 grid gap-2 text-sm leading-6 text-ink-soft sm:grid-cols-2">
-              <span>• Chụp gần lá, đủ sáng.</span>
-              <span>• Giữ máy chắc, không rung.</span>
-              <span>• Để lá chiếm phần lớn khung hình.</span>
-              <span>• Chụp thêm mặt dưới lá nếu có đốm.</span>
+              <span>{tr("• Chụp gần lá, đủ sáng.", "• Shoot close to the leaf, well lit.")}</span>
+              <span>{tr("• Giữ máy chắc, không rung.", "• Hold the device steady, no shaking.")}</span>
+              <span>{tr("• Để lá chiếm phần lớn khung hình.", "• Let the leaf fill most of the frame.")}</span>
+              <span>{tr("• Chụp thêm mặt dưới lá nếu có đốm.", "• Also photograph the leaf underside if spotted.")}</span>
             </div>
           </div>
           <div className="rounded-lg border border-line bg-surface-soft p-4 text-sm leading-6 text-ink-soft">
             {voice.supported
-              ? voiceNote || voice.transcript || "Bấm micro để ghi chú bằng giọng nói tiếng Việt."
-              : "Trình duyệt này chưa hỗ trợ nhập giọng nói. Bạn vẫn có thể nhập câu hỏi trong Chat AI."}
+              ? voiceNote || voice.transcript || tr("Bấm micro để ghi chú bằng giọng nói tiếng Việt.", "Tap the mic to add a voice note in Vietnamese.")
+              : tr("Trình duyệt này chưa hỗ trợ nhập giọng nói. Bạn vẫn có thể nhập câu hỏi trong Chat AI.", "This browser does not support voice input. You can still type questions in AI Chat.")}
           </div>
         </div>
       </Card>
@@ -1078,7 +1089,7 @@ export default function DashboardDiagnosisPage() {
           <div className="grid gap-4 md:grid-cols-3">
             <div className="rounded-lg border border-line bg-surface p-5">
               <p className="text-overline text-leaf-strong">
-                Độ tin cậy
+                {tr("Độ tin cậy", "Confidence")}
               </p>
               <p className="mt-3 font-display text-3xl font-bold text-ink">
                 {formatConfidence(leafAnalysis.confidence)}
@@ -1086,7 +1097,7 @@ export default function DashboardDiagnosisPage() {
             </div>
             <div className="rounded-lg border border-line bg-surface p-5">
               <p className="text-overline text-leaf-strong">
-                Vùng lá trong ảnh
+                {tr("Vùng lá trong ảnh", "Leaf area in image")}
               </p>
               <p className="mt-3 font-display text-3xl font-bold text-ink">
                 {formatConfidence(leafAnalysis.plantLikeRatio)}
@@ -1094,7 +1105,7 @@ export default function DashboardDiagnosisPage() {
             </div>
             <div className="rounded-lg border border-line bg-surface p-5">
               <p className="text-overline text-leaf-strong">
-                Mức độ nhận biết màu lá
+                {tr("Mức độ nhận biết màu lá", "Leaf color recognition")}
               </p>
               <p className="mt-3 font-display text-3xl font-bold text-ink">
                 {formatConfidence(leafAnalysis.greenRatio)}
@@ -1109,17 +1120,17 @@ export default function DashboardDiagnosisPage() {
           <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
             <div>
               <p className="text-overline text-leaf-strong">
-                Bước 3 · Triệu chứng quan sát được
+                {tr("Bước 3 · Triệu chứng quan sát được", "Step 3 · Observed symptoms")}
               </p>
               <h3 className="mt-3 font-display text-3xl font-bold tracking-[-0.03em] text-ink">
-                Bổ sung dấu hiệu bạn nhìn thấy trên cây
+                {tr("Bổ sung dấu hiệu bạn nhìn thấy trên cây", "Add the signs you see on the plant")}
               </h3>
               <p className="mt-3 text-sm leading-7 text-ink-soft">
-                Mô tả đốm, màu sắc, vị trí lá hoặc điều kiện gần đây để hệ thống đối chiếu với các khả năng từ ảnh và nguồn tham khảo. Bạn có thể bỏ qua nếu chưa quan sát rõ.
+                {tr("Mô tả đốm, màu sắc, vị trí lá hoặc điều kiện gần đây để hệ thống đối chiếu với các khả năng từ ảnh và nguồn tham khảo. Bạn có thể bỏ qua nếu chưa quan sát rõ.", "Describe spots, colors, leaf position, or recent conditions so the system can cross-check the possibilities from the image and reference sources. You can skip this if you have not observed clearly.")}
               </p>
 
               <div className="mt-5 rounded-lg border border-line bg-surface-soft p-4">
-                <p className="text-sm font-bold text-ink">Các khả năng từ ảnh</p>
+                <p className="text-sm font-bold text-ink">{tr("Các khả năng từ ảnh", "Possibilities from the image")}</p>
                 <div className="mt-3 space-y-2">
                   {pendingCnnReview.cnn.top_predictions.slice(0, 5).map((item, index) => (
                     <div
@@ -1127,7 +1138,7 @@ export default function DashboardDiagnosisPage() {
                       className="flex items-center justify-between gap-3 rounded-md border border-line bg-surface px-4 py-3 text-sm"
                     >
                       <span className="font-medium text-ink">
-                        {index + 1}. {item.plant_name || "Cây"} · {item.disease_name || item.class_name}
+                        {index + 1}. {item.plant_name || tr("Cây", "Plant")} · {item.disease_name || item.class_name}
                       </span>
                       <span className="shrink-0 font-bold text-leaf-strong">
                         {formatConfidence(item.confidence)}
@@ -1140,7 +1151,7 @@ export default function DashboardDiagnosisPage() {
 
             <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
               <label htmlFor="symptom-text" className="text-sm font-bold text-ink">
-                Mô tả triệu chứng nếu có
+                {tr("Mô tả triệu chứng nếu có", "Describe symptoms if any")}
               </label>
               <textarea
                 id="symptom-text"
@@ -1151,7 +1162,7 @@ export default function DashboardDiagnosisPage() {
                 }}
                 rows={7}
                 className="mt-3 min-h-[180px] w-full resize-none rounded-md border border-line bg-surface-soft px-4 py-3 text-sm leading-7 text-ink outline-none transition placeholder:text-ink-muted focus:border-leaf focus:bg-surface focus:ring-2 focus:ring-leaf/20"
-                placeholder="Ví dụ: lá có đốm nâu lan từ mép, mặt dưới hơi mốc trắng, cây mới mưa nhiều 3 ngày..."
+                placeholder={tr("Ví dụ: lá có đốm nâu lan từ mép, mặt dưới hơi mốc trắng, cây mới mưa nhiều 3 ngày...", "e.g. brown spots spreading from the edges, slight white mold underneath, heavy rain for the last 3 days...")}
               />
               {researchError ? (
                 <div className="mt-3 rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-sm leading-6 text-danger-ink">
@@ -1165,7 +1176,7 @@ export default function DashboardDiagnosisPage() {
                   }}
                   disabled={!symptomText.trim()}
                 >
-                  Dùng triệu chứng
+                  {tr("Dùng triệu chứng", "Use symptoms")}
                 </Button>
                 <Button
                   variant="secondary"
@@ -1173,11 +1184,11 @@ export default function DashboardDiagnosisPage() {
                     void finalizeDiagnosisWithSymptoms("");
                   }}
                 >
-                  Không nhập triệu chứng
+                  {tr("Không nhập triệu chứng", "No symptoms")}
                 </Button>
               </div>
               <p className="mt-4 text-xs leading-6 text-ink-soft">
-                Chỉ khi bạn nhập triệu chứng, hệ thống mới tìm và tổng hợp nguồn tham khảo. Các liên kết nguồn sẽ được lưu cùng kết quả để bạn mở kiểm tra.
+                {tr("Chỉ khi bạn nhập triệu chứng, hệ thống mới tìm và tổng hợp nguồn tham khảo. Các liên kết nguồn sẽ được lưu cùng kết quả để bạn mở kiểm tra.", "Only when you enter symptoms does the system search and compile reference sources. The source links are saved with the result for you to open and review.")}
               </p>
             </div>
           </div>
@@ -1192,11 +1203,11 @@ export default function DashboardDiagnosisPage() {
             </div>
             <div>
               <h3 className="font-display text-2xl font-bold text-ink">
-                Chưa thể xác nhận rõ chiếc lá trong ảnh
+                {tr("Chưa thể xác nhận rõ chiếc lá trong ảnh", "Could not clearly confirm a leaf in the image")}
               </h3>
               <p className="mt-3 text-sm leading-7 text-ink-soft">
                 {leafAnalysis?.reason ??
-                  "Hãy thử chụp gần hơn vào lá, tăng ánh sáng hoặc đổi sang một ảnh rõ hơn."}
+                  tr("Hãy thử chụp gần hơn vào lá, tăng ánh sáng hoặc đổi sang một ảnh rõ hơn.", "Try shooting closer to the leaf, adding light, or switching to a clearer image.")}
               </p>
             </div>
           </div>
@@ -1218,10 +1229,10 @@ export default function DashboardDiagnosisPage() {
           </div>
           <div>
             <h3 className="font-display text-lg font-bold text-ink">
-              Kết quả là gợi ý để bạn tiếp tục quan sát
+              {tr("Kết quả là gợi ý để bạn tiếp tục quan sát", "The result is a suggestion to keep observing")}
             </h3>
             <p className="mt-1 text-sm leading-7 text-ink-soft">
-              Nếu dấu hiệu lan nhanh, xuất hiện trên nhiều cây hoặc bạn cần dùng thuốc, hãy hỏi thêm chuyên gia nông nghiệp địa phương trước khi xử lý.
+              {tr("Nếu dấu hiệu lan nhanh, xuất hiện trên nhiều cây hoặc bạn cần dùng thuốc, hãy hỏi thêm chuyên gia nông nghiệp địa phương trước khi xử lý.", "If signs spread quickly, appear on many plants, or you need to use pesticides, consult a local agriculture expert before taking action.")}
             </p>
           </div>
         </div>

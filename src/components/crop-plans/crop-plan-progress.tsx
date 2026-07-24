@@ -1,7 +1,10 @@
+"use client";
+
 import { CalendarClock, CircleAlert, ListTodo, Sprout } from "lucide-react";
 
 import type { CropPlan, CropPlanStepStatus, ReminderItem } from "@/types";
 import { Card } from "@/components/ui/card";
+import { useTr } from "@/lib/use-tr";
 
 const statusLabels: Record<CropPlanStepStatus, string> = {
   pending: "Sắp tới",
@@ -11,6 +14,14 @@ const statusLabels: Record<CropPlanStepStatus, string> = {
   delayed: "Bị đổi lịch",
 };
 
+const statusLabelsEn: Record<CropPlanStepStatus, string> = {
+  pending: "Upcoming",
+  current: "In progress",
+  completed: "Done",
+  skipped: "Skipped",
+  delayed: "Rescheduled",
+};
+
 export function CropPlanProgress({
   plan,
   reminders,
@@ -18,6 +29,7 @@ export function CropPlanProgress({
   plan: CropPlan;
   reminders: ReminderItem[];
 }) {
+  const tr = useTr();
   const completed = plan.steps.filter((step) => step.status === "completed").length;
   const current = plan.steps.find((step) => step.status === "current") ?? plan.steps[0];
   const delayed = plan.steps.filter((step) => step.status === "delayed").length;
@@ -29,26 +41,30 @@ export function CropPlanProgress({
   const metrics = [
     {
       label: "Tiến độ tổng",
+      labelEn: "Overall progress",
       value: `${progress}%`,
-      note: `${completed}/${plan.steps.length} bước đã hoàn thành`,
+      note: tr(`${completed}/${plan.steps.length} bước đã hoàn thành`, `${completed}/${plan.steps.length} steps completed`),
       icon: Sprout,
     },
     {
       label: "Bước hiện tại",
-      value: current ? `${current.step_number}. ${current.short_label || current.title}` : "Chưa có",
-      note: current ? statusLabels[current.status] : "Đang chờ tạo kế hoạch",
+      labelEn: "Current step",
+      value: current ? `${current.step_number}. ${current.short_label || current.title}` : tr("Chưa có", "None"),
+      note: current ? tr(statusLabels[current.status], statusLabelsEn[current.status]) : tr("Đang chờ tạo kế hoạch", "Waiting for plan creation"),
       icon: ListTodo,
     },
     {
       label: "Nhắc việc liên quan",
+      labelEn: "Related reminders",
       value: `${scheduledReminderCount}`,
-      note: "Nhắc việc cho toàn bộ vụ trồng",
+      note: tr("Nhắc việc cho toàn bộ vụ trồng", "Reminders for the whole planting cycle"),
       icon: CalendarClock,
     },
     {
       label: "Cần xem lại",
+      labelEn: "Needs review",
       value: `${delayed}`,
-      note: delayed ? "Có bước đang bị đổi lịch" : "Chưa có bước bị đổi",
+      note: delayed ? tr("Có bước đang bị đổi lịch", "Some steps have been rescheduled") : tr("Chưa có bước bị đổi", "No steps rescheduled"),
       icon: CircleAlert,
     },
   ];
@@ -66,7 +82,7 @@ export function CropPlanProgress({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className={metric.label === "Tiến độ tổng" ? "text-overline text-on-forest-muted" : "text-overline text-leaf-strong"}>
-                  {metric.label}
+                  {tr(metric.label, metric.labelEn)}
                 </p>
                 <p className={metric.label === "Tiến độ tổng" ? "mt-4 font-display text-3xl font-bold text-on-forest" : "mt-4 font-display text-3xl font-bold text-ink"}>
                   {metric.value}

@@ -8,6 +8,8 @@ import L, {
   type Marker as LeafletMarker,
 } from "leaflet";
 
+import { useTr } from "@/lib/use-tr";
+
 const markerIcon = divIcon({
   className: "agromindai-map-pin",
   html: `
@@ -28,6 +30,7 @@ export function LocationMapCanvas({
   lon: number;
   onChange: (lat: number, lon: number) => void;
 }) {
+  const tr = useTr();
   const containerRef = useRef<LeafletContainer | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const markerRef = useRef<LeafletMarker | null>(null);
@@ -96,7 +99,7 @@ export function LocationMapCanvas({
     <div
       ref={containerRef}
       className="h-full min-h-[300px]"
-      aria-label="Bản đồ chọn vị trí trồng cây"
+      aria-label={tr("Bản đồ chọn vị trí trồng cây", "Map to select planting location")}
     />
   );
 }

@@ -10,8 +10,10 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { useSessionStore } from "@/store/session-store";
+import { useTr } from "@/lib/use-tr";
 
 export default function RegisterPage() {
+  const tr = useTr();
   const router = useRouter();
   const { register, isAuthenticated, status, error, clearError } = useSessionStore();
   const [email, setEmail] = useState("");
@@ -45,11 +47,11 @@ export default function RegisterPage() {
 
   return (
     <AuthShell
-      eyebrow="Tạo tài khoản"
-      title="Bắt đầu theo dõi sức khỏe cây trồng"
-      description="Chỉ cần email và mật khẩu để lưu kết quả kiểm tra, vị trí vườn và kế hoạch chăm sóc của bạn."
-      asideTitle="Mỗi lần kiểm tra trở thành một dấu mốc của khu vườn."
-      asideDescription="Lưu ảnh và kết quả theo thời gian giúp bạn nhận ra thay đổi sớm hơn, thay vì chỉ xem một lần rồi quên."
+      eyebrow={tr("Tạo tài khoản", "Create account")}
+      title={tr("Bắt đầu theo dõi sức khỏe cây trồng", "Start tracking your plants' health")}
+      description={tr("Chỉ cần email và mật khẩu để lưu kết quả kiểm tra, vị trí vườn và kế hoạch chăm sóc của bạn.", "Just an email and password to save your check results, garden location and care plans.")}
+      asideTitle={tr("Mỗi lần kiểm tra trở thành một dấu mốc của khu vườn.", "Every check becomes a milestone for your garden.")}
+      asideDescription={tr("Lưu ảnh và kết quả theo thời gian giúp bạn nhận ra thay đổi sớm hơn, thay vì chỉ xem một lần rồi quên.", "Saving photos and results over time helps you spot changes earlier, instead of checking once and forgetting.")}
     >
       <form onSubmit={handleRegister} className="space-y-5">
         <Input
@@ -65,26 +67,26 @@ export default function RegisterPage() {
           required
         />
         <PasswordInput
-          label="Mật khẩu"
+          label={tr("Mật khẩu", "Password")}
           autoComplete="new-password"
           value={password}
           onChange={(event) => {
             clearMessages();
             setPassword(event.target.value);
           }}
-          placeholder="Tối thiểu 8 ký tự"
-          hint="Nên dùng chữ hoa, chữ thường, số và ký tự đặc biệt."
+          placeholder={tr("Tối thiểu 8 ký tự", "At least 8 characters")}
+          hint={tr("Nên dùng chữ hoa, chữ thường, số và ký tự đặc biệt.", "Use uppercase, lowercase, numbers and special characters.")}
           required
         />
         <PasswordInput
-          label="Xác nhận mật khẩu"
+          label={tr("Xác nhận mật khẩu", "Confirm password")}
           autoComplete="new-password"
           value={confirmPassword}
           onChange={(event) => {
             clearMessages();
             setConfirmPassword(event.target.value);
           }}
-          placeholder="Nhập lại mật khẩu"
+          placeholder={tr("Nhập lại mật khẩu", "Re-enter password")}
           required
         />
 
@@ -95,13 +97,13 @@ export default function RegisterPage() {
         ) : null}
 
         <Button size="lg" loading={status === "loading"} type="submit" className="w-full">
-          <UserRoundPlus size={17} aria-hidden /> Tạo tài khoản <ArrowRight size={17} aria-hidden />
+          <UserRoundPlus size={17} aria-hidden /> {tr("Tạo tài khoản", "Create account")} <ArrowRight size={17} aria-hidden />
         </Button>
 
         <div className="flex flex-col items-center justify-between gap-3 border-t border-line pt-5 text-sm sm:flex-row">
-          <span className="text-ink-soft">Đã có tài khoản?</span>
+          <span className="text-ink-soft">{tr("Đã có tài khoản?", "Already have an account?")}</span>
           <Link href="/login" className={buttonVariants({ variant: "secondary", size: "sm" })}>
-            Đăng nhập
+            {tr("Đăng nhập", "Sign in")}
           </Link>
         </div>
       </form>

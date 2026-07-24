@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowRight, Check, Crown, ShieldCheck, Sprout, TrendingUp } from "lucide-react";
 
@@ -5,6 +7,7 @@ import { SectionShell } from "@/components/layout/section-shell";
 import { buttonVariants } from "@/components/ui/button";
 import { Reveal } from "@/components/ui/reveal";
 import { pricingPlans } from "@/data/mock/plans";
+import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
 
 const planIcons = {
@@ -30,6 +33,7 @@ function Price({ value, featured = false }: { value: string; featured?: boolean 
 }
 
 export function PricingPreviewSection() {
+  const tr = useTr();
   const featured = pricingPlans.find((plan) => plan.highlight) ?? pricingPlans[0];
   const alternatives = pricingPlans.filter((plan) => plan.id !== featured.id);
   const FeaturedIcon = planIcons[featured.id as keyof typeof planIcons] ?? ShieldCheck;
@@ -37,14 +41,14 @@ export function PricingPreviewSection() {
   return (
     <SectionShell
       id="goi-dich-vu"
-      title="Bắt đầu vừa đủ. Nâng cấp khi khu vườn cần nhiều hơn"
-      description="Giới hạn sử dụng và quyền lợi được trình bày rõ trước khi bạn lựa chọn."
+      title={tr("Bắt đầu vừa đủ. Nâng cấp khi khu vườn cần nhiều hơn", "Start with just enough. Upgrade when your garden needs more")}
+      description={tr("Giới hạn sử dụng và quyền lợi được trình bày rõ trước khi bạn lựa chọn.", "Usage limits and benefits are shown clearly before you choose.")}
       className="bg-surface"
     >
       <div className="grid gap-4 lg:grid-cols-12 lg:items-stretch">
         <Reveal className="lg:col-span-7">
           <article
-            aria-label={`Gói ${featured.name}, ${featured.price}`}
+            aria-label={tr(`Gói ${featured.name}, ${featured.price}`, `Plan ${featured.name}, ${featured.price}`)}
             className="living-veins relative flex h-full min-h-[560px] flex-col overflow-hidden rounded-[var(--r-2xl)] border border-line-strong bg-forest p-6 text-on-forest shadow-lg sm:p-8 lg:p-9"
           >
             <div className="pointer-events-none absolute -right-28 -top-32 h-80 w-80 rounded-full border border-on-forest/10" aria-hidden />
@@ -56,7 +60,7 @@ export function PricingPreviewSection() {
                   <FeaturedIcon size={22} strokeWidth={1.8} aria-hidden />
                 </span>
                 <div>
-                  <p className="text-xs font-semibold text-on-forest-muted">Gói được lựa chọn nhiều</p>
+                  <p className="text-xs font-semibold text-on-forest-muted">{tr("Gói được lựa chọn nhiều", "Popular choice")}</p>
                   <h3 className="mt-0.5 font-display text-2xl font-extrabold tracking-[-0.03em]">{featured.name}</h3>
                 </div>
               </div>
@@ -106,7 +110,7 @@ export function PricingPreviewSection() {
             return (
               <Reveal key={plan.id} delay={0.05 + index * 0.045} className={isElite ? "sm:col-span-2" : undefined}>
                 <article
-                  aria-label={`Gói ${plan.name}, ${plan.price}`}
+                  aria-label={tr(`Gói ${plan.name}, ${plan.price}`, `Plan ${plan.name}, ${plan.price}`)}
                   className={cn(
                     "group flex h-full min-h-[260px] flex-col rounded-[var(--r-2xl)] border p-5 shadow-sm transition duration-260 hover:-translate-y-1 hover:border-line-strong hover:shadow-md sm:p-6",
                     isGrow ? "border-line-strong bg-surface-soft" : "border-line bg-surface-raised",
@@ -148,11 +152,11 @@ export function PricingPreviewSection() {
 
       <Reveal delay={0.15} className="mt-4 flex flex-col items-start justify-between gap-4 rounded-[var(--r-xl)] bg-surface-soft px-5 py-5 sm:flex-row sm:items-center sm:px-6">
         <div>
-          <p className="font-semibold text-ink">Muốn xem toàn bộ quyền lợi?</p>
-          <p className="mt-1 text-sm leading-6 text-ink-soft">Mở bảng so sánh chi tiết trước khi quyết định nâng cấp.</p>
+          <p className="font-semibold text-ink">{tr("Muốn xem toàn bộ quyền lợi?", "Want to see all the benefits?")}</p>
+          <p className="mt-1 text-sm leading-6 text-ink-soft">{tr("Mở bảng so sánh chi tiết trước khi quyết định nâng cấp.", "Open the detailed comparison table before deciding to upgrade.")}</p>
         </div>
         <Link href="/login?next=/dashboard/pricing" className={buttonVariants({ variant: "secondary" })}>
-          So sánh các gói
+          {tr("So sánh các gói", "Compare plans")}
           <ArrowRight size={16} aria-hidden />
         </Link>
       </Reveal>

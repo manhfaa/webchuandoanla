@@ -1,32 +1,42 @@
+"use client";
+
 import { ExternalLink, ScanLine, ShieldCheck, SlidersHorizontal, TriangleAlert } from "lucide-react";
 
 import { SectionShell } from "@/components/layout/section-shell";
 import { Reveal } from "@/components/ui/reveal";
+import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
 
 const trustPoints = [
   {
     icon: ScanLine,
     title: "Kiểm tra ảnh đầu vào",
+    titleEn: "Input image check",
     description: "Ảnh mờ, thiếu vùng lá hoặc có vật che sẽ được nhắc chụp lại trước khi phân tích.",
+    descriptionEn: "Blurry photos, missing leaf area or obstructions prompt a retake before analysis.",
   },
   {
     icon: SlidersHorizontal,
     title: "Hiển thị mức độ tin cậy",
+    titleEn: "Confidence shown",
     description: "Bạn thấy khả năng nào đang được ưu tiên và trường hợp nào cần kiểm tra thêm.",
+    descriptionEn: "You see which possibility is prioritized and which cases need further checking.",
   },
   {
     icon: ExternalLink,
     title: "Mở lại nguồn tham khảo",
+    titleEn: "Reopen reference sources",
     description: "Nguồn dùng để đối chiếu triệu chứng được giữ lại để bạn tự xem và so sánh.",
+    descriptionEn: "The sources used to cross-check symptoms are kept so you can view and compare them.",
   },
 ];
 
 export function MissionSection() {
+  const tr = useTr();
   return (
     <SectionShell
-      title="Kết quả có cơ sở để bạn kiểm tra tiếp"
-      description="Agromind trình bày chất lượng ảnh, mức độ tin cậy và nguồn liên quan thay vì che giấu điều chưa chắc chắn."
+      title={tr("Kết quả có cơ sở để bạn kiểm tra tiếp", "Grounded results for you to check further")}
+      description={tr("Agromind trình bày chất lượng ảnh, mức độ tin cậy và nguồn liên quan thay vì che giấu điều chưa chắc chắn.", "Agromind shows image quality, confidence and related sources instead of hiding what is uncertain.")}
       className="bg-surface"
     >
       <div className="grid gap-4 lg:grid-cols-12 lg:items-stretch">
@@ -36,10 +46,10 @@ export function MissionSection() {
           </span>
           <div className="mt-16">
             <h3 className="max-w-md font-display text-3xl font-extrabold leading-[1.12] tracking-[-0.04em] sm:text-4xl">
-              Hiểu vì sao hệ thống đưa ra gợi ý.
+              {tr("Hiểu vì sao hệ thống đưa ra gợi ý.", "Understand why the system makes a suggestion.")}
             </h3>
             <p className="mt-4 max-w-md text-sm font-medium leading-7 text-on-forest-muted sm:text-base">
-              Một kết quả rõ ràng giúp bạn quan sát cây kỹ hơn trước khi quyết định cách xử lý.
+              {tr("Một kết quả rõ ràng giúp bạn quan sát cây kỹ hơn trước khi quyết định cách xử lý.", "A clear result helps you observe the plant more closely before deciding how to treat it.")}
             </p>
           </div>
         </Reveal>
@@ -62,8 +72,8 @@ export function MissionSection() {
                     <Icon size={22} aria-hidden />
                   </span>
                   <div className={cn("mt-auto pt-8", isWide && "sm:mt-0 sm:pt-0")}>
-                    <h3 className="font-display text-xl font-extrabold tracking-[-0.025em] text-ink sm:text-2xl">{point.title}</h3>
-                    <p className="mt-2 max-w-xl text-sm leading-7 text-ink-soft">{point.description}</p>
+                    <h3 className="font-display text-xl font-extrabold tracking-[-0.025em] text-ink sm:text-2xl">{tr(point.title, point.titleEn)}</h3>
+                    <p className="mt-2 max-w-xl text-sm leading-7 text-ink-soft">{tr(point.description, point.descriptionEn)}</p>
                   </div>
                 </article>
               </Reveal>
@@ -77,9 +87,9 @@ export function MissionSection() {
           <TriangleAlert size={20} aria-hidden />
         </span>
         <div>
-          <p className="font-semibold text-ink">Lưu ý khi sử dụng kết quả</p>
+          <p className="font-semibold text-ink">{tr("Lưu ý khi sử dụng kết quả", "Note on using the results")}</p>
           <p className="mt-1 text-sm leading-6 text-ink-soft">
-            Kết quả AI mang tính tham khảo. Nếu cây bệnh lan nhanh hoặc cần dùng thuốc, hãy hỏi chuyên gia nông nghiệp tại địa phương.
+            {tr("Kết quả AI mang tính tham khảo. Nếu cây bệnh lan nhanh hoặc cần dùng thuốc, hãy hỏi chuyên gia nông nghiệp tại địa phương.", "AI results are for reference. If disease spreads quickly or pesticides are needed, consult a local agriculture expert.")}
           </p>
         </div>
       </Reveal>

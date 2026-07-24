@@ -1,7 +1,10 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 
 import { cn } from "@/lib/utils";
+import { useTr } from "@/lib/use-tr";
 
 export function Logo({
   href = "/",
@@ -17,6 +20,7 @@ export function Logo({
   showTagline?: boolean;
   className?: string;
 }) {
+  const tr = useTr();
   return (
     <Link
       href={href}
@@ -41,7 +45,7 @@ export function Logo({
         </span>
         {showTagline ? (
           <span className={cn("text-[10px] font-semibold uppercase tracking-[0.11em]", dark ? "text-on-forest-muted" : "text-ink-soft")}>
-            Trợ lý sức khỏe cây trồng
+            {tr("Trợ lý sức khỏe cây trồng", "Plant health assistant")}
           </span>
         ) : null}
       </span>

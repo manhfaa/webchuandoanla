@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Crown, Sparkles } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
+import { useTr } from "@/lib/use-tr";
 import type { PlanTier } from "@/types";
 
 export function UpgradeBanner({
@@ -11,6 +12,7 @@ export function UpgradeBanner({
 }: {
   currentPlan: PlanTier;
 }) {
+  const tr = useTr();
   if (currentPlan !== "seed") {
     return null;
   }
@@ -21,9 +23,9 @@ export function UpgradeBanner({
         <Crown strokeWidth={1.75} className="h-5 w-5" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-overline text-leaf-strong">Gói hiện tại · {currentPlan.toUpperCase()}</p>
+        <p className="text-overline text-leaf-strong">{tr("Gói hiện tại", "Current plan")} · {currentPlan.toUpperCase()}</p>
         <p className="mt-0.5 text-body font-semibold text-ink">
-          Nâng cấp để lưu đầy đủ lịch sử và mở thêm hỗ trợ khi cần.
+          {tr("Nâng cấp để lưu đầy đủ lịch sử và mở thêm hỗ trợ khi cần.", "Upgrade to save full history and unlock more support when you need it.")}
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-2">
@@ -32,13 +34,13 @@ export function UpgradeBanner({
           className={buttonVariants({ variant: "secondary", size: "sm" })}
         >
           <Sparkles strokeWidth={1.75} className="h-4 w-4" />
-          Nâng cấp
+          {tr("Nâng cấp", "Upgrade")}
         </Link>
         <Link
           href="/dashboard/pricing"
           className={buttonVariants({ variant: "tertiary", size: "sm", className: "hidden sm:inline-flex" })}
         >
-          Chi tiết
+          {tr("Chi tiết", "Details")}
         </Link>
       </div>
     </div>

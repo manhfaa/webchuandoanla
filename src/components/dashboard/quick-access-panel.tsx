@@ -1,39 +1,52 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowRight, CalendarRange, History, MessageSquareText, ScanSearch } from "lucide-react";
+
+import { useTr } from "@/lib/use-tr";
 
 const quickLinks = [
   {
     title: "Kiểm tra ảnh lá",
+    titleEn: "Check leaf image",
     description: "Tải hoặc chụp ảnh để xác minh lá cây.",
+    descriptionEn: "Upload or capture a photo to verify the leaf.",
     href: "/dashboard/diagnosis",
     icon: ScanSearch,
   },
   {
     title: "Chat tư vấn",
+    titleEn: "Advisory chat",
     description: "Hỏi AI hoặc chuyên gia nông nghiệp.",
+    descriptionEn: "Ask the AI or an agriculture expert.",
     href: "/dashboard/chat",
     icon: MessageSquareText,
   },
   {
     title: "Lịch sử ảnh",
+    titleEn: "Image history",
     description: "Xem lại các lần kiểm tra trước.",
+    descriptionEn: "Review your previous checks.",
     href: "/dashboard/history",
     icon: History,
   },
   {
     title: "Kế hoạch trồng cây",
+    titleEn: "Crop plan",
     description: "Lịch chăm cây theo bước.",
+    descriptionEn: "Step-by-step plant care schedule.",
     href: "/dashboard/crop-plans",
     icon: CalendarRange,
   },
 ];
 
 export function QuickAccessPanel() {
+  const tr = useTr();
   return (
     <section>
       <div className="mb-4">
-        <p className="text-overline text-leaf-strong">Thao tác nhanh</p>
-        <h2 className="mt-2 text-h2 font-bold text-ink">Bạn muốn làm gì tiếp theo?</h2>
+        <p className="text-overline text-leaf-strong">{tr("Thao tác nhanh", "Quick actions")}</p>
+        <h2 className="mt-2 text-h2 font-bold text-ink">{tr("Bạn muốn làm gì tiếp theo?", "What would you like to do next?")}</h2>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {quickLinks.map((item) => {
@@ -56,8 +69,8 @@ export function QuickAccessPanel() {
               />
             </div>
             <div>
-              <h3 className={`text-h3 font-bold ${featured ? "text-on-forest" : "text-ink"}`}>{item.title}</h3>
-              <p className={`mt-1 line-clamp-2 text-body-sm ${featured ? "text-on-forest-muted" : "text-ink-soft"}`}>{item.description}</p>
+              <h3 className={`text-h3 font-bold ${featured ? "text-on-forest" : "text-ink"}`}>{tr(item.title, item.titleEn)}</h3>
+              <p className={`mt-1 line-clamp-2 text-body-sm ${featured ? "text-on-forest-muted" : "text-ink-soft"}`}>{tr(item.description, item.descriptionEn)}</p>
             </div>
           </Link>
         );

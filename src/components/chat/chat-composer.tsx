@@ -5,6 +5,7 @@ import { Mic, SendHorizonal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useTr } from "@/lib/use-tr";
 
 export function ChatComposer({ label, value, onChange, onSubmit, placeholder, disabled, helperText, onVoiceClick, voiceListening, voiceSupported = false }: {
   label: string;
@@ -18,6 +19,7 @@ export function ChatComposer({ label, value, onChange, onSubmit, placeholder, di
   voiceListening?: boolean;
   voiceSupported?: boolean;
 }) {
+  const tr = useTr();
   return (
     <Card variant="default" padding="sm" className="rounded-xl">
       <form className="space-y-3" onSubmit={onSubmit}>
@@ -26,8 +28,8 @@ export function ChatComposer({ label, value, onChange, onSubmit, placeholder, di
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           {helperText ? <p className="max-w-lg text-xs leading-6 text-ink-soft">{helperText}</p> : <div />}
           <div className="flex shrink-0 items-center justify-end gap-2">
-            {voiceSupported ? <Button type="button" variant={voiceListening ? "primary" : "secondary"} size="icon" onClick={onVoiceClick} aria-pressed={voiceListening} aria-label={voiceListening ? "Dừng nhập bằng giọng nói" : "Nhập bằng giọng nói"}><Mic size={17} aria-hidden /></Button> : null}
-            <Button type="submit" disabled={disabled || !value.trim()}><SendHorizonal size={16} aria-hidden /> Gửi câu hỏi</Button>
+            {voiceSupported ? <Button type="button" variant={voiceListening ? "primary" : "secondary"} size="icon" onClick={onVoiceClick} aria-pressed={voiceListening} aria-label={voiceListening ? tr("Dừng nhập bằng giọng nói", "Stop voice input") : tr("Nhập bằng giọng nói", "Voice input")}><Mic size={17} aria-hidden /></Button> : null}
+            <Button type="submit" disabled={disabled || !value.trim()}><SendHorizonal size={16} aria-hidden /> {tr("Gửi câu hỏi", "Send question")}</Button>
           </div>
         </div>
       </form>

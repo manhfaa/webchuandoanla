@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 
 import { Logo } from "@/components/layout/logo";
 import { dashboardNavGroups } from "@/constants/navigation";
+import { useLanguageStore } from "@/store/language-store";
+import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
 
 const iconByHref = {
@@ -24,6 +26,8 @@ const iconByHref = {
 
 export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
   const pathname = usePathname();
+  const language = useLanguageStore((state) => state.language);
+  const tr = useTr();
   const [desktop, setDesktop] = useState(false);
   const hiddenFromAssistiveTech = !desktop && !mobileOpen;
 
@@ -54,7 +58,7 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
       {mobileOpen ? (
         <button
           type="button"
-          aria-label="Đóng menu điều hướng"
+          aria-label={tr("Đóng menu điều hướng", "Close navigation menu")}
           className="fixed inset-0 z-40 bg-forest/55 backdrop-blur-sm transition lg:hidden"
           onClick={onClose}
         />
@@ -67,15 +71,15 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
       >
         <div className="flex items-center justify-between gap-3 px-2">
           <Logo href="/dashboard" showTagline={false} />
-          <button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl text-ink-soft hover:bg-surface-soft hover:text-ink lg:hidden" aria-label="Đóng menu">
+          <button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl text-ink-soft hover:bg-surface-soft hover:text-ink lg:hidden" aria-label={tr("Đóng menu", "Close menu")}>
             <X size={19} aria-hidden />
           </button>
         </div>
 
-        <nav className="mt-7 flex-1 space-y-6 overflow-y-auto px-1 pb-4" aria-label="Điều hướng chính">
+        <nav className="mt-7 flex-1 space-y-6 overflow-y-auto px-1 pb-4" aria-label={tr("Điều hướng chính", "Main navigation")}>
           {dashboardNavGroups.map((group) => (
             <div key={group.group}>
-              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-soft">{group.group}</p>
+              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-soft">{language === "en" ? group.groupEn : group.group}</p>
               <div className="space-y-1">
                 {group.items.map((item) => {
                   const Icon = iconByHref[item.href as keyof typeof iconByHref] ?? Sprout;
@@ -84,7 +88,7 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
                     <Link key={item.href} href={item.href} onClick={onClose} className={cn("group relative flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition duration-180 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/35", active ? "bg-gradient-to-r from-leaf/14 via-surface-soft to-surface-soft text-leaf-strong" : "text-ink-soft hover:bg-surface-soft hover:text-ink")}>
                       {active ? <span className="absolute inset-y-2 left-0 w-[3px] rounded-r-full bg-leaf" aria-hidden /> : null}
                       <Icon size={18} strokeWidth={1.8} className={cn("shrink-0 transition-transform duration-180 ease-out", !active && "group-hover:translate-x-0.5 group-hover:scale-105")} aria-hidden />
-                      <span>{item.label}</span>
+                      <span>{language === "en" ? item.labelEn : item.label}</span>
                     </Link>
                   );
                 })}

@@ -5,6 +5,7 @@ import { MapPin, Search, Sparkles } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useTr } from "@/lib/use-tr";
 
 const DynamicMap = dynamic(
   () => import("./location-map-canvas").then((module) => module.LocationMapCanvas),
@@ -35,6 +36,7 @@ export function LocationMapPicker({
   onAddressChange: (value: string) => void;
   onPositionChange: (lat: number, lon: number) => void;
 }) {
+  const tr = useTr();
   return (
     <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
       <Card variant="raised" className="overflow-hidden rounded-xl p-0">
@@ -43,7 +45,7 @@ export function LocationMapPicker({
             <span className="rounded-md bg-surface p-2 text-leaf-strong">
               <MapPin size={16} />
             </span>
-            Chạm hoặc kéo ghim để chọn đúng nơi bạn sẽ trồng cây.
+            {tr("Chạm hoặc kéo ghim để chọn đúng nơi bạn sẽ trồng cây.", "Tap or drag the pin to select exactly where you will plant.")}
           </div>
         </div>
         <div className="h-[360px] p-3">
@@ -54,37 +56,37 @@ export function LocationMapPicker({
       <div className="space-y-5">
         <Card variant="default" padding="lg" className="rounded-xl">
           <p className="text-overline text-leaf-strong">
-            Vị trí trồng
+            {tr("Vị trí trồng", "Planting location")}
           </p>
           <div className="mt-4 space-y-4">
             <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-ink">Tên khu trồng</span>
+              <span className="mb-2 block text-sm font-semibold text-ink">{tr("Tên khu trồng", "Growing area name")}</span>
               <input
                 value={name}
                 onChange={(event) => onNameChange(event.target.value)}
                 className="w-full rounded-md border border-line bg-surface px-4 py-3 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
-                placeholder="Ví dụ: Vườn sau nhà"
+                placeholder={tr("Ví dụ: Vườn sau nhà", "e.g. Backyard garden")}
               />
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-ink">Mô tả địa chỉ</span>
+              <span className="mb-2 block text-sm font-semibold text-ink">{tr("Mô tả địa chỉ", "Address description")}</span>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft" size={16} />
                 <input
                   value={address}
                   onChange={(event) => onAddressChange(event.target.value)}
                   className="w-full rounded-md border border-line bg-surface py-3 pl-11 pr-4 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
-                  placeholder="Ví dụ: Phường Linh Trung, Thủ Đức"
+                  placeholder={tr("Ví dụ: Phường Linh Trung, Thủ Đức", "e.g. Linh Trung Ward, Thu Duc")}
                 />
               </div>
             </label>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-md border border-line bg-surface-soft px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">Vĩ độ</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">{tr("Vĩ độ", "Latitude")}</p>
                 <p className="mt-1 font-semibold text-ink">{lat.toFixed(4)}</p>
               </div>
               <div className="rounded-md border border-line bg-surface-soft px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">Kinh độ</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">{tr("Kinh độ", "Longitude")}</p>
                 <p className="mt-1 font-semibold text-ink">{lon.toFixed(4)}</p>
               </div>
             </div>
@@ -97,8 +99,8 @@ export function LocationMapPicker({
               <Sparkles size={16} />
             </span>
             <div>
-              <p className="font-bold text-ink">Chọn nhanh khu vực gợi ý</p>
-              <p className="text-sm text-ink-soft">Bạn có thể chọn nhanh rồi kéo lại ghim nếu cần.</p>
+              <p className="font-bold text-ink">{tr("Chọn nhanh khu vực gợi ý", "Quickly pick a suggested area")}</p>
+              <p className="text-sm text-ink-soft">{tr("Bạn có thể chọn nhanh rồi kéo lại ghim nếu cần.", "You can pick one quickly, then drag the pin again if needed.")}</p>
             </div>
           </div>
           <div className="mt-4 grid gap-3">

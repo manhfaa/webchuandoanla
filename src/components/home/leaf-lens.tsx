@@ -7,6 +7,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Leaf, ScanSearch, Sparkles } from "lucide-react";
 
 import { LeafScanOverlay } from "@/components/home/leaf-scan-overlay";
+import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -19,13 +20,16 @@ const hotspot = {
   y: 56,
   radius: 9.5,
   title: "Vùng cần chú ý",
+  titleEn: "Area to watch",
   description: "Đốm nâu có rìa sẫm trên bề mặt lá.",
+  descriptionEn: "Brown spot with a dark edge on the leaf surface.",
   tone: "sun",
   calloutPosition: "left-top",
   connectorAnchor: { x: 37, y: 29 },
 } as const;
 
 export function LeafLens() {
+  const tr = useTr();
   const rootRef = useRef<HTMLDivElement>(null);
   const mediaRef = useRef<HTMLDivElement>(null);
   const [activeAnnotation, setActiveAnnotation] = useState<AnnotationId | null>(null);
@@ -416,7 +420,7 @@ export function LeafLens() {
           <div className="relative aspect-[4/3] overflow-hidden sm:aspect-[16/11]">
             <Image
               src="/plant-leaves/agromind-hero-tomato.png"
-              alt="Lá cà chua có các đốm nâu đang được hệ thống đánh dấu để kiểm tra."
+              alt={tr("Lá cà chua có các đốm nâu đang được hệ thống đánh dấu để kiểm tra.", "Tomato leaf with brown spots being marked by the system for inspection.")}
               fill
               priority
               loading="eager"
@@ -497,7 +501,7 @@ export function LeafLens() {
               type="button"
               className="absolute z-30 h-14 w-14 -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun focus-visible:ring-offset-2 focus-visible:ring-offset-forest"
               style={{ left: `${hotspot.x}%`, top: `${hotspot.y}%` }}
-              aria-label="Xem dấu hiệu đốm nâu trên lá cà chua."
+              aria-label={tr("Xem dấu hiệu đốm nâu trên lá cà chua.", "View the brown-spot sign on the tomato leaf.")}
               aria-controls="leaf-lesion-callout"
               aria-describedby="leaf-lesion-description"
               aria-pressed={pinnedAnnotation === "lesion"}
@@ -544,8 +548,8 @@ export function LeafLens() {
 
             <div className="absolute inset-x-4 bottom-4 z-10 flex items-end justify-between gap-4 text-on-forest sm:bottom-5 sm:left-5 sm:right-5">
               <div className="max-w-[240px] rounded-[var(--r-md)] bg-forest/76 px-3 py-2.5 backdrop-blur-sm">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-on-forest-muted">Ảnh lá thực tế</p>
-                <p className="mt-1 text-xs font-semibold leading-5 sm:text-sm">AI đang quan sát dấu hiệu trên bề mặt lá.</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-on-forest-muted">{tr("Ảnh lá thực tế", "Real leaf photo")}</p>
+                <p className="mt-1 text-xs font-semibold leading-5 sm:text-sm">{tr("AI đang quan sát dấu hiệu trên bề mặt lá.", "AI is observing signs on the leaf surface.")}</p>
               </div>
               <span
                 data-leaf-scan-icon
@@ -582,8 +586,8 @@ export function LeafLens() {
                   <Leaf size={17} strokeWidth={1.8} aria-hidden />
                 </span>
                 <span>
-                  <span className="block text-[11px] font-bold uppercase tracking-[0.08em] text-leaf-strong">{hotspot.title}</span>
-                  <span className="mt-1 block text-xs font-semibold leading-5 text-ink sm:text-sm">{hotspot.description}</span>
+                  <span className="block text-[11px] font-bold uppercase tracking-[0.08em] text-leaf-strong">{tr(hotspot.title, hotspot.titleEn)}</span>
+                  <span className="mt-1 block text-xs font-semibold leading-5 text-ink sm:text-sm">{tr(hotspot.description, hotspot.descriptionEn)}</span>
                 </span>
               </span>
             </button>
@@ -612,8 +616,8 @@ export function LeafLens() {
                   <Sparkles size={17} strokeWidth={1.8} aria-hidden />
                 </span>
                 <span>
-                  <span className="block text-[11px] font-bold uppercase tracking-[0.08em] text-leaf-strong">Hệ thống đang đối chiếu</span>
-                  <span className="mt-1 block text-xs font-semibold leading-5 text-ink">Màu sắc, hình dạng và vị trí tổn thương được so sánh.</span>
+                  <span className="block text-[11px] font-bold uppercase tracking-[0.08em] text-leaf-strong">{tr("Hệ thống đang đối chiếu", "System is cross-checking")}</span>
+                  <span className="mt-1 block text-xs font-semibold leading-5 text-ink">{tr("Màu sắc, hình dạng và vị trí tổn thương được so sánh.", "Color, shape, and lesion location are compared.")}</span>
                 </span>
               </span>
             </button>
@@ -632,28 +636,31 @@ export function LeafLens() {
                 <Leaf size={19} aria-hidden />
               </span>
               <div>
-                <p data-leaf-result-label className="text-xs font-semibold text-leaf-strong">Dấu hiệu cần quan sát</p>
-                <p data-leaf-result-value className="mt-1 font-display text-lg font-bold text-ink">Đốm nâu trên lá cà chua</p>
+                <p data-leaf-result-label className="text-xs font-semibold text-leaf-strong">{tr("Dấu hiệu cần quan sát", "Sign to observe")}</p>
+                <p data-leaf-result-value className="mt-1 font-display text-lg font-bold text-ink">{tr("Đốm nâu trên lá cà chua", "Brown spots on the tomato leaf")}</p>
               </div>
             </div>
           </div>
           <div data-leaf-quality className="flex items-center justify-between gap-4 bg-surface-soft p-5 sm:p-6">
             <div>
-              <p className="text-xs font-medium text-ink-soft">Chất lượng ảnh</p>
-              <p className="mt-1 font-semibold text-ink">Đủ rõ để kiểm tra</p>
+              <p className="text-xs font-medium text-ink-soft">{tr("Chất lượng ảnh", "Image quality")}</p>
+              <p className="mt-1 font-semibold text-ink">{tr("Đủ rõ để kiểm tra", "Clear enough to inspect")}</p>
             </div>
             <span
               data-leaf-quality-dot
               role="status"
               className="h-3 w-3 rounded-full bg-leaf shadow-[0_0_0_6px_color-mix(in_srgb,var(--leaf)_14%,transparent)]"
-              aria-label="Ảnh đạt điều kiện"
+              aria-label={tr("Ảnh đạt điều kiện", "Image meets requirements")}
             />
           </div>
         </div>
       </div>
 
       <p id="leaf-lesion-description" className="sr-only">
-        Vùng được đánh dấu là đốm nâu có rìa sẫm. Hệ thống đang đối chiếu màu sắc, hình dạng và vị trí tổn thương.
+        {tr(
+          "Vùng được đánh dấu là đốm nâu có rìa sẫm. Hệ thống đang đối chiếu màu sắc, hình dạng và vị trí tổn thương.",
+          "The marked area is a brown spot with a dark edge. The system is cross-checking its color, shape, and lesion location.",
+        )}
       </p>
     </div>
   );

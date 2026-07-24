@@ -18,6 +18,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchCropCatalog, fetchCropLocations, previewCropPlan, createCropPlan } from "@/lib/crop-plans-client";
 import { getSuitabilityLabel } from "@/lib/crop-plan-labels";
+import { useTr } from "@/lib/use-tr";
 import { useSessionStore } from "@/store/session-store";
 
 import { LocationMapPicker } from "./location-map-picker";
@@ -31,8 +32,16 @@ const loadingStages = [
   "Đang tách thành các bước chăm sóc và nhắc việc",
 ];
 
+const loadingStagesEn = [
+  "Standardizing location and season",
+  "Loading climate data from NASA POWER",
+  "Assessing crop suitability",
+  "Splitting into care steps and reminders",
+];
+
 export function CropPlanCreateWizard() {
   const router = useRouter();
+  const tr = useTr();
   const { accessToken } = useSessionStore();
   const [screen, setScreen] = useState<WizardScreen>("crop");
   const [crops, setCrops] = useState<CropCatalogItem[]>([]);
@@ -77,7 +86,7 @@ export function CropPlanCreateWizard() {
           setLon(locationData[0].lon);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Không tải được dữ liệu ban đầu.");
+        setError(err instanceof Error ? err.message : tr("Không tải được dữ liệu ban đầu.", "Could not load initial data."));
       } finally {
         setLoading(false);
       }
@@ -127,7 +136,7 @@ export function CropPlanCreateWizard() {
       setPreview(result);
       setScreen("preview");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không thể tạo bản xem trước.");
+      setError(err instanceof Error ? err.message : tr("Không thể tạo bản xem trước.", "Could not create preview."));
       setScreen("details");
     } finally {
       setSubmitting(false);
@@ -141,7 +150,7 @@ export function CropPlanCreateWizard() {
       const created = await createCropPlan(accessToken, payload);
       router.push(`/dashboard/crop-plans/${created.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không thể lưu kế hoạch.");
+      setError(err instanceof Error ? err.message : tr("Không thể lưu kế hoạch.", "Could not save plan."));
     } finally {
       setSubmitting(false);
     }
@@ -153,21 +162,21 @@ export function CropPlanCreateWizard() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-overline text-leaf-strong">
-              Kế hoạch trồng cây tự động
+              {tr("Kế hoạch trồng cây tự động", "Automated crop planting plan")}
             </p>
             <h1 className="mt-3 font-display text-3xl font-bold tracking-[-0.035em] text-ink sm:text-4xl">
-              Tạo lịch trồng cây theo địa điểm
+              {tr("Tạo lịch trồng cây theo địa điểm", "Create a location-based planting schedule")}
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-ink-soft sm:text-base">
-              Chọn cây, đặt vị trí trên bản đồ, nhập quy mô canh tác và để Agromind AI tạo lịch chăm cây chi tiết theo từng bước.
+              {tr("Chọn cây, đặt vị trí trên bản đồ, nhập quy mô canh tác và để Agromind AI tạo lịch chăm cây chi tiết theo từng bước.", "Pick a crop, set the location on the map, enter your growing scale and let Agromind AI build a detailed step-by-step care schedule.")}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             {[
-              { key: "crop", label: "1. Chọn cây" },
-              { key: "location", label: "2. Chọn vị trí" },
-              { key: "details", label: "3. Thông tin trồng" },
-              { key: "preview", label: "4. Xem trước" },
+              { key: "crop", label: tr("1. Chọn cây", "1. Choose crop") },
+              { key: "location", label: tr("2. Chọn vị trí", "2. Choose location") },
+              { key: "details", label: tr("3. Thông tin trồng", "3. Planting details") },
+              { key: "preview", label: tr("4. Xem trước", "4. Preview") },
             ].map((item) => (
               <span
                 key={item.key}
@@ -214,7 +223,7 @@ export function CropPlanCreateWizard() {
                     </span>
                     {crop.is_beginner_friendly ? (
                       <span className="rounded-full bg-surface-soft px-3 py-1 text-xs font-semibold text-leaf-strong">
-                        Dễ bắt đầu
+                        {tr("Dễ bắt đầu", "Easy to start")}
                       </span>
                     ) : null}
                   </div>
@@ -226,7 +235,7 @@ export function CropPlanCreateWizard() {
           </div>
           <div className="flex justify-end">
             <Button onClick={() => setScreen("location")} disabled={!selectedCrop}>
-              Tiếp tục
+              {tr("Tiếp tục", "Continue")}
               <ArrowRight size={16} />
             </Button>
           </div>
@@ -238,14 +247,14 @@ export function CropPlanCreateWizard() {
           {locations.length ? (
             <Card variant="default" className="rounded-xl">
               <p className="text-overline text-leaf-strong">
-                Khu trồng đã lưu
+                {tr("Khu trồng đã lưu", "Saved growing areas")}
               </p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <Button
                   variant={selectedLocationId === null ? "primary" : "secondary"}
                   onClick={() => setSelectedLocationId(null)}
                 >
-                  Tạo khu trồng mới
+                  {tr("Tạo khu trồng mới", "Create new growing area")}
                 </Button>
                 {locations.map((location) => (
                   <Button
@@ -288,10 +297,10 @@ export function CropPlanCreateWizard() {
           <div className="flex justify-between">
             <Button variant="secondary" onClick={() => setScreen("crop")}>
               <ArrowLeft size={16} />
-              Quay lại
+              {tr("Quay lại", "Back")}
             </Button>
             <Button onClick={() => setScreen("details")}>
-              Tiếp tục
+              {tr("Tiếp tục", "Continue")}
               <ArrowRight size={16} />
             </Button>
           </div>
@@ -302,15 +311,15 @@ export function CropPlanCreateWizard() {
         <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
           <Card variant="raised" padding="lg" className="rounded-xl">
             <p className="text-overline text-leaf-strong">
-              Thông tin trồng
+              {tr("Thông tin trồng", "Planting details")}
             </p>
             <div className="mt-5 grid gap-5 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-ink">Hình thức trồng</span>
+                <span className="mb-2 block text-sm font-semibold text-ink">{tr("Hình thức trồng", "Planting method")}</span>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { value: "pot", label: "Trồng chậu" },
-                    { value: "ground", label: "Trồng đất" },
+                    { value: "pot", label: tr("Trồng chậu", "In pots") },
+                    { value: "ground", label: tr("Trồng đất", "In ground") },
                   ].map((item) => (
                     <button
                       key={item.value}
@@ -329,7 +338,7 @@ export function CropPlanCreateWizard() {
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-ink">Số lượng cây</span>
+                <span className="mb-2 block text-sm font-semibold text-ink">{tr("Số lượng cây", "Number of plants")}</span>
                 <input
                   value={plantCount}
                   onChange={(event) => setPlantCount(event.target.value)}
@@ -338,7 +347,7 @@ export function CropPlanCreateWizard() {
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-ink">Diện tích / quy mô</span>
+                <span className="mb-2 block text-sm font-semibold text-ink">{tr("Diện tích / quy mô", "Area / scale")}</span>
                 <div className="grid grid-cols-[1fr_110px] gap-3">
                   <input
                     value={areaValue}
@@ -354,7 +363,7 @@ export function CropPlanCreateWizard() {
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-ink">Ngày dự kiến bắt đầu</span>
+                <span className="mb-2 block text-sm font-semibold text-ink">{tr("Ngày dự kiến bắt đầu", "Expected start date")}</span>
                 <input
                   type="date"
                   value={startDate}
@@ -364,19 +373,19 @@ export function CropPlanCreateWizard() {
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-ink">Mức kinh nghiệm</span>
+                <span className="mb-2 block text-sm font-semibold text-ink">{tr("Mức kinh nghiệm", "Experience level")}</span>
                 <select
                   value={experienceLevel}
                   onChange={(event) => setExperienceLevel(event.target.value as "beginner" | "intermediate")}
                   className="w-full rounded-md border border-line bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20"
                 >
-                  <option value="beginner">Mới bắt đầu</option>
-                  <option value="intermediate">Đã từng trồng</option>
+                  <option value="beginner">{tr("Mới bắt đầu", "Just starting out")}</option>
+                  <option value="intermediate">{tr("Đã từng trồng", "Have grown before")}</option>
                 </select>
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-ink">Mục tiêu vụ trồng</span>
+                <span className="mb-2 block text-sm font-semibold text-ink">{tr("Mục tiêu vụ trồng", "Planting goal")}</span>
                 <select
                   value={planGoal}
                   onChange={(event) =>
@@ -386,10 +395,10 @@ export function CropPlanCreateWizard() {
                   }
                   className="w-full rounded-md border border-line bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20"
                 >
-                  <option value="home">Ăn gia đình</option>
-                  <option value="trial">Trồng thử</option>
-                  <option value="small_farm">Vườn nhỏ</option>
-                  <option value="commercial">Canh tác nhiều hơn</option>
+                  <option value="home">{tr("Ăn gia đình", "Family use")}</option>
+                  <option value="trial">{tr("Trồng thử", "Trial planting")}</option>
+                  <option value="small_farm">{tr("Vườn nhỏ", "Small garden")}</option>
+                  <option value="commercial">{tr("Canh tác nhiều hơn", "Larger scale farming")}</option>
                 </select>
               </label>
             </div>
@@ -401,28 +410,28 @@ export function CropPlanCreateWizard() {
                 <Sparkles size={18} />
               </span>
               <div>
-                <p className="text-overline text-on-forest-muted">Tóm tắt đầu vào</p>
+                <p className="text-overline text-on-forest-muted">{tr("Tóm tắt đầu vào", "Input summary")}</p>
                 <h3 className="mt-3 font-display text-2xl font-bold text-on-forest">
-                  {activeCrop?.name ?? "Chưa chọn cây"}
+                  {activeCrop?.name ?? tr("Chưa chọn cây", "No crop selected")}
                 </h3>
               </div>
             </div>
             <div className="mt-6 space-y-3 text-sm leading-7 text-on-forest-muted">
-              <p>- Khu trồng: {selectedLocationId ? locations.find((item) => item.id === selectedLocationId)?.name : locationName}</p>
-              <p>- Hình thức: {plantingMode === "pot" ? "Trồng chậu" : "Trồng đất"}</p>
-              <p>- Số lượng: {plantCount} cây</p>
-              <p>- Bắt đầu: {startDate}</p>
-              <p>- Hệ thống sẽ tính nhiệt độ, độ ẩm, mưa và tạo lịch nhắc việc theo từng bước.</p>
+              <p>{tr("- Khu trồng: ", "- Growing area: ")}{selectedLocationId ? locations.find((item) => item.id === selectedLocationId)?.name : locationName}</p>
+              <p>{tr("- Hình thức: ", "- Method: ")}{plantingMode === "pot" ? tr("Trồng chậu", "In pots") : tr("Trồng đất", "In ground")}</p>
+              <p>{tr(`- Số lượng: ${plantCount} cây`, `- Quantity: ${plantCount} plants`)}</p>
+              <p>{tr("- Bắt đầu: ", "- Start: ")}{startDate}</p>
+              <p>{tr("- Hệ thống sẽ tính nhiệt độ, độ ẩm, mưa và tạo lịch nhắc việc theo từng bước.", "- The system will factor in temperature, humidity and rainfall and create a step-by-step reminder schedule.")}</p>
             </div>
           </Card>
 
           <div className="flex justify-between xl:col-span-2">
             <Button variant="secondary" onClick={() => setScreen("location")}>
               <ArrowLeft size={16} />
-              Quay lại
+              {tr("Quay lại", "Back")}
             </Button>
             <Button onClick={handlePreview} loading={submitting}>
-              Phân tích và xem trước
+              {tr("Phân tích và xem trước", "Analyze and preview")}
               <Sparkles size={16} />
             </Button>
           </div>
@@ -438,13 +447,13 @@ export function CropPlanCreateWizard() {
               </span>
               <div>
                 <p className="text-overline text-leaf-strong">
-                  Đang phân tích
+                  {tr("Đang phân tích", "Analyzing")}
                 </p>
                 <h3 className="mt-3 font-display text-2xl font-bold text-ink">
-                  Agromind AI đang tạo lịch trồng phù hợp
+                  {tr("Agromind AI đang tạo lịch trồng phù hợp", "Agromind AI is building a suitable planting schedule")}
                 </h3>
                 <p className="mt-3 text-sm leading-7 text-ink-soft">
-                  {loadingStages[loadingIndex]}
+                  {tr(loadingStages[loadingIndex], loadingStagesEn[loadingIndex])}
                 </p>
               </div>
             </div>
@@ -467,10 +476,10 @@ export function CropPlanCreateWizard() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-overline text-leaf-strong">
-                    Kết quả phân tích
+                    {tr("Kết quả phân tích", "Analysis result")}
                   </p>
                   <h2 className="mt-3 font-display text-3xl font-bold text-ink">
-                    {preview.crop.name} tại {preview.location.name}
+                    {preview.crop.name}{tr(" tại ", " at ")}{preview.location.name}
                   </h2>
                 </div>
                 <span className="rounded-full bg-surface px-4 py-2 text-sm font-semibold text-leaf-strong shadow-sm">
@@ -478,9 +487,9 @@ export function CropPlanCreateWizard() {
                 </span>
               </div>
               <div className="mt-5 space-y-3 text-sm leading-7 text-ink-soft">
-                <p>- Bắt đầu đề xuất: {preview.summary.recommended_start_date}</p>
-                <p>- Mức phù hợp: {getSuitabilityLabel(preview.summary.suitability_level)}</p>
-                <p>- Phân tích: {preview.summary.reasoning_summary}</p>
+                <p>{tr("- Bắt đầu đề xuất: ", "- Recommended start: ")}{preview.summary.recommended_start_date}</p>
+                <p>{tr("- Mức phù hợp: ", "- Suitability: ")}{getSuitabilityLabel(preview.summary.suitability_level)}</p>
+                <p>{tr("- Phân tích: ", "- Analysis: ")}{preview.summary.reasoning_summary}</p>
               </div>
               <div className="mt-5 grid gap-3">
                 {preview.summary.key_warnings.map((warning) => (
@@ -493,7 +502,7 @@ export function CropPlanCreateWizard() {
 
             <Card variant="default" padding="lg" className="rounded-xl">
               <p className="text-overline text-leaf-strong">
-                Dòng thời gian xem trước
+                {tr("Dòng thời gian xem trước", "Preview timeline")}
               </p>
               <div className="mt-5 space-y-3">
                 {preview.steps.slice(0, 6).map((step: any) => (
@@ -519,10 +528,10 @@ export function CropPlanCreateWizard() {
           <div className="flex justify-between">
             <Button variant="secondary" onClick={() => setScreen("details")}>
               <ArrowLeft size={16} />
-              Sửa thông tin
+              {tr("Sửa thông tin", "Edit details")}
             </Button>
             <Button onClick={handleCreate} loading={submitting}>
-              Lưu và bắt đầu kế hoạch
+              {tr("Lưu và bắt đầu kế hoạch", "Save and start plan")}
               <CalendarDays size={16} />
             </Button>
           </div>

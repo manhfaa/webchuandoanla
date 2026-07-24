@@ -1,4 +1,7 @@
+"use client";
+
 import { cn } from "@/lib/utils";
+import { useTr } from "@/lib/use-tr";
 
 interface ConfidenceMeterProps {
   score: number; // 0 to 1
@@ -7,18 +10,19 @@ interface ConfidenceMeterProps {
 }
 
 export function ConfidenceMeter({ score, tone = "default", className }: ConfidenceMeterProps) {
+  const tr = useTr();
   const percentage = Math.max(0, Math.min(100, Math.round(score * 100)));
 
-  let label = "Độ tin cậy cao";
+  let label = tr("Độ tin cậy cao", "High confidence");
   let barColor = "bg-leaf";
   let trackColor = "bg-leaf/15";
 
   if (percentage < 50) {
-    label = "Độ tin cậy thấp";
+    label = tr("Độ tin cậy thấp", "Low confidence");
     barColor = "bg-danger";
     trackColor = "bg-danger-soft";
   } else if (percentage < 80) {
-    label = "Độ tin cậy khá";
+    label = tr("Độ tin cậy khá", "Moderate confidence");
     barColor = "bg-sun";
     trackColor = "bg-sun-soft";
   }

@@ -20,10 +20,12 @@ import {
   regenerateCropPlan,
   saveCropPlanStepNote,
 } from "@/lib/crop-plans-client";
+import { useTr } from "@/lib/use-tr";
 import { useSessionStore } from "@/store/session-store";
 import type { CropPlan } from "@/types";
 
 export default function CropPlanDetailPage() {
+  const tr = useTr();
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const { accessToken } = useSessionStore();
@@ -44,7 +46,7 @@ export default function CropPlanDetailPage() {
         requestedStep || (data.steps.find((item) => item.status === "current")?.id ?? data.steps[0]?.id ?? null),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không tải được chi tiết kế hoạch.");
+      setError(err instanceof Error ? err.message : tr("Không tải được chi tiết kế hoạch.", "Could not load plan details."));
     } finally {
       setLoading(false);
     }
@@ -101,11 +103,11 @@ export default function CropPlanDetailPage() {
   }
 
   if (loading) {
-    return <LoadingState title="Đang mở kế hoạch trồng" description="Agromind AI đang lấy tiến độ, bước chăm sóc và nhắc việc." />;
+    return <LoadingState title={tr("Đang mở kế hoạch trồng", "Opening crop plan")} description={tr("Agromind AI đang lấy tiến độ, bước chăm sóc và nhắc việc.", "Agromind AI is loading progress, care steps, and reminders.")} />;
   }
 
   if (error || !plan) {
-    return <ErrorState title="Không mở được kế hoạch" description={error ?? "Không tìm thấy kế hoạch này."} onRetry={() => void loadPlan()} />;
+    return <ErrorState title={tr("Không mở được kế hoạch", "Could not open plan")} description={error ?? tr("Không tìm thấy kế hoạch này.", "This plan was not found.")} onRetry={() => void loadPlan()} />;
   }
 
   return (
@@ -123,15 +125,15 @@ export default function CropPlanDetailPage() {
           </div>
           <div className="flex flex-wrap gap-3">
             <span className="rounded-full bg-surface px-4 py-3 text-sm font-semibold text-leaf-strong shadow-sm">
-              Phù hợp {plan.suitability_score}/100
+              {tr(`Phù hợp ${plan.suitability_score}/100`, `Suitability ${plan.suitability_score}/100`)}
             </span>
             <Button variant="secondary" onClick={handleRefreshWeather} loading={refreshing}>
               <RefreshCcw size={16} />
-              Cập nhật thời tiết
+              {tr("Cập nhật thời tiết", "Update weather")}
             </Button>
             <Button onClick={handleRegenerate} loading={refreshing}>
               <Sprout size={16} />
-              Tạo lại lịch
+              {tr("Tạo lại lịch", "Regenerate schedule")}
             </Button>
           </div>
         </div>
@@ -143,10 +145,10 @@ export default function CropPlanDetailPage() {
         <div className="space-y-6">
           <Card variant="default" padding="lg" className="rounded-xl">
             <p className="text-overline text-leaf-strong">
-              Dòng thời gian chăm sóc
+              {tr("Dòng thời gian chăm sóc", "Care timeline")}
             </p>
             <h2 className="mt-3 font-display text-3xl font-bold tracking-[-0.03em] text-ink">
-              Từng bước theo dõi từ lúc bắt đầu đến khi thu hoạch
+              {tr("Từng bước theo dõi từ lúc bắt đầu đến khi thu hoạch", "Track each step from planting to harvest")}
             </h2>
             <div className="mt-6">
               <CropPlanTimeline

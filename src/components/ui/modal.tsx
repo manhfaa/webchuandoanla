@@ -3,6 +3,7 @@
 import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { useTr } from "@/lib/use-tr";
 
 export function Modal({
   open,
@@ -19,6 +20,8 @@ export function Modal({
   children: React.ReactNode;
   className?: string;
 }) {
+  const tr = useTr();
+
   if (!open) return null;
 
   return (
@@ -45,7 +48,7 @@ export function Modal({
             type="button"
             onClick={onClose}
             className="rounded-full border border-line p-2 text-ink-soft transition hover:bg-surface-soft hover:text-ink"
-            aria-label="Đóng"
+            aria-label={tr("Đóng", "Close")}
           >
             <X size={18} />
           </button>

@@ -5,33 +5,51 @@ import { Camera, CheckCircle2, ClipboardCheck, ScanSearch } from "lucide-react";
 import { motion, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from "framer-motion";
 import { useRef } from "react";
 
+import { useTr } from "@/lib/use-tr";
+
 const stages = [
   {
     title: "Chụp lá",
+    titleEn: "Capture leaf",
     question: "Ảnh có đủ rõ không?",
+    questionEn: "Is the photo clear enough?",
     description: "Chụp một chiếc lá chính, đủ sáng và không bị vật khác che khuất.",
+    descriptionEn: "Photograph one main leaf, well-lit and not blocked by anything.",
     detail: "Ảnh được kiểm tra trước khi phân tích.",
+    detailEn: "The photo is checked before analysis.",
     icon: Camera,
   },
   {
     title: "Phân tích",
+    titleEn: "Analyze",
     question: "Lá đang có dấu hiệu gì?",
+    questionEn: "What signs does the leaf show?",
     description: "Các khả năng được xếp hạng cùng độ tin cậy thay vì chỉ đưa ra một nhãn.",
+    descriptionEn: "Possibilities are ranked with confidence instead of giving just one label.",
     detail: "Năm khả năng nổi bật được trình bày rõ.",
+    detailEn: "The five most likely possibilities are shown clearly.",
     icon: ScanSearch,
   },
   {
     title: "Đối chiếu",
+    titleEn: "Cross-check",
     question: "Triệu chứng có phù hợp không?",
+    questionEn: "Do the symptoms match?",
     description: "Mô tả thực tế của bạn được so sánh với nguồn tham khảo có thể mở lại.",
+    descriptionEn: "Your real-world description is compared with references you can reopen.",
     detail: "Bạn luôn biết nguồn thông tin đến từ đâu.",
+    detailEn: "You always know where the information comes from.",
     icon: ClipboardCheck,
   },
   {
     title: "Theo dõi",
+    titleEn: "Follow up",
     question: "Việc nào cần làm tiếp?",
+    questionEn: "What should be done next?",
     description: "Kết quả và khuyến nghị được lưu để bạn chụp lại và so sánh theo thời gian.",
+    descriptionEn: "Results and recommendations are saved so you can re-photograph and compare over time.",
     detail: "Mỗi lần kiểm tra trở thành một mốc chăm sóc.",
+    detailEn: "Each check becomes a care milestone.",
     icon: CheckCircle2,
   },
 ];
@@ -51,6 +69,7 @@ interface StoryStageProps {
 }
 
 function StoryStage({ stage, index, progress, reduceMotion }: StoryStageProps) {
+  const tr = useTr();
   const Icon = stage.icon;
   const [start, peak, end] = ranges[index];
   const opacity = useTransform(
@@ -82,10 +101,10 @@ function StoryStage({ stage, index, progress, reduceMotion }: StoryStageProps) {
         <Icon size={20} strokeWidth={1.8} aria-hidden />
       </motion.span>
       <div>
-        <p className="text-sm font-semibold text-leaf-strong">{stage.question}</p>
-        <h3 className="mt-1 font-display text-xl font-extrabold tracking-[-0.025em] text-ink sm:text-2xl">{stage.title}</h3>
-        <p className="mt-2 text-sm leading-6 text-ink-soft">{stage.description}</p>
-        <p className="mt-2 text-xs font-semibold leading-5 text-ink">{stage.detail}</p>
+        <p className="text-sm font-semibold text-leaf-strong">{tr(stage.question, stage.questionEn)}</p>
+        <h3 className="mt-1 font-display text-xl font-extrabold tracking-[-0.025em] text-ink sm:text-2xl">{tr(stage.title, stage.titleEn)}</h3>
+        <p className="mt-2 text-sm leading-6 text-ink-soft">{tr(stage.description, stage.descriptionEn)}</p>
+        <p className="mt-2 text-xs font-semibold leading-5 text-ink">{tr(stage.detail, stage.detailEn)}</p>
       </div>
     </motion.article>
   );
@@ -106,6 +125,7 @@ function VeinDot({ index, progress, reduceMotion }: { index: number; progress: M
 }
 
 export function LeafDiagnosisStory() {
+  const tr = useTr();
   const sectionRef = useRef<HTMLElement>(null);
   const reduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({
@@ -132,17 +152,20 @@ export function LeafDiagnosisStory() {
     <section
       ref={sectionRef}
       id="quy-trinh"
-      aria-label="Quy trình từ ảnh lá đến hành động"
+      aria-label={tr("Quy trình từ ảnh lá đến hành động", "Workflow from leaf photo to action")}
       className="relative scroll-mt-20 bg-canvas lg:h-[240dvh]"
     >
       <div className="lg:sticky lg:top-0 lg:flex lg:min-h-[100dvh] lg:items-center lg:overflow-hidden lg:pb-10 lg:pt-24">
         <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-0">
           <div className="mb-9 max-w-3xl lg:mb-8">
             <h2 className="font-display text-3xl font-extrabold leading-[1.12] tracking-[-0.04em] text-ink sm:text-4xl lg:text-[44px]">
-              Một đường sinh mạch từ ảnh lá đến hành động.
+              {tr("Một đường sinh mạch từ ảnh lá đến hành động.", "A vein of life from leaf photo to action.")}
             </h2>
             <p className="mt-4 max-w-[62ch] text-base leading-7 text-ink-soft sm:text-lg sm:leading-8">
-              Mỗi giai đoạn trả lời đúng một câu hỏi để kết quả dễ hiểu và có thể theo dõi ngoài vườn.
+              {tr(
+                "Mỗi giai đoạn trả lời đúng một câu hỏi để kết quả dễ hiểu và có thể theo dõi ngoài vườn.",
+                "Each stage answers exactly one question so the result stays easy to understand and trackable out in the garden.",
+              )}
             </p>
           </div>
 
@@ -154,7 +177,7 @@ export function LeafDiagnosisStory() {
               >
                 <Image
                   src="/plant-leaves/story-grape-leaf.png"
-                  alt="Lá nho có phấn trắng và đốm nâu đang được kiểm tra"
+                  alt={tr("Lá nho có phấn trắng và đốm nâu đang được kiểm tra", "Grape leaf with white powder and brown spots being examined")}
                   fill
                   sizes="(min-width: 1024px) 58vw, 100vw"
                   className="object-cover object-center"
@@ -188,7 +211,10 @@ export function LeafDiagnosisStory() {
 
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-forest via-forest/80 to-transparent px-5 pb-5 pt-16 text-on-forest sm:px-7 sm:pb-7">
                   <p className="max-w-lg text-sm font-semibold leading-6 text-on-forest-muted">
-                    Tải ảnh lá để nhận gợi ý bệnh, đối chiếu triệu chứng và biết việc cần làm tiếp theo.
+                    {tr(
+                      "Tải ảnh lá để nhận gợi ý bệnh, đối chiếu triệu chứng và biết việc cần làm tiếp theo.",
+                      "Upload a leaf photo to get disease suggestions, cross-check symptoms, and know what to do next.",
+                    )}
                   </p>
                 </div>
               </motion.div>

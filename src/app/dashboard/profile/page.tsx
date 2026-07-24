@@ -11,10 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { pricingPlans } from "@/data/mock/plans";
+import { useTr } from "@/lib/use-tr";
 import { normalizeUserDisplayName } from "@/lib/user-profile";
 import { useSessionStore } from "@/store/session-store";
 
 export default function DashboardProfilePage() {
+  const tr = useTr();
   const router = useRouter();
   const { user, status, updateProfile } = useSessionStore();
   const [name, setName] = useState(normalizeUserDisplayName(user?.name));
@@ -38,9 +40,9 @@ export default function DashboardProfilePage() {
   async function handleSaveProfile() {
     try {
       await updateProfile({ name, email, avatar: avatarUrl });
-      toast.success("Đã lưu thay đổi hồ sơ.");
+      toast.success(tr("Đã lưu thay đổi hồ sơ.", "Profile changes saved."));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Không thể lưu hồ sơ.");
+      toast.error(err instanceof Error ? err.message : tr("Không thể lưu hồ sơ.", "Could not save profile."));
     }
   }
 
@@ -53,13 +55,13 @@ export default function DashboardProfilePage() {
               <Image src={avatarSrc} alt={displayName} width={160} height={160} className="h-full w-full object-cover" />
             </div>
             <div>
-              <p className="text-overline text-on-forest-muted">Hồ sơ người dùng</p>
+              <p className="text-overline text-on-forest-muted">{tr("Hồ sơ người dùng", "User profile")}</p>
               <h2 className="mt-2 text-h2 font-bold text-on-forest">{displayName}</h2>
               <p className="mt-2 text-body-sm text-on-forest-muted">{user?.email}</p>
               <div className="mt-5 rounded-lg border border-on-forest/10 bg-on-forest/5 px-4 py-3 text-body-sm leading-relaxed text-on-forest-muted">
-                Gói hiện tại: <span className="font-semibold text-on-forest">{currentPlan?.name ?? "Seed"}</span>
+                {tr("Gói hiện tại:", "Current plan:")} <span className="font-semibold text-on-forest">{currentPlan?.name ?? "Seed"}</span>
                 <br />
-                Thông tin này được đồng bộ theo tài khoản của bạn.
+                {tr("Thông tin này được đồng bộ theo tài khoản của bạn.", "This information is synced with your account.")}
               </div>
             </div>
           </div>
@@ -67,7 +69,7 @@ export default function DashboardProfilePage() {
 
         <Card variant="raised" padding="lg" className="rounded-xl shadow-sm">
           <div className="grid gap-5 md:grid-cols-2">
-            <Input tone="light" label="Tên người dùng" value={name} onChange={(event) => setName(event.target.value)} />
+            <Input tone="light" label={tr("Tên người dùng", "Display name")} value={name} onChange={(event) => setName(event.target.value)} />
             <Input tone="light" label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
             <div className="md:col-span-2">
               <Input
@@ -82,7 +84,7 @@ export default function DashboardProfilePage() {
           </div>
           <div className="mt-5 flex flex-wrap gap-3">
             <Button onClick={handleSaveProfile} loading={status === "loading"}>
-              Lưu thay đổi
+              {tr("Lưu thay đổi", "Save changes")}
             </Button>
             <LanguageToggle />
           </div>
@@ -92,10 +94,10 @@ export default function DashboardProfilePage() {
       <Card variant="default" padding="lg" className="rounded-xl">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-overline text-leaf-strong">Gói dịch vụ</p>
-            <h3 className="mt-2 text-h2 font-bold text-ink">Chọn mức sử dụng phù hợp</h3>
+            <p className="text-overline text-leaf-strong">{tr("Gói dịch vụ", "Service plans")}</p>
+            <h3 className="mt-2 text-h2 font-bold text-ink">{tr("Chọn mức sử dụng phù hợp", "Choose the plan that fits you")}</h3>
             <p className="mt-2 max-w-2xl text-body-sm leading-relaxed text-ink-soft">
-              So sánh quyền lợi và chuyển đến bước xác nhận trước khi thay đổi gói.
+              {tr("So sánh quyền lợi và chuyển đến bước xác nhận trước khi thay đổi gói.", "Compare benefits and continue to confirmation before changing your plan.")}
             </p>
           </div>
         </div>

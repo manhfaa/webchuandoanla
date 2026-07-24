@@ -9,6 +9,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { useSessionStore } from "@/store/session-store";
+import { useTr } from "@/lib/use-tr";
 
 type GoogleCredentialResponse = {
   credential?: string;
@@ -43,6 +44,7 @@ declare global {
 }
 
 export default function LoginPage() {
+  const tr = useTr();
   const { login, loginWithGoogle, isAuthenticated, status, error, clearError } = useSessionStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -128,21 +130,21 @@ export default function LoginPage() {
 
   return (
     <AuthShell
-      eyebrow="Truy cập tài khoản"
-      title="Tiếp tục theo dõi khu vườn của bạn"
-      description="Đăng nhập để xem lại ảnh lá, kết quả cần chú ý và các kế hoạch chăm sóc đã lưu."
-      asideTitle="Từ một chiếc lá, theo dõi cả quá trình chăm sóc."
-      asideDescription="Agromind AI sắp xếp kết quả kiểm tra, điều kiện vườn và việc nên làm trong một không gian dễ theo dõi."
+      eyebrow={tr("Truy cập tài khoản", "Account access")}
+      title={tr("Tiếp tục theo dõi khu vườn của bạn", "Keep tracking your garden")}
+      description={tr("Đăng nhập để xem lại ảnh lá, kết quả cần chú ý và các kế hoạch chăm sóc đã lưu.", "Sign in to revisit leaf photos, results that need attention and your saved care plans.")}
+      asideTitle={tr("Từ một chiếc lá, theo dõi cả quá trình chăm sóc.", "From a single leaf, follow the whole care journey.")}
+      asideDescription={tr("Agromind AI sắp xếp kết quả kiểm tra, điều kiện vườn và việc nên làm trong một không gian dễ theo dõi.", "Agromind AI organizes check results, garden conditions and next steps in one easy-to-follow space.")}
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         {googleClientId ? (
           <div className="rounded-lg border border-line bg-surface-soft p-4">
-            <p className="text-sm font-semibold text-ink">Tiếp tục nhanh bằng Google</p>
+            <p className="text-sm font-semibold text-ink">{tr("Tiếp tục nhanh bằng Google", "Continue quickly with Google")}</p>
             <div ref={googleButtonRef} className="mt-3 min-h-11 w-full overflow-hidden rounded-md" />
             {googleError ? <p role="alert" className="mt-3 text-xs leading-6 text-danger-ink">{googleError}</p> : null}
             <div className="mt-5 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
               <span className="h-px flex-1 bg-line" aria-hidden />
-              Hoặc dùng email
+              {tr("Hoặc dùng email", "Or use email")}
               <span className="h-px flex-1 bg-line" aria-hidden />
             </div>
           </div>
@@ -161,14 +163,14 @@ export default function LoginPage() {
           required
         />
         <PasswordInput
-          label="Mật khẩu"
+          label={tr("Mật khẩu", "Password")}
           autoComplete="current-password"
           value={password}
           onChange={(event) => {
             clearError();
             setPassword(event.target.value);
           }}
-          placeholder="Nhập mật khẩu"
+          placeholder={tr("Nhập mật khẩu", "Enter password")}
           required
         />
 
@@ -179,19 +181,19 @@ export default function LoginPage() {
         ) : null}
 
         <Button size="lg" loading={status === "loading"} type="submit" className="w-full">
-          <LockKeyhole size={17} aria-hidden /> Đăng nhập <ArrowRight size={17} aria-hidden />
+          <LockKeyhole size={17} aria-hidden /> {tr("Đăng nhập", "Sign in")} <ArrowRight size={17} aria-hidden />
         </Button>
 
         <div className="flex flex-col items-center justify-between gap-3 border-t border-line pt-5 text-sm sm:flex-row">
-          <span className="text-ink-soft">Chưa có tài khoản?</span>
+          <span className="text-ink-soft">{tr("Chưa có tài khoản?", "Don't have an account?")}</span>
           <Link href="/register" className={buttonVariants({ variant: "secondary", size: "sm" })}>
-            Tạo tài khoản
+            {tr("Tạo tài khoản", "Create account")}
           </Link>
         </div>
       </form>
 
       <p className="mt-6 text-xs leading-6 text-ink-soft">
-        Nếu quên mật khẩu, hãy liên hệ quản trị viên hỗ trợ tài khoản.
+        {tr("Nếu quên mật khẩu, hãy liên hệ quản trị viên hỗ trợ tài khoản.", "If you forgot your password, contact the administrator for account support.")}
       </p>
     </AuthShell>
   );

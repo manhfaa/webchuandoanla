@@ -5,6 +5,7 @@ import { Check, Crown, ShieldCheck, Sprout, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SurfaceCard } from "@/components/ui/card";
+import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
 import type { PlanTier, PricingPlan } from "@/types";
 
@@ -37,6 +38,7 @@ export function PricingCard({
   onSelect?: (planId: PricingPlan["id"]) => void;
   dark?: boolean;
 }) {
+  const tr = useTr();
   const current = currentPlan ?? "seed";
   const isCurrent = current === plan.id;
   const curRank = rankOf(current);
@@ -55,12 +57,12 @@ export function PricingCard({
 
   if (!isCurrent && curRank > pRank) {
     const downgradeLabels: Record<PlanTier, string> = {
-      seed: "Hạ cấp về Seed",
-      grow: "Hạ cấp về Grow",
-      bloom: "Hạ cấp về Bloom",
-      elite: "Hạ cấp về Elite",
+      seed: tr("Hạ cấp về Seed", "Downgrade to Seed"),
+      grow: tr("Hạ cấp về Grow", "Downgrade to Grow"),
+      bloom: tr("Hạ cấp về Bloom", "Downgrade to Bloom"),
+      elite: tr("Hạ cấp về Elite", "Downgrade to Elite"),
     };
-    actionLabel = downgradeLabels[plan.id] ?? "Hạ cấp";
+    actionLabel = downgradeLabels[plan.id] ?? tr("Hạ cấp", "Downgrade");
     actionVariant = dark ? "outline" : "secondary";
   }
 
@@ -167,7 +169,7 @@ export function PricingCard({
               )}
             >
               <Check strokeWidth={2.5} className="h-4 w-4 shrink-0" aria-hidden />
-              Đang sử dụng
+              {tr("Đang sử dụng", "Currently active")}
             </div>
           ) : (
             <Button

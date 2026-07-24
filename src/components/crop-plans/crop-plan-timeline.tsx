@@ -6,12 +6,14 @@ import type { CropPlanStep, CropPlanStepStatus } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getCropPhaseLabel } from "@/lib/crop-plan-labels";
+import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
 
 const statusMeta: Record<
   CropPlanStepStatus,
   {
     label: string;
+    labelEn: string;
     icon: typeof CircleDashed;
     nodeClass: string;
     lineClass: string;
@@ -19,30 +21,35 @@ const statusMeta: Record<
 > = {
   pending: {
     label: "Sắp tới",
+    labelEn: "Upcoming",
     icon: CircleDashed,
     nodeClass: "bg-surface text-ink-soft ring-1 ring-line",
     lineClass: "bg-line",
   },
   current: {
     label: "Đang thực hiện",
+    labelEn: "In progress",
     icon: Clock3,
     nodeClass: "bg-leaf text-on-leaf shadow-md",
     lineClass: "bg-leaf/45",
   },
   completed: {
     label: "Đã hoàn thành",
+    labelEn: "Completed",
     icon: CheckCircle2,
     nodeClass: "bg-leaf-strong text-on-leaf",
     lineClass: "bg-leaf",
   },
   skipped: {
     label: "Bỏ qua",
+    labelEn: "Skipped",
     icon: PauseCircle,
     nodeClass: "bg-surface-soft text-ink-soft",
     lineClass: "bg-line",
   },
   delayed: {
     label: "Bị đổi lịch",
+    labelEn: "Rescheduled",
     icon: TriangleAlert,
     nodeClass: "bg-sun text-forest",
     lineClass: "bg-[linear-gradient(to_bottom,var(--sun)_50%,transparent_50%)] bg-[length:100%_12px]",
@@ -60,6 +67,7 @@ export function CropPlanTimeline({
   onSelect: (step: CropPlanStep) => void;
   onComplete: (stepId: number) => Promise<void>;
 }) {
+  const tr = useTr();
   let previousPhase = "";
 
   return (
@@ -104,7 +112,7 @@ export function CropPlanTimeline({
                         {step.short_label || step.title}
                       </span>
                       <span className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-ink-soft">
-                        {meta.label}
+                        {tr(meta.label, meta.labelEn)}
                       </span>
                     </div>
                     <h3 className="mt-3 font-display text-2xl font-bold text-ink">
@@ -113,7 +121,7 @@ export function CropPlanTimeline({
                     <p className="mt-3 max-w-3xl text-sm leading-7 text-ink-soft">{step.description}</p>
                   </div>
                   <div className="rounded-lg bg-surface-soft px-4 py-3 text-right">
-                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">Thời gian</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">{tr("Thời gian", "Time")}</p>
                     <p className="mt-1 text-sm font-medium text-ink">
                       {new Date(step.suggested_start_time).toLocaleString("vi-VN")}
                     </p>
@@ -122,30 +130,30 @@ export function CropPlanTimeline({
 
                 <div className="mt-5 grid gap-3 md:grid-cols-3">
                   <div className="rounded-lg border border-line bg-surface-soft px-4 py-3 text-sm text-ink-soft">
-                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">Thời lượng</p>
-                    <p className="mt-2 font-medium text-ink">{step.estimated_duration_minutes} phút</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">{tr("Thời lượng", "Duration")}</p>
+                    <p className="mt-2 font-medium text-ink">{tr(`${step.estimated_duration_minutes} phút`, `${step.estimated_duration_minutes} min`)}</p>
                   </div>
                   <div className="rounded-lg border border-line bg-surface-soft px-4 py-3 text-sm text-ink-soft">
-                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">Nước tưới</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">{tr("Nước tưới", "Watering")}</p>
                     <p className="mt-2 font-medium text-ink">
-                      {step.water_amount ? `${step.water_amount.value} ${step.water_amount.unit}` : "Theo dõi ẩm đất"}
+                      {step.water_amount ? `${step.water_amount.value} ${step.water_amount.unit}` : tr("Theo dõi ẩm đất", "Monitor soil moisture")}
                     </p>
                   </div>
                   <div className="rounded-lg border border-line bg-surface-soft px-4 py-3 text-sm text-ink-soft">
-                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">Nắng</p>
-                    <p className="mt-2 font-medium text-ink">{step.sunlight_requirement_text || "Theo điều kiện thực tế"}</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">{tr("Nắng", "Sunlight")}</p>
+                    <p className="mt-2 font-medium text-ink">{step.sunlight_requirement_text || tr("Theo điều kiện thực tế", "Based on actual conditions")}</p>
                   </div>
                 </div>
 
                 <div className="mt-5 flex flex-wrap gap-3">
                   <Button variant="secondary" onClick={() => onSelect(step)}>
-                    Xem chi tiết
+                    {tr("Xem chi tiết", "View details")}
                   </Button>
                   {step.status !== "completed" ? (
-                    <Button onClick={() => onComplete(step.id)}>Hoàn thành</Button>
+                    <Button onClick={() => onComplete(step.id)}>{tr("Hoàn thành", "Complete")}</Button>
                   ) : (
                     <span className="rounded-full bg-surface-soft px-4 py-3 text-sm font-medium text-leaf-strong">
-                      Bước này đã xong
+                      {tr("Bước này đã xong", "This step is done")}
                     </span>
                   )}
                 </div>

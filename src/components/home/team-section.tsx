@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 import { teamMembers } from "@/data/mock/team";
+import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
 
 const portraitStyles: Record<string, string> = {
@@ -19,6 +20,7 @@ const DESKTOP_MEDIA_QUERY = "(min-width: 1024px)";
 const MEMBER_SCROLL_DISTANCE_SVH = 88;
 
 export function TeamSection() {
+  const tr = useTr();
   const storyRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const [isDesktop, setIsDesktop] = useState(false);
@@ -79,10 +81,13 @@ export function TeamSection() {
             id="team-heading"
             className="font-display text-3xl font-extrabold tracking-[-0.04em] text-ink sm:text-4xl lg:text-[44px] lg:leading-[1.12]"
           >
-            Đội ngũ dự án
+            {tr("Đội ngũ dự án", "Project team")}
           </h2>
           <p className="mt-4 max-w-[64ch] text-base leading-7 text-ink-soft sm:text-lg sm:leading-8">
-            Khảo sát, công nghệ, website, kiểm thử và truyền thông cùng hướng về một trải nghiệm dễ dùng cho người Việt Nam.
+            {tr(
+              "Khảo sát, công nghệ, website, kiểm thử và truyền thông cùng hướng về một trải nghiệm dễ dùng cho người Việt Nam.",
+              "Research, technology, website, testing, and communications all aimed at an easy-to-use experience for Vietnamese people.",
+            )}
           </p>
         </header>
 
@@ -101,7 +106,7 @@ export function TeamSection() {
             <div className="grid w-full items-stretch gap-5 lg:grid-cols-[292px_minmax(0,1fr)] lg:gap-6">
               <div
                 className="team-roster-scroll grid snap-x snap-mandatory grid-flow-col grid-cols-none gap-2 overflow-x-auto pb-2 lg:grid-flow-row lg:grid-cols-1 lg:overflow-visible lg:pb-0"
-                aria-label="Chọn thành viên dự án"
+                aria-label={tr("Chọn thành viên dự án", "Select a project member")}
               >
                 {teamMembers.map((member, memberIndex) => {
                   const active = member.id === activeMember.id;
@@ -183,7 +188,7 @@ export function TeamSection() {
                     </p>
 
                     <div className="mt-auto pt-9">
-                      <p className="text-sm font-semibold text-ink">Phụ trách chính</p>
+                      <p className="text-sm font-semibold text-ink">{tr("Phụ trách chính", "Main responsibilities")}</p>
                       <div className="mt-4 grid gap-3 sm:grid-cols-3">
                         {activeMember.responsibilities.map((responsibility) => (
                           <div

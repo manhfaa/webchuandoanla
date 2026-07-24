@@ -10,10 +10,12 @@ import { Card } from "@/components/ui/card";
 import { ListSkeleton } from "@/components/ui/skeleton";
 import { EmptyState, ErrorState } from "@/components/ui/states";
 import { fetchCropPlans, fetchReminders } from "@/lib/crop-plans-client";
+import { useTr } from "@/lib/use-tr";
 import { useSessionStore } from "@/store/session-store";
 import type { CropPlan, ReminderItem } from "@/types";
 
 export default function CropPlansPage() {
+  const tr = useTr();
   const { accessToken } = useSessionStore();
   const [plans, setPlans] = useState<CropPlan[]>([]);
   const [reminders, setReminders] = useState<ReminderItem[]>([]);
@@ -36,7 +38,7 @@ export default function CropPlansPage() {
         setPlans(planData);
         setReminders(reminderData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Không tải được danh sách kế hoạch.");
+        setError(err instanceof Error ? err.message : tr("Không tải được danh sách kế hoạch.", "Could not load the plan list."));
       } finally {
         setLoading(false);
       }
@@ -53,16 +55,16 @@ export default function CropPlansPage() {
       <Card variant="raised" padding="lg" className="field-contours rounded-xl">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-overline text-leaf-strong">Kế hoạch canh tác</p>
-            <h1 className="mt-2 text-h2 font-bold text-ink sm:text-h1">Kế hoạch trồng cây của bạn</h1>
+            <p className="text-overline text-leaf-strong">{tr("Kế hoạch canh tác", "Crop planning")}</p>
+            <h1 className="mt-2 text-h2 font-bold text-ink sm:text-h1">{tr("Kế hoạch trồng cây của bạn", "Your crop plans")}</h1>
             <p className="mt-3 max-w-3xl text-body text-ink-soft sm:text-body-lg">
-              Xem các vụ đang chạy, việc cần làm hôm nay và mở nhanh timeline chăm cây theo địa điểm.
+              {tr("Xem các vụ đang chạy, việc cần làm hôm nay và mở nhanh timeline chăm cây theo địa điểm.", "See active crops, today's tasks, and quickly open the care timeline by location.")}
             </p>
           </div>
           <Link href="/dashboard/crop-plans/new" className="no-underline">
             <Button>
               <Plus strokeWidth={1.75} className="h-4 w-4" aria-hidden />
-              Tạo kế hoạch mới
+              {tr("Tạo kế hoạch mới", "Create new plan")}
             </Button>
           </Link>
         </div>
@@ -70,36 +72,36 @@ export default function CropPlansPage() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card variant="dark" className="rounded-lg shadow-sm">
-          <p className="text-overline text-on-forest-muted">Kế hoạch đang theo dõi</p>
+          <p className="text-overline text-on-forest-muted">{tr("Kế hoạch đang theo dõi", "Plans being tracked")}</p>
           <p className="mt-3 font-display text-4xl font-bold text-on-forest">{activePlans.length}</p>
           <p className="mt-2 text-body-sm leading-relaxed text-on-forest-muted">
-            Số vụ trồng đang được theo dõi trong hệ thống.
+            {tr("Số vụ trồng đang được theo dõi trong hệ thống.", "Number of crops currently tracked in the system.")}
           </p>
         </Card>
         <Card variant="default" className="rounded-lg shadow-sm">
-          <p className="text-overline text-leaf-strong">Nhắc việc hôm nay</p>
+          <p className="text-overline text-leaf-strong">{tr("Nhắc việc hôm nay", "Today's reminders")}</p>
           <p className="mt-3 font-display text-4xl font-bold text-ink">{reminders.length}</p>
           <p className="mt-2 text-body-sm leading-relaxed text-ink-soft">
-            Tổng số thông báo cần xem trong ngày.
+            {tr("Tổng số thông báo cần xem trong ngày.", "Total notifications to review today.")}
           </p>
         </Card>
         <Card variant={plans.some((plan) => plan.status === "needs_review") ? "warning" : "default"} className="rounded-lg shadow-sm">
-          <p className="text-overline text-leaf-strong">Cần xem lại</p>
+          <p className="text-overline text-leaf-strong">{tr("Cần xem lại", "Needs review")}</p>
           <p className="mt-3 font-display text-4xl font-bold text-ink">
             {plans.filter((plan) => plan.status === "needs_review").length}
           </p>
           <p className="mt-2 text-body-sm leading-relaxed text-ink-soft">
-            Kế hoạch bị ảnh hưởng bởi thời tiết và cần điều chỉnh.
+            {tr("Kế hoạch bị ảnh hưởng bởi thời tiết và cần điều chỉnh.", "Plans affected by weather that need adjustment.")}
           </p>
         </Card>
       </div>
 
-      {error ? <ErrorState title="Chưa tải được kế hoạch" description={error} onRetry={() => window.location.reload()} /> : null}
+      {error ? <ErrorState title={tr("Chưa tải được kế hoạch", "Could not load plans")} description={error} onRetry={() => window.location.reload()} /> : null}
 
       {loading ? <ListSkeleton count={3} itemClassName="h-[220px]" /> : null}
 
       {!loading && !error && !plans.length ? (
-        <EmptyState title="Chưa có kế hoạch trồng nào" description="Tạo kế hoạch đầu tiên để theo dõi mùa vụ, nhắc việc và thời tiết cho từng bước chăm cây." icon={Leaf} action={<Link href="/dashboard/crop-plans/new" className="no-underline"><Button><Sprout strokeWidth={1.75} className="h-4 w-4" aria-hidden /> Tạo kế hoạch mới</Button></Link>} />
+        <EmptyState title={tr("Chưa có kế hoạch trồng nào", "No crop plans yet")} description={tr("Tạo kế hoạch đầu tiên để theo dõi mùa vụ, nhắc việc và thời tiết cho từng bước chăm cây.", "Create your first plan to track the season, reminders, and weather for each care step.")} icon={Leaf} action={<Link href="/dashboard/crop-plans/new" className="no-underline"><Button><Sprout strokeWidth={1.75} className="h-4 w-4" aria-hidden /> {tr("Tạo kế hoạch mới", "Create new plan")}</Button></Link>} />
       ) : null}
 
       {!loading && plans.length ? (
@@ -117,7 +119,7 @@ export default function CropPlansPage() {
               <TriangleAlert strokeWidth={1.75} className="h-5 w-5" aria-hidden />
             </span>
             <div>
-              <h3 className="text-h3 font-bold text-ink">Cần làm trong hôm nay</h3>
+              <h3 className="text-h3 font-bold text-ink">{tr("Cần làm trong hôm nay", "To do today")}</h3>
               <p className="mt-2 text-body leading-relaxed text-ink-soft">
                 {reminders[0].title}: {reminders[0].body}
               </p>

@@ -5,10 +5,12 @@ import { Crown, LogOut, Menu, ScanSearch } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { LanguageToggle } from "@/components/layout/language-toggle";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { normalizePlan, PLANS } from "@/lib/plans";
+import { useTr } from "@/lib/use-tr";
 import { normalizeUserDisplayName } from "@/lib/user-profile";
 import { useSessionStore } from "@/store/session-store";
 import type { PlanTier } from "@/types";
@@ -29,6 +31,7 @@ function planBadgeVariant(plan: PlanTier) {
 export function WorkspaceHeader({ pageTitle, pageDescription, mobileNavOpen = false, onOpenMobileNav }: WorkspaceHeaderProps) {
   const router = useRouter();
   const { user, logout } = useSessionStore();
+  const tr = useTr();
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -46,7 +49,7 @@ export function WorkspaceHeader({ pageTitle, pageDescription, mobileNavOpen = fa
     <header className={`workspace-header sticky top-0 z-30 flex min-h-[72px] shrink-0 items-center px-4 transition-shadow duration-260 sm:px-6 lg:px-8 ${scrolled ? "shadow-md" : ""}`}>
       <div className="flex w-full min-w-0 items-center gap-3">
         {onOpenMobileNav ? (
-          <button id="workspace-mobile-nav-trigger" type="button" onClick={onOpenMobileNav} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-ink-soft transition hover:bg-surface-soft hover:text-ink lg:hidden" aria-label="Mở menu điều hướng" aria-expanded={mobileNavOpen} aria-controls="workspace-sidebar">
+          <button id="workspace-mobile-nav-trigger" type="button" onClick={onOpenMobileNav} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-ink-soft transition hover:bg-surface-soft hover:text-ink lg:hidden" aria-label={tr("Mở menu điều hướng", "Open navigation")} aria-expanded={mobileNavOpen} aria-controls="workspace-sidebar">
             <Menu size={19} aria-hidden />
           </button>
         ) : null}
@@ -60,15 +63,16 @@ export function WorkspaceHeader({ pageTitle, pageDescription, mobileNavOpen = fa
           <Badge variant={planBadgeVariant(plan)} className="hidden min-h-8 items-center gap-1.5 px-3 sm:inline-flex">
             <Crown size={13} aria-hidden /> {planInfo.name}
           </Badge>
+          <LanguageToggle />
           <ThemeToggle className="border border-line bg-surface" />
           <Link href="/dashboard/diagnosis" className={buttonVariants({ variant: "primary", size: "sm", className: "hidden md:inline-flex" })}>
-            <ScanSearch size={16} aria-hidden /> Kiểm tra ảnh mới
+            <ScanSearch size={16} aria-hidden /> {tr("Kiểm tra ảnh mới", "New leaf check")}
           </Link>
-          <Link href="/dashboard/profile" className="flex h-10 min-w-10 items-center gap-2 rounded-xl border border-line bg-surface px-1.5 pr-2.5 transition hover:bg-surface-soft" aria-label="Mở hồ sơ người dùng">
+          <Link href="/dashboard/profile" className="flex h-10 min-w-10 items-center gap-2 rounded-xl border border-line bg-surface px-1.5 pr-2.5 transition hover:bg-surface-soft" aria-label={tr("Mở hồ sơ người dùng", "Open profile")}>
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-soft text-xs font-bold text-leaf-strong">{initials}</span>
             <span className="hidden max-w-[140px] truncate text-xs font-semibold text-ink xl:block">{displayName}</span>
           </Link>
-          <button type="button" onClick={() => { logout(); router.push("/login"); }} className="flex h-10 w-10 items-center justify-center rounded-xl text-ink-soft transition hover:bg-danger-soft hover:text-danger-ink" aria-label="Đăng xuất">
+          <button type="button" onClick={() => { logout(); router.push("/login"); }} className="flex h-10 w-10 items-center justify-center rounded-xl text-ink-soft transition hover:bg-danger-soft hover:text-danger-ink" aria-label={tr("Đăng xuất", "Log out")}>
             <LogOut size={17} aria-hidden />
           </button>
         </div>

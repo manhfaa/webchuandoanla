@@ -4,6 +4,7 @@ import { Be_Vietnam_Pro, Bricolage_Grotesque } from "next/font/google";
 import { BackendWakeup } from "@/components/system/backend-wakeup";
 import { ClarityAnalytics } from "@/components/system/clarity-analytics";
 import { brand } from "@/constants/brand";
+import { SkipLink } from "@/components/layout/skip-link";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 
 import "./globals.css";
@@ -46,12 +47,7 @@ export default function RootLayout({
           enableColorScheme
           disableTransitionOnChange
         >
-          <a
-            href="#main-content"
-            className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-md bg-leaf px-4 py-2 text-sm font-medium text-on-leaf opacity-0 shadow-lg transition duration-200 focus-visible:translate-y-0 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/40 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
-          >
-            Bỏ qua đến nội dung chính
-          </a>
+          <SkipLink />
           <BackendWakeup />
           {children}
           <ClarityAnalytics />

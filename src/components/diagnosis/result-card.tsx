@@ -11,7 +11,10 @@ import { ConfidenceMeter } from "@/components/ui/confidence-meter";
 import { SourceList } from "@/components/ui/source-list";
 import { EmptyState } from "@/components/ui/states";
 import { toUserFacingText } from "@/lib/user-facing-copy";
+import { useTr } from "@/lib/use-tr";
 import type { DiagnosisRecord } from "@/types";
+
+type Tr = (vi: string, en: string) => string;
 
 type ResearchSource = { id?: number; title?: string; url?: string };
 type ResearchPayload = { compatibilitySources?: ResearchSource[]; treatmentSources?: ResearchSource[] };
@@ -45,7 +48,7 @@ function customerText(text: string) {
   return toUserFacingText(text);
 }
 
-function renderRecommendationItem(rawItem: string) {
+function renderRecommendationItem(rawItem: string, tr: Tr) {
   const item = customerText(rawItem);
   const sourceMatch = item.match(/^(\[\d+\])\s*(.*?):\s*(https?:\/\/\S+)$/);
   if (sourceMatch) {
@@ -55,7 +58,7 @@ function renderRecommendationItem(rawItem: string) {
   const urlMatch = item.match(/https?:\/\/\S+/);
   if (urlMatch) {
     const url = urlMatch[0];
-    return <span>{item.slice(0, urlMatch.index)}<a href={url} target="_blank" rel="noreferrer" className="font-semibold text-leaf-strong hover:text-leaf">Mở nguồn tham khảo <ExternalLink className="inline h-3.5 w-3.5" aria-hidden /></a></span>;
+    return <span>{item.slice(0, urlMatch.index)}<a href={url} target="_blank" rel="noreferrer" className="font-semibold text-leaf-strong hover:text-leaf">{tr("Mở nguồn tham khảo", "Open reference source")} <ExternalLink className="inline h-3.5 w-3.5" aria-hidden /></a></span>;
   }
   return <span>{item}</span>;
 }
@@ -71,10 +74,11 @@ export function DiagnosisResultCard({
   onUpgrade?: () => void;
   detailsOnly?: boolean;
 }) {
+  const tr = useTr();
   if (!record) {
     return (
       <Card variant="raised" padding="lg" className="rounded-xl">
-        <EmptyState title="Kết quả sẽ xuất hiện tại đây" description="Chọn hoặc chụp ảnh lá, sau đó hoàn tất các bước kiểm tra để xem gợi ý và việc nên làm." icon={Leaf} />
+        <EmptyState title={tr("Kết quả sẽ xuất hiện tại đây", "Results will appear here")} description={tr("Chọn hoặc chụp ảnh lá, sau đó hoàn tất các bước kiểm tra để xem gợi ý và việc nên làm.", "Choose or capture a leaf photo, then complete the check steps to see suggestions and what to do.")} icon={Leaf} />
       </Card>
     );
   }
@@ -97,9 +101,9 @@ export function DiagnosisResultCard({
     <Card variant="raised" padding="lg" className="overflow-hidden rounded-xl">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-overline text-leaf-strong">{detailsOnly ? "Thông tin bổ sung" : "Bước 4 · Kết quả"}</p>
-          <h2 className="mt-2 font-display text-[30px] font-bold tracking-[-0.035em] text-ink">{detailsOnly ? "Các khả năng khác và nguồn đối chiếu" : "Kết quả kiểm tra ảnh lá"}</h2>
-          <p className="mt-2 text-sm text-ink-soft">{detailsOnly ? "Xem thêm cơ sở tham khảo cho kết luận chính ở trên." : "Xem gợi ý chính, mức tin cậy và các bước nên thực hiện tiếp theo."}</p>
+          <p className="text-overline text-leaf-strong">{detailsOnly ? tr("Thông tin bổ sung", "Additional information") : tr("Bước 4 · Kết quả", "Step 4 · Results")}</p>
+          <h2 className="mt-2 font-display text-[30px] font-bold tracking-[-0.035em] text-ink">{detailsOnly ? tr("Các khả năng khác và nguồn đối chiếu", "Other possibilities and reference sources") : tr("Kết quả kiểm tra ảnh lá", "Leaf photo check results")}</h2>
+          <p className="mt-2 text-sm text-ink-soft">{detailsOnly ? tr("Xem thêm cơ sở tham khảo cho kết luận chính ở trên.", "See more reference basis for the main conclusion above.") : tr("Xem gợi ý chính, mức tin cậy và các bước nên thực hiện tiếp theo.", "See the main suggestion, confidence level, and the next steps to take.")}</p>
         </div>
         {!detailsOnly ? <StatusBadge status={status.state} label={status.label} /> : null}
       </div>
@@ -107,33 +111,33 @@ export function DiagnosisResultCard({
       <div className="mt-6 grid gap-5 xl:grid-cols-[0.86fr_1.14fr]">
         <div className="space-y-4">
           {!detailsOnly ? <div className="fl-rise field-contours relative overflow-hidden rounded-xl bg-forest p-6 text-on-forest">
-            <Badge className="bg-on-forest/10 text-on-forest">{record.plant || "Chưa xác định cây"}</Badge>
-            <p className="mt-6 text-overline text-on-forest-muted">Khả năng cao nhất</p>
-            <h3 className="mt-2 font-display text-[30px] font-bold leading-tight tracking-[-0.03em] text-on-forest">{record.disease || "Chưa có gợi ý bệnh"}</h3>
+            <Badge className="bg-on-forest/10 text-on-forest">{record.plant || tr("Chưa xác định cây", "Plant not identified")}</Badge>
+            <p className="mt-6 text-overline text-on-forest-muted">{tr("Khả năng cao nhất", "Most likely")}</p>
+            <h3 className="mt-2 font-display text-[30px] font-bold leading-tight tracking-[-0.03em] text-on-forest">{record.disease || tr("Chưa có gợi ý bệnh", "No disease suggestion yet")}</h3>
             <ConfidenceMeter score={confidence} tone="dark" className="mt-6" />
             <div className="mt-5 grid grid-cols-2 gap-3 border-t border-on-forest/10 pt-5 text-sm">
-              <div><p className="text-xs text-on-forest-muted">Ảnh đầu vào</p><p className="mt-1 font-semibold text-on-forest">Ảnh lá hợp lệ</p></div>
-              <div><p className="text-xs text-on-forest-muted">Nguồn ảnh</p><p className="mt-1 font-semibold text-on-forest">{record.inputMethod === "capture" ? "Ảnh chụp" : "Ảnh tải lên"}</p></div>
+              <div><p className="text-xs text-on-forest-muted">{tr("Ảnh đầu vào", "Input photo")}</p><p className="mt-1 font-semibold text-on-forest">{tr("Ảnh lá hợp lệ", "Valid leaf photo")}</p></div>
+              <div><p className="text-xs text-on-forest-muted">{tr("Nguồn ảnh", "Photo source")}</p><p className="mt-1 font-semibold text-on-forest">{record.inputMethod === "capture" ? tr("Ảnh chụp", "Captured photo") : tr("Ảnh tải lên", "Uploaded photo")}</p></div>
             </div>
           </div> : null}
 
           {sourceItems.length ? (
             <div className="rounded-xl border border-line bg-surface-soft p-5">
-              <p className="text-overline text-leaf-strong">Nguồn tham khảo</p>
-              <p className="mt-2 text-xs leading-6 text-ink-soft">Mở nguồn để tự đối chiếu thông tin đã được tổng hợp.</p>
+              <p className="text-overline text-leaf-strong">{tr("Nguồn tham khảo", "Reference sources")}</p>
+              <p className="mt-2 text-xs leading-6 text-ink-soft">{tr("Mở nguồn để tự đối chiếu thông tin đã được tổng hợp.", "Open the sources to cross-check the compiled information yourself.")}</p>
               <div className="mt-3"><SourceList sources={sourceItems} /></div>
             </div>
-          ) : detailsOnly ? <EmptyState title="Chưa có nguồn đối chiếu" description="Nguồn tham khảo chỉ xuất hiện khi bạn nhập triệu chứng và bước đối chiếu hoàn tất." icon={ExternalLink} /> : null}
+          ) : detailsOnly ? <EmptyState title={tr("Chưa có nguồn đối chiếu", "No reference sources yet")} description={tr("Nguồn tham khảo chỉ xuất hiện khi bạn nhập triệu chứng và bước đối chiếu hoàn tất.", "Reference sources appear only after you enter symptoms and the cross-check step is complete.")} icon={ExternalLink} /> : null}
         </div>
 
         <div className="space-y-4">
           {!detailsOnly ? <div className="rounded-xl bg-surface-soft p-5">
-            <p className="text-sm font-bold text-ink">Tình trạng hiện tại</p>
+            <p className="text-sm font-bold text-ink">{tr("Tình trạng hiện tại", "Current condition")}</p>
             <p className="mt-3 text-sm leading-7 text-ink-soft">{customerText(record.symptomSummary)}</p>
           </div> : null}
 
           <div className="rounded-xl border border-line bg-surface p-5">
-            <p className="flex items-center gap-2 text-sm font-bold text-ink"><Sparkles size={16} className="text-leaf-strong" aria-hidden /> {detailsOnly ? "Thông tin đã đối chiếu" : "Giải thích và việc nên làm"}</p>
+            <p className="flex items-center gap-2 text-sm font-bold text-ink"><Sparkles size={16} className="text-leaf-strong" aria-hidden /> {detailsOnly ? tr("Thông tin đã đối chiếu", "Cross-checked information") : tr("Giải thích và việc nên làm", "Explanation and what to do")}</p>
             <div className="mt-5 space-y-5">
               {recommendationSections.map((section, sectionIndex) => (
                 <section key={section.title} className="fl-rise" style={{ "--fl-i": sectionIndex + 1 } as CSSProperties}>
@@ -142,7 +146,7 @@ export function DiagnosisResultCard({
                     {section.items.slice(0, locked ? 1 : section.items.length).filter((item) => customerText(item).trim()).map((item) => (
                       <li key={item} className="flex gap-2 rounded-lg bg-surface-soft px-3 py-3 text-sm leading-7 text-ink-soft">
                         <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-leaf" aria-hidden />
-                        <span>{renderRecommendationItem(item)}</span>
+                        <span>{renderRecommendationItem(item, tr)}</span>
                       </li>
                     ))}
                   </ul>
@@ -157,9 +161,9 @@ export function DiagnosisResultCard({
         <div className="mt-5 flex flex-col items-start justify-between gap-4 rounded-xl border border-line bg-surface-soft p-5 sm:flex-row sm:items-center">
           <div className="flex items-start gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-surface text-leaf-strong"><LockKeyhole size={18} aria-hidden /></span>
-            <div><p className="text-sm font-bold text-ink">Mở rộng phần hỏi đáp về kết quả</p><p className="mt-1 text-xs leading-6 text-ink-soft">Bạn vẫn xem được kết quả chính. Nâng cấp nếu muốn dùng thêm hỗ trợ trò chuyện theo ca đã lưu.</p></div>
+            <div><p className="text-sm font-bold text-ink">{tr("Mở rộng phần hỏi đáp về kết quả", "Expand the Q&A about your results")}</p><p className="mt-1 text-xs leading-6 text-ink-soft">{tr("Bạn vẫn xem được kết quả chính. Nâng cấp nếu muốn dùng thêm hỗ trợ trò chuyện theo ca đã lưu.", "You can still see the main results. Upgrade if you want added chat support based on your saved cases.")}</p></div>
           </div>
-          <Button size="sm" onClick={onUpgrade}>Xem gói phù hợp</Button>
+          <Button size="sm" onClick={onUpgrade}>{tr("Xem gói phù hợp", "See suitable plans")}</Button>
         </div>
       ) : null}
     </Card>
