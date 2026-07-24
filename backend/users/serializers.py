@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password as run_password_validators
 from django.conf import settings
+from django.core.exceptions import ValidationError as DjangoValidationError
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from rest_framework import serializers
@@ -47,6 +49,16 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ("id", "email", "password")
         read_only_fields = ("id",)
+
+    def validate_password(self, value):
+        # Enforce Django's configured password validators (min length, common
+        # password, numeric-only, user-attribute similarity) so a weak password
+        # like "12345678" is rejected server-side, not just in the UI.
+        try:
+            run_password_validators(value)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(list(exc.messages))
+        return value
 
     def validate_email(self, value):
         normalized_email = value.strip().lower()

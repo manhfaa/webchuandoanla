@@ -26,7 +26,7 @@ function getWorkspaceSubtitle(workspace: ChatWorkspace) {
 }
 
 export default function DashboardChatPage() {
-  const { user } = useSessionStore();
+  const { user, accessToken } = useSessionStore();
   const { records, latestRecordId } = useDiagnosisStore();
   const [workspace, setWorkspace] = useState<ChatWorkspace>("assistant");
   const [selectedDiagnosisId, setSelectedDiagnosisId] = useState("");
@@ -63,7 +63,10 @@ export default function DashboardChatPage() {
       const diagnosisForRequest = mode === "assistant" ? selectedDiagnosis : null;
       const response = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({ query: content, mode, latestDiagnosis: diagnosisForRequest, selectedDiagnosis: diagnosisForRequest }),
       });
       if (!response.ok) throw new Error("Chat request failed");

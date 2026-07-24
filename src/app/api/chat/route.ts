@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isAuthenticatedRequest } from "@/lib/api-auth";
 import { buildChatApiResponse } from "@/lib/chat-assistant";
 import { ChatApiRequest, ChatMode, DiagnosisRecord } from "@/types";
 
@@ -132,6 +133,10 @@ async function callDeepSeek({
 }
 
 export async function POST(request: Request) {
+  if (!(await isAuthenticatedRequest(request))) {
+    return NextResponse.json({ error: "Bạn cần đăng nhập để dùng tính năng này." }, { status: 401 });
+  }
+
   let body: Partial<ChatApiRequest> = {};
 
   try {

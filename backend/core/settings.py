@@ -146,6 +146,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "payment_orders": "30/hour",
         "payment_status": "120/minute",
+        "login": "10/minute",
+        "register": "5/hour",
     },
 }
 

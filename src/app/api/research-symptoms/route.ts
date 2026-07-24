@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { isAuthenticatedRequest } from "@/lib/api-auth";
+
 type Prediction = {
   class_name?: string;
   plant_name?: string;
@@ -594,6 +596,10 @@ async function buildFinalConclusion({
 }
 
 export async function POST(request: Request) {
+  if (!(await isAuthenticatedRequest(request))) {
+    return NextResponse.json({ error: "Bạn cần đăng nhập để dùng tính năng này." }, { status: 401 });
+  }
+
   let body: ResearchRequest;
   try {
     body = (await request.json()) as ResearchRequest;

@@ -467,9 +467,11 @@ function buildGeneratedRecord({
 async function researchSymptomsWithSources({
   symptoms,
   cnn,
+  accessToken,
 }: {
   symptoms: string;
   cnn: DjangoCnnResponse;
+  accessToken: string | null;
 }) {
   if (!symptoms.trim()) return null;
 
@@ -478,6 +480,7 @@ async function researchSymptomsWithSources({
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
     body: JSON.stringify({
       symptoms,
@@ -946,6 +949,7 @@ export default function DashboardDiagnosisPage() {
         research = await researchSymptomsWithSources({
           symptoms,
           cnn: pendingCnnReview.cnn,
+          accessToken,
         });
         if (!research || research.skipped) {
           throw new Error("Chưa thể hoàn tất bước đối chiếu nguồn. Vui lòng thử lại sau ít phút.");

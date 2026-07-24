@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 
 const DJANGO_BASE_URL = process.env.DJANGO_BASE_URL ?? "http://127.0.0.1:8000";
+const BASE = DJANGO_BASE_URL.endsWith("/") ? DJANGO_BASE_URL : `${DJANGO_BASE_URL}/`;
+const ALLOWED_ORIGIN = new URL(BASE).origin;
 
 function buildTargetUrl(req: Request, pathSegments: string[]) {
   const incoming = new URL(req.url);
-  const base = DJANGO_BASE_URL.endsWith("/") ? DJANGO_BASE_URL : `${DJANGO_BASE_URL}/`;
-  const target = new URL(pathSegments.join("/"), base);
+  const target = new URL(pathSegments.join("/"), BASE);
+  // SSRF guard: `new URL(userPath, base)` silently ignores the base when the
+  // path resolves to an absolute or protocol-relative URL (e.g. "http://evil"
+  // or "//evil"). Refuse anything that escapes the Django origin.
+  if (target.origin !== ALLOWED_ORIGIN) return null;
   // Most Django REST endpoints use trailing slashes; hitting without slash causes redirects.
   if (!target.pathname.endsWith("/")) target.pathname += "/";
   target.search = incoming.search;
@@ -15,6 +20,9 @@ function buildTargetUrl(req: Request, pathSegments: string[]) {
 async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> }) {
   const { path } = await ctx.params;
   const targetUrl = buildTargetUrl(req, path);
+  if (!targetUrl) {
+    return NextResponse.json({ error: "Đường dẫn không hợp lệ." }, { status: 400 });
+  }
 
   const headers = new Headers();
   const incomingHeaders = new Headers(req.headers);
