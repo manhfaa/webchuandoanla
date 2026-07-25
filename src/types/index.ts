@@ -38,8 +38,11 @@ export interface TeamMember {
   id: string;
   name: string;
   role: string;
+  roleEn?: string;
   description: string;
+  descriptionEn?: string;
   responsibilities: string[];
+  responsibilitiesEn?: string[];
   presentationFocus: string[];
   avatar: string;
 }
@@ -47,10 +50,13 @@ export interface TeamMember {
 export interface SupportedPlant {
   id: string;
   name: PlantType;
+  nameEn?: string;
   latinLabel: string;
   insight: string;
+  insightEn?: string;
   image: string;
   imageAlt: string;
+  imageAltEn?: string;
   imageCredit: string;
   imageSourceUrl: string;
 }
@@ -67,11 +73,16 @@ export interface PricingPlan {
   name: string;
   icon: string;
   price: string;
+  priceEn?: string;
   description: string;
+  descriptionEn?: string;
   cta: string;
+  ctaEn?: string;
   highlight?: boolean;
   badge?: string;
+  badgeEn?: string;
   features: string[];
+  featuresEn?: string[];
 }
 
 export interface RecommendationBlock {
@@ -127,7 +138,9 @@ export interface ChatMessage {
 export interface QuickPrompt {
   id: string;
   label: string;
+  labelEn?: string;
   prompt: string;
+  promptEn?: string;
 }
 
 export interface UserProfile {

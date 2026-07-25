@@ -48,7 +48,7 @@ export function PricingCard({
   const isTopCurrent = isCurrent && plan.id === "elite";
   const PlanIcon = planIcons[plan.id as PlanTier] ?? Sprout;
 
-  let actionLabel = plan.cta;
+  let actionLabel = tr(plan.cta, plan.ctaEn ?? plan.cta);
   let actionVariant: "primary" | "secondary" | "outline" | "ghost" = plan.highlight
     ? "secondary"
     : dark
@@ -102,7 +102,7 @@ export function PricingCard({
                   plan.highlight && "bg-sun px-3 py-1 text-[11px] font-bold text-forest shadow-sm",
                 )}
               >
-                {plan.badge}
+                {tr(plan.badge, plan.badgeEn ?? plan.badge)}
               </Badge>
             ) : null}
           </div>
@@ -114,7 +114,7 @@ export function PricingCard({
                 isEmphasized ? "text-on-forest" : "text-ink",
               )}
             >
-              {plan.price}
+              {tr(plan.price, plan.priceEn ?? plan.price)}
             </h3>
             <p
               className={cn(
@@ -122,7 +122,7 @@ export function PricingCard({
                 isEmphasized ? "text-on-forest-muted" : "text-ink-soft",
               )}
             >
-              {plan.description}
+              {tr(plan.description, plan.descriptionEn ?? plan.description)}
             </p>
           </div>
         </div>
@@ -130,7 +130,7 @@ export function PricingCard({
         <div className="mt-5 h-px w-full bg-gradient-to-r from-line via-line/50 to-transparent" />
 
         <div className="mt-5 space-y-3">
-          {plan.features.map((feature) => (
+          {plan.features.map((feature, i) => (
             <div
               key={feature}
               className={cn(
@@ -152,7 +152,7 @@ export function PricingCard({
                   isEmphasized ? "text-on-forest" : "text-ink",
                 )}
               >
-                {feature}
+                {tr(feature, plan.featuresEn?.[i] ?? feature)}
               </p>
             </div>
           ))}

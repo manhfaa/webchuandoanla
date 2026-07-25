@@ -151,7 +151,7 @@ export function PlantsSection() {
                   )}>
                     <Image
                       src={plant.image}
-                      alt={plant.imageAlt}
+                      alt={tr(plant.imageAlt, plant.imageAltEn ?? plant.imageAlt)}
                       fill
                       sizes={isWide
                         ? "(min-width: 1024px) 58vw, (min-width: 640px) 520px, 84vw"
@@ -172,8 +172,8 @@ export function PlantsSection() {
 
                   <div className="flex min-h-0 flex-1 flex-col p-5 sm:p-6">
                     <p className="text-xs font-semibold italic text-leaf-strong">{plant.latinLabel}</p>
-                    <h3 className="mt-1 font-display text-2xl font-extrabold tracking-[-0.03em] text-ink">{plant.name}</h3>
-                    <p className="mt-3 text-sm leading-6 text-ink-soft">{plant.insight}</p>
+                    <h3 className="mt-1 font-display text-2xl font-extrabold tracking-[-0.03em] text-ink">{tr(plant.name, plant.nameEn ?? plant.name)}</h3>
+                    <p className="mt-3 text-sm leading-6 text-ink-soft">{tr(plant.insight, plant.insightEn ?? plant.insight)}</p>
                     <a
                       href={plant.imageSourceUrl}
                       target="_blank"

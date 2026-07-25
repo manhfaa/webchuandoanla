@@ -48,7 +48,7 @@ export function PricingPreviewSection() {
       <div className="grid gap-4 lg:grid-cols-12 lg:items-stretch">
         <Reveal className="lg:col-span-7">
           <article
-            aria-label={tr(`Gói ${featured.name}, ${featured.price}`, `Plan ${featured.name}, ${featured.price}`)}
+            aria-label={tr(`Gói ${featured.name}, ${featured.price}`, `Plan ${featured.name}, ${featured.priceEn ?? featured.price}`)}
             className="living-veins relative flex h-full min-h-[560px] flex-col overflow-hidden rounded-[var(--r-2xl)] border border-line-strong bg-forest p-6 text-on-forest shadow-lg sm:p-8 lg:p-9"
           >
             <div className="pointer-events-none absolute -right-28 -top-32 h-80 w-80 rounded-full border border-on-forest/10" aria-hidden />
@@ -66,25 +66,25 @@ export function PricingPreviewSection() {
               </div>
               {featured.badge ? (
                 <span className="rounded-[var(--r-pill)] border border-on-forest/20 bg-on-forest/10 px-3 py-1.5 text-xs font-semibold text-on-forest">
-                  {featured.badge}
+                  {tr(featured.badge, featured.badgeEn ?? featured.badge)}
                 </span>
               ) : null}
             </header>
 
             <div className="relative mt-10 border-b border-on-forest/15 pb-8">
-              <Price value={featured.price} featured />
+              <Price value={tr(featured.price, featured.priceEn ?? featured.price)} featured />
               <p className="mt-4 max-w-[52ch] text-sm font-medium leading-7 text-on-forest-muted sm:text-base">
-                {featured.description}
+                {tr(featured.description, featured.descriptionEn ?? featured.description)}
               </p>
             </div>
 
             <ul className="relative mt-7 grid gap-x-6 gap-y-3 sm:grid-cols-2">
-              {featured.features.slice(0, 6).map((feature) => (
+              {featured.features.slice(0, 6).map((feature, i) => (
                 <li key={feature} className="flex items-start gap-3 text-sm font-semibold leading-6">
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-leaf text-on-leaf">
                     <Check size={12} strokeWidth={3} aria-hidden />
                   </span>
-                  {feature}
+                  {tr(feature, featured.featuresEn?.[i] ?? feature)}
                 </li>
               ))}
             </ul>
@@ -94,7 +94,7 @@ export function PricingPreviewSection() {
                 href="/login?next=/dashboard/pricing"
                 className={`${buttonVariants({ variant: "primary", size: "lg" })} w-full sm:w-fit`}
               >
-                {featured.cta}
+                {tr(featured.cta, featured.ctaEn ?? featured.cta)}
                 <ArrowRight size={17} aria-hidden />
               </Link>
             </div>
@@ -110,7 +110,7 @@ export function PricingPreviewSection() {
             return (
               <Reveal key={plan.id} delay={0.05 + index * 0.045} className={isElite ? "sm:col-span-2" : undefined}>
                 <article
-                  aria-label={tr(`Gói ${plan.name}, ${plan.price}`, `Plan ${plan.name}, ${plan.price}`)}
+                  aria-label={tr(`Gói ${plan.name}, ${plan.price}`, `Plan ${plan.name}, ${plan.priceEn ?? plan.price}`)}
                   className={cn(
                     "group flex h-full min-h-[260px] flex-col rounded-[var(--r-2xl)] border p-5 shadow-sm transition duration-260 hover:-translate-y-1 hover:border-line-strong hover:shadow-md sm:p-6",
                     isGrow ? "border-line-strong bg-surface-soft" : "border-line bg-surface-raised",
@@ -126,11 +126,11 @@ export function PricingPreviewSection() {
 
                   <div className={cn("mt-6", isElite && "sm:mt-0")}>
                     <h3 className="font-display text-xl font-extrabold tracking-[-0.025em] text-ink">{plan.name}</h3>
-                    <p className="mt-2 text-sm leading-6 text-ink-soft">{plan.description}</p>
+                    <p className="mt-2 text-sm leading-6 text-ink-soft">{tr(plan.description, plan.descriptionEn ?? plan.description)}</p>
                   </div>
 
                   <div className={cn("mt-5", isElite && "sm:mt-0 sm:text-right")}>
-                    <Price value={plan.price} />
+                    <Price value={tr(plan.price, plan.priceEn ?? plan.price)} />
                   </div>
 
                   <Link
@@ -140,7 +140,7 @@ export function PricingPreviewSection() {
                       isElite && "sm:col-start-2 sm:mt-6 sm:pt-0",
                     )}
                   >
-                    {plan.cta}
+                    {tr(plan.cta, plan.ctaEn ?? plan.cta)}
                     <ArrowRight size={16} className="transition duration-180 group-hover:translate-x-1" aria-hidden />
                   </Link>
                 </article>

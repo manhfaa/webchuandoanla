@@ -131,7 +131,7 @@ export function TeamSection() {
                           active ? "text-on-leaf/80" : "text-leaf-strong",
                         )}
                       >
-                        {member.role}
+                        {tr(member.role, member.roleEn ?? member.role)}
                       </span>
                       <span className="mt-1 block font-display text-lg font-extrabold leading-6 tracking-[-0.025em]">
                         {member.name}
@@ -179,23 +179,23 @@ export function TeamSection() {
                     exit={reduceMotion ? undefined : { opacity: 0, y: -10 }}
                     transition={{ duration: 0.48, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    <p className="text-sm font-semibold leading-6 text-leaf-strong">{activeMember.role}</p>
+                    <p className="text-sm font-semibold leading-6 text-leaf-strong">{tr(activeMember.role, activeMember.roleEn ?? activeMember.role)}</p>
                     <h3 className="mt-3 max-w-xl font-display text-3xl font-extrabold tracking-[-0.04em] text-ink sm:text-4xl">
                       {activeMember.name}
                     </h3>
                     <p className="mt-5 max-w-[54ch] text-base leading-8 text-ink-soft">
-                      {activeMember.description}
+                      {tr(activeMember.description, activeMember.descriptionEn ?? activeMember.description)}
                     </p>
 
                     <div className="mt-auto pt-9">
                       <p className="text-sm font-semibold text-ink">{tr("Phụ trách chính", "Main responsibilities")}</p>
                       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                        {activeMember.responsibilities.map((responsibility) => (
+                        {activeMember.responsibilities.map((responsibility, i) => (
                           <div
                             key={responsibility}
                             className="border-t-2 border-leaf pt-3 text-sm font-semibold leading-6 text-ink"
                           >
-                            {responsibility}
+                            {tr(responsibility, activeMember.responsibilitiesEn?.[i] ?? responsibility)}
                           </div>
                         ))}
                       </div>
