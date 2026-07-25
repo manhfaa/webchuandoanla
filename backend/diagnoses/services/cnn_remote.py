@@ -45,11 +45,26 @@ def classify_remote(*, image_data_url: str | None = None, image_file=None, top_k
                 json={"image_data_url": image_data_url, "top_k": top_k},
                 timeout=45,
             )
+    except requests.Timeout as exc:
+        # Almost always a cold start: the inference Space was asleep and did not
+        # finish waking within the timeout. Retrying shortly usually succeeds, so
+        # tell the user that instead of showing a generic failure.
+        raise RemoteCnnUnavailable(
+            "Hệ thống phân tích ảnh đang khởi động. Vui lòng thử lại sau khoảng 30 giây."
+        ) from exc
+    except requests.ConnectionError as exc:
+        raise RemoteCnnUnavailable(
+            "Chưa kết nối được hệ thống phân tích ảnh. Vui lòng thử lại sau ít phút."
+        ) from exc
     except requests.RequestException as exc:
-        raise RemoteCnnUnavailable("Remote CNN request failed.") from exc
+        raise RemoteCnnUnavailable(
+            "Chưa gửi được ảnh đến hệ thống phân tích. Vui lòng thử lại sau ít phút."
+        ) from exc
 
     if response.status_code >= 500:
-        raise RemoteCnnUnavailable("Remote CNN service is unavailable.")
+        raise RemoteCnnUnavailable(
+            "Hệ thống phân tích ảnh đang bận hoặc khởi động lại. Vui lòng thử lại sau ít phút."
+        )
 
     if not response.ok:
         detail = "Remote CNN rejected the request."
