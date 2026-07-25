@@ -267,6 +267,7 @@ Hugging Face behavior:
 - YOLO threshold currently `0.35`.
 - YOLO crop padding ratio currently `0.08`.
 - CNN returns top predictions with plant, disease and confidence.
+- `/detect-leaf` and `/predict` require `Authorization: Bearer <CNN_API_TOKEN>` when the `CNN_API_TOKEN` secret is set on the Space, and stay open when it is not. Set the same value as the Render `CNN_API_TOKEN` env var. `/health` is always public so the keep-warm cron can reach it.
 
 Required behavior:
 

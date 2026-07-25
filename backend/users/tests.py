@@ -5,6 +5,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.management.base import CommandError
+from django.db import IntegrityError, transaction
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
@@ -123,3 +124,23 @@ class TokenRefreshTests(APITestCase):
     def test_garbage_refresh_token_is_rejected(self):
         response = self.client.post(reverse("token-refresh"), {"refresh": "not-a-token"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class EmailUniquenessTests(TestCase):
+    """Email is the login identifier, so the database must reject duplicates."""
+
+    def test_duplicate_email_is_rejected_case_insensitively(self):
+        get_user_model().objects.create_user(username="first", email="owner@example.com", password=PASSWORD)
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                get_user_model().objects.create_user(
+                    username="second", email="OWNER@example.com", password=PASSWORD
+                )
+
+    def test_blank_emails_do_not_collide(self):
+        # Accounts created without an email must still be allowed side by side.
+        get_user_model().objects.create_user(username="noemail1", email="", password=PASSWORD)
+        get_user_model().objects.create_user(username="noemail2", email="", password=PASSWORD)
+
+        self.assertEqual(get_user_model().objects.filter(email="").count(), 2)

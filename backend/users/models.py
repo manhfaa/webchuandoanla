@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models.functions import Lower
 
 
 class User(AbstractUser):
@@ -21,6 +22,20 @@ class User(AbstractUser):
     )
     plan_expires_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta(AbstractUser.Meta):
+        constraints = [
+            # Email is the login identifier but AbstractUser does not make it
+            # unique, so only application code prevented duplicates. Enforce it
+            # in the database too. Lower() matches how login/registration
+            # normalise the address, and accounts with no email are excluded so
+            # the constraint cannot collide on empty strings.
+            models.UniqueConstraint(
+                Lower("email"),
+                condition=~models.Q(email=""),
+                name="unique_user_email_ci",
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.username
