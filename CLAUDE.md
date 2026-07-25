@@ -423,7 +423,22 @@ SEPAY_PAYMENT_PREFIX
 SEPAY_WEBHOOK_MAX_AGE_SECONDS
 SEPAY_ORDER_TTL_MINUTES
 SEPAY_SUBSCRIPTION_DAYS
+EMAIL_HOST
+EMAIL_PORT
+EMAIL_HOST_USER
+EMAIL_HOST_PASSWORD
+DEFAULT_FROM_EMAIL
 ```
+
+Mail: the password-reset flow is the only sender. `EMAIL_HOST` decides the
+backend — set it and Django uses SMTP, leave it empty and the message goes to
+the server log instead (usable in development, invisible to a real user in
+production, and the startup log warns when `DEBUG=False`). `EMAIL_PORT` 587
+selects STARTTLS and 465 selects implicit TLS automatically; only set
+`EMAIL_USE_TLS`/`EMAIL_USE_SSL` when a provider needs something else, and never
+both. `DEFAULT_FROM_EMAIL` must be an address the provider has authorised.
+The reset link is built from `FRONTEND_ORIGIN`, so that must be the public site
+URL in production or the email will point at localhost.
 
 Security warning:
 

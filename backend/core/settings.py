@@ -1,3 +1,4 @@
+import logging
 import os
 import secrets
 from datetime import timedelta
@@ -119,6 +120,46 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://127.0.0.1:3000")
 frontend_origin = FRONTEND_ORIGIN
+
+# --- Outgoing mail (password reset) ---------------------------------------
+# Django's default EMAIL_HOST is "localhost", where nothing is listening, so an
+# unconfigured deployment would attempt a real SMTP connection and fail. Treat
+# "no EMAIL_HOST" as "no provider" and print to the console instead: the reset
+# flow stays exercisable in development, and production surfaces the gap in the
+# startup log rather than silently swallowing every message.
+EMAIL_HOST = os.getenv("EMAIL_HOST", "").strip()
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "").strip()
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+
+# 465 is implicit TLS, 587 is STARTTLS. Django rejects both flags at once, so
+# derive them from the port unless the provider needs something unusual.
+_email_use_ssl_raw = os.getenv("EMAIL_USE_SSL", "").strip().lower()
+_email_use_tls_raw = os.getenv("EMAIL_USE_TLS", "").strip().lower()
+if _email_use_ssl_raw or _email_use_tls_raw:
+    EMAIL_USE_SSL = _email_use_ssl_raw == "true"
+    EMAIL_USE_TLS = _email_use_tls_raw == "true"
+else:
+    EMAIL_USE_SSL = EMAIL_PORT == 465
+    EMAIL_USE_TLS = EMAIL_PORT != 465
+if EMAIL_USE_SSL and EMAIL_USE_TLS:
+    raise RuntimeError("EMAIL_USE_SSL and EMAIL_USE_TLS cannot both be true.")
+
+# Without a timeout a stalled provider holds the request until the gunicorn
+# worker is killed, which on a single-worker free tier stalls the whole API.
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Agromind AI <no-reply@agromindai.vercel.app>")
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+if EMAIL_HOST:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    if not DEBUG:
+        logging.getLogger(__name__).warning(
+            "EMAIL_HOST chưa được cấu hình: liên kết đặt lại mật khẩu chỉ hiện trong log "
+            "máy chủ, người dùng sẽ không nhận được email."
+        )
 
 # Allow comma-separated origins for staging/prod
 cors_origins_raw = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()

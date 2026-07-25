@@ -2,29 +2,11 @@ import logging
 from urllib.parse import quote
 
 from django.conf import settings
-from django.core.mail import EmailMessage, get_connection
+from django.core.mail import EmailMessage
 
 logger = logging.getLogger(__name__)
 
 RESET_SUBJECT = "Đặt lại mật khẩu Agromind AI"
-
-
-def _has_smtp_provider() -> bool:
-    """Django defaults EMAIL_HOST to 'localhost', where nothing is listening.
-
-    Sending through that raises ConnectionRefusedError and would turn a reset
-    request into a 500, so treat "no host configured" as "no provider".
-    """
-    host = (getattr(settings, "EMAIL_HOST", "") or "").strip()
-    return bool(host) and host != "localhost"
-
-
-def _connection():
-    if _has_smtp_provider():
-        return get_connection()
-    # Nothing is configured yet: print the message to the server console so the
-    # flow stays exercisable in development instead of failing silently.
-    return get_connection("django.core.mail.backends.console.EmailBackend")
 
 
 def build_password_reset_url(raw_token: str) -> str:
@@ -50,12 +32,13 @@ def send_password_reset_email(user, raw_token: str) -> bool:
     )
 
     try:
+        # settings.EMAIL_BACKEND is the single authority: SMTP when EMAIL_HOST is
+        # configured, console otherwise.
         EmailMessage(
             subject=RESET_SUBJECT,
             body=body,
             from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
             to=[user.email],
-            connection=_connection(),
         ).send(fail_silently=False)
         return True
     except Exception:
