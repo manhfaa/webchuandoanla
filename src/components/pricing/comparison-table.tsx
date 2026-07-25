@@ -33,8 +33,9 @@ const rows: Row[] = [
 ];
 
 function Cell({ value }: { value: CellValue }) {
-  if (value === false) return <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface-soft text-ink-soft"><Minus size={16} aria-hidden /></span>;
-  if (value === true) return <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface-soft text-leaf-strong"><Check size={16} aria-hidden /></span>;
+  const tr = useTr();
+  if (value === false) return <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface-soft text-ink-soft"><Minus size={16} aria-hidden /><span className="sr-only">{tr("Không có", "Not included")}</span></span>;
+  if (value === true) return <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface-soft text-leaf-strong"><Check size={16} aria-hidden /><span className="sr-only">{tr("Có", "Included")}</span></span>;
   return <span className="text-xs font-semibold text-ink-soft">{value}</span>;
 }
 
@@ -46,13 +47,37 @@ export function ComparisonTable() {
     <section>
       <div className="mb-4"><p className="text-overline text-leaf-strong">{tr("So sánh chi tiết", "Detailed comparison")}</p><h2 className="mt-2 text-h2 font-bold text-ink">{tr("Quyền lợi theo từng gói", "Benefits by plan")}</h2></div>
       <Card variant="raised" padding="none" className="overflow-x-auto rounded-xl">
-        <div className="min-w-[820px]">
-          <div className="grid grid-cols-[1.5fr_repeat(4,minmax(0,1fr))] bg-surface-soft px-6 py-4 text-xs font-bold text-ink">
-            <div>{tr("Tính năng", "Feature")}</div>
-            {headers.map(({ name, icon: Icon }) => <div key={name} className="flex items-center justify-center gap-2"><Icon size={15} className="text-leaf-strong" aria-hidden />{name}</div>)}
-          </div>
-          {rows.map((row) => <div key={row.feature} className="grid grid-cols-[1.5fr_repeat(4,minmax(0,1fr))] items-center gap-2 border-t border-line px-6 py-4 text-sm"><div className="font-semibold text-ink">{tr(row.feature, row.featureEn)}</div><div className="flex justify-center"><Cell value={resolve(row.seed, row.seedEn)} /></div><div className="flex justify-center"><Cell value={resolve(row.grow, row.growEn)} /></div><div className="flex justify-center"><Cell value={resolve(row.bloom, row.bloomEn)} /></div><div className="flex justify-center"><Cell value={resolve(row.elite, row.eliteEn)} /></div></div>)}
-        </div>
+        <table className="w-full min-w-[820px] table-fixed border-collapse">
+          <caption className="sr-only">{tr("So sánh quyền lợi của các gói Seed, Grow, Bloom và Elite", "Comparison of benefits across the Seed, Grow, Bloom and Elite plans")}</caption>
+          <colgroup>
+            <col className="w-[27.3%]" />
+            <col className="w-[18.1%]" />
+            <col className="w-[18.1%]" />
+            <col className="w-[18.1%]" />
+            <col className="w-[18.1%]" />
+          </colgroup>
+          <thead>
+            <tr className="bg-surface-soft text-xs font-bold text-ink">
+              <th scope="col" className="px-6 py-4 text-left font-bold">{tr("Tính năng", "Feature")}</th>
+              {headers.map(({ name, icon: Icon }) => (
+                <th key={name} scope="col" className="px-2 py-4 font-bold last:pr-6">
+                  <span className="flex items-center justify-center gap-2"><Icon size={15} className="text-leaf-strong" aria-hidden />{name}</span>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.feature} className="border-t border-line text-sm">
+                <th scope="row" className="px-6 py-4 text-left text-sm font-semibold text-ink">{tr(row.feature, row.featureEn)}</th>
+                <td className="px-2 py-4 text-center align-middle"><Cell value={resolve(row.seed, row.seedEn)} /></td>
+                <td className="px-2 py-4 text-center align-middle"><Cell value={resolve(row.grow, row.growEn)} /></td>
+                <td className="px-2 py-4 text-center align-middle"><Cell value={resolve(row.bloom, row.bloomEn)} /></td>
+                <td className="px-2 py-4 pr-6 text-center align-middle"><Cell value={resolve(row.elite, row.eliteEn)} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </Card>
     </section>
   );

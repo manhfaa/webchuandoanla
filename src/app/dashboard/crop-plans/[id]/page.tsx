@@ -118,9 +118,9 @@ export default function CropPlanDetailPage() {
             <p className="text-overline text-leaf-strong">
               {plan.crop.name} | {plan.location.name}
             </p>
-            <h1 className="mt-3 font-display text-3xl font-bold tracking-[-0.035em] text-ink sm:text-4xl">
+            <h2 className="mt-3 font-display text-3xl font-bold tracking-[-0.035em] text-ink sm:text-4xl">
               {plan.title}
-            </h1>
+            </h2>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-ink-soft">{plan.summary}</p>
           </div>
           <div className="flex flex-wrap gap-3">

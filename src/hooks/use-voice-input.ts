@@ -15,9 +15,17 @@ type SpeechRecognitionLike = {
 
 export function useVoiceInput({ lang = "vi-VN", onTranscript }: { lang?: string; onTranscript?: (value: string) => void } = {}) {
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const onTranscriptRef = useRef(onTranscript);
   const [supported, setSupported] = useState(false);
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
+
+  // Keep the latest callback in a ref so the setup effect below never has to
+  // re-run (and tear down a live SpeechRecognition instance) just because the
+  // caller passed a new inline function on this render.
+  useEffect(() => {
+    onTranscriptRef.current = onTranscript;
+  }, [onTranscript]);
 
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -36,15 +44,21 @@ export function useVoiceInput({ lang = "vi-VN", onTranscript }: { lang?: string;
         .trim();
       setTranscript(text);
       if (event.results?.[event.results.length - 1]?.isFinal && text) {
-        onTranscript?.(text);
+        onTranscriptRef.current?.(text);
       }
     };
     recognition.onend = () => setListening(false);
     recognition.onerror = () => setListening(false);
     recognitionRef.current = recognition;
     setSupported(true);
-    return () => recognition.stop();
-  }, [lang, onTranscript]);
+    return () => {
+      recognition.onresult = null;
+      recognition.onend = null;
+      recognition.onerror = null;
+      recognition.stop();
+      if (recognitionRef.current === recognition) recognitionRef.current = null;
+    };
+  }, [lang]);
 
   const start = useCallback(() => {
     if (!recognitionRef.current) return;

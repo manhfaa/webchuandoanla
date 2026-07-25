@@ -56,7 +56,7 @@ export default function CropPlansPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-overline text-leaf-strong">{tr("Kế hoạch canh tác", "Crop planning")}</p>
-            <h1 className="mt-2 text-h2 font-bold text-ink sm:text-h1">{tr("Kế hoạch trồng cây của bạn", "Your crop plans")}</h1>
+            <h2 className="mt-2 text-h2 font-bold text-ink sm:text-h1">{tr("Kế hoạch trồng cây của bạn", "Your crop plans")}</h2>
             <p className="mt-3 max-w-3xl text-body text-ink-soft sm:text-body-lg">
               {tr("Xem các vụ đang chạy, việc cần làm hôm nay và mở nhanh timeline chăm cây theo địa điểm.", "See active crops, today's tasks, and quickly open the care timeline by location.")}
             </p>

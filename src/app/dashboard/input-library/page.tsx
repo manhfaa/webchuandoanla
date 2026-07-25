@@ -13,56 +13,33 @@ import {
   type AgriculturalInput,
   type NutritionSymptom,
 } from "@/lib/farmops-client";
+import { useTr } from "@/lib/use-tr";
 import { useLanguageStore } from "@/store/language-store";
 
-const copy = {
-  vi: {
-    eyebrow: "Thư viện vật tư",
-    title: "Thuốc, phân bón và dinh dưỡng cây trồng",
-    intro: "Tra cứu theo cây, bệnh, hoạt chất hoặc loại vật tư. Gợi ý này chỉ là tham khảo, cần đọc nhãn và tuân thủ quy định địa phương.",
-    search: "Tìm kiếm",
-    crop: "Cây trồng",
-    disease: "Bệnh/triệu chứng",
-    category: "Loại vật tư",
-    all: "Tất cả",
-    pesticide: "Thuốc BVTV",
-    fertilizer: "Phân bón",
-    nutrition: "Dinh dưỡng",
-    symptoms: "Triệu chứng thiếu dinh dưỡng",
-    safety: "Lưu ý an toàn",
-  },
-  en: {
-    eyebrow: "Input library",
-    title: "Pesticides, fertilizers and crop nutrition",
-    intro: "Search by crop, disease, active ingredient or input type. Suggestions are reference only; read labels and follow local rules.",
-    search: "Search",
-    crop: "Crop",
-    disease: "Disease/symptom",
-    category: "Input type",
-    all: "All",
-    pesticide: "Pesticide",
-    fertilizer: "Fertilizer",
-    nutrition: "Nutrition",
-    symptoms: "Nutrition deficiency symptoms",
-    safety: "Safety notes",
-  },
-};
+type Tr = (vi: string, en: string) => string;
 
-function categoryLabel(category: string, language: "vi" | "en") {
-  const labels = copy[language];
-  if (category === "pesticide") return labels.pesticide;
-  if (category === "fertilizer") return labels.fertilizer;
-  if (category === "nutrition") return labels.nutrition;
+/**
+ * Same bilingual resolution as `useTr`, but readable outside of render
+ * (async callbacks) so memoised handlers do not need `tr` as a dependency.
+ */
+function trOffRender(vi: string, en: string) {
+  return useLanguageStore.getState().language === "en" ? en : vi;
+}
+
+function categoryLabel(category: string, tr: Tr) {
+  if (category === "pesticide") return tr("Thuốc BVTV", "Pesticide");
+  if (category === "fertilizer") return tr("Phân bón", "Fertilizer");
+  if (category === "nutrition") return tr("Dinh dưỡng", "Nutrition");
   return category;
 }
 
-function InputCard({ item, language }: { item: AgriculturalInput; language: "vi" | "en" }) {
+function InputCard({ item, tr }: { item: AgriculturalInput; tr: Tr }) {
   return (
     <Card variant={item.category === "pesticide" ? "warning" : "default"} padding="lg" className="rounded-xl shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Badge variant={item.category === "pesticide" ? "warning" : "success"}>
-            {categoryLabel(item.category, language)}
+            {categoryLabel(item.category, tr)}
           </Badge>
           <h3 className="mt-3 text-h3 font-bold text-ink">{item.name}</h3>
           <p className="mt-1 text-body-sm text-ink-soft">{item.group || item.active_ingredient}</p>
@@ -109,8 +86,7 @@ function SymptomCard({ item }: { item: NutritionSymptom }) {
 }
 
 export default function InputLibraryPage() {
-  const { language } = useLanguageStore();
-  const text = copy[language];
+  const tr = useTr();
   const [query, setQuery] = useState("");
   const [crop, setCrop] = useState("");
   const [disease, setDisease] = useState("");
@@ -141,7 +117,11 @@ export default function InputLibraryPage() {
       setItems(libraryData);
       setSymptoms(symptomData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không tải được thư viện vật tư.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : trOffRender("Không tải được thư viện vật tư.", "Could not load the input library."),
+      );
     } finally {
       setLoading(false);
     }
@@ -164,39 +144,64 @@ export default function InputLibraryPage() {
   return (
     <div className="fl-stagger mx-auto max-w-[1380px] space-y-6">
       <Card variant="dark" padding="lg" className="field-contours rounded-xl">
-        <p className="text-overline text-on-forest-muted">{text.eyebrow}</p>
-        <h2 className="mt-2 text-h2 font-bold text-on-forest">{text.title}</h2>
-        <p className="mt-3 max-w-3xl text-body-sm leading-relaxed text-on-forest-muted">{text.intro}</p>
+        <p className="text-overline text-on-forest-muted">{tr("Thư viện vật tư", "Input library")}</p>
+        <h2 className="mt-2 text-h2 font-bold text-on-forest">
+          {tr("Thuốc, phân bón và dinh dưỡng cây trồng", "Pesticides, fertilizers and crop nutrition")}
+        </h2>
+        <p className="mt-3 max-w-3xl text-body-sm leading-relaxed text-on-forest-muted">
+          {tr(
+            "Tra cứu theo cây, bệnh, hoạt chất hoặc loại vật tư. Gợi ý này chỉ là tham khảo, cần đọc nhãn và tuân thủ quy định địa phương.",
+            "Search by crop, disease, active ingredient or input type. Suggestions are reference only; read labels and follow local rules.",
+          )}
+        </p>
       </Card>
 
       <Card variant="raised" padding="lg" className="rounded-xl">
         <form className="grid gap-4 xl:grid-cols-[1fr_0.8fr_0.8fr_0.7fr_auto]" onSubmit={handleSubmit}>
-          <Input label={text.search} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Mancozeb, đốm lá, kali..." />
-          <Input label={text.crop} value={crop} onChange={(e) => setCrop(e.target.value)} placeholder="Cà chua, táo, lúa..." />
-          <Input label={text.disease} value={disease} onChange={(e) => setDisease(e.target.value)} placeholder="Đốm lá, cháy lá..." />
+          <Input
+            label={tr("Tìm kiếm", "Search")}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={tr("Mancozeb, đốm lá, kali...", "Mancozeb, leaf spot, potassium...")}
+          />
+          <Input
+            label={tr("Cây trồng", "Crop")}
+            value={crop}
+            onChange={(e) => setCrop(e.target.value)}
+            placeholder={tr("Cà chua, táo, lúa...", "Tomato, apple, rice...")}
+          />
+          <Input
+            label={tr("Bệnh/triệu chứng", "Disease/symptom")}
+            value={disease}
+            onChange={(e) => setDisease(e.target.value)}
+            placeholder={tr("Đốm lá, cháy lá...", "Leaf spot, leaf blight...")}
+          />
           <label className="space-y-1.5">
-            <span className="text-body-sm font-semibold text-ink">{text.category}</span>
+            <span className="text-body-sm font-semibold text-ink">{tr("Loại vật tư", "Input type")}</span>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="h-11 w-full rounded-md border border-line bg-surface px-3.5 text-body text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
             >
-              <option value="">{text.all}</option>
-              <option value="pesticide">{text.pesticide}</option>
-              <option value="fertilizer">{text.fertilizer}</option>
-              <option value="nutrition">{text.nutrition}</option>
+              <option value="">{tr("Tất cả", "All")}</option>
+              <option value="pesticide">{tr("Thuốc BVTV", "Pesticide")}</option>
+              <option value="fertilizer">{tr("Phân bón", "Fertilizer")}</option>
+              <option value="nutrition">{tr("Dinh dưỡng", "Nutrition")}</option>
             </select>
           </label>
           <div className="flex items-end">
             <Button type="submit" loading={loading}>
               <Search strokeWidth={1.75} className="h-4 w-4" />
-              {text.search}
+              {tr("Tìm kiếm", "Search")}
             </Button>
           </div>
         </form>
         {error ? (
           <p className="mt-4 text-body-sm text-danger-ink">
-            Không tìm thấy vật tư phù hợp. Thử từ khoá khác hoặc kiểm tra kết nối.
+            {tr(
+              "Không tìm thấy vật tư phù hợp. Thử từ khoá khác hoặc kiểm tra kết nối.",
+              "No matching input found. Try another keyword or check your connection.",
+            )}
           </p>
         ) : null}
       </Card>
@@ -204,16 +209,20 @@ export default function InputLibraryPage() {
       <div className="grid gap-6 xl:grid-cols-[1fr_0.75fr]">
         <div className="grid gap-4 lg:grid-cols-2">
           {items.map((item) => (
-            <InputCard key={item.id} item={item} language={language} />
+            <InputCard key={item.id} item={item} tr={tr} />
           ))}
           {!items.length && !loading && !error ? (
             <Card variant="soft" padding="lg" className="rounded-xl shadow-sm">
-              <p className="text-body-sm text-ink-soft">Chưa có vật tư phù hợp với bộ lọc hiện tại.</p>
+              <p className="text-body-sm text-ink-soft">
+                {tr("Chưa có vật tư phù hợp với bộ lọc hiện tại.", "No input matches the current filters yet.")}
+              </p>
             </Card>
           ) : null}
           {!items.length && !loading && error ? (
             <Card variant="soft" padding="lg" className="rounded-xl shadow-sm">
-              <p className="text-body-sm text-ink-soft">Không tìm thấy vật tư phù hợp. Thử từ khoá khác.</p>
+              <p className="text-body-sm text-ink-soft">
+                {tr("Không tìm thấy vật tư phù hợp. Thử từ khoá khác.", "No matching input found. Try another keyword.")}
+              </p>
             </Card>
           ) : null}
         </div>
@@ -221,18 +230,25 @@ export default function InputLibraryPage() {
         <Card variant="soft" padding="lg" className="rounded-xl">
           <div className="flex items-center gap-2">
             <ShieldAlert strokeWidth={1.75} className="h-5 w-5 text-warning-ink" />
-            <h3 className="text-h3 font-bold text-ink">{text.symptoms}</h3>
+            <h3 className="text-h3 font-bold text-ink">
+              {tr("Triệu chứng thiếu dinh dưỡng", "Nutrition deficiency symptoms")}
+            </h3>
           </div>
           <div className="mt-5 space-y-3">
             {symptoms.map((item) => (
               <SymptomCard key={item.id} item={item} />
             ))}
             {!symptoms.length && !loading ? (
-              <p className="text-body-sm text-ink-soft">Chưa có triệu chứng phù hợp.</p>
+              <p className="text-body-sm text-ink-soft">
+                {tr("Chưa có triệu chứng phù hợp.", "No matching symptom yet.")}
+              </p>
             ) : null}
           </div>
           <p className="mt-5 border-t border-line pt-4 text-caption leading-relaxed text-ink-soft">
-            {text.safety}: không pha trộn vật tư khi chưa kiểm tra nhãn, không phun khi gió mạnh hoặc sắp mưa, dùng bảo hộ và tuân thủ thời gian cách ly.
+            {tr(
+              "Lưu ý an toàn: không pha trộn vật tư khi chưa kiểm tra nhãn, không phun khi gió mạnh hoặc sắp mưa, dùng bảo hộ và tuân thủ thời gian cách ly.",
+              "Safety notes: do not mix inputs before checking the labels, do not spray in strong wind or before rain, wear protective gear and respect the pre-harvest interval.",
+            )}
           </p>
         </Card>
       </div>

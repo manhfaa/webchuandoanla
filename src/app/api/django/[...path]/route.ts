@@ -17,6 +17,26 @@ function buildTargetUrl(req: Request, pathSegments: string[]) {
   return target;
 }
 
+const TIMEOUT_CODES = new Set([
+  "ETIMEDOUT",
+  "UND_ERR_CONNECT_TIMEOUT",
+  "UND_ERR_HEADERS_TIMEOUT",
+  "UND_ERR_BODY_TIMEOUT",
+]);
+
+function isTimeoutError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const candidate = error as { name?: unknown; code?: unknown; cause?: unknown };
+  if (candidate.name === "TimeoutError" || candidate.name === "HeadersTimeoutError") return true;
+  if (typeof candidate.code === "string" && TIMEOUT_CODES.has(candidate.code)) return true;
+  const cause = candidate.cause as { name?: unknown; code?: unknown } | undefined;
+  if (cause && typeof cause === "object") {
+    if (cause.name === "TimeoutError") return true;
+    if (typeof cause.code === "string" && TIMEOUT_CODES.has(cause.code)) return true;
+  }
+  return false;
+}
+
 async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> }) {
   const { path } = await ctx.params;
   const targetUrl = buildTargetUrl(req, path);
@@ -35,13 +55,28 @@ async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> })
   const method = req.method.toUpperCase();
   const hasBody = !["GET", "HEAD"].includes(method);
 
-  const res = await fetch(targetUrl, {
-    method,
-    headers,
-    body: hasBody ? await req.arrayBuffer() : undefined,
-    redirect: "manual",
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(targetUrl, {
+      method,
+      headers,
+      body: hasBody ? await req.arrayBuffer() : undefined,
+      redirect: "manual",
+      cache: "no-store",
+    });
+  } catch (error) {
+    // The upstream Django service can be asleep (Render free tier) or simply
+    // unreachable. Answer with a clear message instead of an opaque 500.
+    const timedOut = isTimeoutError(error);
+    return NextResponse.json(
+      {
+        error: timedOut
+          ? "Máy chủ phản hồi quá lâu. Vui lòng thử lại sau ít phút."
+          : "Chưa kết nối được máy chủ. Vui lòng thử lại sau ít phút.",
+      },
+      { status: timedOut ? 504 : 502 },
+    );
+  }
 
   const resHeaders = new Headers(res.headers);
   resHeaders.delete("set-cookie"); // keep auth purely token-based in frontend

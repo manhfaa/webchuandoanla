@@ -59,6 +59,37 @@ type OrderStatusData = {
   current_plan: string;
 };
 
+const ORDER_STATUSES: readonly OrderStatus[] = ["pending", "underpaid", "paid", "overpaid", "expired", "cancelled", "review"];
+
+function isOrderStatus(value: unknown): value is OrderStatus {
+  return typeof value === "string" && (ORDER_STATUSES as readonly string[]).includes(value);
+}
+
+/**
+ * The poll response drives plan activation, so never trust an unchecked cast:
+ * a malformed body must be ignored rather than treated as a valid status.
+ */
+function parseOrderStatusData(payload: unknown): OrderStatusData | null {
+  if (typeof payload !== "object" || payload === null) return null;
+  const root = payload as { order?: unknown; current_plan?: unknown };
+  if (typeof root.order !== "object" || root.order === null) return null;
+  if (typeof root.current_plan !== "string") return null;
+
+  const order = root.order as { status?: unknown; amount_received?: unknown; remaining_amount?: unknown };
+  if (!isOrderStatus(order.status)) return null;
+  if (typeof order.amount_received !== "number" || !Number.isFinite(order.amount_received)) return null;
+  if (typeof order.remaining_amount !== "number" || !Number.isFinite(order.remaining_amount)) return null;
+
+  return {
+    order: {
+      status: order.status,
+      amount_received: order.amount_received,
+      remaining_amount: order.remaining_amount,
+    },
+    current_plan: root.current_plan,
+  };
+}
+
 const currencyFormatter = new Intl.NumberFormat("vi-VN");
 
 function formatCurrency(value: number) {
@@ -312,7 +343,15 @@ export default function CheckoutPlanPage() {
           return;
         }
 
-        const data = await response.json() as OrderStatusData;
+        const data = parseOrderStatusData(await response.json().catch(() => null));
+        if (!data) {
+          if (Date.now() - pollingStartedAtRef.current > 10 * 60 * 1000) {
+            stopPolling();
+            setPaymentMessage(tr("Chưa đọc được trạng thái giao dịch. Vui lòng quay lại kiểm tra đơn này sau.", "Could not read the transaction status. Please come back to check this order later."));
+          }
+          return;
+        }
+
         setOrderData((current) => current ? {
           ...current,
           order: {
@@ -377,7 +416,7 @@ export default function CheckoutPlanPage() {
           <span className="absolute inset-0 animate-ping rounded-full border border-leaf/25 motion-reduce:animate-none" aria-hidden />
         </span>
         <StatusBadge status="healthy" label={tr("Gói đã được kích hoạt", "Plan activated")} className="mt-6" />
-        <h1 className="mt-4 font-display text-3xl font-bold text-ink sm:text-4xl">{tr("Thanh toán thành công", "Payment successful")}</h1>
+        <h2 className="mt-4 font-display text-3xl font-bold text-ink sm:text-4xl">{tr("Thanh toán thành công", "Payment successful")}</h2>
         <p className="mt-3 max-w-lg text-sm leading-7 text-ink-soft">
           {tr("Tài khoản của bạn đã được nâng cấp lên gói", "Your account has been upgraded to the")} <strong className="text-ink">{planInfo.name}</strong> {tr("Bạn có thể sử dụng quyền lợi mới ngay bây giờ.", "plan. You can use your new benefits right now.")}
         </p>
@@ -423,9 +462,9 @@ export default function CheckoutPlanPage() {
           <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
             <div>
               <p className="text-overline text-on-forest-muted">{tr("Xác nhận nâng cấp", "Confirm upgrade")}</p>
-              <h1 className="mt-3 flex items-center gap-3 font-display text-3xl font-bold text-on-forest sm:text-4xl">
+              <h2 className="mt-3 flex items-center gap-3 font-display text-3xl font-bold text-on-forest sm:text-4xl">
                 <PlanIcon size={30} aria-hidden /> {tr("Gói", "Plan")} {planInfo.name}
-              </h1>
+              </h2>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-on-forest-muted">
                 {tr("Kiểm tra quyền lợi và số tiền trước khi tạo mã QR chuyển khoản riêng cho tài khoản của bạn.", "Review the benefits and amount before generating a QR transfer code for your account.")}
               </p>
@@ -492,7 +531,7 @@ export default function CheckoutPlanPage() {
         <div className="grid gap-6 lg:grid-cols-[1fr_440px] lg:items-center">
           <div>
             <p className="text-overline text-on-forest-muted">{tr("Thanh toán gói", "Pay for plan")} {planInfo.name}</p>
-            <h1 className="mt-3 font-display text-3xl font-bold text-on-forest sm:text-4xl">{tr("Hoàn tất chuyển khoản để kích hoạt gói", "Complete the transfer to activate your plan")}</h1>
+            <h2 className="mt-3 font-display text-3xl font-bold text-on-forest sm:text-4xl">{tr("Hoàn tất chuyển khoản để kích hoạt gói", "Complete the transfer to activate your plan")}</h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-on-forest-muted">
               {tr("Quét QR hoặc nhập đúng thông tin bên dưới. Gói được kích hoạt tự động khi giao dịch được xác nhận.", "Scan the QR code or enter the exact details below. The plan is activated automatically once the transaction is confirmed.")}
             </p>
