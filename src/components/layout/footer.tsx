@@ -50,9 +50,13 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col gap-2 border-t border-on-forest/10 pt-5 text-xs text-on-forest-muted sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col gap-3 border-t border-on-forest/10 pt-5 text-xs text-on-forest-muted sm:flex-row sm:items-center sm:justify-between">
           <span>© 2026 Agromind AI.</span>
-          <span>{tr("Trợ lý sức khỏe cây trồng dành cho người Việt.", "Plant health assistant for Vietnamese growers.")}</span>
+          <div className="flex flex-wrap items-center gap-4">
+            <Link href="/terms" className="transition hover:text-on-forest">{tr("Điều khoản sử dụng", "Terms of Service")}</Link>
+            <Link href="/privacy" className="transition hover:text-on-forest">{tr("Chính sách quyền riêng tư", "Privacy Policy")}</Link>
+            <span>{tr("Trợ lý sức khỏe cây trồng dành cho người Việt.", "Plant health assistant for Vietnamese growers.")}</span>
+          </div>
         </div>
       </div>
     </footer>

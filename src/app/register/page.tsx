@@ -19,6 +19,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -28,9 +29,17 @@ export default function RegisterPage() {
   async function handleRegister(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLocalError(null);
-    if (!email.trim()) return setLocalError("Vui lòng nhập email.");
-    if (password.length < 8) return setLocalError("Mật khẩu phải có ít nhất 8 ký tự.");
-    if (password !== confirmPassword) return setLocalError("Xác nhận mật khẩu chưa khớp.");
+    if (!email.trim()) return setLocalError(tr("Vui lòng nhập email.", "Please enter your email."));
+    if (password.length < 8) return setLocalError(tr("Mật khẩu phải có ít nhất 8 ký tự.", "Password must be at least 8 characters."));
+    if (password !== confirmPassword) return setLocalError(tr("Xác nhận mật khẩu chưa khớp.", "Password confirmation does not match."));
+    if (!acceptedTerms) {
+      return setLocalError(
+        tr(
+          "Bạn cần đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư để tạo tài khoản.",
+          "You must agree to the Terms of Service and Privacy Policy to create an account.",
+        ),
+      );
+    }
 
     try {
       await register({ email, password });
@@ -90,13 +99,41 @@ export default function RegisterPage() {
           required
         />
 
+        <label className="flex cursor-pointer items-start gap-3 rounded-[var(--r-md)] border border-line bg-surface-soft p-4">
+          <input
+            type="checkbox"
+            checked={acceptedTerms}
+            onChange={(event) => {
+              clearMessages();
+              setAcceptedTerms(event.target.checked);
+            }}
+            aria-describedby="terms-consent-text"
+            className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[var(--leaf)]"
+            required
+          />
+          <span id="terms-consent-text" className="text-xs leading-6 text-ink-soft sm:text-sm">
+            {tr("Tôi đã đọc và đồng ý với ", "I have read and agree to the ")}
+            <Link href="/terms" target="_blank" className="font-semibold text-leaf-strong underline underline-offset-2 hover:text-leaf">
+              {tr("Điều khoản sử dụng", "Terms of Service")}
+            </Link>
+            {tr(" và ", " and ")}
+            <Link href="/privacy" target="_blank" className="font-semibold text-leaf-strong underline underline-offset-2 hover:text-leaf">
+              {tr("Chính sách quyền riêng tư", "Privacy Policy")}
+            </Link>
+            {tr(
+              ". Tôi hiểu kết quả từ Agromind AI chỉ mang tính tham khảo, không thay thế ý kiến chuyên gia nông nghiệp.",
+              ". I understand that Agromind AI results are advisory only and do not replace advice from an agriculture expert.",
+            )}
+          </span>
+        </label>
+
         {localError || error ? (
           <div role="alert" className="rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-sm font-medium text-danger-ink">
             {localError || error}
           </div>
         ) : null}
 
-        <Button size="lg" loading={status === "loading"} type="submit" className="w-full">
+        <Button size="lg" loading={status === "loading"} disabled={!acceptedTerms} type="submit" className="w-full">
           <UserRoundPlus size={17} aria-hidden /> {tr("Tạo tài khoản", "Create account")} <ArrowRight size={17} aria-hidden />
         </Button>
 
