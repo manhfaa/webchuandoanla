@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import base64
 import binascii
+import hmac
+import os
 from functools import lru_cache
 from io import BytesIO
 from pathlib import Path
@@ -251,8 +253,15 @@ app = FastAPI(title="Agromind CNN API")
 
 @app.on_event("startup")
 def warm_model() -> None:
-    # Free CPU Space memory is tight. Load and cache models on first request.
-    return None
+    # Load and cache the weights at boot so the first real request does not pay
+    # the model-load cost on top of inference. Failures are swallowed on purpose:
+    # the lru_cache loaders still run lazily per request, so a warm-up problem
+    # must not take the whole Space down.
+    for loader in (load_bundle, load_yolo_model):
+        try:
+            loader()
+        except Exception as exc:  # noqa: BLE001 - warm-up is best effort
+            print(f"[warm_model] skipped {loader.__name__}: {exc}", flush=True)
 
 
 @app.get("/health")
@@ -276,8 +285,29 @@ def health() -> dict[str, Any]:
     }
 
 
+def require_api_token(request: Request) -> None:
+    """Reject unauthenticated inference calls when a token is configured.
+
+    The Django backend already sends `Authorization: Bearer <CNN_API_TOKEN>`,
+    but this Space never checked it, so anyone could run the model for free.
+    Enforced only when CNN_API_TOKEN is set on the Space, so the endpoint keeps
+    working until the secret is configured on both sides. /health stays open
+    because the keep-warm cron pings it without credentials.
+    """
+    expected = os.getenv("CNN_API_TOKEN", "").strip()
+    if not expected:
+        return
+
+    header = request.headers.get("authorization", "").strip()
+    prefix = "Bearer "
+    received = header[len(prefix):].strip() if header.startswith(prefix) else ""
+    if not received or not hmac.compare_digest(received, expected):
+        raise HTTPException(status_code=401, detail="Yêu cầu chưa được xác thực.")
+
+
 @app.post("/detect-leaf")
 async def detect_leaf(request: Request):
+    require_api_token(request)
     image = await image_from_request(request)
     payload = detect_leaf_and_crop(image)
     payload.pop("cropped_image", None)
@@ -303,6 +333,7 @@ async def image_from_request(request: Request) -> Image.Image:
 
 @app.post("/predict")
 async def predict(request: Request):
+    require_api_token(request)
     top_k = 5
     content_type = request.headers.get("content-type", "").lower()
     if content_type.startswith("multipart/form-data"):
