@@ -50,6 +50,13 @@ class CropLocation(models.Model):
     def __str__(self) -> str:
         return self.name
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Ordering (and every "pick the user's location" lookup) assumes at most
+        # one default per grower.
+        if self.is_default:
+            CropLocation.objects.filter(user_id=self.user_id).exclude(pk=self.pk).update(is_default=False)
+
 
 class WeatherSnapshot(models.Model):
     location = models.ForeignKey(
@@ -117,7 +124,9 @@ class CropPlan(models.Model):
         choices=Status.choices,
         default=Status.ACTIVE,
     )
-    suitability_score = models.PositiveIntegerField(default=0)
+    # Null when the climate window had no usable observations: a made-up number
+    # would read as a real assessment.
+    suitability_score = models.PositiveIntegerField(null=True, blank=True, default=None)
     suitability_level = models.CharField(
         max_length=20,
         choices=SuitabilityLevel.choices,
@@ -291,11 +300,17 @@ class CompletionLog(models.Model):
         on_delete=models.CASCADE,
         related_name="completion_logs",
     )
+    # Regenerating a plan replaces its steps; the history of what the grower
+    # actually did should outlive them, hence the snapshot columns.
     step = models.ForeignKey(
         CropPlanStep,
-        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
         related_name="completion_logs",
     )
+    step_number = models.PositiveIntegerField(null=True, blank=True)
+    step_title = models.CharField(max_length=180, blank=True, default="")
     action = models.CharField(max_length=20, default="completed")
     note = models.TextField(blank=True, default="")
     proof_image_url = models.URLField(blank=True, default="")

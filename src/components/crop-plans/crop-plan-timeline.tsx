@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { CheckCircle2, CircleDashed, Clock3, PauseCircle, TriangleAlert } from "lucide-react";
 
 import type { CropPlanStep, CropPlanStepStatus } from "@/types";
@@ -73,7 +74,17 @@ export function CropPlanTimeline({
   onComplete: (stepId: number) => Promise<void>;
 }) {
   const tr = useTr();
+  const [pendingStepId, setPendingStepId] = useState<number | null>(null);
   let previousPhase = "";
+
+  async function handleComplete(stepId: number) {
+    setPendingStepId(stepId);
+    try {
+      await onComplete(stepId);
+    } finally {
+      setPendingStepId(null);
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -173,7 +184,13 @@ export function CropPlanTimeline({
                     {tr("Xem chi tiết", "View details")}
                   </Button>
                   {step.status !== "completed" ? (
-                    <Button onClick={() => onComplete(step.id)}>{tr("Hoàn thành", "Complete")}</Button>
+                    <Button
+                      onClick={() => void handleComplete(step.id)}
+                      loading={pendingStepId === step.id}
+                      disabled={pendingStepId !== null}
+                    >
+                      {tr("Hoàn thành", "Complete")}
+                    </Button>
                   ) : (
                     <span className="rounded-full bg-surface-soft px-4 py-3 text-sm font-medium text-leaf-strong">
                       {tr("Bước này đã xong", "This step is done")}

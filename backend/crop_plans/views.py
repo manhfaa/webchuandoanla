@@ -1,11 +1,15 @@
+from django.db.models import Count
+from django.db.models.deletion import ProtectedError
 from django.utils import timezone
 from rest_framework import generics, permissions, response, status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 
 from .models import Crop, CropLocation, CropPlan, CropPlanStep, Reminder
 from .serializers import (
     CreateCropPlanSerializer,
     CropLocationSerializer,
+    CropPlanListSerializer,
     CropPlanSerializer,
     CropSerializer,
     ReminderReadSerializer,
@@ -13,6 +17,7 @@ from .serializers import (
     StepCompleteSerializer,
     StepDelaySerializer,
     StepNoteSerializer,
+    StepReopenSerializer,
 )
 from .services.planner import (
     build_context_from_request,
@@ -21,7 +26,31 @@ from .services.planner import (
     generate_plan_payload,
     mark_step_complete,
     refresh_plan_weather,
+    regenerate_plan,
+    reopen_step,
 )
+
+
+class CropPlanPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 50
+
+
+class ReminderPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
+def _int_param(request, name: str) -> int | None:
+    raw = request.query_params.get(name)
+    if raw in (None, ""):
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
 
 
 class CropListAPIView(generics.ListAPIView):
@@ -48,17 +77,48 @@ class CropLocationDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return CropLocation.objects.filter(user=self.request.user)
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        try:
+            instance.delete()
+        except ProtectedError:
+            titles = list(instance.crop_plans.values_list("title", flat=True)[:5])
+            return response.Response(
+                {
+                    "detail": "Khu trồng này đang được dùng bởi kế hoạch: " + ", ".join(titles) + ". "
+                    "Hãy xóa hoặc lưu trữ các kế hoạch đó trước.",
+                    "detail_en": "This growing area is still used by: " + ", ".join(titles) + ". "
+                    "Delete or archive those plans first.",
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class CropPlanListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = CropPlanPagination
 
     def get_queryset(self):
-        return CropPlan.objects.filter(user=self.request.user).select_related("crop", "location", "weather_snapshot")
+        queryset = (
+            CropPlan.objects.filter(user=self.request.user)
+            .select_related("crop", "location", "weather_snapshot")
+            .prefetch_related("steps")
+            .annotate(reminder_total=Count("reminders", distinct=True))
+            # Explicit and unique, so page 2 cannot repeat a row from page 1.
+            .order_by("-updated_at", "-id")
+        )
+        status_filter = self.request.query_params.get("status")
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        elif self.request.query_params.get("include_archived") not in ("1", "true", "True"):
+            queryset = queryset.exclude(status=CropPlan.Status.ARCHIVED)
+        return queryset
 
     def get_serializer_class(self):
         if self.request.method.upper() == "POST":
             return CreateCropPlanSerializer
-        return CropPlanSerializer
+        return CropPlanListSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -122,8 +182,13 @@ class CropPlanPreviewAPIView(APIView):
                     "suitability_score": payload["suitability"]["score"],
                     "suitability_level": payload["suitability"]["level"],
                     "key_warnings": payload["suitability"]["warnings"],
+                    "key_warnings_en": payload["suitability"].get("warnings_en", []),
                     "reasoning_summary": payload["suitability"]["reasoning_summary"],
+                    "reasoning_summary_en": payload["suitability"].get("reasoning_summary_en", ""),
                     "climate_metrics": payload["weather"]["derived_metrics"],
+                    "climate_confidence": payload["climate_confidence"],
+                    "climate_coverage": payload["weather"].get("coverage", {}),
+                    "weather_source": payload["weather"]["source"],
                 },
                 "steps": payload["steps"],
             }
@@ -135,30 +200,22 @@ class CropPlanDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return CropPlan.objects.filter(user=self.request.user).select_related("crop", "location", "weather_snapshot")
+        return (
+            CropPlan.objects.filter(user=self.request.user)
+            .select_related("crop", "location", "weather_snapshot")
+            .prefetch_related("steps")
+        )
 
 
 class CropPlanRegenerateAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk: int):
-        plan = generics.get_object_or_404(CropPlan.objects.filter(user=request.user).select_related("crop", "location"), pk=pk)
-        payload = {
-            "planting_mode": plan.planting_mode,
-            "area_value": plan.area_value,
-            "area_unit": plan.area_unit,
-            "plant_count": plan.plant_count,
-            "start_date": plan.planned_start_date,
-            "experience_level": plan.experience_level or "beginner",
-            "plan_goal": plan.plan_goal or "home",
-            "timezone": plan.location.timezone,
-        }
-        plan.steps.all().delete()
-        plan.reminders.all().delete()
-        context = build_context_from_request(plan.crop, plan.location, payload)
-        refreshed = create_plan_from_payload(request.user, context)
-        plan.delete()
-        return response.Response(CropPlanSerializer(refreshed).data)
+        plan = generics.get_object_or_404(
+            CropPlan.objects.filter(user=request.user).select_related("crop", "location"), pk=pk
+        )
+        refreshed = regenerate_plan(plan)
+        return response.Response(CropPlanSerializer(refreshed, context={"request": request}).data)
 
 
 class CropPlanWeatherRefreshAPIView(APIView):
@@ -181,6 +238,22 @@ class CropPlanStepCompleteAPIView(APIView):
         return response.Response({"status": "ok"})
 
 
+class CropPlanStepReopenAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk: int):
+        serializer = StepReopenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        step = generics.get_object_or_404(CropPlanStep.objects.filter(crop_plan__user=request.user), pk=pk)
+        if step.status != CropPlanStep.Status.COMPLETED:
+            return response.Response(
+                {"detail": "Bước này chưa được đánh dấu hoàn thành."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        reopen_step(step, serializer.validated_data.get("note", ""))
+        return response.Response({"status": "ok"})
+
+
 class CropPlanStepDelayAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -188,6 +261,11 @@ class CropPlanStepDelayAPIView(APIView):
         serializer = StepDelaySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         step = generics.get_object_or_404(CropPlanStep.objects.filter(crop_plan__user=request.user), pk=pk)
+        if step.status == CropPlanStep.Status.COMPLETED:
+            return response.Response(
+                {"detail": "Bước đã hoàn thành nên không dời lịch được. Hãy bỏ đánh dấu hoàn thành trước."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         delay_step(step, serializer.validated_data["delay_days"], serializer.validated_data.get("reason", ""))
         return response.Response({"status": "ok"})
 
@@ -199,7 +277,7 @@ class CropPlanStepNoteAPIView(APIView):
         serializer = StepNoteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         step = generics.get_object_or_404(CropPlanStep.objects.filter(crop_plan__user=request.user), pk=pk)
-        step.user_notes = serializer.validated_data["note"]
+        step.user_notes = serializer.validated_data.get("note", "")
         step.save(update_fields=["user_notes", "updated_at"])
         return response.Response({"status": "ok"})
 
@@ -207,18 +285,28 @@ class CropPlanStepNoteAPIView(APIView):
 class ReminderListAPIView(generics.ListAPIView):
     serializer_class = ReminderSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = ReminderPagination
 
     def get_queryset(self):
         queryset = Reminder.objects.filter(user=self.request.user).select_related("crop_plan", "step")
+        plan_id = _int_param(self.request, "plan")
+        if plan_id is not None:
+            queryset = queryset.filter(crop_plan_id=plan_id)
+
         filter_value = self.request.query_params.get("filter")
         if filter_value == "today":
-            today = timezone.localdate()
-            queryset = queryset.filter(trigger_time__date=today)
+            queryset = queryset.filter(trigger_time__date=timezone.localdate())
         elif filter_value == "missed":
-            queryset = queryset.filter(trigger_time__lt=timezone.now(), completed_or_not=False).exclude(status=Reminder.Status.CANCELLED)
+            queryset = queryset.filter(trigger_time__lt=timezone.now(), completed_or_not=False).exclude(
+                status=Reminder.Status.CANCELLED
+            )
+            # Most recently missed first: those are the ones still worth acting on.
+            return queryset.order_by("-trigger_time", "-id")
+        elif filter_value == "upcoming":
+            queryset = queryset.filter(trigger_time__gte=timezone.now()).exclude(status=Reminder.Status.CANCELLED)
         elif filter_value == "unread":
             queryset = queryset.filter(read=False)
-        return queryset
+        return queryset.order_by("trigger_time", "id")
 
 
 class ReminderReadAPIView(APIView):

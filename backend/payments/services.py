@@ -11,12 +11,14 @@ from django.utils import timezone
 
 from engagement.models import ServicePlan, UserSubscription
 
+from .entitlements import PLAN_ORDER
 from .models import Payment, PaymentOrder
 
 User = get_user_model()
 
-PLAN_ORDER = ("seed", "grow", "bloom", "elite")
 OPEN_ORDER_STATUSES = (PaymentOrder.Status.PENDING, PaymentOrder.Status.UNDERPAID)
+# Money has arrived but the plan is not on: these orders wait for a human.
+RECONCILIATION_STATUSES = (PaymentOrder.Status.OVERPAID, PaymentOrder.Status.REVIEW)
 
 
 class PaymentConfigurationError(RuntimeError):
@@ -62,11 +64,11 @@ def expire_user_plan(user, now=None):
 def get_purchasable_plan(slug):
     normalized = str(slug or "").strip().lower()
     if normalized not in PLAN_ORDER or normalized == "seed":
-        raise PaymentRequestError("Goi dich vu khong hop le.")
+        raise PaymentRequestError("Gói dịch vụ không hợp lệ.")
 
     plan = ServicePlan.objects.filter(slug=normalized, is_active=True).first()
     if not plan:
-        raise PaymentRequestError("Goi dich vu hien khong mo ban.")
+        raise PaymentRequestError("Gói dịch vụ hiện không mở bán.")
 
     try:
         amount = Decimal(plan.price_monthly)
@@ -98,9 +100,27 @@ def create_payment_order(user, plan_slug):
     plan, amount = get_purchasable_plan(plan_slug)
     current_plan = locked_user.current_plan if locked_user.current_plan in PLAN_ORDER else "seed"
     if PLAN_ORDER.index(plan.slug) < PLAN_ORDER.index(current_plan):
-        raise PaymentRequestError(
-            "Khong the ha goi khi goi hien tai van con hieu luc."
+        until = (
+            f" đến {timezone.localtime(locked_user.plan_expires_at):%d/%m/%Y}"
+            if locked_user.plan_expires_at
+            else ""
         )
+        raise PaymentRequestError(
+            f"Gói {current_plan.title()} vẫn còn hiệu lực{until} nên chưa thể mua gói thấp hơn. "
+            "Khi gói hiện tại hết hạn, tài khoản sẽ tự chuyển về gói Seed miễn phí và bạn có thể chọn gói khác."
+        )
+
+    # An order that already received money but never activated must be handed
+    # back instead of minting a second code — otherwise the grower pays twice
+    # for the same plan while the first transfer waits for reconciliation.
+    awaiting_reconciliation = (
+        PaymentOrder.objects.select_for_update()
+        .filter(user=locked_user, plan=plan, status__in=RECONCILIATION_STATUSES)
+        .order_by("-created_at")
+        .first()
+    )
+    if awaiting_reconciliation:
+        return awaiting_reconciliation, False
 
     PaymentOrder.objects.filter(
         user=locked_user,
@@ -239,6 +259,105 @@ def _activate_locked_order(order, now):
         update_fields=["status", "paid_at", "amount_received", "updated_at"]
     )
     return old_plan, ends_at
+
+
+def order_needs_reconciliation(order):
+    """True when money arrived on an order that never activated a plan.
+
+    Covers the overpaid/late cases and the quieter one: a partial transfer on an
+    order that then expired, which leaves real money with no plan behind it.
+    """
+    if order.status == PaymentOrder.Status.PAID:
+        return False
+    if order.status in RECONCILIATION_STATUSES:
+        return True
+    return order.amount_received > 0
+
+
+@transaction.atomic
+def request_order_reconciliation(order, note=""):
+    """Record that the user asked a human to look at a stuck order."""
+    locked_order = PaymentOrder.objects.select_for_update().get(pk=order.pk)
+    if not order_needs_reconciliation(locked_order):
+        raise PaymentRequestError("Đơn thanh toán này không cần đối soát.")
+
+    metadata = dict(locked_order.metadata or {})
+    reconciliation = dict(metadata.get("reconciliation") or {})
+    reconciliation["requested_at"] = timezone.now().isoformat()
+    reconciliation["amount_received"] = locked_order.amount_received
+    if note:
+        reconciliation["user_note"] = note[:500]
+    metadata["reconciliation"] = reconciliation
+    locked_order.metadata = metadata
+    locked_order.save(update_fields=["metadata", "updated_at"])
+    return locked_order
+
+
+@transaction.atomic
+def reconcile_order(order, actor=None, note=""):
+    """Activate an order whose transfer arrived but whose plan never turned on.
+
+    This is the manual way out of overpaid/review/expired-with-money: the money
+    is already in the account, so the only thing missing is the activation the
+    webhook declined to do automatically.
+    """
+    locked_order = (
+        PaymentOrder.objects.select_for_update()
+        .select_related("plan", "user")
+        .get(pk=order.pk)
+    )
+    if locked_order.status == PaymentOrder.Status.PAID:
+        raise PaymentRequestError("Đơn thanh toán này đã được kích hoạt trước đó.")
+    if locked_order.amount_received <= 0:
+        raise PaymentRequestError("Đơn thanh toán này chưa nhận được tiền nên không thể kích hoạt.")
+
+    now = timezone.now()
+    old_plan, ends_at = _activate_locked_order(locked_order, now)
+
+    metadata = dict(locked_order.metadata or {})
+    reconciliation = dict(metadata.get("reconciliation") or {})
+    reconciliation.update(
+        {
+            "resolved_at": now.isoformat(),
+            "resolved_by": getattr(actor, "email", "") or getattr(actor, "username", "") or "system",
+            "amount_difference": locked_order.amount_received - locked_order.amount_expected,
+            "plan_before": old_plan,
+            "action": "activated",
+        }
+    )
+    if note:
+        reconciliation["admin_note"] = note[:500]
+    metadata["reconciliation"] = reconciliation
+    locked_order.metadata = metadata
+    locked_order.save(update_fields=["metadata", "updated_at"])
+    return locked_order, old_plan, ends_at
+
+
+@transaction.atomic
+def close_order_as_refunded(order, actor=None, note=""):
+    """Close a stuck order after the money was returned outside the app."""
+    locked_order = PaymentOrder.objects.select_for_update().get(pk=order.pk)
+    if locked_order.status == PaymentOrder.Status.PAID:
+        raise PaymentRequestError("Đơn đã kích hoạt gói, không thể đánh dấu hoàn tiền tại đây.")
+
+    now = timezone.now()
+    metadata = dict(locked_order.metadata or {})
+    reconciliation = dict(metadata.get("reconciliation") or {})
+    reconciliation.update(
+        {
+            "resolved_at": now.isoformat(),
+            "resolved_by": getattr(actor, "email", "") or getattr(actor, "username", "") or "system",
+            "refunded_amount": locked_order.amount_received,
+            "action": "refunded",
+        }
+    )
+    if note:
+        reconciliation["admin_note"] = note[:500]
+    metadata["reconciliation"] = reconciliation
+    locked_order.metadata = metadata
+    locked_order.status = PaymentOrder.Status.CANCELLED
+    locked_order.save(update_fields=["metadata", "status", "updated_at"])
+    return locked_order
 
 
 @transaction.atomic

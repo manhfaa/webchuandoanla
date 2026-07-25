@@ -10,6 +10,12 @@ export type DjangoLoginResponse = {
 export type DjangoRegisterRequest = {
   email: string;
   password: string;
+  accepted_terms: boolean;
+};
+
+export type DjangoRegisterResponse = DjangoLoginResponse & {
+  id: number;
+  email: string;
 };
 
 export type DjangoCnnPrediction = {
@@ -39,23 +45,113 @@ export type DjangoCnnResponse = DjangoCnnPrediction & {
   };
 };
 
-type DjangoMeResponse = {
+/** The full account record served by /api/users/me/. */
+export type DjangoAccount = {
   id: number;
   username: string;
   email: string;
   full_name: string;
   phone: string;
   avatar_url: string;
+  company_name: string;
+  farm_name: string;
+  location: string;
   current_plan: PlanTier;
+  plan_expires_at: string | null;
+  terms_accepted_at: string | null;
+  terms_version: string;
+  has_usable_password: boolean;
 };
 
-function mapMeToUserProfile(me: DjangoMeResponse): UserProfile {
+export type DjangoAccountPatch = Partial<
+  Pick<DjangoAccount, "full_name" | "email" | "phone" | "avatar_url" | "company_name" | "farm_name" | "location">
+>;
+
+export type DjangoUserSettings = {
+  theme: string;
+  language: string;
+  email_notifications: boolean;
+  push_notifications: boolean;
+  diagnosis_auto_save: boolean;
+  marketing_opt_in: boolean;
+  expert_chat_enabled: boolean;
+  timezone: string;
+  updated_at: string;
+};
+
+export type DjangoAccountDeletionPreview = {
+  diagnoses: number;
+  farm_plots: number;
+  cultivation_logs: number;
+  traceability_records: number;
+  farm_locations: number;
+  crop_plans: number;
+  chat_conversations: number;
+  payment_orders: number;
+  confirm_phrase: string;
+};
+
+export const AVATAR_PLACEHOLDER = "/avatars/user-demo.svg";
+
+export function mapAccountToUserProfile(account: DjangoAccount): UserProfile {
   return {
-    name: normalizeUserDisplayName(me.full_name),
-    email: me.email,
-    avatar: me.avatar_url || "/avatars/user-demo.svg",
-    currentPlan: normalizePlan(me.current_plan),
+    name: normalizeUserDisplayName(account.full_name),
+    email: account.email,
+    // Kept raw (possibly empty): the placeholder used to be stored here and
+    // then echoed back into the editable field, which made every profile save
+    // fail with "Nhập một URL hợp lệ." Render-time code applies the fallback.
+    avatar: account.avatar_url ?? "",
+    currentPlan: normalizePlan(account.current_plan),
   };
+}
+
+/**
+ * Error carrying the HTTP status and DRF's per-field messages, so a caller can
+ * branch on a specific field (e.g. the Google consent gate) instead of pattern
+ * matching on a translated sentence.
+ */
+export class DjangoApiError extends Error {
+  readonly status: number;
+  readonly fieldErrors: Record<string, string>;
+
+  constructor(message: string, status: number, fieldErrors: Record<string, string> = {}) {
+    super(message);
+    this.name = "DjangoApiError";
+    this.status = status;
+    this.fieldErrors = fieldErrors;
+  }
+}
+
+function firstMessage(value: unknown): string | null {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      const nested = firstMessage(entry);
+      if (nested) return nested;
+    }
+  }
+  return null;
+}
+
+function readErrorBody(data: unknown, statusCode: number) {
+  const fieldErrors: Record<string, string> = {};
+  if (data && typeof data === "object") {
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+      const message = firstMessage(value);
+      if (message) fieldErrors[key] = message;
+    }
+  }
+
+  // Prefer the keys DRF uses for whole-request problems, then fall back to
+  // whichever field failed — a bare "HTTP 400" told the user nothing.
+  const message =
+    fieldErrors.detail ??
+    fieldErrors.non_field_errors ??
+    fieldErrors.error ??
+    Object.values(fieldErrors)[0] ??
+    `HTTP ${statusCode}`;
+
+  return { message, fieldErrors };
 }
 
 type DjangoFetchInit = RequestInit & {
@@ -87,25 +183,76 @@ async function djangoFetch<T>(path: string, init?: DjangoFetchInit): Promise<T> 
   }
 
   if (!res.ok) {
-    let message = `HTTP ${res.status}`;
+    let data: unknown = null;
     try {
-      const data = (await res.json()) as any;
-      if (typeof data?.detail === "string") {
-        message = data.detail;
-      } else if (typeof data?.non_field_errors?.[0] === "string") {
-        message = data.non_field_errors[0];
-      } else if (typeof data?.email?.[0] === "string") {
-        message = data.email[0];
-      } else if (typeof data?.password?.[0] === "string") {
-        message = data.password[0];
-      }
+      data = await res.json();
     } catch {
-      // ignore
+      // A proxy or gateway may answer with something that is not JSON.
     }
-    throw new Error(message);
+    const { message, fieldErrors } = readErrorBody(data, res.status);
+    throw new DjangoApiError(
+      res.status === 429 ? describeThrottle(message) : message,
+      res.status,
+      fieldErrors,
+    );
   }
 
+  // 204 No Content (account deletion) has no body to parse.
+  if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
+}
+
+/** DRF's throttle message is raw English with a second count; make it human. */
+function describeThrottle(message: string): string {
+  const seconds = Number(/(\d+)\s*second/.exec(message)?.[1] ?? 0);
+  if (!seconds) return "Bạn đã thử quá nhiều lần. Vui lòng chờ một lát rồi thử lại.";
+  const minutes = Math.ceil(seconds / 60);
+  const wait = seconds < 60 ? `${seconds} giây` : `${minutes} phút`;
+  return `Bạn đã thử quá nhiều lần. Vui lòng thử lại sau khoảng ${wait}.`;
+}
+
+/**
+ * Lets the session store supply the current access token and refresh it, without
+ * django-client importing the store (the store already imports this module).
+ */
+type AuthTokenBridge = {
+  getAccessToken: () => string | null;
+  refreshAccessToken: () => Promise<string | null>;
+};
+
+let authTokenBridge: AuthTokenBridge | null = null;
+
+export function registerAuthTokenBridge(bridge: AuthTokenBridge) {
+  authTokenBridge = bridge;
+}
+
+/**
+ * Authenticated request that survives an expired access token: the 30-minute
+ * token used to be refreshed only on a full page load, so a session died
+ * mid-use during client-side navigation.
+ */
+async function djangoAuthedFetch<T>(path: string, init?: DjangoFetchInit): Promise<T> {
+  const accessToken = authTokenBridge?.getAccessToken() ?? null;
+  if (!accessToken) {
+    throw new DjangoApiError("Bạn cần đăng nhập lại để tiếp tục.", 401);
+  }
+
+  const withToken = (token: string): DjangoFetchInit => ({
+    ...init,
+    headers: { ...(init?.headers ?? {}), authorization: `Bearer ${token}` },
+  });
+
+  try {
+    return await djangoFetch<T>(path, withToken(accessToken));
+  } catch (error) {
+    if (!(error instanceof DjangoApiError) || error.status !== 401 || !authTokenBridge) throw error;
+
+    const refreshed = await authTokenBridge.refreshAccessToken();
+    if (!refreshed) {
+      throw new DjangoApiError("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.", 401);
+    }
+    return djangoFetch<T>(path, withToken(refreshed));
+  }
 }
 
 export async function djangoLogin(payload: { email: string; password: string }) {
@@ -115,10 +262,35 @@ export async function djangoLogin(payload: { email: string; password: string }) 
   });
 }
 
-export async function djangoGoogleLogin(payload: { credential: string }) {
+export async function djangoGoogleLogin(payload: { credential: string; acceptedTerms?: boolean }) {
   return djangoFetch<DjangoLoginResponse>("/api/auth/google/", {
     method: "POST",
-    body: JSON.stringify({ credential: payload.credential }),
+    body: JSON.stringify({
+      credential: payload.credential,
+      accepted_terms: Boolean(payload.acceptedTerms),
+    }),
+  });
+}
+
+/** Blacklists the refresh token so signing out is not merely local state. */
+export async function djangoLogout(refreshToken: string) {
+  return djangoFetch<{ detail: string }>("/api/auth/logout/", {
+    method: "POST",
+    body: JSON.stringify({ refresh: refreshToken }),
+  });
+}
+
+export async function djangoRequestPasswordReset(email: string) {
+  return djangoFetch<{ detail: string }>("/api/auth/password-reset/", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function djangoConfirmPasswordReset(payload: { token: string; newPassword: string }) {
+  return djangoFetch<DjangoLoginResponse & { detail: string }>("/api/auth/password-reset/confirm/", {
+    method: "POST",
+    body: JSON.stringify({ token: payload.token, new_password: payload.newPassword }),
   });
 }
 
@@ -133,35 +305,67 @@ export async function djangoRefreshToken(refreshToken: string) {
   });
 }
 
+/** Registration now returns the JWT pair, so the account and the session are
+ * created in one round-trip instead of create-then-login. */
 export async function djangoRegister(payload: DjangoRegisterRequest) {
-  return djangoFetch<{ id: number; email: string }>("/api/auth/register/", {
+  return djangoFetch<DjangoRegisterResponse>("/api/auth/register/", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
+/** Used right after sign-in, before the store holds a token to refresh with. */
 export async function djangoMe(accessToken: string) {
-  const me = await djangoFetch<DjangoMeResponse>("/api/users/me/", {
+  const account = await djangoFetch<DjangoAccount>("/api/users/me/", {
     method: "GET",
-    headers: {
-      authorization: `Bearer ${accessToken}`,
-    },
+    headers: { authorization: `Bearer ${accessToken}` },
   });
-  return mapMeToUserProfile(me);
+  return mapAccountToUserProfile(account);
 }
 
-export async function djangoUpdateMe(
-  accessToken: string,
-  payload: { full_name?: string; email?: string; avatar_url?: string },
-) {
-  const me = await djangoFetch<DjangoMeResponse>("/api/users/me/", {
+export async function djangoAccount() {
+  return djangoAuthedFetch<DjangoAccount>("/api/users/me/", { method: "GET" });
+}
+
+export async function djangoUpdateMe(payload: DjangoAccountPatch) {
+  return djangoAuthedFetch<DjangoAccount>("/api/users/me/", {
     method: "PATCH",
-    headers: {
-      authorization: `Bearer ${accessToken}`,
-    },
     body: JSON.stringify(payload),
   });
-  return mapMeToUserProfile(me);
+}
+
+export async function djangoChangePassword(payload: { currentPassword?: string; newPassword: string }) {
+  return djangoAuthedFetch<DjangoLoginResponse & { detail: string }>("/api/users/change-password/", {
+    method: "POST",
+    body: JSON.stringify({
+      current_password: payload.currentPassword ?? "",
+      new_password: payload.newPassword,
+    }),
+  });
+}
+
+export async function djangoAccountDeletionPreview() {
+  return djangoAuthedFetch<DjangoAccountDeletionPreview>("/api/users/me/deletion-preview/", {
+    method: "GET",
+  });
+}
+
+export async function djangoDeleteAccount(payload: { password?: string; confirmText: string }) {
+  return djangoAuthedFetch<void>("/api/users/me/", {
+    method: "DELETE",
+    body: JSON.stringify({ password: payload.password ?? "", confirm_text: payload.confirmText }),
+  });
+}
+
+export async function djangoUserSettings() {
+  return djangoAuthedFetch<DjangoUserSettings>("/api/users/settings/", { method: "GET" });
+}
+
+export async function djangoUpdateUserSettings(payload: Partial<Omit<DjangoUserSettings, "updated_at">>) {
+  return djangoAuthedFetch<DjangoUserSettings>("/api/users/settings/", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function djangoClassifyLeafImage(payload: { imageDataUrl: string; accessToken?: string | null }) {

@@ -1,14 +1,29 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Crown } from "lucide-react";
+import { CalendarClock, Crown } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import { pricingPlans } from "@/data/mock/plans";
+import {
+  applyCataloguePrices,
+  fetchServicePlans,
+  fetchSubscriptionSummary,
+  type ServicePlanDto,
+  type SubscriptionSummary,
+} from "@/lib/payments-client";
+import { normalizePlan } from "@/lib/plans";
 import { useTr } from "@/lib/use-tr";
 import { useSessionStore } from "@/store/session-store";
 
 import { Modal } from "../ui/modal";
 import { PricingCard } from "./pricing-card";
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
+}
 
 export function UpgradeModal({
   open,
@@ -19,7 +34,31 @@ export function UpgradeModal({
 }) {
   const router = useRouter();
   const tr = useTr();
-  const { user } = useSessionStore();
+  const { user, accessToken } = useSessionStore();
+  const [catalogue, setCatalogue] = useState<ServicePlanDto[] | null>(null);
+  const [summary, setSummary] = useState<SubscriptionSummary | null>(null);
+
+  // Prices and expiry are only needed once the grower actually opens the modal.
+  useEffect(() => {
+    if (!open || catalogue) return;
+    let cancelled = false;
+    void (async () => {
+      const [catalogueResult, summaryResult] = await Promise.allSettled([
+        fetchServicePlans(),
+        accessToken ? fetchSubscriptionSummary(accessToken) : Promise.resolve(null),
+      ]);
+      if (cancelled) return;
+      if (catalogueResult.status === "fulfilled") setCatalogue(catalogueResult.value);
+      if (summaryResult.status === "fulfilled" && summaryResult.value) setSummary(summaryResult.value);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, catalogue, accessToken]);
+
+  const plans = useMemo(() => applyCataloguePrices(pricingPlans, catalogue), [catalogue]);
+  const currentPlan = normalizePlan(summary?.current_plan ?? user?.currentPlan);
+  const planExpiresAt = summary?.plan_expires_at ?? null;
 
   return (
     <Modal
@@ -29,22 +68,26 @@ export function UpgradeModal({
       description={tr("Chọn gói bạn muốn dùng để mở thêm tính năng và lưu lịch sử đầy đủ hơn.", "Pick the plan you want to unlock more features and keep a fuller history.")}
       className="max-w-5xl"
     >
-      <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-surface-soft px-4 py-2 text-sm font-semibold text-ink-soft">
-        <Crown size={16} className="text-leaf-strong" />
-        {tr("Gói hiện tại:", "Current plan:")} {user?.currentPlan?.toUpperCase() ?? "FREE"}
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <span className="inline-flex items-center gap-2 rounded-full bg-surface-soft px-4 py-2 text-sm font-semibold text-ink-soft">
+          <Crown size={16} className="text-leaf-strong" />
+          {tr("Gói hiện tại:", "Current plan:")} {currentPlan.toUpperCase()}
+        </span>
+        {planExpiresAt ? (
+          <span className="inline-flex items-center gap-2 text-xs font-semibold text-ink-soft">
+            <CalendarClock size={14} aria-hidden />
+            {tr(`Hiệu lực đến ${formatDate(planExpiresAt)}`, `Valid until ${formatDate(planExpiresAt)}`)}
+          </span>
+        ) : null}
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {pricingPlans.map((plan) => (
+        {plans.map((plan) => (
           <PricingCard
             key={plan.id}
             plan={plan}
-            currentPlan={user?.currentPlan}
+            currentPlan={currentPlan}
+            currentPlanExpiresAt={planExpiresAt}
             onSelect={(planId) => {
-              if (planId === "seed") {
-                router.push("/dashboard/pricing");
-                onClose();
-                return;
-              }
               router.push(`/dashboard/pricing/checkout/${planId}`);
               onClose();
             }}

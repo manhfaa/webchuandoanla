@@ -3,6 +3,7 @@ import hmac
 import json
 import logging
 import time
+import uuid
 
 from django.conf import settings
 from django.utils import timezone
@@ -11,8 +12,13 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from .entitlements import active_subscription, resolve_entitlements
 from .models import PaymentOrder
-from .serializers import PaymentOrderCreateSerializer, PaymentOrderSerializer
+from .serializers import (
+    PaymentOrderCreateSerializer,
+    PaymentOrderSerializer,
+    ReconciliationRequestSerializer,
+)
 from .services import (
     OPEN_ORDER_STATUSES,
     PaymentConfigurationError,
@@ -21,6 +27,7 @@ from .services import (
     create_payment_order,
     expire_user_plan,
     process_sepay_payload,
+    request_order_reconciliation,
 )
 
 logger = logging.getLogger(__name__)
@@ -31,6 +38,15 @@ def _mark_expired(order):
         order.status = PaymentOrder.Status.EXPIRED
         order.save(update_fields=["status", "updated_at"])
     return order
+
+
+def _bank_details():
+    return {
+        "name": getattr(settings, "SEPAY_BANK_NAME", "") or settings.SEPAY_BANK_CODE,
+        "code": settings.SEPAY_BANK_CODE,
+        "account_number": settings.SEPAY_ACCOUNT_NUMBER,
+        "account_name": settings.SEPAY_ACCOUNT_NAME,
+    }
 
 
 def _order_response(order, created=False):
@@ -48,12 +64,7 @@ def _order_response(order, created=False):
             "transfer_content": order.payment_code,
             "expires_at": order.expires_at.isoformat(),
         },
-        "bank": {
-            "name": getattr(settings, "SEPAY_BANK_NAME", "") or settings.SEPAY_BANK_CODE,
-            "code": settings.SEPAY_BANK_CODE,
-            "account_number": settings.SEPAY_ACCOUNT_NUMBER,
-            "account_name": settings.SEPAY_ACCOUNT_NAME,
-        },
+        "bank": _bank_details(),
         "qr_url": build_qr_url(order),
     }
 
@@ -108,11 +119,96 @@ class PaymentOrderDetailView(APIView):
         if not order:
             return Response({"error": "Không tìm thấy đơn thanh toán."}, status=status.HTTP_404_NOT_FOUND)
         _mark_expired(order)
+        payload = {
+            "order": PaymentOrderSerializer(order).data,
+            "current_plan": request.user.current_plan,
+            "plan_expires_at": request.user.plan_expires_at,
+        }
+        try:
+            # Bank details and the QR let the checkout screen rebuild itself
+            # after a reload instead of dropping the grower back on "create
+            # order" with a transfer already in flight.
+            payload["bank"] = _bank_details()
+            payload["qr_url"] = build_qr_url(order)
+        except PaymentConfigurationError as exc:
+            logger.error("Payment configuration error: %s", exc)
+        return Response(payload)
+
+
+class PaymentOrderReconcileView(APIView):
+    """Let the owner of a stuck order ask for it to be reviewed.
+
+    Overpaid, late and partially paid orders never activate on their own, so
+    without this the grower has paid and has no move left to make. The request
+    only flags the order; a staff member still activates or refunds it.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "payment_orders"
+
+    def post(self, request, order_id):
+        order = (
+            PaymentOrder.objects.filter(id=order_id, user=request.user)
+            .select_related("plan")
+            .first()
+        )
+        if not order:
+            return Response({"error": "Không tìm thấy đơn thanh toán."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ReconciliationRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            order = request_order_reconciliation(order, note=serializer.validated_data.get("note", ""))
+        except PaymentRequestError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        logger.info("Reconciliation requested for order %s by user %s", order.payment_code, request.user.pk)
         return Response(
             {
                 "order": PaymentOrderSerializer(order).data,
+                "message": "Đã ghi nhận yêu cầu đối soát. Chúng tôi sẽ kiểm tra giao dịch và kích hoạt gói cho bạn.",
+            }
+        )
+
+
+class SubscriptionSummaryView(APIView):
+    """Everything the account needs to explain its own plan: what is active,
+    when it ends, and the limits that come with it."""
+
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "payment_status"
+
+    def get(self, request):
+        expire_user_plan(request.user)
+        now = timezone.now()
+        subscription = active_subscription(request.user, now=now)
+        expires_at = request.user.plan_expires_at
+        days_remaining = None
+        if expires_at and expires_at > now:
+            days_remaining = max(0, (expires_at - now).days)
+
+        return Response(
+            {
                 "current_plan": request.user.current_plan,
-                "plan_expires_at": request.user.plan_expires_at,
+                "plan_expires_at": expires_at,
+                "days_remaining": days_remaining,
+                "entitlements": resolve_entitlements(request.user, now=now),
+                "subscription": (
+                    {
+                        "id": subscription.id,
+                        "plan": subscription.plan.slug,
+                        "plan_name": subscription.plan.name,
+                        "status": subscription.status,
+                        "starts_at": subscription.starts_at,
+                        "ends_at": subscription.ends_at,
+                        "auto_renew": subscription.auto_renew,
+                        "payment_provider": subscription.payment_provider,
+                    }
+                    if subscription
+                    else None
+                ),
             }
         )
 
@@ -214,7 +310,19 @@ class CheckPaymentStatusView(APIView):
         expire_user_plan(request.user)
         order_id = request.query_params.get("order_id")
         orders = PaymentOrder.objects.filter(user=request.user).select_related("plan")
-        order = orders.filter(id=order_id).first() if order_id else orders.order_by("-created_at").first()
+        # The raw query param used to reach the ORM untouched, so any non-UUID
+        # value raised a ValidationError and returned a 500.
+        if order_id:
+            try:
+                order_uuid = uuid.UUID(str(order_id))
+            except (ValueError, AttributeError, TypeError):
+                return Response(
+                    {"error": "Mã đơn thanh toán không hợp lệ."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            order = orders.filter(id=order_uuid).first()
+        else:
+            order = orders.order_by("-created_at").first()
         if order:
             _mark_expired(order)
         return Response(

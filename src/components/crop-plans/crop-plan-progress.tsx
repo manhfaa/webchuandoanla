@@ -2,7 +2,8 @@
 
 import { CalendarClock, CircleAlert, ListTodo, Sprout } from "lucide-react";
 
-import type { CropPlan, CropPlanStepStatus, ReminderItem } from "@/types";
+import type { CropPlanStepStatus } from "@/types";
+import type { CropPlanDetail } from "@/lib/crop-plans-client";
 import { Card } from "@/components/ui/card";
 import { withViFallback } from "@/lib/crop-plan-labels";
 import { useTr } from "@/lib/use-tr";
@@ -25,19 +26,16 @@ const statusLabelsEn: Record<CropPlanStepStatus, string> = {
 
 export function CropPlanProgress({
   plan,
-  reminders,
+  reminderCount,
 }: {
-  plan: CropPlan;
-  reminders: ReminderItem[];
+  plan: CropPlanDetail;
+  reminderCount: number;
 }) {
   const tr = useTr();
   const completed = plan.steps.filter((step) => step.status === "completed").length;
   const current = plan.steps.find((step) => step.status === "current") ?? plan.steps[0];
   const delayed = plan.steps.filter((step) => step.status === "delayed").length;
   const progress = plan.steps.length ? Math.round((completed / plan.steps.length) * 100) : 0;
-  const scheduledReminderCount = reminders.filter((item) =>
-    item.deep_link.includes(`/crop-plans/${plan.id}`),
-  ).length;
 
   const metrics = [
     {
@@ -63,7 +61,7 @@ export function CropPlanProgress({
     {
       label: "Nhắc việc liên quan",
       labelEn: "Related reminders",
-      value: `${scheduledReminderCount}`,
+      value: `${reminderCount}`,
       note: tr("Nhắc việc cho toàn bộ vụ trồng", "Reminders for the whole planting cycle"),
       icon: CalendarClock,
     },

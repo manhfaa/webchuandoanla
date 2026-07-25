@@ -8,20 +8,40 @@ import {
   CalendarDays,
   Leaf,
   LoaderCircle,
-  MapPinned,
+  Plus,
   Sparkles,
+  Star,
+  Trash2,
 } from "lucide-react";
 
 import type { CreateCropPlanPayload, CropCatalogItem, CropLocation, CropPlanPreview } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetchCropCatalog, fetchCropLocations, previewCropPlan, createCropPlan } from "@/lib/crop-plans-client";
+import {
+  fetchCropCatalog,
+  fetchCropLocations,
+  previewCropPlan,
+  createCropPlan,
+  deleteCropLocation,
+  updateCropLocation,
+  type ClimateConfidence,
+} from "@/lib/crop-plans-client";
 import { getSuitabilityLabel, withViFallback } from "@/lib/crop-plan-labels";
 import { useTr } from "@/lib/use-tr";
 import { useSessionStore } from "@/store/session-store";
 
+import { ConfirmDialog } from "./confirm-dialog";
+import { climateConfidenceLabel, climateConfidenceNote } from "./crop-plan-status";
 import { LocationMapPicker } from "./location-map-picker";
+
+/** Fields the preview endpoint returns on top of the shared CropPlanPreview type. */
+type PreviewSummaryExtras = {
+  suitability_score: number | null;
+  climate_confidence?: ClimateConfidence;
+  key_warnings_en?: string[];
+  reasoning_summary_en?: string;
+};
 
 type WizardScreen = "crop" | "location" | "details" | "analyzing" | "preview";
 
@@ -51,6 +71,8 @@ export function CropPlanCreateWizard() {
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<CropPlanPreview | null>(null);
   const [loadingIndex, setLoadingIndex] = useState(0);
+  const [locationBusy, setLocationBusy] = useState(false);
+  const [deletingLocation, setDeletingLocation] = useState<CropLocation | null>(null);
 
   const [selectedCrop, setSelectedCrop] = useState<string>("");
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
@@ -106,6 +128,101 @@ export function CropPlanCreateWizard() {
     [crops, selectedCrop],
   );
 
+  const selectedLocation = useMemo(
+    () => locations.find((location) => location.id === selectedLocationId) ?? null,
+    [locations, selectedLocationId],
+  );
+
+  // Dragging the pin used to silently drop the selection and mint a duplicate
+  // area on save; now the difference is shown and the grower decides.
+  const hasLocationEdits = Boolean(
+    selectedLocation &&
+      (selectedLocation.name !== locationName ||
+        (selectedLocation.address_text ?? "") !== locationAddress ||
+        Math.abs(selectedLocation.lat - lat) > 1e-6 ||
+        Math.abs(selectedLocation.lon - lon) > 1e-6),
+  );
+
+  function applySavedLocation(location: CropLocation) {
+    setSelectedLocationId(location.id);
+    setLocationName(location.name);
+    setLocationAddress(location.address_text ?? "");
+    setLat(location.lat);
+    setLon(location.lon);
+  }
+
+  function startNewLocation() {
+    setSelectedLocationId(null);
+  }
+
+  async function refreshLocations() {
+    if (!accessToken) return [] as CropLocation[];
+    const data = await fetchCropLocations(accessToken);
+    setLocations(data);
+    return data;
+  }
+
+  async function handleUpdateSelectedLocation() {
+    if (!accessToken || !selectedLocation) return;
+    try {
+      setLocationBusy(true);
+      setError(null);
+      const updated = await updateCropLocation(accessToken, selectedLocation.id, {
+        name: locationName,
+        address_text: locationAddress,
+        lat,
+        lon,
+      });
+      await refreshLocations();
+      applySavedLocation(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : tr("Không cập nhật được khu trồng.", "Could not update the growing area."));
+    } finally {
+      setLocationBusy(false);
+    }
+  }
+
+  async function handleSetDefaultLocation(location: CropLocation) {
+    if (!accessToken) return;
+    try {
+      setLocationBusy(true);
+      setError(null);
+      await updateCropLocation(accessToken, location.id, { is_default: true });
+      await refreshLocations();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : tr("Không đặt được khu trồng mặc định.", "Could not set the default growing area."));
+    } finally {
+      setLocationBusy(false);
+    }
+  }
+
+  async function handleDeleteLocation() {
+    if (!accessToken || !deletingLocation) return;
+    try {
+      setLocationBusy(true);
+      setError(null);
+      await deleteCropLocation(accessToken, deletingLocation.id);
+      const remaining = await refreshLocations();
+      if (selectedLocationId === deletingLocation.id) {
+        if (remaining[0]) {
+          applySavedLocation(remaining[0]);
+        } else {
+          startNewLocation();
+        }
+      }
+      setDeletingLocation(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : tr("Không xóa được khu trồng.", "Could not delete the growing area."));
+      setDeletingLocation(null);
+    } finally {
+      setLocationBusy(false);
+    }
+  }
+
+  const previewSummary = (preview?.summary ?? {}) as CropPlanPreview["summary"] & PreviewSummaryExtras;
+  const previewConfidenceLabel = climateConfidenceLabel(previewSummary.climate_confidence ?? "");
+  const previewConfidenceNote = climateConfidenceNote(previewSummary.climate_confidence ?? "");
+
   const payload: CreateCropPlanPayload = {
     crop_type: selectedCrop,
     planting_mode: plantingMode,
@@ -128,6 +245,15 @@ export function CropPlanCreateWizard() {
 
   async function handlePreview() {
     if (!accessToken) return;
+    const parsedCount = Number(plantCount);
+    if (!Number.isInteger(parsedCount) || parsedCount < 1) {
+      setError(tr("Số lượng cây phải là số nguyên từ 1 trở lên.", "The number of plants must be a whole number of at least 1."));
+      return;
+    }
+    if (areaValue && (!Number.isFinite(Number(areaValue)) || Number(areaValue) < 0)) {
+      setError(tr("Diện tích phải là số không âm.", "The area must be a number that is not negative."));
+      return;
+    }
     try {
       setError(null);
       setSubmitting(true);
@@ -246,30 +372,66 @@ export function CropPlanCreateWizard() {
         <div className="space-y-5">
           {locations.length ? (
             <Card variant="default" className="rounded-xl">
-              <p className="text-overline text-leaf-strong">
-                {tr("Khu trồng đã lưu", "Saved growing areas")}
-              </p>
-              <div className="mt-4 flex flex-wrap gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-overline text-leaf-strong">
+                  {tr("Khu trồng đã lưu", "Saved growing areas")}
+                </p>
                 <Button
+                  size="sm"
                   variant={selectedLocationId === null ? "primary" : "secondary"}
-                  onClick={() => setSelectedLocationId(null)}
+                  onClick={startNewLocation}
+                  disabled={locationBusy}
                 >
+                  <Plus size={14} />
                   {tr("Tạo khu trồng mới", "Create new growing area")}
                 </Button>
+              </div>
+              <div className="mt-4 space-y-3">
                 {locations.map((location) => (
-                  <Button
+                  <div
                     key={location.id}
-                    variant={selectedLocationId === location.id ? "primary" : "secondary"}
-                    onClick={() => {
-                      setSelectedLocationId(location.id);
-                      setLocationName(location.name);
-                      setLocationAddress(location.address_text);
-                      setLat(location.lat);
-                      setLon(location.lon);
-                    }}
+                    className={`rounded-lg border p-4 ${
+                      selectedLocationId === location.id ? "border-leaf/45 bg-surface-soft" : "border-line bg-surface"
+                    }`}
                   >
-                    {location.name}
-                  </Button>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <button type="button" className="text-left" onClick={() => applySavedLocation(location)}>
+                        <span className="flex flex-wrap items-center gap-2 font-semibold text-ink">
+                          {location.name}
+                          {location.is_default ? (
+                            <span className="rounded-full bg-surface-soft px-2 py-0.5 text-xs font-medium text-leaf-strong">
+                              {tr("Mặc định", "Default")}
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="mt-1 block text-sm text-ink-soft">
+                          {location.address_text || `${location.lat.toFixed(5)}, ${location.lon.toFixed(5)}`}
+                        </span>
+                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        {!location.is_default ? (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => void handleSetDefaultLocation(location)}
+                            disabled={locationBusy}
+                          >
+                            <Star size={14} />
+                            {tr("Đặt mặc định", "Set as default")}
+                          </Button>
+                        ) : null}
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setDeletingLocation(location)}
+                          disabled={locationBusy}
+                        >
+                          <Trash2 size={14} />
+                          {tr("Xóa", "Delete")}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             </Card>
@@ -280,20 +442,35 @@ export function CropPlanCreateWizard() {
             address={locationAddress}
             lat={lat}
             lon={lon}
-            onNameChange={(value) => {
-              setSelectedLocationId(null);
-              setLocationName(value);
-            }}
-            onAddressChange={(value) => {
-              setSelectedLocationId(null);
-              setLocationAddress(value);
-            }}
+            onNameChange={setLocationName}
+            onAddressChange={setLocationAddress}
             onPositionChange={(nextLat, nextLon) => {
-              setSelectedLocationId(null);
               setLat(nextLat);
               setLon(nextLon);
             }}
           />
+
+          {selectedLocation && hasLocationEdits ? (
+            <Card variant="warning" className="rounded-xl">
+              <p className="text-sm leading-7 text-ink">
+                {tr(
+                  `Bạn vừa sửa khu trồng đã lưu “${selectedLocation.name}”. Chọn cập nhật khu trồng đó, hoặc lưu thành khu trồng mới để giữ nguyên bản cũ.`,
+                  `You have edited the saved area "${selectedLocation.name}". Update that area, or keep the original and save this as a new one.`,
+                )}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Button onClick={() => void handleUpdateSelectedLocation()} loading={locationBusy} disabled={locationBusy}>
+                  {tr("Cập nhật khu trồng này", "Update this area")}
+                </Button>
+                <Button variant="secondary" onClick={startNewLocation} disabled={locationBusy}>
+                  {tr("Lưu thành khu trồng mới", "Save as a new area")}
+                </Button>
+                <Button variant="tertiary" onClick={() => applySavedLocation(selectedLocation)} disabled={locationBusy}>
+                  {tr("Hoàn tác thay đổi", "Undo changes")}
+                </Button>
+              </div>
+            </Card>
+          ) : null}
           <div className="flex justify-between">
             <Button variant="secondary" onClick={() => setScreen("crop")}>
               <ArrowLeft size={16} />
@@ -340,6 +517,10 @@ export function CropPlanCreateWizard() {
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-ink">{tr("Số lượng cây", "Number of plants")}</span>
                 <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  step={1}
                   value={plantCount}
                   onChange={(event) => setPlantCount(event.target.value)}
                   className="w-full rounded-md border border-line bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20"
@@ -350,6 +531,10 @@ export function CropPlanCreateWizard() {
                 <span className="mb-2 block text-sm font-semibold text-ink">{tr("Diện tích / quy mô", "Area / scale")}</span>
                 <div className="grid grid-cols-[1fr_110px] gap-3">
                   <input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="0.01"
                     value={areaValue}
                     onChange={(event) => setAreaValue(event.target.value)}
                     className="w-full rounded-md border border-line bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20"
@@ -483,18 +668,34 @@ export function CropPlanCreateWizard() {
                   </h2>
                 </div>
                 <span className="rounded-full bg-surface px-4 py-2 text-sm font-semibold text-leaf-strong shadow-sm">
-                  {preview.summary.suitability_score}/100
+                  {previewSummary.suitability_score === null
+                    ? tr("Chưa chấm điểm", "Not scored")
+                    : `${previewSummary.suitability_score}/100`}
                 </span>
               </div>
               <div className="mt-5 space-y-3 text-sm leading-7 text-ink-soft">
                 <p>{tr("- Bắt đầu đề xuất: ", "- Recommended start: ")}{preview.summary.recommended_start_date}</p>
                 <p>{tr("- Mức phù hợp: ", "- Suitability: ")}{getSuitabilityLabel(preview.summary.suitability_level)}</p>
-                <p>{tr("- Phân tích: ", "- Analysis: ")}{preview.summary.reasoning_summary}</p>
+                <p>
+                  {tr("- Phân tích: ", "- Analysis: ")}
+                  {tr(
+                    preview.summary.reasoning_summary,
+                    withViFallback(preview.summary.reasoning_summary, previewSummary.reasoning_summary_en),
+                  )}
+                </p>
+                {previewConfidenceLabel ? (
+                  <p>{tr("- Nguồn đánh giá: ", "- Assessment basis: ")}{tr(...previewConfidenceLabel)}</p>
+                ) : null}
               </div>
+              {previewConfidenceNote ? (
+                <p className="mt-4 rounded-md border border-line bg-surface px-4 py-3 text-sm leading-6 text-ink-soft">
+                  {tr(...previewConfidenceNote)}
+                </p>
+              ) : null}
               <div className="mt-5 grid gap-3">
-                {preview.summary.key_warnings.map((warning) => (
+                {preview.summary.key_warnings.map((warning, index) => (
                   <div key={warning} className="rounded-md border border-sun/30 bg-sun-soft px-4 py-3 text-sm text-ink">
-                    {warning}
+                    {tr(warning, withViFallback(warning, previewSummary.key_warnings_en?.[index]))}
                   </div>
                 ))}
               </div>
@@ -537,6 +738,31 @@ export function CropPlanCreateWizard() {
           </div>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={deletingLocation !== null}
+        danger
+        title={tr("Xóa khu trồng này?", "Delete this growing area?")}
+        description={
+          deletingLocation
+            ? tr(
+                `“${deletingLocation.name}” sẽ bị xóa khỏi danh sách khu trồng đã lưu.`,
+                `"${deletingLocation.name}" will be removed from your saved growing areas.`,
+              )
+            : ""
+        }
+        consequences={[
+          tr(
+            "Nếu còn kế hoạch đang dùng khu trồng này, hệ thống sẽ từ chối xóa và cho bạn biết kế hoạch nào.",
+            "If any plan still uses this area, the deletion is refused and you are told which plans they are.",
+          ),
+          tr("Dữ liệu thời tiết đã lưu cho khu trồng này cũng sẽ bị xóa.", "The saved weather data for this area is removed too."),
+        ]}
+        confirmLabel={tr("Xóa khu trồng", "Delete area")}
+        pending={locationBusy}
+        onConfirm={() => void handleDeleteLocation()}
+        onCancel={() => setDeletingLocation(null)}
+      />
     </div>
   );
 }

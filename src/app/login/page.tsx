@@ -1,47 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, LockKeyhole } from "lucide-react";
 
 import { AuthShell } from "@/components/auth/auth-shell";
+import { AuthDivider, GoogleSignInButton, useGoogleSignInAvailability } from "@/components/auth/google-sign-in";
+import { TermsConsentCheckbox } from "@/components/auth/terms-consent";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
+import { DjangoApiError } from "@/lib/django-client";
 import { useSessionStore } from "@/store/session-store";
 import { useTr } from "@/lib/use-tr";
-
-type GoogleCredentialResponse = {
-  credential?: string;
-};
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (options: {
-            client_id: string;
-            callback: (response: GoogleCredentialResponse) => void;
-            use_fedcm_for_prompt?: boolean;
-          }) => void;
-          renderButton: (
-            element: HTMLElement,
-            options: {
-              theme?: "outline" | "filled_blue" | "filled_black";
-              size?: "large" | "medium" | "small";
-              shape?: "rectangular" | "pill" | "circle" | "square";
-              text?: "signin_with" | "signup_with" | "continue_with" | "signin";
-              width?: number;
-              locale?: string;
-            },
-          ) => void;
-          cancel: () => void;
-        };
-      };
-    };
-  }
-}
 
 export default function LoginPage() {
   const tr = useTr();
@@ -50,8 +21,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [nextPath, setNextPath] = useState("/dashboard");
   const [googleError, setGoogleError] = useState<string | null>(null);
-  const googleButtonRef = useRef<HTMLDivElement | null>(null);
-  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  // A Google identity with no account yet has to agree to the terms first; the
+  // credential is held so the user does not have to pick their account again.
+  const [pendingGoogleCredential, setPendingGoogleCredential] = useState<string | null>(null);
+  const [googleConsent, setGoogleConsent] = useState(false);
+  const [googleConsentNotice, setGoogleConsentNotice] = useState<string | null>(null);
+  const { clientId: googleClientId, available: googleAvailable } = useGoogleSignInAvailability();
 
   useEffect(() => {
     if (isAuthenticated) window.location.replace(nextPath);
@@ -62,61 +37,25 @@ export default function LoginPage() {
     if (candidate?.startsWith("/dashboard")) setNextPath(candidate);
   }, []);
 
-  useEffect(() => {
-    if (!googleClientId || !googleButtonRef.current) return;
-
-    const buttonElement = googleButtonRef.current;
-    const existingScript = document.querySelector<HTMLScriptElement>("script[data-google-identity]");
-
-    const initializeGoogle = () => {
-      if (!window.google) return;
-      buttonElement.innerHTML = "";
-      window.google.accounts.id.initialize({
-        client_id: googleClientId,
-        use_fedcm_for_prompt: true,
-        callback: async (response) => {
-          if (!response.credential) {
-            setGoogleError("Google chưa xác nhận được tài khoản. Vui lòng thử lại.");
-            return;
-          }
-
-          try {
-            clearError();
-            setGoogleError(null);
-            await loginWithGoogle({ credential: response.credential });
-            window.location.assign(nextPath);
-          } catch {
-            // The session store provides a user-facing message below.
-          }
-        },
-      });
-      window.google.accounts.id.renderButton(buttonElement, {
-        theme: "outline",
-        size: "large",
-        shape: "rectangular",
-        text: "continue_with",
-        width: Math.min(420, buttonElement.clientWidth || 420),
-        locale: "vi",
-      });
-    };
-
-    if (existingScript) {
-      if (window.google) initializeGoogle();
-      else existingScript.addEventListener("load", initializeGoogle, { once: true });
-      return () => existingScript.removeEventListener("load", initializeGoogle);
+  async function signInWithGoogle(credential: string, acceptedTerms: boolean) {
+    try {
+      clearError();
+      setGoogleError(null);
+      await loginWithGoogle({ credential, acceptedTerms });
+      window.location.assign(nextPath);
+    } catch (err) {
+      const consentMessage = err instanceof DjangoApiError ? err.fieldErrors.accepted_terms : undefined;
+      if (consentMessage) {
+        // Not a failure the user needs to see twice: the consent step below
+        // explains it, so drop the store's duplicate error banner.
+        clearError();
+        setPendingGoogleCredential(credential);
+        setGoogleConsentNotice(consentMessage);
+        return;
+      }
+      // The session store provides a user-facing message below.
     }
-
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    script.dataset.googleIdentity = "true";
-    script.onload = initializeGoogle;
-    script.onerror = () => setGoogleError("Chưa thể mở đăng nhập Google. Vui lòng dùng email hoặc thử lại sau.");
-    document.head.appendChild(script);
-
-    return () => window.google?.accounts.id.cancel();
-  }, [clearError, googleClientId, loginWithGoogle, nextPath]);
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -137,16 +76,33 @@ export default function LoginPage() {
       asideDescription={tr("Agromind AI sắp xếp kết quả kiểm tra, điều kiện vườn và việc nên làm trong một không gian dễ theo dõi.", "Agromind AI organizes check results, garden conditions and next steps in one easy-to-follow space.")}
     >
       <form onSubmit={handleSubmit} className="space-y-5">
-        {googleClientId ? (
+        {googleAvailable && googleClientId ? (
           <div className="rounded-lg border border-line bg-surface-soft p-4">
             <p className="text-sm font-semibold text-ink">{tr("Tiếp tục nhanh bằng Google", "Continue quickly with Google")}</p>
-            <div ref={googleButtonRef} className="mt-3 min-h-11 w-full overflow-hidden rounded-md" />
+            {pendingGoogleCredential ? (
+              <div className="mt-3 space-y-3">
+                <p className="text-xs leading-6 text-ink-soft">{googleConsentNotice}</p>
+                <TermsConsentCheckbox checked={googleConsent} onChange={setGoogleConsent} required={false} />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={!googleConsent}
+                  loading={status === "loading"}
+                  onClick={() => void signInWithGoogle(pendingGoogleCredential, true)}
+                >
+                  {tr("Đồng ý và tiếp tục bằng Google", "Agree and continue with Google")}
+                </Button>
+              </div>
+            ) : (
+              <GoogleSignInButton
+                clientId={googleClientId}
+                onCredential={(credential) => void signInWithGoogle(credential, false)}
+                onError={setGoogleError}
+              />
+            )}
             {googleError ? <p role="alert" className="mt-3 text-xs leading-6 text-danger-ink">{googleError}</p> : null}
-            <div className="mt-5 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
-              <span className="h-px flex-1 bg-line" aria-hidden />
-              {tr("Hoặc dùng email", "Or use email")}
-              <span className="h-px flex-1 bg-line" aria-hidden />
-            </div>
+            <AuthDivider />
           </div>
         ) : null}
 
@@ -174,6 +130,12 @@ export default function LoginPage() {
           required
         />
 
+        <div className="flex justify-end">
+          <Link href="/forgot-password" className="text-sm font-semibold text-leaf-strong underline underline-offset-2 hover:text-leaf">
+            {tr("Quên mật khẩu?", "Forgot your password?")}
+          </Link>
+        </div>
+
         {error ? (
           <div role="alert" className="rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-sm font-medium text-danger-ink">
             {error}
@@ -193,7 +155,10 @@ export default function LoginPage() {
       </form>
 
       <p className="mt-6 text-xs leading-6 text-ink-soft">
-        {tr("Nếu quên mật khẩu, hãy liên hệ quản trị viên hỗ trợ tài khoản.", "If you forgot your password, contact the administrator for account support.")}
+        {tr(
+          "Không nhận được email đặt lại mật khẩu? Hãy kiểm tra mục spam, hoặc liên hệ quản trị viên hỗ trợ tài khoản.",
+          "No password reset email? Check your spam folder, or contact the administrator for account support.",
+        )}
       </p>
     </AuthShell>
   );

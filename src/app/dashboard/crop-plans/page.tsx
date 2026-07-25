@@ -1,54 +1,118 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { Leaf, Plus, Sprout, TriangleAlert } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { ChevronLeft, ChevronRight, Leaf, Plus, Sprout } from "lucide-react";
 
+import { ConfirmDialog } from "@/components/crop-plans/confirm-dialog";
 import { CropPlanListCard } from "@/components/crop-plans/crop-plan-list-card";
+import { ReminderCenter } from "@/components/crop-plans/reminder-center";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ListSkeleton } from "@/components/ui/skeleton";
 import { EmptyState, ErrorState } from "@/components/ui/states";
-import { fetchCropPlans, fetchReminders } from "@/lib/crop-plans-client";
+import {
+  deleteCropPlan,
+  fetchCropPlans,
+  fetchReminders,
+  updateCropPlan,
+  type CropPlanListItem,
+} from "@/lib/crop-plans-client";
 import { useTr } from "@/lib/use-tr";
 import { useSessionStore } from "@/store/session-store";
-import type { CropPlan, ReminderItem } from "@/types";
+
+const PAGE_SIZE = 10;
+
+type PendingConfirm =
+  | { kind: "archive"; plan: CropPlanListItem }
+  | { kind: "delete"; plan: CropPlanListItem }
+  | null;
 
 export default function CropPlansPage() {
   const tr = useTr();
   const { accessToken } = useSessionStore();
-  const [plans, setPlans] = useState<CropPlan[]>([]);
-  const [reminders, setReminders] = useState<ReminderItem[]>([]);
+  const [plans, setPlans] = useState<CropPlanListItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [hasNext, setHasNext] = useState(false);
+  const [page, setPage] = useState(1);
+  const [includeArchived, setIncludeArchived] = useState(false);
+  const [todayCount, setTodayCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<PendingConfirm>(null);
+  const [actionPending, setActionPending] = useState(false);
+  const [reminderKey, setReminderKey] = useState(0);
 
-  useEffect(() => {
+  const loadPlans = useCallback(async () => {
     if (!accessToken) {
       setLoading(false);
       return;
     }
-    void (async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const [planData, reminderData] = await Promise.all([
-          fetchCropPlans(accessToken),
-          fetchReminders(accessToken, "today"),
-        ]);
-        setPlans(planData);
-        setReminders(reminderData);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : tr("Không tải được danh sách kế hoạch.", "Could not load the plan list."));
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [accessToken]);
+    try {
+      setLoading(true);
+      setError(null);
+      const [planData, reminderData] = await Promise.all([
+        fetchCropPlans(accessToken, { page, pageSize: PAGE_SIZE, includeArchived }),
+        fetchReminders(accessToken, { filter: "today", pageSize: 1 }),
+      ]);
+      setPlans(planData.results);
+      setTotal(planData.count);
+      setHasNext(Boolean(planData.next));
+      setTodayCount(reminderData.count);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : tr("Không tải được danh sách kế hoạch.", "Could not load the plan list."));
+    } finally {
+      setLoading(false);
+    }
+  }, [accessToken, page, includeArchived]);
+
+  useEffect(() => {
+    void loadPlans();
+  }, [loadPlans]);
 
   const activePlans = useMemo(
     () => plans.filter((plan) => ["active", "needs_review", "paused"].includes(plan.status)),
     [plans],
   );
+
+  async function handleUnarchive(plan: CropPlanListItem) {
+    if (!accessToken) return;
+    try {
+      setActionPending(true);
+      await updateCropPlan(accessToken, plan.id, { status: "active" });
+      toast.success(tr("Đã khôi phục kế hoạch.", "Plan restored."));
+      await loadPlans();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : tr("Không khôi phục được kế hoạch.", "Could not restore the plan."));
+    } finally {
+      setActionPending(false);
+    }
+  }
+
+  async function handleConfirm() {
+    if (!accessToken || !confirming) return;
+    const { kind, plan } = confirming;
+    try {
+      setActionPending(true);
+      if (kind === "archive") {
+        await updateCropPlan(accessToken, plan.id, { status: "archived" });
+        toast.success(tr("Đã lưu trữ kế hoạch.", "Plan archived."));
+      } else {
+        await deleteCropPlan(accessToken, plan.id);
+        toast.success(tr("Đã xóa kế hoạch.", "Plan deleted."));
+      }
+      setConfirming(null);
+      setReminderKey((current) => current + 1);
+      await loadPlans();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : tr("Thao tác không thành công.", "The action did not go through."));
+    } finally {
+      setActionPending(false);
+    }
+  }
+
+  const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="fl-stagger mx-auto max-w-[1320px] space-y-6">
@@ -80,7 +144,7 @@ export default function CropPlansPage() {
         </Card>
         <Card variant="default" className="rounded-lg shadow-sm">
           <p className="text-overline text-leaf-strong">{tr("Nhắc việc hôm nay", "Today's reminders")}</p>
-          <p className="mt-3 font-display text-4xl font-bold text-ink">{reminders.length}</p>
+          <p className="mt-3 font-display text-4xl font-bold text-ink">{todayCount}</p>
           <p className="mt-2 text-body-sm leading-relaxed text-ink-soft">
             {tr("Tổng số thông báo cần xem trong ngày.", "Total notifications to review today.")}
           </p>
@@ -96,7 +160,23 @@ export default function CropPlansPage() {
         </Card>
       </div>
 
-      {error ? <ErrorState title={tr("Chưa tải được kế hoạch", "Could not load plans")} description={error} onRetry={() => window.location.reload()} /> : null}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-body-sm text-ink-soft">
+          {tr(`Đang hiển thị ${plans.length}/${total} kế hoạch`, `Showing ${plans.length} of ${total} plans`)}
+        </p>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => {
+            setIncludeArchived((current) => !current);
+            setPage(1);
+          }}
+        >
+          {includeArchived ? tr("Ẩn kế hoạch đã lưu trữ", "Hide archived plans") : tr("Hiện kế hoạch đã lưu trữ", "Show archived plans")}
+        </Button>
+      </div>
+
+      {error ? <ErrorState title={tr("Chưa tải được kế hoạch", "Could not load plans")} description={error} onRetry={() => void loadPlans()} /> : null}
 
       {loading ? <ListSkeleton count={3} itemClassName="h-[220px]" /> : null}
 
@@ -107,26 +187,94 @@ export default function CropPlansPage() {
       {!loading && plans.length ? (
         <div className="space-y-4">
           {plans.map((plan) => (
-            <CropPlanListCard key={plan.id} plan={plan} />
+            <CropPlanListCard
+              key={plan.id}
+              plan={plan}
+              pending={actionPending}
+              onArchive={(target) => setConfirming({ kind: "archive", plan: target })}
+              onUnarchive={(target) => void handleUnarchive(target)}
+              onDelete={(target) => setConfirming({ kind: "delete", plan: target })}
+            />
           ))}
         </div>
       ) : null}
 
-      {reminders.length ? (
-        <Card variant="warning" className="rounded-lg">
-          <div className="flex items-start gap-3">
-            <span className="rounded-md bg-sun-soft p-3 text-warning-ink">
-              <TriangleAlert strokeWidth={1.75} className="h-5 w-5" aria-hidden />
-            </span>
-            <div>
-              <h3 className="text-h3 font-bold text-ink">{tr("Cần làm trong hôm nay", "To do today")}</h3>
-              <p className="mt-2 text-body leading-relaxed text-ink-soft">
-                {reminders[0].title}: {reminders[0].body}
-              </p>
-            </div>
+      {total > PAGE_SIZE ? (
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-body-sm text-ink-soft">{tr(`Trang ${page}/${lastPage}`, `Page ${page}/${lastPage}`)}</p>
+          <div className="flex gap-2">
+            <Button size="sm" variant="secondary" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1 || loading}>
+              <ChevronLeft size={14} />
+              {tr("Trước", "Previous")}
+            </Button>
+            <Button size="sm" variant="secondary" onClick={() => setPage((current) => current + 1)} disabled={!hasNext || loading}>
+              {tr("Sau", "Next")}
+              <ChevronRight size={14} />
+            </Button>
           </div>
-        </Card>
+        </div>
       ) : null}
+
+      <ReminderCenter
+        accessToken={accessToken}
+        refreshKey={reminderKey}
+        title="Việc cần làm cho tất cả kế hoạch"
+        titleEn="To do across all plans"
+      />
+
+      <ConfirmDialog
+        open={confirming?.kind === "archive"}
+        title={tr("Lưu trữ kế hoạch này?", "Archive this plan?")}
+        description={
+          confirming
+            ? tr(
+                `“${confirming.plan.title}” sẽ được ẩn khỏi danh sách chính.`,
+                `"${confirming.plan.title}" will be hidden from the main list.`,
+              )
+            : ""
+        }
+        consequences={[
+          tr("Toàn bộ bước chăm cây và nhắc việc vẫn được giữ nguyên.", "All care steps and reminders are kept."),
+          tr("Bạn có thể khôi phục bất cứ lúc nào bằng nút “Hiện kế hoạch đã lưu trữ”.", "You can restore it any time via \"Show archived plans\"."),
+        ]}
+        confirmLabel={tr("Lưu trữ", "Archive")}
+        pending={actionPending}
+        onConfirm={() => void handleConfirm()}
+        onCancel={() => setConfirming(null)}
+      />
+
+      <ConfirmDialog
+        open={confirming?.kind === "delete"}
+        danger
+        title={tr("Xóa vĩnh viễn kế hoạch này?", "Permanently delete this plan?")}
+        description={
+          confirming
+            ? tr(
+                `“${confirming.plan.title}” sẽ bị xóa và không khôi phục được.`,
+                `"${confirming.plan.title}" will be deleted and cannot be recovered.`,
+              )
+            : ""
+        }
+        consequences={
+          confirming
+            ? [
+                tr(
+                  `${confirming.plan.step_count} bước chăm cây sẽ bị xóa, bao gồm ${confirming.plan.completed_step_count} bước đã hoàn thành.`,
+                  `${confirming.plan.step_count} care steps will be removed, including ${confirming.plan.completed_step_count} already completed.`,
+                ),
+                tr(
+                  `${confirming.plan.reminder_count ?? 0} nhắc việc của kế hoạch này sẽ bị xóa.`,
+                  `${confirming.plan.reminder_count ?? 0} reminders for this plan will be removed.`,
+                ),
+                tr("Nếu chỉ muốn ẩn kế hoạch, hãy chọn “Lưu trữ” thay vì xóa.", "Choose \"Archive\" instead if you only want to hide the plan."),
+              ]
+            : []
+        }
+        confirmLabel={tr("Xóa kế hoạch", "Delete plan")}
+        pending={actionPending}
+        onConfirm={() => void handleConfirm()}
+        onCancel={() => setConfirming(null)}
+      />
     </div>
   );
 }

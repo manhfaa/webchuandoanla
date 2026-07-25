@@ -1,5 +1,15 @@
 import { PricingPlan } from "@/types";
 
+/**
+ * Presentation copy for the plans, plus an offline fallback for their prices.
+ *
+ * The catalogue at `GET /api/engagement/plans/` is the source of truth for what
+ * an account is actually charged: the pricing screens overwrite the price
+ * strings below with the live values (see `applyCataloguePrices`) and only fall
+ * back to them when the server cannot be reached. `payments/tests.py` asserts
+ * that these prices still match the catalogue, so editing one side alone fails
+ * the test suite instead of quietly advertising the wrong amount.
+ */
 export const pricingPlans: PricingPlan[] = [
   {
     id: "seed",

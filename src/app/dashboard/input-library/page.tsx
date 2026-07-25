@@ -1,12 +1,15 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
-import { FlaskConical, Leaf, Search, ShieldAlert } from "lucide-react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FilterX, FlaskConical, Search, SearchX, ShieldAlert } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { InputCard } from "@/components/input-library/input-card";
+import { SymptomCard } from "@/components/input-library/symptom-card";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ListSkeleton } from "@/components/ui/skeleton";
+import { EmptyState, ErrorState } from "@/components/ui/states";
 import {
   fetchInputLibrary,
   fetchNutritionSymptoms,
@@ -16,7 +19,15 @@ import {
 import { useTr } from "@/lib/use-tr";
 import { useLanguageStore } from "@/store/language-store";
 
-type Tr = (vi: string, en: string) => string;
+type Filters = { q: string; category: string; crop: string; disease: string };
+
+const NO_FILTERS: Filters = { q: "", category: "", crop: "", disease: "" };
+
+/**
+ * Combining accent marks that NFD normalisation leaves behind, built from char
+ * codes (U+0300 to U+036F) so this source line stays free of invisible characters.
+ */
+const COMBINING_MARKS = new RegExp(`[${String.fromCharCode(0x300)}-${String.fromCharCode(0x36f)}]`, "g");
 
 /**
  * Same bilingual resolution as `useTr`, but readable outside of render
@@ -26,94 +37,45 @@ function trOffRender(vi: string, en: string) {
   return useLanguageStore.getState().language === "en" ? en : vi;
 }
 
+/** Fold case and Vietnamese accents so "Cà chua", "ca chua" and "CÀ CHUA" all match. */
+function fold(value: string) {
+  return value.toLowerCase().normalize("NFD").replace(COMBINING_MARKS, "").replace(/đ/g, "d").trim();
+}
+
+/** Each entry is one crop name, so a plain substring is precise enough here. */
+function matchesCrop(needle: string, crops: string[]) {
+  const folded = fold(needle);
+  if (!folded) return true;
+  return crops.some((crop) => fold(crop).includes(folded));
+}
+
 /**
- * Backend content is Vietnamese-first: the English column is optional and is
- * empty for every row created before the bilingual rollout. Always fall back
- * to the Vietnamese value.
+ * Free prose, so every word of the needle must appear somewhere rather than as
+ * one block: growers type "vàng lá" for a row that reads "Vàng giữa gân lá".
  */
-function pickText(vi: string, en: string | null | undefined, isEnglish: boolean) {
-  if (!isEnglish) return vi;
-  return en && en.trim() ? en : vi;
+function matchesText(needle: string, texts: Array<string | null | undefined>) {
+  const words = fold(needle).split(/\s+/).filter(Boolean);
+  if (!words.length) return true;
+  const haystack = texts.map((text) => (text ? fold(text) : "")).join(" ");
+  return words.every((word) => haystack.includes(word));
 }
 
-function pickList(vi: string[], en: string[] | null | undefined, isEnglish: boolean) {
-  if (!isEnglish) return vi;
-  return en && en.length ? en : vi;
-}
-
-function categoryLabel(category: string, tr: Tr) {
-  if (category === "pesticide") return tr("Thuốc BVTV", "Pesticide");
-  if (category === "fertilizer") return tr("Phân bón", "Fertilizer");
-  if (category === "nutrition") return tr("Dinh dưỡng", "Nutrition");
-  return category;
-}
-
-function InputCard({ item, tr }: { item: AgriculturalInput; tr: Tr }) {
-  const isEnglish = useLanguageStore((state) => state.language === "en");
-  const name = pickText(item.name, item.name_en, isEnglish);
-  const group = pickText(item.group, item.group_en, isEnglish);
-  const activeIngredient = pickText(item.active_ingredient, item.active_ingredient_en, isEnglish);
-  const usage = pickText(item.usage, item.usage_en, isEnglish);
-  const warning = pickText(item.warning, item.warning_en, isEnglish);
-  const suitableCrops = pickList(item.suitable_crops, item.suitable_crops_en, isEnglish);
-  const relatedDiseases = pickList(item.related_diseases, item.related_diseases_en, isEnglish);
-  const safetyNotes = pickList(item.safety_notes, item.safety_notes_en, isEnglish);
-
-  return (
-    <Card variant={item.category === "pesticide" ? "warning" : "default"} padding="lg" className="rounded-xl shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <Badge variant={item.category === "pesticide" ? "warning" : "success"}>
-            {categoryLabel(item.category, tr)}
-          </Badge>
-          <h3 className="mt-3 text-h3 font-bold text-ink">{name}</h3>
-          <p className="mt-1 text-body-sm text-ink-soft">{group || activeIngredient}</p>
-        </div>
-        <FlaskConical strokeWidth={1.75} className="h-6 w-6 text-leaf-strong" />
-      </div>
-      <p className="mt-4 text-body-sm leading-relaxed text-ink-soft">{usage}</p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {suitableCrops.map((crop) => (
-          <Badge key={crop} variant="muted">{crop}</Badge>
-        ))}
-        {relatedDiseases.map((disease) => (
-          <Badge key={disease} variant="brand">{disease}</Badge>
-        ))}
-      </div>
-      {warning ? <p className="mt-4 text-body-sm leading-relaxed text-danger-ink">{warning}</p> : null}
-      {safetyNotes.length ? (
-        <ul className="mt-4 space-y-1 text-caption leading-relaxed text-ink-soft">
-          {safetyNotes.map((note) => (
-            <li key={note}>- {note}</li>
-          ))}
-        </ul>
-      ) : null}
-    </Card>
+/**
+ * /api/nutrition-symptoms/ only understands `q`, which it matches against the
+ * nutrient and symptom text. Feeding the crop box into `q` therefore matched
+ * nothing and blanked the whole panel, so crop and disease are narrowed here
+ * against the fields the rows actually carry.
+ */
+function narrowSymptoms(rows: NutritionSymptom[], crop: string, disease: string) {
+  return rows.filter(
+    (row) =>
+      matchesCrop(crop, [...row.affected_crops, ...(row.affected_crops_en ?? [])]) &&
+      matchesText(disease, [row.nutrient, row.nutrient_en, row.symptom, row.symptom_en]),
   );
 }
 
-function SymptomCard({ item }: { item: NutritionSymptom }) {
-  const isEnglish = useLanguageStore((state) => state.language === "en");
-  const nutrient = pickText(item.nutrient, item.nutrient_en, isEnglish);
-  const symptom = pickText(item.symptom, item.symptom_en, isEnglish);
-  const recommendation = pickText(item.recommendation, item.recommendation_en, isEnglish);
-  const affectedCrops = pickList(item.affected_crops, item.affected_crops_en, isEnglish);
-
-  return (
-    <div className="rounded-lg border border-line bg-surface p-4">
-      <div className="flex items-center gap-2">
-        <Leaf strokeWidth={1.75} className="h-4 w-4 text-leaf-strong" />
-        <p className="font-semibold text-ink">{nutrient}</p>
-      </div>
-      <p className="mt-3 text-body-sm leading-relaxed text-ink-soft">{symptom}</p>
-      <p className="mt-3 text-body-sm font-medium leading-relaxed text-leaf-strong">{recommendation}</p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {affectedCrops.map((crop) => (
-          <Badge key={crop} variant="locked">{crop}</Badge>
-        ))}
-      </div>
-    </div>
-  );
+function errorMessage(reason: unknown, fallback: string) {
+  return reason instanceof Error && reason.message ? reason.message : fallback;
 }
 
 export default function InputLibraryPage() {
@@ -122,55 +84,90 @@ export default function InputLibraryPage() {
   const [crop, setCrop] = useState("");
   const [disease, setDisease] = useState("");
   const [category, setCategory] = useState("");
+  const [applied, setApplied] = useState<Filters>(NO_FILTERS);
   const [items, setItems] = useState<AgriculturalInput[]>([]);
   const [symptoms, setSymptoms] = useState<NutritionSymptom[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [libraryError, setLibraryError] = useState<string | null>(null);
+  const [symptomError, setSymptomError] = useState<string | null>(null);
+  const latestRequest = useRef(0);
 
-  const load = useCallback(async ({
-    nextQuery,
-    nextCategory,
-    nextCrop,
-    nextDisease,
-  }: {
-    nextQuery: string;
-    nextCategory: string;
-    nextCrop: string;
-    nextDisease: string;
-  }) => {
+  const load = useCallback(async (next: Filters) => {
+    const requestId = ++latestRequest.current;
+    setApplied(next);
     setLoading(true);
-    setError(null);
-    try {
-      const [libraryData, symptomData] = await Promise.all([
-        fetchInputLibrary({ q: nextQuery, category: nextCategory, crop: nextCrop, disease: nextDisease }),
-        fetchNutritionSymptoms(nextQuery || nextCrop || nextDisease),
-      ]);
-      setItems(libraryData);
-      setSymptoms(symptomData);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : trOffRender("Không tải được thư viện vật tư.", "Could not load the input library."),
+    // Settled, not all: a failure in one panel must not blank the other.
+    const [library, nutrition] = await Promise.allSettled([
+      fetchInputLibrary(next),
+      fetchNutritionSymptoms(next.q),
+    ]);
+    if (requestId !== latestRequest.current) return;
+
+    if (library.status === "fulfilled") {
+      setItems(library.value);
+      setLibraryError(null);
+    } else {
+      setItems([]);
+      setLibraryError(
+        errorMessage(
+          library.reason,
+          trOffRender("Không tải được thư viện vật tư.", "Could not load the input library."),
+        ),
       );
-    } finally {
-      setLoading(false);
     }
+
+    if (nutrition.status === "fulfilled") {
+      setSymptoms(nutrition.value);
+      setSymptomError(null);
+    } else {
+      setSymptoms([]);
+      setSymptomError(
+        errorMessage(
+          nutrition.reason,
+          trOffRender("Không tải được danh sách triệu chứng.", "Could not load the symptom list."),
+        ),
+      );
+    }
+
+    setLoading(false);
   }, []);
 
   useEffect(() => {
-    void load({ nextQuery: "", nextCategory: "", nextCrop: "", nextDisease: "" });
+    void load(NO_FILTERS);
   }, [load]);
+
+  const visibleSymptoms = useMemo(
+    () => narrowSymptoms(symptoms, applied.crop, applied.disease),
+    [applied.crop, applied.disease, symptoms],
+  );
+
+  /** Only these three narrow the symptom panel; the input-type select does not apply to it. */
+  const appliedTerms = [applied.q, applied.crop, applied.disease].filter(Boolean);
+  const hasAppliedFilters = appliedTerms.length > 0 || Boolean(applied.category);
+  const canClear = hasAppliedFilters || Boolean(query.trim() || crop.trim() || disease.trim() || category);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void load({
-      nextQuery: query,
-      nextCategory: category,
-      nextCrop: crop,
-      nextDisease: disease,
-    });
+    void load({ q: query.trim(), category, crop: crop.trim(), disease: disease.trim() });
   }
+
+  function handleClearFilters() {
+    setQuery("");
+    setCrop("");
+    setDisease("");
+    setCategory("");
+    void load(NO_FILTERS);
+  }
+
+  const clearFiltersAction = (
+    <button
+      type="button"
+      onClick={handleClearFilters}
+      className={buttonVariants({ variant: "secondary", size: "md" })}
+    >
+      {tr("Xóa bộ lọc", "Clear filters")}
+    </button>
+  );
 
   return (
     <div className="fl-stagger mx-auto max-w-[1380px] space-y-6">
@@ -193,19 +190,19 @@ export default function InputLibraryPage() {
             label={tr("Tìm kiếm", "Search")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={tr("Mancozeb, đốm lá, kali...", "Mancozeb, leaf spot, potassium...")}
+            placeholder={tr("Gốc đồng, NPK, canxi...", "Copper-based, NPK, calcium...")}
           />
           <Input
             label={tr("Cây trồng", "Crop")}
             value={crop}
             onChange={(e) => setCrop(e.target.value)}
-            placeholder={tr("Cà chua, táo, lúa...", "Tomato, apple, rice...")}
+            placeholder={tr("Cà chua, cà phê, lúa...", "Tomato, coffee, rice...")}
           />
           <Input
             label={tr("Bệnh/triệu chứng", "Disease/symptom")}
             value={disease}
             onChange={(e) => setDisease(e.target.value)}
-            placeholder={tr("Đốm lá, cháy lá...", "Leaf spot, leaf blight...")}
+            placeholder={tr("Đốm lá, vàng lá...", "Leaf spot, leaf yellowing...")}
           />
           <label className="space-y-1.5">
             <span className="text-body-sm font-semibold text-ink">{tr("Loại vật tư", "Input type")}</span>
@@ -220,41 +217,70 @@ export default function InputLibraryPage() {
               <option value="nutrition">{tr("Dinh dưỡng", "Nutrition")}</option>
             </select>
           </label>
-          <div className="flex items-end">
-            <Button type="submit" loading={loading}>
+          <div className="flex items-end gap-2">
+            <Button type="submit" loading={loading} disabled={loading}>
               <Search strokeWidth={1.75} className="h-4 w-4" />
               {tr("Tìm kiếm", "Search")}
             </Button>
+            {canClear ? (
+              <Button type="button" variant="secondary" onClick={handleClearFilters} disabled={loading}>
+                <FilterX strokeWidth={1.75} className="h-4 w-4" />
+                {tr("Xóa bộ lọc", "Clear filters")}
+              </Button>
+            ) : null}
           </div>
         </form>
-        {error ? (
-          <p className="mt-4 text-body-sm text-danger-ink">
-            {tr(
-              "Không tìm thấy vật tư phù hợp. Thử từ khoá khác hoặc kiểm tra kết nối.",
-              "No matching input found. Try another keyword or check your connection.",
-            )}
-          </p>
-        ) : null}
       </Card>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_0.75fr]">
-        <div className="grid gap-4 lg:grid-cols-2">
-          {items.map((item) => (
-            <InputCard key={item.id} item={item} tr={tr} />
-          ))}
-          {!items.length && !loading && !error ? (
-            <Card variant="soft" padding="lg" className="rounded-xl shadow-sm">
-              <p className="text-body-sm text-ink-soft">
-                {tr("Chưa có vật tư phù hợp với bộ lọc hiện tại.", "No input matches the current filters yet.")}
-              </p>
-            </Card>
+        <div className="space-y-4">
+          {!loading && !libraryError ? (
+            <p className="text-body-sm text-ink-soft" role="status">
+              {hasAppliedFilters
+                ? tr(`${items.length} vật tư khớp bộ lọc`, `${items.length} inputs match your filters`)
+                : tr(`${items.length} vật tư trong thư viện`, `${items.length} inputs in the library`)}
+            </p>
           ) : null}
-          {!items.length && !loading && error ? (
-            <Card variant="soft" padding="lg" className="rounded-xl shadow-sm">
-              <p className="text-body-sm text-ink-soft">
-                {tr("Không tìm thấy vật tư phù hợp. Thử từ khoá khác.", "No matching input found. Try another keyword.")}
-              </p>
-            </Card>
+
+          {loading ? <ListSkeleton count={4} className="lg:grid-cols-2" itemClassName="h-[260px]" /> : null}
+
+          {!loading && libraryError ? (
+            <ErrorState
+              title={tr("Chưa tải được thư viện vật tư", "Could not load the input library")}
+              description={libraryError}
+              onRetry={() => void load(applied)}
+            />
+          ) : null}
+
+          {!loading && !libraryError && items.length ? (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {items.map((item) => (
+                <InputCard key={item.id} item={item} />
+              ))}
+            </div>
+          ) : null}
+
+          {!loading && !libraryError && !items.length ? (
+            hasAppliedFilters ? (
+              <EmptyState
+                icon={SearchX}
+                title={tr("Không tìm thấy vật tư phù hợp", "No matching input found")}
+                description={tr(
+                  "Chưa có vật tư phù hợp với bộ lọc hiện tại. Thử từ khoá khác hoặc bỏ bớt bộ lọc.",
+                  "No input matches the current filters yet. Try another keyword or remove some filters.",
+                )}
+                action={clearFiltersAction}
+              />
+            ) : (
+              <EmptyState
+                icon={FlaskConical}
+                title={tr("Thư viện chưa có vật tư nào", "The library has no inputs yet")}
+                description={tr(
+                  "Danh mục vật tư đang được cập nhật. Bạn có thể quay lại sau hoặc hỏi thêm trong phần chat tư vấn.",
+                  "The catalogue is being updated. Check back later or ask in the advisory chat.",
+                )}
+              />
+            )
           ) : null}
         </div>
 
@@ -265,14 +291,44 @@ export default function InputLibraryPage() {
               {tr("Triệu chứng thiếu dinh dưỡng", "Nutrition deficiency symptoms")}
             </h3>
           </div>
+          {appliedTerms.length ? (
+            <p className="mt-2 text-caption text-ink-soft">
+              {tr(`Lọc theo: ${appliedTerms.join(" · ")}`, `Filtered by: ${appliedTerms.join(" · ")}`)}
+            </p>
+          ) : null}
           <div className="mt-5 space-y-3">
-            {symptoms.map((item) => (
-              <SymptomCard key={item.id} item={item} />
-            ))}
-            {!symptoms.length && !loading ? (
-              <p className="text-body-sm text-ink-soft">
-                {tr("Chưa có triệu chứng phù hợp.", "No matching symptom yet.")}
-              </p>
+            {loading ? <ListSkeleton count={3} itemClassName="h-[148px]" /> : null}
+
+            {!loading && symptomError ? (
+              <ErrorState
+                title={tr("Chưa tải được triệu chứng", "Could not load symptoms")}
+                description={symptomError}
+                onRetry={() => void load(applied)}
+                className="min-h-[180px]"
+              />
+            ) : null}
+
+            {!loading && !symptomError
+              ? visibleSymptoms.map((item) => <SymptomCard key={item.id} item={item} />)
+              : null}
+
+            {!loading && !symptomError && !visibleSymptoms.length ? (
+              appliedTerms.length ? (
+                <EmptyState
+                  icon={SearchX}
+                  title={tr("Chưa có triệu chứng phù hợp.", "No matching symptom yet.")}
+                  description={tr(
+                    "Không có dấu hiệu thiếu dinh dưỡng nào khớp với cây trồng hoặc triệu chứng bạn vừa nhập.",
+                    "No deficiency sign matches the crop or symptom you entered.",
+                  )}
+                  action={clearFiltersAction}
+                  className="min-h-[200px]"
+                />
+              ) : (
+                <p className="text-body-sm text-ink-soft">
+                  {tr("Danh sách triệu chứng đang được cập nhật.", "The symptom list is being updated.")}
+                </p>
+              )
             ) : null}
           </div>
           <p className="mt-5 border-t border-line pt-4 text-caption leading-relaxed text-ink-soft">

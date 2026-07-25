@@ -11,6 +11,7 @@ import {
   Clock3,
   Copy,
   Crown,
+  LifeBuoy,
   Loader2,
   LockKeyhole,
   QrCode,
@@ -20,12 +21,29 @@ import {
   Sprout,
   TrendingUp,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { StatusBadge, type StatusBadgeState } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState, LoadingState } from "@/components/ui/states";
+import {
+  blocksNewOrder,
+  createPaymentOrder,
+  fetchPaymentOrder,
+  fetchPaymentOrders,
+  fetchServicePlans,
+  formatVnd,
+  isOpenOrder,
+  PaymentsApiError,
+  planAmount,
+  requestOrderReconciliation,
+  type BankDetails,
+  type CreatedOrder,
+  type PaymentOrderDetail,
+  type PaymentOrderStatus,
+  type ServicePlanDto,
+} from "@/lib/payments-client";
 import { PLANS } from "@/lib/plans";
 import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
@@ -33,31 +51,40 @@ import { cn } from "@/lib/utils";
 type Tr = (vi: string, en: string) => string;
 import { useSessionStore } from "@/store/session-store";
 
-type OrderStatus = "pending" | "underpaid" | "paid" | "overpaid" | "expired" | "cancelled" | "review";
+type OrderStatus = PaymentOrderStatus;
+
+type CheckoutOrder = {
+  id: string;
+  plan: string;
+  price: number;
+  amount_received: number;
+  remaining_amount: number;
+  status: OrderStatus;
+  transfer_content: string;
+  expires_at: string;
+  needs_reconciliation: boolean;
+  reconciliation_requested: boolean;
+};
 
 type OrderData = {
-  order: {
-    id: string;
-    plan: string;
-    price: number;
-    amount_received: number;
-    remaining_amount: number;
-    status: OrderStatus;
-    transfer_content: string;
-    expires_at: string;
-  };
-  bank: { name: string; account_number: string; account_name: string };
+  order: CheckoutOrder;
+  bank: BankDetails;
   qr_url: string;
 };
 
-type OrderStatusData = {
-  order: {
-    status: OrderStatus;
-    amount_received: number;
-    remaining_amount: number;
-  };
-  current_plan: string;
-};
+/**
+ * Anything that has to be told to the grower is stored as a reason, not as a
+ * finished sentence: the copy is then rendered in whichever language is active
+ * when it is shown, instead of freezing at the moment the poll ran.
+ */
+type PaymentNotice =
+  | { kind: "underpaid"; received: number; remaining: number }
+  | { kind: "review" }
+  | { kind: "closed" }
+  | { kind: "session" }
+  | { kind: "not-seen" }
+  | { kind: "unreadable" }
+  | { kind: "interrupted" };
 
 const ORDER_STATUSES: readonly OrderStatus[] = ["pending", "underpaid", "paid", "overpaid", "expired", "cancelled", "review"];
 
@@ -65,35 +92,75 @@ function isOrderStatus(value: unknown): value is OrderStatus {
   return typeof value === "string" && (ORDER_STATUSES as readonly string[]).includes(value);
 }
 
+type PollResult = {
+  status: OrderStatus;
+  amount_received: number;
+  remaining_amount: number;
+  needs_reconciliation: boolean;
+  reconciliation_requested: boolean;
+  current_plan: string;
+  plan_expires_at: string | null;
+};
+
 /**
  * The poll response drives plan activation, so never trust an unchecked cast:
  * a malformed body must be ignored rather than treated as a valid status.
  */
-function parseOrderStatusData(payload: unknown): OrderStatusData | null {
+function parseOrderDetail(payload: PaymentOrderDetail | null): PollResult | null {
   if (typeof payload !== "object" || payload === null) return null;
-  const root = payload as { order?: unknown; current_plan?: unknown };
-  if (typeof root.order !== "object" || root.order === null) return null;
-  if (typeof root.current_plan !== "string") return null;
-
-  const order = root.order as { status?: unknown; amount_received?: unknown; remaining_amount?: unknown };
+  const order = payload.order as Partial<PaymentOrderDetail["order"]> | undefined;
+  if (typeof order !== "object" || order === null) return null;
   if (!isOrderStatus(order.status)) return null;
   if (typeof order.amount_received !== "number" || !Number.isFinite(order.amount_received)) return null;
   if (typeof order.remaining_amount !== "number" || !Number.isFinite(order.remaining_amount)) return null;
+  if (typeof payload.current_plan !== "string") return null;
 
   return {
-    order: {
-      status: order.status,
-      amount_received: order.amount_received,
-      remaining_amount: order.remaining_amount,
-    },
-    current_plan: root.current_plan,
+    status: order.status,
+    amount_received: order.amount_received,
+    remaining_amount: order.remaining_amount,
+    needs_reconciliation: order.needs_reconciliation === true,
+    reconciliation_requested: Boolean(order.reconciliation?.requested_at),
+    current_plan: payload.current_plan,
+    plan_expires_at: typeof payload.plan_expires_at === "string" ? payload.plan_expires_at : null,
   };
 }
 
-const currencyFormatter = new Intl.NumberFormat("vi-VN");
+function fromCreatedOrder(payload: CreatedOrder): OrderData {
+  return {
+    order: {
+      ...payload.order,
+      needs_reconciliation: payload.needs_reconciliation === true,
+      reconciliation_requested: Boolean(payload.reconciliation?.requested_at),
+    },
+    bank: payload.bank,
+    qr_url: payload.qr_url,
+  };
+}
+
+function fromOrderDetail(payload: PaymentOrderDetail): OrderData | null {
+  if (!payload.bank || !payload.qr_url || !isOrderStatus(payload.order?.status)) return null;
+  const order = payload.order;
+  return {
+    order: {
+      id: order.id,
+      plan: order.plan,
+      price: order.amount_expected,
+      amount_received: order.amount_received,
+      remaining_amount: order.remaining_amount,
+      status: order.status,
+      transfer_content: order.payment_code,
+      expires_at: order.expires_at,
+      needs_reconciliation: order.needs_reconciliation === true,
+      reconciliation_requested: Boolean(order.reconciliation?.requested_at),
+    },
+    bank: payload.bank,
+    qr_url: payload.qr_url,
+  };
+}
 
 function formatCurrency(value: number) {
-  return `${currencyFormatter.format(value)}đ`;
+  return formatVnd(value);
 }
 
 function formatExpiry(value: string) {
@@ -106,12 +173,58 @@ function formatExpiry(value: string) {
   }).format(new Date(value));
 }
 
+function formatDay(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
+}
+
 function formatCountdown(milliseconds: number, tr: Tr) {
   if (milliseconds <= 0) return tr("Đã hết hạn", "Expired");
   const totalSeconds = Math.floor(milliseconds / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function renderNotice(notice: PaymentNotice, tr: Tr) {
+  switch (notice.kind) {
+    case "underpaid":
+      return tr(
+        `Đã nhận ${formatCurrency(notice.received)}. Bạn cần chuyển thêm ${formatCurrency(notice.remaining)} với cùng nội dung chuyển khoản.`,
+        `Received ${formatCurrency(notice.received)}. You need to transfer an additional ${formatCurrency(notice.remaining)} with the same transfer note.`,
+      );
+    case "review":
+      return tr(
+        "Giao dịch đã được ghi nhận nhưng cần kiểm tra lại số tiền hoặc thời điểm chuyển. Gói sẽ được kích hoạt sau khi đối soát xong.",
+        "The transaction was recorded but the amount or transfer time needs review. The plan will be activated once reconciliation is complete.",
+      );
+    case "closed":
+      return tr(
+        "Yêu cầu này đã đóng. Không chuyển thêm tiền vào nội dung cũ, hãy tạo yêu cầu mới.",
+        "This request is closed. Do not transfer more money using the old note; please create a new request.",
+      );
+    case "session":
+      return tr(
+        "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để kiểm tra giao dịch.",
+        "Your session has expired. Please sign in again to check the transaction.",
+      );
+    case "not-seen":
+      return tr(
+        "Chưa thấy giao dịch sau 10 phút. Không cần chuyển thêm nếu bạn đã thanh toán, hãy kiểm tra lại sau.",
+        "No transaction seen after 10 minutes. No need to transfer again if you already paid; please check back later.",
+      );
+    case "unreadable":
+      return tr(
+        "Chưa đọc được trạng thái giao dịch. Vui lòng quay lại kiểm tra đơn này sau.",
+        "Could not read the transaction status. Please come back to check this order later.",
+      );
+    case "interrupted":
+      return tr(
+        "Kết nối kiểm tra thanh toán bị gián đoạn. Vui lòng thử lại sau.",
+        "The payment check connection was interrupted. Please try again later.",
+      );
+  }
 }
 
 async function copyToClipboard(text: string) {
@@ -244,16 +357,29 @@ export default function CheckoutPlanPage() {
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [creatingOrder, setCreatingOrder] = useState(false);
-  const [polling, setPolling] = useState(false);
+  const [restoringOrder, setRestoringOrder] = useState(true);
+  const [pollMode, setPollMode] = useState<"idle" | "auto" | "fast">("idle");
   const [success, setSuccess] = useState(false);
-  const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
+  const [activatedUntil, setActivatedUntil] = useState<string | null>(null);
+  const [notice, setNotice] = useState<PaymentNotice | null>(null);
+  const [catalogue, setCatalogue] = useState<ServicePlanDto[] | null>(null);
+  const [qrFailed, setQrFailed] = useState(false);
+  const [qrAttempt, setQrAttempt] = useState(0);
+  const [reconcileState, setReconcileState] = useState<"idle" | "sending" | "sent">("idle");
+  const [reconcileMessage, setReconcileMessage] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const redirectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollingStartedAtRef = useRef(0);
-  const countdownOrderId = orderData?.order.id;
-  const countdownStatus = orderData?.order.status;
+  const orderIdRef = useRef<string | null>(null);
+
+  const activeOrderId = orderData?.order.id ?? null;
+  const activeStatus = orderData?.order.status ?? null;
+  const catalogueAmount = planAmount(catalogue, planParam);
+
+  useEffect(() => {
+    orderIdRef.current = activeOrderId;
+  }, [activeOrderId]);
 
   useEffect(() => {
     if (!planInfo || planParam === "seed") router.replace("/dashboard/pricing");
@@ -266,137 +392,186 @@ export default function CheckoutPlanPage() {
   }, [accessToken, initialized, planParam, router]);
 
   useEffect(() => {
-    if (!countdownOrderId || !countdownStatus || ["paid", "expired", "cancelled"].includes(countdownStatus)) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const plans = await fetchServicePlans();
+        if (!cancelled) setCatalogue(plans);
+      } catch {
+        // The order response carries the authoritative amount anyway.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // A reload used to drop the grower back on the "create request" screen while
+  // a transfer was already in flight, which invites paying twice.
+  useEffect(() => {
+    if (!planInfo || planParam === "seed") {
+      setRestoringOrder(false);
+      return;
+    }
+    if (!initialized) return;
+    if (!accessToken) {
+      setRestoringOrder(false);
+      return;
+    }
+    let cancelled = false;
+    setRestoringOrder(true);
+    void (async () => {
+      try {
+        const orders = await fetchPaymentOrders(accessToken);
+        // Only orders the backend would hand back anyway: a closed order that
+        // received a partial transfer stays in the history (with its own
+        // reconciliation action) and must not block buying the plan again.
+        const existing = orders.find((order) => order.plan === planParam && (isOpenOrder(order) || blocksNewOrder(order)));
+        if (!existing || cancelled) return;
+        const restored = fromOrderDetail(await fetchPaymentOrder(accessToken, existing.id));
+        if (cancelled || !restored) return;
+        setOrderData(restored);
+        setNow(Date.now());
+      } catch {
+        // Falling back to the create screen is safe: the backend returns the
+        // same order instead of minting a second code.
+      } finally {
+        if (!cancelled) setRestoringOrder(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, initialized, planInfo, planParam]);
+
+  useEffect(() => {
+    if (!activeOrderId || !activeStatus || ["paid", "expired", "cancelled"].includes(activeStatus)) return;
     setNow(Date.now());
     countdownRef.current = setInterval(() => setNow(Date.now()), 1000);
     return () => {
       if (countdownRef.current) clearInterval(countdownRef.current);
       countdownRef.current = null;
     };
-  }, [countdownOrderId, countdownStatus]);
-
-  const stopPolling = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    setPolling(false);
-  }, []);
+  }, [activeOrderId, activeStatus]);
 
   useEffect(() => () => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
     if (countdownRef.current) clearInterval(countdownRef.current);
     if (redirectRef.current) clearTimeout(redirectRef.current);
   }, []);
+
+  const checkOrder = useCallback(async () => {
+    const orderId = orderIdRef.current;
+    if (!orderId) return;
+    try {
+      const data = parseOrderDetail(await fetchPaymentOrder(accessToken, orderId));
+      if (!data) {
+        // Only the manual check reports failures; background polling stays
+        // quiet until the grower actually asks for an answer.
+        if (pollingStartedAtRef.current && Date.now() - pollingStartedAtRef.current > 10 * 60 * 1000) {
+          setPollMode("idle");
+          setNotice({ kind: "unreadable" });
+        }
+        return;
+      }
+
+      setOrderData((current) => current ? {
+        ...current,
+        order: {
+          ...current.order,
+          status: data.status,
+          amount_received: data.amount_received,
+          remaining_amount: data.remaining_amount,
+          needs_reconciliation: data.needs_reconciliation,
+          reconciliation_requested: data.reconciliation_requested,
+        },
+      } : current);
+
+      if (data.status === "paid") {
+        setPollMode("idle");
+        setPlan(data.current_plan as Parameters<typeof setPlan>[0]);
+        setActivatedUntil(data.plan_expires_at);
+        setSuccess(true);
+        redirectRef.current = setTimeout(() => router.push("/dashboard"), 4000);
+        return;
+      }
+      if (data.status === "underpaid") {
+        setNotice({ kind: "underpaid", received: data.amount_received, remaining: data.remaining_amount });
+        return;
+      }
+      if (["overpaid", "review"].includes(data.status)) {
+        setPollMode("idle");
+        setNotice({ kind: "review" });
+        return;
+      }
+      if (["expired", "cancelled"].includes(data.status)) {
+        setPollMode("idle");
+        setNotice({ kind: "closed" });
+        return;
+      }
+      if (pollingStartedAtRef.current && Date.now() - pollingStartedAtRef.current > 10 * 60 * 1000) {
+        setPollMode("idle");
+        setNotice({ kind: "not-seen" });
+      }
+    } catch (caught) {
+      if (caught instanceof PaymentsApiError && caught.status === 401) {
+        setPollMode("idle");
+        setNotice({ kind: "session" });
+        return;
+      }
+      if (pollingStartedAtRef.current && Date.now() - pollingStartedAtRef.current > 10 * 60 * 1000) {
+        setPollMode("idle");
+        setNotice({ kind: "interrupted" });
+      }
+    }
+  }, [accessToken, router, setPlan]);
+
+  // Activation is announced by the bank, not by the grower, so an open order is
+  // watched in the background; pressing "I have transferred" only speeds it up.
+  useEffect(() => {
+    if (!activeOrderId || (activeStatus !== "pending" && activeStatus !== "underpaid")) {
+      setPollMode((mode) => (mode === "idle" ? mode : "idle"));
+      return;
+    }
+    setPollMode((mode) => (mode === "idle" ? "auto" : mode));
+  }, [activeOrderId, activeStatus]);
+
+  useEffect(() => {
+    if (pollMode === "idle" || !activeOrderId) return;
+    const interval = pollMode === "fast" ? 3000 : 9000;
+    const timer = setInterval(() => void checkOrder(), interval);
+    return () => clearInterval(timer);
+  }, [pollMode, activeOrderId, checkOrder]);
 
   async function createOrder() {
     try {
       setCreatingOrder(true);
       setOrderError(null);
-      setPaymentMessage(null);
-      stopPolling();
-      const response = await fetch("/api/django/api/payments/orders/", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
-        },
-        body: JSON.stringify({ plan: planParam }),
-      });
-      const data = await response.json().catch(() => ({})) as Partial<OrderData> & { error?: string; detail?: string };
-      if (!response.ok) {
-        setOrderError(data.detail ?? data.error ?? tr("Không thể tạo yêu cầu thanh toán.", "Could not create the payment request."));
-        return;
-      }
-      setOrderData(data as OrderData);
+      setNotice(null);
+      setPollMode("idle");
+      setQrFailed(false);
+      const payload = await createPaymentOrder(accessToken, planParam);
+      setOrderData(fromCreatedOrder(payload));
       setNow(Date.now());
-    } catch {
-      setOrderError(tr("Chưa thể kết nối dịch vụ thanh toán. Vui lòng kiểm tra mạng và thử lại.", "Could not reach the payment service. Please check your connection and try again."));
+    } catch (caught) {
+      if (caught instanceof PaymentsApiError) {
+        setOrderError(
+          caught.serverMessage ||
+            tr("Không thể tạo yêu cầu thanh toán.", "Could not create the payment request."),
+        );
+      } else {
+        setOrderError(tr("Chưa thể kết nối dịch vụ thanh toán. Vui lòng kiểm tra mạng và thử lại.", "Could not reach the payment service. Please check your connection and try again."));
+      }
     } finally {
       setCreatingOrder(false);
     }
   }
 
-  function startPolling() {
-    if (!orderData || polling) return;
-    const orderId = orderData.order.id;
-    setPaymentMessage(null);
-    setPolling(true);
+  function startFastPolling() {
+    if (!orderData || pollMode === "fast") return;
+    setNotice(null);
     pollingStartedAtRef.current = Date.now();
-
-    async function checkOrder() {
-      try {
-        const response = await fetch(`/api/django/api/payments/orders/${orderId}/`, {
-          headers: accessToken ? { authorization: `Bearer ${accessToken}` } : {},
-          cache: "no-store",
-        });
-        if (!response.ok) {
-          if (response.status === 401) {
-            stopPolling();
-            setPaymentMessage(tr("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để kiểm tra giao dịch.", "Your session has expired. Please sign in again to check the transaction."));
-            return;
-          }
-          if (Date.now() - pollingStartedAtRef.current > 10 * 60 * 1000) {
-            stopPolling();
-            setPaymentMessage(tr("Chưa thể xác nhận giao dịch. Bạn có thể quay lại kiểm tra đơn này sau.", "Could not confirm the transaction yet. You can come back to check this order later."));
-          }
-          return;
-        }
-
-        const data = parseOrderStatusData(await response.json().catch(() => null));
-        if (!data) {
-          if (Date.now() - pollingStartedAtRef.current > 10 * 60 * 1000) {
-            stopPolling();
-            setPaymentMessage(tr("Chưa đọc được trạng thái giao dịch. Vui lòng quay lại kiểm tra đơn này sau.", "Could not read the transaction status. Please come back to check this order later."));
-          }
-          return;
-        }
-
-        setOrderData((current) => current ? {
-          ...current,
-          order: {
-            ...current.order,
-            status: data.order.status,
-            amount_received: data.order.amount_received,
-            remaining_amount: data.order.remaining_amount,
-          },
-        } : current);
-
-        if (data.order.status === "paid") {
-          stopPolling();
-          setPlan(data.current_plan as Parameters<typeof setPlan>[0]);
-          setSuccess(true);
-          redirectRef.current = setTimeout(() => router.push("/dashboard"), 3000);
-          return;
-        }
-        if (data.order.status === "underpaid") {
-          setPaymentMessage(tr(`Đã nhận ${formatCurrency(data.order.amount_received)}. Bạn cần chuyển thêm ${formatCurrency(data.order.remaining_amount)} với cùng nội dung chuyển khoản.`, `Received ${formatCurrency(data.order.amount_received)}. You need to transfer an additional ${formatCurrency(data.order.remaining_amount)} with the same transfer note.`));
-          return;
-        }
-        if (["overpaid", "review"].includes(data.order.status)) {
-          stopPolling();
-          setPaymentMessage(tr("Giao dịch đã được ghi nhận nhưng cần kiểm tra lại số tiền hoặc thời điểm chuyển. Gói sẽ được kích hoạt sau khi đối soát xong.", "The transaction was recorded but the amount or transfer time needs review. The plan will be activated once reconciliation is complete."));
-          return;
-        }
-        if (["expired", "cancelled"].includes(data.order.status)) {
-          stopPolling();
-          setPaymentMessage(tr("Yêu cầu này đã đóng. Không chuyển thêm tiền vào nội dung cũ, hãy tạo yêu cầu mới.", "This request is closed. Do not transfer more money using the old note; please create a new request."));
-          return;
-        }
-        if (Date.now() - pollingStartedAtRef.current > 10 * 60 * 1000) {
-          stopPolling();
-          setPaymentMessage(tr("Chưa thấy giao dịch sau 10 phút. Không cần chuyển thêm nếu bạn đã thanh toán, hãy kiểm tra lại sau.", "No transaction seen after 10 minutes. No need to transfer again if you already paid; please check back later."));
-        }
-      } catch {
-        if (Date.now() - pollingStartedAtRef.current > 10 * 60 * 1000) {
-          stopPolling();
-          setPaymentMessage(tr("Kết nối kiểm tra thanh toán bị gián đoạn. Vui lòng thử lại sau.", "The payment check connection was interrupted. Please try again later."));
-        }
-      }
-    }
-
+    setPollMode("fast");
     void checkOrder();
-    intervalRef.current = setInterval(() => void checkOrder(), 3000);
   }
 
   async function renewOrder() {
@@ -404,9 +579,30 @@ export default function CheckoutPlanPage() {
     await createOrder();
   }
 
+  async function askForReconciliation() {
+    if (!orderData) return;
+    setReconcileState("sending");
+    try {
+      const result = await requestOrderReconciliation(accessToken, orderData.order.id);
+      setOrderData((current) => current ? { ...current, order: { ...current.order, reconciliation_requested: true } } : current);
+      setReconcileMessage(result.message);
+      setReconcileState("sent");
+    } catch (caught) {
+      setReconcileState("idle");
+      setReconcileMessage(
+        caught instanceof PaymentsApiError && caught.serverMessage
+          ? caught.serverMessage
+          : tr("Chưa gửi được yêu cầu đối soát. Vui lòng thử lại.", "Could not send the reconciliation request. Please try again."),
+      );
+    }
+  }
+
+  const planFeatures = useMemo(() => (planInfo ? (planInfo.features as readonly string[]) : []), [planInfo]);
+
   if (!planInfo) return null;
 
   const PlanIcon = { grow: TrendingUp, bloom: ShieldCheck, elite: Crown }[planParam] ?? Sprout;
+  const displayPrice = catalogueAmount ?? planInfo.price;
 
   if (success) {
     return (
@@ -420,6 +616,11 @@ export default function CheckoutPlanPage() {
         <p className="mt-3 max-w-lg text-sm leading-7 text-ink-soft">
           {tr("Tài khoản của bạn đã được nâng cấp lên gói", "Your account has been upgraded to the")} <strong className="text-ink">{planInfo.name}</strong> {tr("Bạn có thể sử dụng quyền lợi mới ngay bây giờ.", "plan. You can use your new benefits right now.")}
         </p>
+        {activatedUntil ? (
+          <p className="mt-2 text-sm font-semibold text-ink">
+            {tr(`Gói có hiệu lực đến ${formatDay(activatedUntil)}`, `The plan is valid until ${formatDay(activatedUntil)}`)}
+          </p>
+        ) : null}
         <Link href="/dashboard" className={cn(buttonVariants({ size: "lg" }), "mt-7")}>
           {tr("Về bảng điều khiển", "Back to dashboard")}
         </Link>
@@ -447,8 +648,13 @@ export default function CheckoutPlanPage() {
     );
   }
 
-  if (creatingOrder) {
-    return <LoadingState title={tr("Đang chuẩn bị thông tin thanh toán", "Preparing your payment details")} description={tr("Hệ thống đang tạo mã chuyển khoản riêng cho bạn.", "We are generating a transfer code just for you.")} />;
+  if (creatingOrder || (restoringOrder && !orderData)) {
+    return (
+      <LoadingState
+        title={creatingOrder ? tr("Đang chuẩn bị thông tin thanh toán", "Preparing your payment details") : tr("Đang kiểm tra yêu cầu thanh toán của bạn", "Checking your payment request")}
+        description={creatingOrder ? tr("Hệ thống đang tạo mã chuyển khoản riêng cho bạn.", "We are generating a transfer code just for you.") : tr("Nếu bạn đã tạo mã trước đó, hệ thống sẽ mở lại đúng mã đó.", "If you created a code earlier, we will reopen exactly that one.")}
+      />
+    );
   }
 
   if (!orderData) {
@@ -471,7 +677,7 @@ export default function CheckoutPlanPage() {
             </div>
             <div className="rounded-lg border border-on-forest/15 bg-on-forest/[0.06] px-5 py-4 text-left lg:text-right">
               <p className="text-xs font-semibold text-on-forest-muted">{tr("Thanh toán một lần", "One-time payment")}</p>
-              <p className="mt-1 font-display text-3xl font-bold text-on-forest">{formatCurrency(planInfo.price)}</p>
+              <p className="mt-1 font-display text-3xl font-bold text-on-forest">{formatCurrency(displayPrice)}</p>
               <p className="mt-1 text-xs text-on-forest-muted">{tr("Sử dụng trong 30 ngày", "Valid for 30 days")}</p>
             </div>
           </div>
@@ -482,7 +688,7 @@ export default function CheckoutPlanPage() {
             <p className="text-overline text-leaf-strong">{tr("Quyền lợi của gói", "Plan benefits")}</p>
             <h2 className="mt-3 font-display text-2xl font-bold text-ink">{tr(planInfo.tagline, planInfo.taglineEn)}</h2>
             <div className="mt-5 grid gap-2 sm:grid-cols-2">
-              {(planInfo.features as readonly string[]).map((feature, featureIndex) => (
+              {planFeatures.map((feature, featureIndex) => (
                 <div key={feature} className="flex items-start gap-3 rounded-lg bg-surface-soft px-4 py-3 text-sm leading-6 text-ink">
                   <Check size={16} className="mt-1 shrink-0 text-leaf-strong" aria-hidden />
                   {tr(feature, (planInfo.featuresEn as readonly string[])[featureIndex] ?? feature)}
@@ -512,11 +718,15 @@ export default function CheckoutPlanPage() {
   const expiresIn = new Date(orderData.order.expires_at).getTime() - now;
   const locallyExpired = expiresIn <= 0 && orderStatus === "pending";
   const isClosed = locallyExpired || ["expired", "cancelled"].includes(orderStatus);
-  const needsReview = ["overpaid", "review"].includes(orderStatus);
+  const needsReview = ["overpaid", "review"].includes(orderStatus) || orderData.order.needs_reconciliation;
   const isUnderpaid = orderStatus === "underpaid";
-  const canUseQr = !isClosed && !needsReview && !isUnderpaid;
+  const canUseQr = !isClosed && !needsReview && !isUnderpaid && !qrFailed;
   const visibleStatus = locallyExpired ? "expired" : orderStatus;
-  const statusMeta = getStatusMeta(visibleStatus, polling, tr);
+  const confirming = pollMode === "fast";
+  const statusMeta = getStatusMeta(visibleStatus, confirming, tr);
+  const reconciliationRequested = orderData.order.reconciliation_requested || reconcileState === "sent";
+  // A failed image stays failed in the browser cache, so a retry needs a new URL.
+  const qrSrc = qrAttempt === 0 ? orderData.qr_url : `${orderData.qr_url}${orderData.qr_url.includes("?") ? "&" : "?"}r=${qrAttempt}`;
 
   return (
     <div className="mx-auto max-w-[1180px] space-y-5">
@@ -537,7 +747,7 @@ export default function CheckoutPlanPage() {
             </p>
           </div>
           <div className="rounded-xl border border-on-forest/15 bg-on-forest/[0.06] p-4">
-            <PaymentProgress status={visibleStatus} polling={polling} />
+            <PaymentProgress status={visibleStatus} polling={confirming} />
           </div>
         </div>
       </Card>
@@ -546,31 +756,50 @@ export default function CheckoutPlanPage() {
         <div
           className={cn(
             "flex flex-col gap-4 rounded-xl border p-5 sm:flex-row sm:items-center sm:justify-between",
-            isClosed ? "border-danger/30 bg-danger-soft" : "border-sun/35 bg-sun-soft",
+            isClosed && !needsReview ? "border-danger/30 bg-danger-soft" : "border-sun/35 bg-sun-soft",
           )}
           role="status"
           aria-live="polite"
         >
           <div className="flex items-start gap-3">
-            <AlertTriangle className={cn("mt-0.5 shrink-0", isClosed ? "text-danger-ink" : "text-warning-ink")} size={20} aria-hidden />
+            <AlertTriangle className={cn("mt-0.5 shrink-0", isClosed && !needsReview ? "text-danger-ink" : "text-warning-ink")} size={20} aria-hidden />
             <div>
               <p className="font-bold text-ink">
-                {isClosed ? tr("Yêu cầu thanh toán đã hết hiệu lực", "The payment request is no longer valid") : isUnderpaid ? tr("Số tiền nhận được chưa đủ", "The received amount is not enough") : tr("Giao dịch đang cần đối soát", "The transaction needs reconciliation")}
+                {needsReview ? tr("Giao dịch đang cần đối soát", "The transaction needs reconciliation") : isClosed ? tr("Yêu cầu thanh toán đã hết hiệu lực", "The payment request is no longer valid") : tr("Số tiền nhận được chưa đủ", "The received amount is not enough")}
               </p>
               <p className="mt-1 text-sm leading-6 text-ink-soft">
-                {isClosed
-                  ? tr("Không chuyển khoản bằng nội dung cũ. Hãy tạo yêu cầu mới để nhận mã thanh toán còn hiệu lực.", "Do not transfer using the old note. Create a new request to get a valid payment code.")
-                  : isUnderpaid
-                    ? tr(`Đã nhận ${formatCurrency(orderData.order.amount_received)}. Còn thiếu ${formatCurrency(orderData.order.remaining_amount)}.`, `Received ${formatCurrency(orderData.order.amount_received)}. Still short ${formatCurrency(orderData.order.remaining_amount)}.`)
-                    : tr("Giao dịch đã được lưu. Hệ thống cần kiểm tra lại trước khi kích hoạt gói.", "The transaction was saved. It needs review before the plan can be activated.")}
+                {needsReview
+                  ? tr(
+                      `Hệ thống đã nhận ${formatCurrency(orderData.order.amount_received)} cho mã ${orderData.order.transfer_content} nhưng chưa kích hoạt gói. Đừng chuyển thêm tiền — hãy gửi yêu cầu đối soát để được xử lý.`,
+                      `We received ${formatCurrency(orderData.order.amount_received)} for code ${orderData.order.transfer_content} but the plan is not active yet. Do not transfer more money — send a reconciliation request instead.`,
+                    )
+                  : isClosed
+                    ? tr("Không chuyển khoản bằng nội dung cũ. Hãy tạo yêu cầu mới để nhận mã thanh toán còn hiệu lực.", "Do not transfer using the old note. Create a new request to get a valid payment code.")
+                    : tr(`Đã nhận ${formatCurrency(orderData.order.amount_received)}. Còn thiếu ${formatCurrency(orderData.order.remaining_amount)}.`, `Received ${formatCurrency(orderData.order.amount_received)}. Still short ${formatCurrency(orderData.order.remaining_amount)}.`)}
               </p>
+              {needsReview && (reconcileMessage || reconciliationRequested) ? (
+                <p className="mt-2 text-sm font-semibold text-warning-ink">
+                  {reconcileMessage ?? tr("Đã ghi nhận yêu cầu đối soát của bạn.", "Your reconciliation request has been recorded.")}
+                </p>
+              ) : null}
             </div>
           </div>
-          {isClosed ? (
-            <Button type="button" variant="secondary" className="shrink-0" onClick={() => void renewOrder()}>
-              <RefreshCw size={16} aria-hidden /> {tr("Tạo yêu cầu mới", "Create new request")}
-            </Button>
-          ) : null}
+          <div className="flex shrink-0 flex-wrap gap-2">
+            {needsReview && !reconciliationRequested ? (
+              <Button type="button" variant="secondary" loading={reconcileState === "sending"} disabled={reconcileState === "sending"} onClick={() => void askForReconciliation()}>
+                <LifeBuoy size={16} aria-hidden /> {tr("Yêu cầu đối soát", "Request reconciliation")}
+              </Button>
+            ) : null}
+            {needsReview ? (
+              <Link href="/dashboard/pricing" className={buttonVariants({ variant: "secondary", size: "md" })}>
+                <ReceiptText size={16} aria-hidden /> {tr("Xem lịch sử thanh toán", "View payment history")}
+              </Link>
+            ) : isClosed ? (
+              <Button type="button" variant="secondary" onClick={() => void renewOrder()}>
+                <RefreshCw size={16} aria-hidden /> {tr("Tạo yêu cầu mới", "Create new request")}
+              </Button>
+            ) : null}
+          </div>
         </div>
       ) : null}
 
@@ -580,7 +809,7 @@ export default function CheckoutPlanPage() {
             <div>
               <p className="text-overline text-leaf-strong">{tr("Mã thanh toán", "Payment code")}</p>
               <h2 className="mt-2 font-display text-2xl font-bold text-ink">
-                {isUnderpaid ? tr("Chuyển phần còn thiếu bằng thông tin bên dưới", "Transfer the remaining amount using the details below") : isClosed || needsReview ? tr("Mã QR hiện không thể sử dụng", "The QR code cannot be used right now") : tr("Quét QR bằng ứng dụng ngân hàng", "Scan the QR code with your banking app")}
+                {isUnderpaid ? tr("Chuyển phần còn thiếu bằng thông tin bên dưới", "Transfer the remaining amount using the details below") : isClosed || needsReview ? tr("Mã QR hiện không thể sử dụng", "The QR code cannot be used right now") : qrFailed ? tr("Chuyển khoản thủ công theo thông tin bên dưới", "Transfer manually using the details below") : tr("Quét QR bằng ứng dụng ngân hàng", "Scan the QR code with your banking app")}
               </h2>
             </div>
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-success-soft text-leaf-strong"><QrCode size={22} aria-hidden /></span>
@@ -590,16 +819,34 @@ export default function CheckoutPlanPage() {
             <div className="relative rounded-xl border border-line-strong bg-qr-paper p-3 shadow-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={orderData.qr_url}
+                src={qrSrc}
                 alt={tr(`QR thanh toán gói ${planInfo.name}`, `Payment QR for ${planInfo.name} plan`)}
+                onError={() => setQrFailed(true)}
                 className={cn("aspect-square w-full object-contain transition", !canUseQr && "opacity-15 grayscale")}
               />
               {!canUseQr ? (
                 <div className="absolute inset-3 flex items-center justify-center rounded-lg border border-line bg-surface/95 p-5 text-center">
                   <div>
                     <AlertTriangle className="mx-auto text-warning-ink" size={26} aria-hidden />
-                    <p className="mt-3 text-sm font-bold text-ink">{isUnderpaid ? tr("Không quét lại QR cũ", "Do not rescan the old QR") : tr("QR đã được khóa", "QR is locked")}</p>
-                    <p className="mt-1 text-xs leading-5 text-ink-soft">{isUnderpaid ? tr("Hãy nhập thủ công đúng số tiền còn thiếu.", "Enter the exact remaining amount manually.") : tr("Không thực hiện thêm giao dịch với yêu cầu này.", "Do not make any more transactions with this request.")}</p>
+                    <p className="mt-3 text-sm font-bold text-ink">
+                      {qrFailed && !isClosed && !needsReview && !isUnderpaid
+                        ? tr("Không tải được mã QR", "Could not load the QR code")
+                        : isUnderpaid
+                          ? tr("Không quét lại QR cũ", "Do not rescan the old QR")
+                          : tr("QR đã được khóa", "QR is locked")}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-ink-soft">
+                      {qrFailed && !isClosed && !needsReview && !isUnderpaid
+                        ? tr("Hãy chuyển khoản thủ công theo số tài khoản, số tiền và nội dung bên dưới.", "Please transfer manually using the account number, amount and note below.")
+                        : isUnderpaid
+                          ? tr("Hãy nhập thủ công đúng số tiền còn thiếu.", "Enter the exact remaining amount manually.")
+                          : tr("Không thực hiện thêm giao dịch với yêu cầu này.", "Do not make any more transactions with this request.")}
+                    </p>
+                    {qrFailed && !isClosed && !needsReview ? (
+                      <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={() => { setQrAttempt((attempt) => attempt + 1); setQrFailed(false); }}>
+                        <RefreshCw size={14} aria-hidden /> {tr("Tải lại QR", "Reload the QR")}
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
               ) : null}
@@ -619,13 +866,16 @@ export default function CheckoutPlanPage() {
                   <li className="flex gap-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-success-soft text-xs font-bold text-success-ink">3</span> {tr("Hoàn tất giao dịch rồi bấm kiểm tra thanh toán.", "Complete the transaction, then press check payment.")}</li>
                 </ol>
               )}
-              <div className={cn("mt-5 flex items-center gap-3 rounded-lg border px-4 py-3", locallyExpired ? "border-danger/30 bg-danger-soft" : "border-line bg-surface-soft")}>
-                <Clock3 className={cn("shrink-0", locallyExpired ? "text-danger-ink" : "text-leaf-strong")} size={19} aria-hidden />
-                <div>
-                  <p className="text-xs font-semibold text-ink-soft">{tr("Thời gian còn lại", "Time remaining")}</p>
-                  <p className={cn("mt-0.5 font-mono text-xl font-bold tabular-nums", locallyExpired ? "text-danger-ink" : "text-ink")}>{formatCountdown(expiresIn, tr)}</p>
+              {/* A request under review is no longer racing its own clock. */}
+              {needsReview ? null : (
+                <div className={cn("mt-5 flex items-center gap-3 rounded-lg border px-4 py-3", locallyExpired ? "border-danger/30 bg-danger-soft" : "border-line bg-surface-soft")}>
+                  <Clock3 className={cn("shrink-0", locallyExpired ? "text-danger-ink" : "text-leaf-strong")} size={19} aria-hidden />
+                  <div>
+                    <p className="text-xs font-semibold text-ink-soft">{tr("Thời gian còn lại", "Time remaining")}</p>
+                    <p className={cn("mt-0.5 font-mono text-xl font-bold tabular-nums", locallyExpired ? "text-danger-ink" : "text-ink")}>{formatCountdown(expiresIn, tr)}</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -653,21 +903,25 @@ export default function CheckoutPlanPage() {
               <div>
                 <p className="text-overline text-leaf-strong">{tr("Trạng thái giao dịch", "Transaction status")}</p>
                 <h2 className="mt-2 font-display text-2xl font-bold text-ink">
-                  {polling ? tr("Đang chờ ngân hàng xác nhận", "Waiting for bank confirmation") : isClosed ? tr("Yêu cầu đã hết hiệu lực", "The request is no longer valid") : needsReview ? tr("Đang kiểm tra giao dịch", "Reviewing the transaction") : isUnderpaid ? tr("Cần chuyển phần còn thiếu", "Remaining amount needs to be transferred") : tr("Chờ bạn chuyển khoản", "Waiting for your transfer")}
+                  {confirming ? tr("Đang chờ ngân hàng xác nhận", "Waiting for bank confirmation") : isClosed ? tr("Yêu cầu đã hết hiệu lực", "The request is no longer valid") : needsReview ? tr("Đang kiểm tra giao dịch", "Reviewing the transaction") : isUnderpaid ? tr("Cần chuyển phần còn thiếu", "Remaining amount needs to be transferred") : tr("Chờ bạn chuyển khoản", "Waiting for your transfer")}
                 </h2>
               </div>
-              {polling ? <Loader2 className="mt-1 h-6 w-6 shrink-0 animate-spin text-leaf motion-reduce:animate-none" aria-hidden /> : <ReceiptText className="mt-1 h-6 w-6 shrink-0 text-leaf-strong" aria-hidden />}
+              {confirming ? <Loader2 className="mt-1 h-6 w-6 shrink-0 animate-spin text-leaf motion-reduce:animate-none" aria-hidden /> : <ReceiptText className="mt-1 h-6 w-6 shrink-0 text-leaf-strong" aria-hidden />}
             </div>
 
             <p className="mt-3 text-sm leading-7 text-ink-soft" aria-live="polite">
-              {paymentMessage ?? (polling
-                ? tr("Hệ thống đang kiểm tra tự động mỗi vài giây. Bạn có thể giữ nguyên trang này.", "We check automatically every few seconds. You can keep this page open.")
-                : tr("Sau khi ngân hàng báo chuyển khoản thành công, bấm nút bên dưới để hệ thống kiểm tra ngay.", "After your bank reports a successful transfer, press the button below to check right away."))}
+              {notice
+                ? renderNotice(notice, tr)
+                : confirming
+                  ? tr("Hệ thống đang kiểm tra tự động mỗi vài giây. Bạn có thể giữ nguyên trang này.", "We check automatically every few seconds. You can keep this page open.")
+                  : pollMode === "auto"
+                    ? tr("Trang này tự kiểm tra giao dịch cho bạn. Nếu đã chuyển khoản xong, bấm nút bên dưới để kiểm tra ngay.", "This page checks the transaction for you. If you have finished the transfer, press the button below to check right away.")
+                    : tr("Sau khi ngân hàng báo chuyển khoản thành công, bấm nút bên dưới để hệ thống kiểm tra ngay.", "After your bank reports a successful transfer, press the button below to check right away.")}
             </p>
 
             {!isClosed && !needsReview ? (
-              <Button type="button" size="lg" className="mt-5 w-full" onClick={startPolling} disabled={polling}>
-                {polling ? <><Loader2 size={18} className="animate-spin motion-reduce:animate-none" aria-hidden /> {tr("Đang kiểm tra giao dịch", "Checking the transaction")}</> : <><RefreshCw size={18} aria-hidden /> {tr("Tôi đã chuyển khoản, kiểm tra ngay", "I have transferred, check now")}</>}
+              <Button type="button" size="lg" className="mt-5 w-full" onClick={startFastPolling} disabled={confirming}>
+                {confirming ? <><Loader2 size={18} className="animate-spin motion-reduce:animate-none" aria-hidden /> {tr("Đang kiểm tra giao dịch", "Checking the transaction")}</> : <><RefreshCw size={18} aria-hidden /> {tr("Tôi đã chuyển khoản, kiểm tra ngay", "I have transferred, check now")}</>}
               </Button>
             ) : null}
 

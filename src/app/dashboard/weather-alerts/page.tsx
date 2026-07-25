@@ -7,6 +7,7 @@ import {
   Compass,
   LocateFixed,
   MapPin,
+  Plus,
   RefreshCcw,
   ShieldAlert,
   Sprout,
@@ -14,12 +15,23 @@ import {
   Wind,
 } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import {
+  createFarmLocation,
+  deleteFarmLocation,
+  getFieldErrors,
+  updateFarmLocation,
+  type FarmLocationPayload,
+  type FieldErrors,
+} from "@/components/weather/farm-location-api";
+import { SavedLocationList } from "@/components/weather/saved-location-list";
+import { WeatherFreshness } from "@/components/weather/weather-freshness";
+import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ListSkeleton, Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/states";
 import {
-  createFarmLocation,
   fetchFarmAdvisory,
   fetchFarmLocations,
   type FarmAdvisory,
@@ -31,6 +43,9 @@ import { useLanguageStore } from "@/store/language-store";
 import { useSessionStore } from "@/store/session-store";
 
 type Tr = (vi: string, en: string) => string;
+
+/** A reading older than this is refetched when the tab comes back to the front. */
+const REVALIDATE_AFTER_MS = 10 * 60 * 1000;
 
 /**
  * Same bilingual resolution as `useTr`, but readable outside of render
@@ -52,6 +67,8 @@ function createDefaultForm(tr: Tr) {
     longitude: null as number | null,
   };
 }
+
+type LocationForm = ReturnType<typeof createDefaultForm>;
 
 function sourceLabel(source: string | undefined, tr: Tr) {
   if (source === "open_meteo") return tr("Dự báo đã cập nhật · Open-Meteo", "Forecast updated · Open-Meteo");
@@ -85,6 +102,81 @@ function bilingualList(vi: string[] | null | undefined, en: string[] | null | un
 function coordinateText(lat: number | null | undefined, lon: number | null | undefined, tr: Tr) {
   if (lat == null || lon == null) return tr("Chưa có tọa độ", "No coordinates yet");
   return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+}
+
+/**
+ * The reading time the server reports, when it reports one. Read defensively:
+ * responses in the wild still ship without any timestamp, and the caller then
+ * falls back to the moment the browser received the payload.
+ */
+function readServerFetchedAt(advisory: FarmAdvisory | null): string | null {
+  if (!advisory) return null;
+  const payload = advisory as unknown as Record<string, unknown>;
+  const weather = payload.weather as Record<string, unknown> | undefined;
+  for (const candidate of [weather?.fetched_at, weather?.observed_at, payload.fetched_at]) {
+    if (typeof candidate === "string" && !Number.isNaN(Date.parse(candidate))) return candidate;
+  }
+  return null;
+}
+
+function addressKey(value: { province: string; district: string; ward: string; address_text: string }) {
+  return [value.province, value.district, value.ward, value.address_text]
+    .map((part) => (part || "").trim().toLowerCase())
+    .join("|");
+}
+
+/** ~11 m of precision: enough to spot the same field saved twice. */
+function coordinateKey(lat: number | null | undefined, lon: number | null | undefined) {
+  if (lat == null || lon == null) return null;
+  return `${lat.toFixed(4)},${lon.toFixed(4)}`;
+}
+
+/** The saved location this form would duplicate, if any. */
+function findDuplicate(form: LocationForm, locations: FarmLocation[]) {
+  const key = addressKey(form);
+  const hasAddress = key.replace(/\|/g, "").length > 0;
+  const name = form.name.trim().toLowerCase();
+  const coordinates = coordinateKey(form.latitude, form.longitude);
+
+  return (
+    locations.find(
+      (location) =>
+        (hasAddress && addressKey(location) === key) ||
+        location.name.trim().toLowerCase() === name ||
+        (coordinates !== null && coordinateKey(location.latitude, location.longitude) === coordinates),
+    ) ?? null
+  );
+}
+
+/**
+ * Address and coordinates of a saved location. Every partial update has to carry
+ * them: the serializer re-geocodes whenever a request arrives without
+ * coordinates, which drops the pin at the geographic centre of Vietnam.
+ */
+function locationPatchBase(location: FarmLocation): FarmLocationPayload {
+  return {
+    province: location.province,
+    district: location.district,
+    ward: location.ward,
+    address_text: location.address_text,
+    ...(location.latitude != null && location.longitude != null
+      ? { latitude: location.latitude, longitude: location.longitude }
+      : {}),
+  };
+}
+
+function formPayload(form: LocationForm): FarmLocationPayload {
+  return {
+    name: form.name.trim(),
+    province: form.province.trim(),
+    district: form.district.trim(),
+    ward: form.ward.trim(),
+    address_text: form.address_text.trim(),
+    crop_type: form.crop_type.trim(),
+    ...(form.latitude != null && form.longitude != null
+      ? { latitude: form.latitude, longitude: form.longitude }
+      : {}),
+  };
 }
 
 function WeatherMetric({ icon: Icon, label, value }: { icon: typeof ThermometerSun; label: string; value: string }) {
@@ -125,14 +217,26 @@ export default function WeatherAlertsPage() {
   );
 
   const [locations, setLocations] = useState<FarmLocation[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(true);
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
+  const [editingLocationId, setEditingLocationId] = useState<number | null>(null);
   const [form, setForm] = useState(() => createDefaultForm(tr));
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [duplicateOf, setDuplicateOf] = useState<FarmLocation | null>(null);
   const [advisory, setAdvisory] = useState<FarmAdvisory | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [advisoryLoading, setAdvisoryLoading] = useState(false);
+  const [advisoryError, setAdvisoryError] = useState<string | null>(null);
+  const [fetchedAt, setFetchedAt] = useState<{ iso: string; fromServer: boolean } | null>(null);
+  const [saving, setSaving] = useState(false);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [locationNote, setLocationNote] = useState<string | null>(null);
+
   const cropTypeRef = useRef(form.crop_type);
+  const advisoryRequestRef = useRef(0);
+  const advisoryLoadingRef = useRef(false);
+  const lastAttemptRef = useRef(0);
+  const formPrefilledRef = useRef(false);
 
   useEffect(() => {
     cropTypeRef.current = form.crop_type;
@@ -142,6 +246,12 @@ export default function WeatherAlertsPage() {
     () => locations.find((location) => location.id === selectedLocationId) ?? locations[0] ?? null,
     [locations, selectedLocationId],
   );
+  const editingLocation = useMemo(
+    () => locations.find((location) => location.id === editingLocationId) ?? null,
+    [locations, editingLocationId],
+  );
+  const activeLocationId = selectedLocation?.id ?? null;
+  const activeCrop = selectedLocation?.crop_type ?? "";
 
   const applyLocationToForm = useCallback((location: FarmLocation) => {
     const fallback = createDefaultForm(trOffRender);
@@ -158,29 +268,116 @@ export default function WeatherAlertsPage() {
   }, []);
 
   const loadLocations = useCallback(async () => {
-    if (!accessToken) return;
-    const data = await fetchFarmLocations(accessToken);
-    setLocations(data);
-    if (data[0]) {
-      setSelectedLocationId(data[0].id);
-      applyLocationToForm(data[0]);
+    if (!accessToken) {
+      setLocationsLoading(false);
+      return;
+    }
+    setLocationsLoading(true);
+    try {
+      const data = await fetchFarmLocations(accessToken);
+      setLocations(data);
+      setSelectedLocationId((current) => current ?? data[0]?.id ?? null);
+      // Only the first load may fill the form: this also re-runs when the access
+      // token is refreshed, and that must not overwrite what the grower is typing.
+      if (!formPrefilledRef.current && data[0]) {
+        formPrefilledRef.current = true;
+        setEditingLocationId(data[0].id);
+        applyLocationToForm(data[0]);
+      }
+    } finally {
+      setLocationsLoading(false);
     }
   }, [accessToken, applyLocationToForm]);
 
-  const loadAdvisory = useCallback(async (location: FarmLocation) => {
-    if (!accessToken) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchFarmAdvisory(accessToken, location.id, location.crop_type || cropTypeRef.current);
-      setAdvisory(data);
-    } catch (err) {
+  const loadAdvisory = useCallback(
+    async (locationId: number, crop: string) => {
+      if (!accessToken) return;
+      const requestId = advisoryRequestRef.current + 1;
+      advisoryRequestRef.current = requestId;
+      advisoryLoadingRef.current = true;
+      setAdvisoryLoading(true);
+      setAdvisoryError(null);
+      try {
+        const data = await fetchFarmAdvisory(accessToken, locationId, crop || cropTypeRef.current);
+        if (requestId !== advisoryRequestRef.current) return;
+        const serverIso = readServerFetchedAt(data);
+        setAdvisory(data);
+        setFetchedAt({ iso: serverIso ?? new Date().toISOString(), fromServer: Boolean(serverIso) });
+      } catch (err) {
+        if (requestId !== advisoryRequestRef.current) return;
+        // Keep whatever reading is already on screen and flag it instead of
+        // blanking the cards: an empty card reads as "nothing to report here".
+        setAdvisoryError(
+          err instanceof Error ? err.message : trOffRender("Không tải được cảnh báo.", "Could not load the alerts."),
+        );
+      } finally {
+        if (requestId === advisoryRequestRef.current) {
+          advisoryLoadingRef.current = false;
+          lastAttemptRef.current = Date.now();
+          setAdvisoryLoading(false);
+        }
+      }
+    },
+    [accessToken],
+  );
+
+  useEffect(() => {
+    void loadLocations().catch((err) => {
+      setError(
+        err instanceof Error
+          ? err.message
+          : trOffRender("Không tải được vị trí canh tác.", "Could not load your farm locations."),
+      );
+    });
+  }, [loadLocations]);
+
+  useEffect(() => {
+    if (activeLocationId == null) {
       setAdvisory(null);
-      setError(err instanceof Error ? err.message : trOffRender("Không tải được cảnh báo.", "Could not load the alerts."));
-    } finally {
-      setLoading(false);
+      setAdvisoryError(null);
+      setFetchedAt(null);
+      return;
     }
-  }, [accessToken]);
+    // Another field (or another crop) means the reading on screen no longer applies.
+    setAdvisory(null);
+    setFetchedAt(null);
+    void loadAdvisory(activeLocationId, activeCrop);
+  }, [activeCrop, activeLocationId, loadAdvisory]);
+
+  useEffect(() => {
+    if (activeLocationId == null) return;
+
+    const revalidate = () => {
+      if (document.visibilityState !== "visible") return;
+      if (advisoryLoadingRef.current) return;
+      if (Date.now() - lastAttemptRef.current < REVALIDATE_AFTER_MS) return;
+      void loadAdvisory(activeLocationId, activeCrop);
+    };
+
+    window.addEventListener("focus", revalidate);
+    document.addEventListener("visibilitychange", revalidate);
+    const timer = window.setInterval(revalidate, 60_000);
+    return () => {
+      window.removeEventListener("focus", revalidate);
+      document.removeEventListener("visibilitychange", revalidate);
+      window.clearInterval(timer);
+    };
+  }, [activeCrop, activeLocationId, loadAdvisory]);
+
+  function handleRefreshAdvisory() {
+    if (activeLocationId == null) return;
+    void loadAdvisory(activeLocationId, activeCrop);
+  }
+
+  function updateForm(patch: Partial<LocationForm>, changedFields: string[]) {
+    setForm((current) => ({ ...current, ...patch }));
+    setFieldErrors((current) => {
+      const next = { ...current };
+      changedFields.forEach((field) => delete next[field]);
+      return next;
+    });
+    setDuplicateOf(null);
+  }
 
   function handleUseCurrentLocation() {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -225,21 +422,65 @@ export default function WeatherAlertsPage() {
     );
   }
 
-  useEffect(() => {
-    void loadLocations().catch((err) => {
-      setError(
-        err instanceof Error
-          ? err.message
-          : trOffRender("Không tải được vị trí canh tác.", "Could not load your farm locations."),
-      );
-    });
-  }, [loadLocations]);
+  function applySaveError(err: unknown) {
+    setFieldErrors(getFieldErrors(err));
+    setError(err instanceof Error ? err.message : tr("Không lưu được vị trí.", "Could not save the location."));
+  }
 
-  useEffect(() => {
-    if (selectedLocation) {
-      void loadAdvisory(selectedLocation);
+  async function createNewLocation() {
+    if (!accessToken) {
+      setError(loginMessage);
+      return;
     }
-  }, [loadAdvisory, selectedLocation]);
+    setSaving(true);
+    setError(null);
+    setFieldErrors({});
+    setLocationNote(null);
+    try {
+      const location = await createFarmLocation(accessToken, formPayload(form));
+      setLocations((current) => [location, ...current.filter((item) => item.id !== location.id)]);
+      setSelectedLocationId(location.id);
+      setEditingLocationId(location.id);
+      applyLocationToForm(location);
+      setDuplicateOf(null);
+      setLocationNote(
+        tr(
+          "Đã lưu tọa độ. Dự báo sẽ dùng dữ liệu thật từ Open-Meteo.",
+          "Coordinates saved. The forecast will use live Open-Meteo data.",
+        ),
+      );
+    } catch (err) {
+      applySaveError(err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveExistingLocation(target: FarmLocation) {
+    if (!accessToken) {
+      setError(loginMessage);
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    setFieldErrors({});
+    setLocationNote(null);
+    try {
+      const updated = await updateFarmLocation(accessToken, target.id, formPayload(form));
+      setLocations((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+      applyLocationToForm(updated);
+      setLocationNote(tr("Đã cập nhật vị trí đã lưu.", "The saved location has been updated."));
+      // The advisory reloads by itself when the crop changes; an address or
+      // coordinate edit keeps the same key, so ask for it explicitly.
+      if (updated.id === activeLocationId && updated.crop_type === target.crop_type) {
+        void loadAdvisory(updated.id, updated.crop_type);
+      }
+    } catch (err) {
+      applySaveError(err);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -248,34 +489,129 @@ export default function WeatherAlertsPage() {
       return;
     }
 
-    setLoading(true);
+    if (editingLocation) {
+      await saveExistingLocation(editingLocation);
+      return;
+    }
+
+    const duplicate = findDuplicate(form, locations);
+    if (duplicate) {
+      // Saving the same field twice used to silently add another row.
+      setDuplicateOf(duplicate);
+      setError(null);
+      setLocationNote(null);
+      return;
+    }
+    await createNewLocation();
+  }
+
+  function handleSelectLocation(location: FarmLocation) {
+    setSelectedLocationId(location.id);
+    setEditingLocationId(location.id);
+    applyLocationToForm(location);
+    setFieldErrors({});
+    setDuplicateOf(null);
     setError(null);
     setLocationNote(null);
-    try {
-      const location = await createFarmLocation(accessToken, {
-        ...form,
-        latitude: form.latitude ?? undefined,
-        longitude: form.longitude ?? undefined,
-      });
-      setLocations((current) => [location, ...current.filter((item) => item.id !== location.id)]);
-      setSelectedLocationId(location.id);
-      applyLocationToForm(location);
-      await loadAdvisory(location);
-      setLocationNote(
-        tr(
-          "Đã lưu tọa độ. Dự báo sẽ dùng dữ liệu thật từ Open-Meteo.",
-          "Coordinates saved. The forecast will use live Open-Meteo data.",
-        ),
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : tr("Không lưu được vị trí.", "Could not save the location."));
-    } finally {
-      setLoading(false);
+  }
+
+  function handleStartNewLocation() {
+    setEditingLocationId(null);
+    setForm(createDefaultForm(tr));
+    setFieldErrors({});
+    setDuplicateOf(null);
+    setError(null);
+    setLocationNote(
+      tr(
+        "Đang nhập một vị trí mới. Cảnh báo bên phải vẫn là của vị trí đang chọn.",
+        "Entering a new location. The alerts on the right still belong to the selected location.",
+      ),
+    );
+  }
+
+  function handleEditDuplicateInstead(duplicate: FarmLocation) {
+    // Keep what the grower just typed; the next submit writes it onto the saved row.
+    setSelectedLocationId(duplicate.id);
+    setEditingLocationId(duplicate.id);
+    setDuplicateOf(null);
+    setLocationNote(
+      tr(
+        `Đang sửa vị trí "${duplicate.name}". Bấm "Cập nhật vị trí" để lưu thay đổi.`,
+        `Editing "${duplicate.name}". Press "Update location" to save the changes.`,
+      ),
+    );
+  }
+
+  async function handleRenameLocation(location: FarmLocation, name: string) {
+    if (!accessToken) throw new Error(loginMessage);
+    const updated = await updateFarmLocation(accessToken, location.id, { ...locationPatchBase(location), name });
+    setLocations((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+    if (editingLocationId === updated.id) applyLocationToForm(updated);
+  }
+
+  async function handleSetDefaultLocation(location: FarmLocation) {
+    if (!accessToken) throw new Error(loginMessage);
+    const updated = await updateFarmLocation(accessToken, location.id, {
+      ...locationPatchBase(location),
+      is_default: true,
+    });
+    // Nothing on the server unsets the previous default, and the whole app falls
+    // back to the first "-is_default" row, so clear the others from here.
+    const cleared = await Promise.all(
+      locations
+        .filter((item) => item.is_default && item.id !== updated.id)
+        .map((item) => updateFarmLocation(accessToken, item.id, { ...locationPatchBase(item), is_default: false })),
+    );
+
+    const byId = new Map<number, FarmLocation>();
+    byId.set(updated.id, updated);
+    cleared.forEach((item) => byId.set(item.id, item));
+    setLocations((current) => current.map((item) => byId.get(item.id) ?? item));
+    setLocationNote(
+      tr(`Đã đặt "${updated.name}" làm vị trí mặc định.`, `"${updated.name}" is now the default location.`),
+    );
+  }
+
+  async function handleDeleteLocation(location: FarmLocation) {
+    if (!accessToken) throw new Error(loginMessage);
+    await deleteFarmLocation(accessToken, location.id);
+
+    const remaining = locations.filter((item) => item.id !== location.id);
+    setLocations(remaining);
+    if (selectedLocationId === location.id || selectedLocationId == null) {
+      setSelectedLocationId(remaining[0]?.id ?? null);
     }
+    if (editingLocationId === location.id) {
+      setEditingLocationId(remaining[0]?.id ?? null);
+      if (remaining[0]) applyLocationToForm(remaining[0]);
+      else setForm(createDefaultForm(tr));
+    }
+    setError(null);
+    setLocationNote(tr(`Đã xóa vị trí "${location.name}".`, `Deleted the location "${location.name}".`));
   }
 
   const current = advisory?.weather.current;
   const weatherSource = advisory?.weather.source;
+  const showStaleNotice = Boolean(advisoryError && advisory);
+  // Responses without `is_current` carry the daily aggregate in `current` (its
+  // wind is the day's maximum), so only an explicit flag counts as a live reading.
+  const showsDailyAggregate =
+    Boolean(current) && (current as unknown as { is_current?: boolean } | undefined)?.is_current !== true;
+
+  const statusBadge: { variant: BadgeVariant; label: string } = (() => {
+    if (advisoryError && !advisory) {
+      return { variant: "danger", label: tr("Không lấy được dữ liệu", "Data unavailable") };
+    }
+    if (!advisory) {
+      return advisoryLoading
+        ? { variant: "muted", label: tr("Đang cập nhật...", "Updating...") }
+        : { variant: "muted", label: tr("Chưa có dữ liệu", "No data yet") };
+    }
+    const risk = advisory.pest_alerts.risk_level;
+    if (risk === "high") return { variant: "danger", label: riskLabel(risk, tr) };
+    if (risk === "medium") return { variant: "warning", label: riskLabel(risk, tr) };
+    return { variant: "success", label: riskLabel(risk, tr) };
+  })();
 
   return (
     <div className="fl-stagger mx-auto max-w-[1380px] space-y-6">
@@ -293,9 +629,7 @@ export default function WeatherAlertsPage() {
               )}
             </p>
           </div>
-          <Badge variant={advisory?.pest_alerts.risk_level === "high" ? "warning" : "success"}>
-            {riskLabel(advisory?.pest_alerts.risk_level, tr)}
-          </Badge>
+          <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>
         </div>
       </Card>
 
@@ -307,7 +641,11 @@ export default function WeatherAlertsPage() {
                 <Compass className="h-5 w-5" />
               </div>
               <div>
-                <p className="font-bold text-ink">{tr("Chọn vị trí khu vườn", "Choose your field location")}</p>
+                <p className="font-bold text-ink">
+                  {editingLocation
+                    ? tr(`Đang sửa: ${editingLocation.name}`, `Editing: ${editingLocation.name}`)
+                    : tr("Chọn vị trí khu vườn", "Choose your field location")}
+                </p>
                 <p className="mt-1 text-body-sm leading-relaxed text-ink-soft">
                   {tr(
                     "Vị trí hiện tại thường cho kết quả sát nhất. Bạn cũng có thể nhập tỉnh, huyện và xã/phường để lưu khu vực trồng.",
@@ -323,7 +661,7 @@ export default function WeatherAlertsPage() {
 
           <form className="space-y-4 font-sans" onSubmit={handleSubmit}>
             <div className="flex flex-wrap gap-3">
-              <Button type="button" variant="secondary" onClick={handleUseCurrentLocation} disabled={locating || loading}>
+              <Button type="button" variant="secondary" onClick={handleUseCurrentLocation} disabled={locating || saving}>
                 <LocateFixed strokeWidth={1.75} className="h-4 w-4" />
                 {locating
                   ? tr("Đang lấy vị trí...", "Getting location...")
@@ -332,24 +670,68 @@ export default function WeatherAlertsPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <Input label={tr("Tên vị trí", "Location name")} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              <Input label={tr("Cây trồng", "Crop")} value={form.crop_type} onChange={(e) => setForm({ ...form, crop_type: e.target.value })} />
-              <Input label={tr("Tỉnh / thành phố", "Province")} value={form.province} onChange={(e) => setForm({ ...form, province: e.target.value, latitude: null, longitude: null })} />
-              <Input label={tr("Huyện / quận", "District")} value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value, latitude: null, longitude: null })} />
-              <Input label={tr("Xã / phường", "Ward")} value={form.ward} onChange={(e) => setForm({ ...form, ward: e.target.value, latitude: null, longitude: null })} />
-              <Input label={tr("Địa chỉ / ghi chú", "Address / note")} value={form.address_text} onChange={(e) => setForm({ ...form, address_text: e.target.value, latitude: null, longitude: null })} />
+              <Input
+                label={tr("Tên vị trí", "Location name")}
+                value={form.name}
+                error={fieldErrors.name}
+                onChange={(e) => updateForm({ name: e.target.value }, ["name"])}
+              />
+              <Input
+                label={tr("Cây trồng", "Crop")}
+                value={form.crop_type}
+                error={fieldErrors.crop_type}
+                onChange={(e) => updateForm({ crop_type: e.target.value }, ["crop_type"])}
+              />
+              <Input
+                label={tr("Tỉnh / thành phố", "Province")}
+                value={form.province}
+                error={fieldErrors.province}
+                onChange={(e) =>
+                  updateForm({ province: e.target.value, latitude: null, longitude: null }, ["province"])
+                }
+              />
+              <Input
+                label={tr("Huyện / quận", "District")}
+                value={form.district}
+                error={fieldErrors.district}
+                onChange={(e) =>
+                  updateForm({ district: e.target.value, latitude: null, longitude: null }, ["district"])
+                }
+              />
+              <Input
+                label={tr("Xã / phường", "Ward")}
+                value={form.ward}
+                error={fieldErrors.ward}
+                onChange={(e) => updateForm({ ward: e.target.value, latitude: null, longitude: null }, ["ward"])}
+              />
+              <Input
+                label={tr("Địa chỉ / ghi chú", "Address / note")}
+                value={form.address_text}
+                error={fieldErrors.address_text}
+                onChange={(e) =>
+                  updateForm({ address_text: e.target.value, latitude: null, longitude: null }, ["address_text"])
+                }
+              />
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Button type="submit" loading={loading}>
+              <Button type="submit" loading={saving} disabled={saving}>
                 <MapPin strokeWidth={1.75} className="h-4 w-4" />
-                {tr("Lưu vị trí & xem cảnh báo", "Save location & view alerts")}
+                {editingLocation
+                  ? tr("Cập nhật vị trí", "Update location")
+                  : tr("Lưu vị trí & xem cảnh báo", "Save location & view alerts")}
               </Button>
+              {editingLocation ? (
+                <Button type="button" variant="secondary" disabled={saving} onClick={handleStartNewLocation}>
+                  <Plus strokeWidth={1.75} className="h-4 w-4" />
+                  {tr("Thêm vị trí mới", "Add a new location")}
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 variant="secondary"
-                disabled={!selectedLocation || loading}
-                onClick={() => selectedLocation && void loadAdvisory(selectedLocation)}
+                disabled={!selectedLocation || advisoryLoading}
+                onClick={handleRefreshAdvisory}
               >
                 <RefreshCcw strokeWidth={1.75} className="h-4 w-4" />
                 {tr("Tải lại cảnh báo", "Refresh alerts")}
@@ -357,31 +739,47 @@ export default function WeatherAlertsPage() {
             </div>
           </form>
 
-          {locations.length ? (
-            <div className="mt-5 flex flex-wrap gap-2">
-              {locations.map((location) => (
-                <button
-                  key={location.id}
+          {error ? <p className="mt-4 text-body-sm text-danger-ink">{error}</p> : null}
+
+          {duplicateOf ? (
+            <div className="mt-4 rounded-lg border border-sun/40 bg-sun-soft p-4">
+              <p className="text-body-sm leading-relaxed text-warning-ink">
+                {tr(
+                  `Vị trí "${duplicateOf.name}" đã được lưu với thông tin này. Cập nhật vị trí đó thay vì tạo thêm một bản trùng?`,
+                  `"${duplicateOf.name}" is already saved with these details. Update it instead of creating a duplicate?`,
+                )}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-3">
+                <Button type="button" size="sm" onClick={() => handleEditDuplicateInstead(duplicateOf)}>
+                  {tr("Cập nhật vị trí đã lưu", "Update the saved location")}
+                </Button>
+                <Button
                   type="button"
-                  onClick={() => {
-                    setSelectedLocationId(location.id);
-                    applyLocationToForm(location);
-                  }}
-                  className={`rounded-full border px-3 py-1.5 text-body-sm transition ${
-                    selectedLocationId === location.id
-                      ? "border-leaf/40 bg-surface-soft text-leaf-strong"
-                      : "border-line bg-surface text-ink-soft hover:bg-surface-soft"
-                  }`}
-                  title={coordinateText(location.latitude, location.longitude, tr)}
+                  size="sm"
+                  variant="secondary"
+                  loading={saving}
+                  disabled={saving}
+                  onClick={() => void createNewLocation()}
                 >
-                  {location.name} · {location.crop_type || tr("Cây trồng", "Crop")}
-                </button>
-              ))}
+                  {tr("Vẫn lưu thành vị trí mới", "Save as a new location anyway")}
+                </Button>
+              </div>
             </div>
           ) : null}
 
           {locationNote ? <p className="mt-4 text-body-sm font-medium text-leaf-strong">{locationNote}</p> : null}
-          {error ? <p className="mt-4 text-body-sm text-danger-ink">{error}</p> : null}
+
+          <SavedLocationList
+            locations={locations}
+            loading={locationsLoading}
+            selectedId={selectedLocation?.id ?? null}
+            editingId={editingLocationId}
+            accessToken={accessToken}
+            onSelect={handleSelectLocation}
+            onRename={handleRenameLocation}
+            onSetDefault={handleSetDefaultLocation}
+            onDelete={handleDeleteLocation}
+          />
 
           {!accessToken ? (
             <div className="mt-4 rounded-lg border border-danger/30 bg-danger-soft p-4">
@@ -399,7 +797,9 @@ export default function WeatherAlertsPage() {
         <Card variant="default" padding="lg" className="rounded-xl">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-overline text-leaf-strong">{tr("Hiện tại", "Current")}</p>
+              <p className="text-overline text-leaf-strong">
+                {showsDailyAggregate ? tr("Hôm nay", "Today") : tr("Hiện tại", "Current")}
+              </p>
               <p className="mt-2 text-caption font-semibold text-leaf-strong">{sourceLabel(weatherSource, tr)}</p>
               {selectedLocation ? (
                 <p className="mt-1 text-caption text-ink-soft">
@@ -407,12 +807,50 @@ export default function WeatherAlertsPage() {
                 </p>
               ) : null}
             </div>
-            {weatherSource === "open_meteo" ? (
+            {weatherSource === "open_meteo" && !advisoryError ? (
               <Badge variant="success">{tr("Dữ liệu thật", "Live data")}</Badge>
             ) : null}
           </div>
 
-          {current ? (
+          {selectedLocation && (advisory || advisoryLoading) ? (
+            <div className="mt-4">
+              <WeatherFreshness
+                fetchedAt={fetchedAt?.iso ?? null}
+                fromServer={Boolean(fetchedAt?.fromServer)}
+                loading={advisoryLoading}
+                onRefresh={handleRefreshAdvisory}
+              />
+            </div>
+          ) : null}
+
+          {showStaleNotice ? (
+            <p className="mt-4 rounded-lg border border-sun/40 bg-sun-soft p-3 text-body-sm leading-relaxed text-warning-ink" role="status">
+              {tr(
+                "Không lấy được số liệu mới, đang hiển thị lần cập nhật gần nhất.",
+                "Could not fetch a new reading; showing the most recent one.",
+              )}{" "}
+              {advisoryError}
+            </p>
+          ) : null}
+
+          {advisoryLoading && !advisory ? (
+            <div className="mt-4">
+              <Skeleton className="h-8 w-2/3" />
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
+                {[0, 1, 2, 3].map((index) => (
+                  <Skeleton key={index} className="h-[92px]" />
+                ))}
+              </div>
+              <Skeleton className="mt-5 h-[76px]" />
+            </div>
+          ) : advisoryError && !advisory ? (
+            <ErrorState
+              className="mt-4"
+              title={tr("Chưa lấy được dữ liệu thời tiết", "Weather data unavailable")}
+              description={advisoryError}
+              onRetry={handleRefreshAdvisory}
+            />
+          ) : current ? (
             <>
               <h3 className="mt-4 text-h2 font-bold text-ink">{bilingualText(current.summary, current.summary_en, tr)}</h3>
               <div className="mt-5 grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
@@ -421,6 +859,14 @@ export default function WeatherAlertsPage() {
                 <WeatherMetric icon={Sprout} label={tr("Độ ẩm", "Humidity")} value={`${current.humidity_percent}%`} />
                 <WeatherMetric icon={Wind} label={tr("Gió", "Wind")} value={`${current.wind_kmh} km/h`} />
               </div>
+              {showsDailyAggregate ? (
+                <p className="mt-3 text-caption leading-relaxed text-ink-soft">
+                  {tr(
+                    "Đây là số liệu tổng hợp cả ngày, không phải số đo ngay lúc này.",
+                    "These are whole-day figures, not a reading taken right now.",
+                  )}
+                </p>
+              ) : null}
               <p className="mt-5 rounded-lg border border-line bg-surface-soft p-4 text-body-sm leading-relaxed text-ink-soft">
                 {bilingualText(advisory?.weather.message, advisory?.weather.message_en, tr)}
               </p>
@@ -436,7 +882,18 @@ export default function WeatherAlertsPage() {
         </Card>
       </div>
 
-      {advisory ? (
+      {advisoryLoading && !advisory ? (
+        <div className="grid gap-6 xl:grid-cols-2">
+          <Card variant="default" padding="lg" className="rounded-xl shadow-sm">
+            <p className="text-overline text-leaf-strong">{tr("Dự báo 3 ngày", "3-day forecast")}</p>
+            <ListSkeleton count={3} itemClassName="h-[110px]" className="mt-4 md:grid-cols-3" />
+          </Card>
+          <Card variant="default" padding="lg" className="rounded-xl shadow-sm">
+            <p className="text-overline text-leaf-strong">{tr("Dự báo 7 ngày", "7-day forecast")}</p>
+            <ListSkeleton count={4} itemClassName="h-[110px]" className="mt-4 md:grid-cols-2" />
+          </Card>
+        </div>
+      ) : advisory ? (
         <>
           <div className="grid gap-6 xl:grid-cols-2">
             <Card variant="default" padding="lg" className="rounded-xl shadow-sm">
@@ -450,7 +907,7 @@ export default function WeatherAlertsPage() {
             <Card variant="default" padding="lg" className="rounded-xl shadow-sm">
               <p className="text-overline text-leaf-strong">{tr("Dự báo 7 ngày", "7-day forecast")}</p>
               <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {advisory.weather.forecast_7d.slice(0, 6).map((day) => (
+                {advisory.weather.forecast_7d.map((day) => (
                   <WeatherDayCard key={day.date} day={day} tr={tr} />
                 ))}
               </div>

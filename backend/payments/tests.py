@@ -1,7 +1,11 @@
 import hashlib
 import hmac
 import json
+import re
 import time
+import unittest
+from decimal import Decimal
+from pathlib import Path
 
 from django.contrib.auth import get_user_model
 from django.test import override_settings
@@ -13,7 +17,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from engagement.models import ServicePlan, UserSubscription
 
+from .admin import PaymentOrderAdmin
+from .entitlements import enforce_limit, PlanLimitExceeded, resolve_entitlements
 from .models import Payment, PaymentOrder
+from .services import reconcile_order
+
+FRONTEND_PLAN_CATALOGUE = Path(__file__).resolve().parents[2] / "src" / "data" / "mock" / "plans.ts"
 
 User = get_user_model()
 
@@ -271,3 +280,146 @@ class PaymentFlowTests(APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_payment_status_rejects_a_non_uuid_order_id(self):
+        response = self.client.get(reverse("payment_status"), {"order_id": "not-a-uuid"})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("error", response.data)
+
+    def test_subscription_summary_exposes_expiry_and_entitlements(self):
+        order, _ = self.create_order()
+        self.signed_webhook(order, "8001", 39000)
+        self.user.refresh_from_db()
+
+        response = self.client.get(reverse("payment_subscription"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["current_plan"], "bloom")
+        self.assertEqual(response.data["plan_expires_at"], self.user.plan_expires_at)
+        self.assertEqual(response.data["days_remaining"], 29)
+        self.assertEqual(response.data["subscription"]["plan"], "bloom")
+        self.assertEqual(response.data["subscription"]["status"], "active")
+        self.assertEqual(response.data["entitlements"]["plan"], "bloom")
+
+    def test_order_detail_carries_bank_details_so_a_reload_can_resume(self):
+        order, created = self.create_order()
+        response = self.client.get(reverse("payment_order_detail", kwargs={"order_id": order.id}))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["bank"]["account_number"], "123456789")
+        self.assertEqual(response.data["qr_url"], created.data["qr_url"])
+        self.assertEqual(response.data["order"]["payment_code"], order.payment_code)
+        self.assertFalse(response.data["order"]["needs_reconciliation"])
+
+    def test_entitlements_follow_the_catalogue_and_lapse_with_the_plan(self):
+        grow = ServicePlan.objects.get(slug="grow")
+        self.user.current_plan = "grow"
+        self.user.plan_expires_at = timezone.now() + timezone.timedelta(days=5)
+        self.user.save(update_fields=["current_plan", "plan_expires_at", "updated_at"])
+
+        entitlements = resolve_entitlements(self.user)
+        self.assertEqual(entitlements["plan"], "grow")
+        self.assertEqual(entitlements["limits"]["daily_diagnoses"], grow.metadata["daily_diagnoses"])
+        self.assertEqual(entitlements["limits"]["history_days"], grow.metadata["history_days"])
+        self.assertEqual(entitlements["limits"]["crop_plans"], 2)
+
+        # A lapsed expiry must not keep granting the paid limits, even before
+        # the lazy reset writes "seed" back onto the row.
+        self.user.plan_expires_at = timezone.now() - timezone.timedelta(minutes=1)
+        self.user.save(update_fields=["plan_expires_at", "updated_at"])
+        self.assertEqual(resolve_entitlements(self.user)["plan"], "seed")
+
+    def test_enforce_limit_raises_payment_required_with_an_upgrade_hint(self):
+        self.user.current_plan = "grow"
+        self.user.plan_expires_at = timezone.now() + timezone.timedelta(days=5)
+        self.user.save(update_fields=["current_plan", "plan_expires_at", "updated_at"])
+
+        self.assertEqual(enforce_limit(self.user, "crop_plans", used=1), 2)
+        with self.assertRaises(PlanLimitExceeded) as raised:
+            enforce_limit(self.user, "crop_plans", used=2)
+        self.assertEqual(raised.exception.status_code, 402)
+        self.assertEqual(raised.exception.detail["upgrade_to"], "bloom")
+        self.assertEqual(raised.exception.detail["limit"], 2)
+
+        # Bloom and Elite sell "unlimited", which the catalogue stores as 0.
+        self.user.current_plan = "elite"
+        self.user.save(update_fields=["current_plan", "updated_at"])
+        self.assertIsNone(enforce_limit(self.user, "daily_diagnoses", used=10_000))
+
+    def test_overpaid_order_is_reused_instead_of_minting_a_second_code(self):
+        order, _ = self.create_order()
+        self.signed_webhook(order, "9001", 50000)
+        order.refresh_from_db()
+        self.assertEqual(order.status, PaymentOrder.Status.OVERPAID)
+
+        again = self.client.post(reverse("payment_order_list_create"), {"plan": "bloom"}, format="json")
+        self.assertEqual(again.status_code, status.HTTP_200_OK)
+        self.assertFalse(again.data["created"])
+        self.assertEqual(again.data["order"]["transfer_content"], order.payment_code)
+        self.assertEqual(PaymentOrder.objects.filter(user=self.user, plan=self.bloom).count(), 1)
+        self.assertTrue(again.data["needs_reconciliation"])
+
+    def test_owner_can_request_reconciliation_and_staff_can_activate(self):
+        order, _ = self.create_order()
+        self.signed_webhook(order, "9101", 50000)
+        order.refresh_from_db()
+
+        url = reverse("payment_order_reconcile", kwargs={"order_id": order.id})
+        response = self.client.post(url, {"note": "Chuyển dư 11.000đ"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNotNone(response.data["order"]["reconciliation"]["requested_at"])
+        order.refresh_from_db()
+        self.assertEqual(order.metadata["reconciliation"]["user_note"], "Chuyển dư 11.000đ")
+
+        # Another account must not be able to touch it.
+        self.client.force_authenticate(self.other_user)
+        self.assertEqual(self.client.post(url, {}, format="json").status_code, status.HTTP_404_NOT_FOUND)
+        self.client.force_authenticate(self.user)
+
+        reconcile_order(order, actor=self.other_user, note="Đã đối soát")
+        order.refresh_from_db()
+        self.user.refresh_from_db()
+        self.assertEqual(order.status, PaymentOrder.Status.PAID)
+        self.assertEqual(self.user.current_plan, "bloom")
+        self.assertIsNotNone(self.user.plan_expires_at)
+        self.assertEqual(order.metadata["reconciliation"]["action"], "activated")
+        self.assertEqual(order.metadata["reconciliation"]["amount_difference"], 11000)
+        self.assertEqual(UserSubscription.objects.filter(user=self.user, status="active").count(), 1)
+        self.assertIn("reconcile_and_activate", PaymentOrderAdmin.actions)
+
+    def test_reconciliation_is_not_offered_for_orders_without_money(self):
+        order, _ = self.create_order()
+        url = reverse("payment_order_reconcile", kwargs={"order_id": order.id})
+        response = self.client.post(url, {}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_downgrade_is_refused_with_a_readable_vietnamese_message(self):
+        self.user.current_plan = "elite"
+        self.user.plan_expires_at = timezone.now() + timezone.timedelta(days=10)
+        self.user.save(update_fields=["current_plan", "plan_expires_at", "updated_at"])
+
+        response = self.client.post(reverse("payment_order_list_create"), {"plan": "grow"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        message = response.data["error"]
+        self.assertIn("Seed", message)
+        # The old copy was unaccented ASCII, which reads as broken Vietnamese.
+        self.assertTrue(any(character in message for character in "ạảãáàăâđêôơư"))
+
+    @unittest.skipUnless(FRONTEND_PLAN_CATALOGUE.exists(), "frontend catalogue not present in this deployment")
+    def test_frontend_fallback_catalogue_matches_the_service_plans(self):
+        """The pricing screen falls back to a checked-in catalogue when the API
+        is unreachable, so a price edited on only one side has to fail here."""
+        source = FRONTEND_PLAN_CATALOGUE.read_text(encoding="utf-8")
+        entries = re.findall(r'id:\s*"([a-z]+)".*?price:\s*"([^"]+)"', source, re.DOTALL)
+        self.assertTrue(entries, "no plans parsed from the frontend catalogue")
+
+        for slug, price_label in entries:
+            with self.subTest(plan=slug):
+                digits = re.sub(r"[^0-9]", "", price_label)
+                expected = Decimal(digits or 0)
+                plan = ServicePlan.objects.filter(slug=slug).first()
+                self.assertIsNotNone(plan, f"plan {slug} is sold in the UI but missing from the catalogue")
+                self.assertEqual(
+                    plan.price_monthly,
+                    expected,
+                    f"{slug}: frontend shows {price_label} but the catalogue charges {plan.price_monthly}",
+                )

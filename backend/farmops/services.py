@@ -1,13 +1,35 @@
 from __future__ import annotations
 
 import json
+import re
+import unicodedata
 from typing import Any
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+from django.utils import timezone
+
 
 DISCLAIMER = "Thông tin chỉ mang tính tham khảo, không thay thế tư vấn của chuyên gia nông nghiệp."
 DISCLAIMER_EN = "This information is for reference only and does not replace advice from an agricultural expert."
+
+
+def fold_text(text: Any) -> str:
+    """Lowercase and drop Vietnamese diacritics so 'Ớt chuông' and 'ot chuong' compare equal.
+
+    Growers type accents inconsistently and the catalogue mixes Vietnamese and
+    English spellings, so every crop/disease comparison in this app folds first.
+    """
+    lowered = str(text or "").lower()
+    stripped = "".join(ch for ch in unicodedata.normalize("NFD", lowered) if unicodedata.category(ch) != "Mn")
+    return unicodedata.normalize("NFC", stripped).replace("đ", "d")
+
+
+def contains_term(haystack: Any, needle_folded: str) -> bool:
+    """Whole-word containment on folded text, so crop='a' stops matching 'cà chua'."""
+    if not needle_folded:
+        return False
+    return re.search(rf"(?<!\w){re.escape(needle_folded)}(?!\w)", fold_text(haystack)) is not None
 
 
 class WeatherDataUnavailable(RuntimeError):
@@ -105,23 +127,73 @@ def geocode_location_query(query: str) -> dict[str, Any] | None:
 
 
 def geocode_location_fields(*, province: str = "", district: str = "", ward: str = "", address_text: str = "") -> dict[str, Any] | None:
+    """Resolve the most specific address tier that Nominatim/Open-Meteo can find.
+
+    "Việt Nam" is only a country qualifier appended to a real address, never a
+    query of its own: on its own it resolves to the geographic centre of the
+    country, which would silently relocate the field.
+    """
     query_sets = [
-        [address_text, ward, district, province, "Việt Nam"],
-        [ward, district, province, "Việt Nam"],
-        [district, province, "Việt Nam"],
-        [province, "Việt Nam"],
+        [address_text, ward, district, province],
+        [ward, district, province],
+        [district, province],
+        [province],
     ]
+    seen: set[str] = set()
     for parts in query_sets:
-        query = ", ".join(part.strip() for part in parts if part and part.strip())
+        address_parts = [part.strip() for part in parts if part and part.strip()]
+        if not address_parts:
+            continue
+        query = ", ".join([*address_parts, "Việt Nam"])
+        # Tiers collapse into each other when only one field is filled; asking
+        # Nominatim the same question four times only burns its rate limit.
+        if query in seen:
+            continue
+        seen.add(query)
         result = geocode_location_query(query)
         if result:
             return result
     return None
 
 
+# Crops whose main Vietnamese diseases are driven by leaf wetness, listed in
+# both languages (and as the crop slugs the crop planner uses) because the crop
+# name reaching this function comes straight from a free-text field.
+FUNGAL_SENSITIVE_CROP_KEYWORDS = (
+    "ca chua",
+    "tomato",
+    "khoai tay",
+    "potato",
+    "ot chuong",
+    "bell pepper",
+    "bell-pepper",
+    "pepper",
+    "ho tieu",
+    "tieu",
+    "dau tay",
+    "strawberry",
+    "nho",
+    "grape",
+    "ca phe",
+    "coffee",
+    "dua chuot",
+    "cucumber",
+    "sau rieng",
+    "durian",
+    "xoai",
+    "mango",
+    "che",
+    "tea",
+)
+
+
+def _is_fungal_sensitive(crop: str) -> bool:
+    folded = fold_text(crop)
+    return any(contains_term(folded, keyword) for keyword in FUNGAL_SENSITIVE_CROP_KEYWORDS)
+
+
 def _risk_from_conditions(crop: str, humidity: int, rain_probability: int, temperature: int) -> str:
-    crop_norm = crop.lower()
-    fungal_sensitive = any(key in crop_norm for key in ["tomato", "cà chua", "potato", "khoai", "pepper", "tiêu"])
+    fungal_sensitive = _is_fungal_sensitive(crop)
     if humidity >= 82 or rain_probability >= 70:
         return "high" if fungal_sensitive else "medium"
     if temperature >= 35 or humidity >= 75 or rain_probability >= 45:
@@ -167,7 +239,7 @@ def _fetch_open_meteo(location: Any) -> dict[str, Any]:
         "latitude": lat,
         "longitude": lon,
         "current": "temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation,weather_code",
-        "hourly": "relative_humidity_2m",
+        "hourly": "relative_humidity_2m,precipitation_probability",
         "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max",
         "forecast_days": 7,
         "timezone": "auto",
@@ -199,6 +271,8 @@ def _fetch_open_meteo(location: Any) -> dict[str, Any]:
             {
                 "date": day,
                 "temperature_c": round((temp_max + temp_min) / 2),
+                "temperature_max_c": round(temp_max),
+                "temperature_min_c": round(temp_min),
                 "humidity_percent": humidity,
                 "rain_probability_percent": rain_probability,
                 "wind_kmh": round(wind),
@@ -210,19 +284,72 @@ def _fetch_open_meteo(location: Any) -> dict[str, Any]:
     if not rows:
         raise WeatherDataUnavailable("Open-Meteo không trả về dự báo cho tọa độ này.")
 
+    current = _current_conditions(payload, rows)
     return {
         "source": "open_meteo",
-        "is_mock": False,
         "latitude": lat,
         "longitude": lon,
-        "current": rows[0],
+        # fetched_at is when we asked Open-Meteo; observed_at is when the
+        # reading itself was taken, in the field's own timezone.
+        "fetched_at": timezone.now().isoformat(),
+        "observed_at": current.get("observed_at"),
+        "timezone": payload.get("timezone") or "",
+        "current": current,
+        "today": rows[0],
         "forecast_3d": rows[:3],
         "forecast_7d": rows,
     }
 
 
-def _weather_warning_pairs(current: dict[str, Any], daily: list[dict[str, Any]]) -> list[tuple[str, str]]:
-    """Weather warnings as (Vietnamese, English) pairs, kept in the same order."""
+def _current_conditions(payload: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Real "right now" reading from the Open-Meteo `current` block.
+
+    The daily row is an aggregate — its wind is the day's MAXIMUM and its
+    temperature the midpoint of max/min — so it must never be shown as the
+    current conditions. Falls back to today's aggregate only if Open-Meteo
+    omits the block, and says so through `is_current`.
+    """
+    today = rows[0]
+    current = payload.get("current") or {}
+    observed_at = current.get("time")
+    if not observed_at:
+        return {**today, "observed_at": None, "is_current": False}
+
+    hourly = payload.get("hourly") or {}
+    hours = hourly.get("time") or []
+    probabilities = hourly.get("precipitation_probability") or []
+    rain_probability = today["rain_probability_percent"]
+    for index, stamp in enumerate(hours):
+        # Open-Meteo stamps `current` to the quarter hour and `hourly` to the hour.
+        if str(stamp)[:13] == str(observed_at)[:13] and index < len(probabilities):
+            if probabilities[index] is not None:
+                rain_probability = int(probabilities[index])
+            break
+
+    temperature = current.get("temperature_2m")
+    humidity = current.get("relative_humidity_2m")
+    wind = current.get("wind_speed_10m")
+    return {
+        "date": str(observed_at)[:10],
+        "observed_at": observed_at,
+        "is_current": True,
+        "temperature_c": round(float(temperature)) if temperature is not None else today["temperature_c"],
+        "humidity_percent": int(humidity) if humidity is not None else today["humidity_percent"],
+        "rain_probability_percent": rain_probability,
+        "wind_kmh": round(float(wind)) if wind is not None else today["wind_kmh"],
+        "precipitation_mm": round(float(current.get("precipitation") or 0), 1),
+        "summary": _weather_summary(int(current.get("weather_code") or 0)),
+        "summary_en": _weather_summary_en(int(current.get("weather_code") or 0)),
+    }
+
+
+def _weather_warning_pairs(today: dict[str, Any], daily: list[dict[str, Any]]) -> list[tuple[str, str]]:
+    """Weather warnings as (Vietnamese, English) pairs, kept in the same order.
+
+    Driven by today's daily aggregate rather than the instantaneous reading:
+    every message is advice for the whole day ("hôm nay").
+    """
+    current = today
     warnings: list[tuple[str, str]] = []
     if current["rain_probability_percent"] >= 60:
         warnings.append(
@@ -262,8 +389,13 @@ def _weather_warning_pairs(current: dict[str, Any], daily: list[dict[str, Any]])
     return warnings
 
 
-def _weather_warnings(current: dict[str, Any], daily: list[dict[str, Any]]) -> list[str]:
-    return [vi for vi, _ in _weather_warning_pairs(current, daily)]
+def _weather_warnings(today: dict[str, Any], daily: list[dict[str, Any]]) -> list[str]:
+    return [vi for vi, _ in _weather_warning_pairs(today, daily)]
+
+
+def _today_row(weather: dict[str, Any]) -> dict[str, Any]:
+    """Today's daily aggregate, tolerating a payload built before `today` existed."""
+    return weather.get("today") or weather["forecast_7d"][0]
 
 
 def build_weather(location: Any, crop: str = "") -> dict[str, Any]:
@@ -271,8 +403,7 @@ def build_weather(location: Any, crop: str = "") -> dict[str, Any]:
     weather = _fetch_open_meteo(location)
 
     daily = weather["forecast_7d"]
-    current = weather["current"]
-    warning_pairs = _weather_warning_pairs(current, daily)
+    warning_pairs = _weather_warning_pairs(_today_row(weather), daily)
     return {
         **weather,
         "location_name": getattr(location, "name", "Vị trí canh tác"),
@@ -287,12 +418,13 @@ def build_weather(location: Any, crop: str = "") -> dict[str, Any]:
 def build_pest_alerts(location: Any, crop: str = "", weather: dict[str, Any] | None = None) -> dict[str, Any]:
     weather = weather or build_weather(location, crop)
     crop_name = crop or getattr(location, "crop_type", "") or "cây trồng"
-    current = weather["current"]
+    # Disease pressure builds over a day, so score it on today's aggregate.
+    today = _today_row(weather)
     risk_level = _risk_from_conditions(
         crop_name,
-        current["humidity_percent"],
-        current["rain_probability_percent"],
-        current["temperature_c"],
+        today["humidity_percent"],
+        today["rain_probability_percent"],
+        today["temperature_c"],
     )
 
     alerts = []
@@ -332,14 +464,15 @@ def build_pest_alerts(location: Any, crop: str = "", weather: dict[str, Any] | N
         "risk_level": risk_level,
         "alerts": alerts,
         "source": "weather_rule_engine",
-        "is_mock": False,
     }
 
 
 def build_farm_advisory(location: Any, crop: str = "") -> dict[str, Any]:
     weather = build_weather(location, crop)
     pest_alerts = build_pest_alerts(location, crop, weather)
-    current = weather["current"]
+    # Whole-day advice, so the daily aggregate is the right input: its wind is
+    # the day's maximum, which is exactly what a spray decision should respect.
+    current = _today_row(weather)
     should_water = current["rain_probability_percent"] < 45 and current["temperature_c"] >= 28
     should_fertilize = current["rain_probability_percent"] < 55
     should_spray = current["rain_probability_percent"] < 45 and current["wind_kmh"] <= 18

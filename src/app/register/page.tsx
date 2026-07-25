@@ -6,6 +6,8 @@ import { ArrowRight, UserRoundPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { AuthShell } from "@/components/auth/auth-shell";
+import { AuthDivider, GoogleSignInButton, useGoogleSignInAvailability } from "@/components/auth/google-sign-in";
+import { TermsConsentCheckbox } from "@/components/auth/terms-consent";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -15,12 +17,14 @@ import { useTr } from "@/lib/use-tr";
 export default function RegisterPage() {
   const tr = useTr();
   const router = useRouter();
-  const { register, isAuthenticated, status, error, clearError } = useSessionStore();
+  const { register, loginWithGoogle, isAuthenticated, status, error, clearError } = useSessionStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [googleError, setGoogleError] = useState<string | null>(null);
+  const { clientId: googleClientId, available: googleAvailable } = useGoogleSignInAvailability();
 
   useEffect(() => {
     if (isAuthenticated) router.replace("/dashboard");
@@ -42,7 +46,18 @@ export default function RegisterPage() {
     }
 
     try {
-      await register({ email, password });
+      await register({ email, password, acceptedTerms });
+      router.push("/dashboard");
+    } catch {
+      // The session store provides a user-facing message below.
+    }
+  }
+
+  async function handleGoogleCredential(credential: string) {
+    try {
+      clearMessages();
+      setGoogleError(null);
+      await loginWithGoogle({ credential, acceptedTerms });
       router.push("/dashboard");
     } catch {
       // The session store provides a user-facing message below.
@@ -63,6 +78,30 @@ export default function RegisterPage() {
       asideDescription={tr("Lưu ảnh và kết quả theo thời gian giúp bạn nhận ra thay đổi sớm hơn, thay vì chỉ xem một lần rồi quên.", "Saving photos and results over time helps you spot changes earlier, instead of checking once and forgetting.")}
     >
       <form onSubmit={handleRegister} className="space-y-5">
+        {googleAvailable && googleClientId ? (
+          <div className="rounded-lg border border-line bg-surface-soft p-4">
+            <p className="text-sm font-semibold text-ink">{tr("Tạo tài khoản nhanh bằng Google", "Create an account quickly with Google")}</p>
+            {acceptedTerms ? (
+              <GoogleSignInButton
+                clientId={googleClientId}
+                text="signup_with"
+                onCredential={(credential) => void handleGoogleCredential(credential)}
+                onError={setGoogleError}
+              />
+            ) : (
+              // Google sign-in used to bypass the consent checkbox entirely.
+              <p className="mt-3 text-xs leading-6 text-ink-soft">
+                {tr(
+                  "Hãy tích vào ô đồng ý điều khoản bên dưới để dùng Google.",
+                  "Tick the terms agreement below to continue with Google.",
+                )}
+              </p>
+            )}
+            {googleError ? <p role="alert" className="mt-3 text-xs leading-6 text-danger-ink">{googleError}</p> : null}
+            <AuthDivider />
+          </div>
+        ) : null}
+
         <Input
           label="Email"
           type="email"
@@ -99,33 +138,13 @@ export default function RegisterPage() {
           required
         />
 
-        <label className="flex cursor-pointer items-start gap-3 rounded-[var(--r-md)] border border-line bg-surface-soft p-4">
-          <input
-            type="checkbox"
-            checked={acceptedTerms}
-            onChange={(event) => {
-              clearMessages();
-              setAcceptedTerms(event.target.checked);
-            }}
-            aria-describedby="terms-consent-text"
-            className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[var(--leaf)]"
-            required
-          />
-          <span id="terms-consent-text" className="text-xs leading-6 text-ink-soft sm:text-sm">
-            {tr("Tôi đã đọc và đồng ý với ", "I have read and agree to the ")}
-            <Link href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-leaf-strong underline underline-offset-2 hover:text-leaf">
-              {tr("Điều khoản sử dụng", "Terms of Service")}
-            </Link>
-            {tr(" và ", " and ")}
-            <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-leaf-strong underline underline-offset-2 hover:text-leaf">
-              {tr("Chính sách quyền riêng tư", "Privacy Policy")}
-            </Link>
-            {tr(
-              ". Tôi hiểu kết quả từ Agromind AI chỉ mang tính tham khảo, không thay thế ý kiến chuyên gia nông nghiệp.",
-              ". I understand that Agromind AI results are advisory only and do not replace advice from an agriculture expert.",
-            )}
-          </span>
-        </label>
+        <TermsConsentCheckbox
+          checked={acceptedTerms}
+          onChange={(checked) => {
+            clearMessages();
+            setAcceptedTerms(checked);
+          }}
+        />
 
         {localError || error ? (
           <div role="alert" className="rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-sm font-medium text-danger-ink">

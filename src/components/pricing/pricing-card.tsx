@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Crown, ShieldCheck, Sprout, TrendingUp } from "lucide-react";
+import { CalendarClock, Check, Crown, ShieldCheck, Sprout, TrendingUp } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,12 @@ import { SurfaceCard } from "@/components/ui/card";
 import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
 import type { PlanTier, PricingPlan } from "@/types";
+
+function formatPlanDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
+}
 
 const PLAN_RANK: Record<PlanTier, number> = {
   seed: 0,
@@ -30,11 +36,14 @@ const planIcons = {
 export function PricingCard({
   plan,
   currentPlan = "seed",
+  currentPlanExpiresAt = null,
   onSelect,
   dark = false,
 }: {
   plan: PricingPlan;
   currentPlan?: PlanTier;
+  /** Expiry of the plan the account is on, used to explain lower-tier cards. */
+  currentPlanExpiresAt?: string | null;
   onSelect?: (planId: PricingPlan["id"]) => void;
   dark?: boolean;
 }) {
@@ -48,23 +57,19 @@ export function PricingCard({
   const isTopCurrent = isCurrent && plan.id === "elite";
   const PlanIcon = planIcons[plan.id as PlanTier] ?? Sprout;
 
-  let actionLabel = tr(plan.cta, plan.ctaEn ?? plan.cta);
-  let actionVariant: "primary" | "secondary" | "outline" | "ghost" = plan.highlight
+  // Plans are prepaid 30-day passes with no auto-renew: there is nothing to
+  // downgrade to, the current plan simply runs out and the account falls back
+  // to Seed. So a lower tier gets that explanation instead of a CTA that the
+  // backend rejects (or, for Seed, one that used to do nothing at all).
+  const isLowerTier = !isCurrent && curRank > pRank;
+  const expiryLabel = currentPlanExpiresAt ? formatPlanDate(currentPlanExpiresAt) : "";
+
+  const actionLabel = tr(plan.cta, plan.ctaEn ?? plan.cta);
+  const actionVariant: "primary" | "secondary" | "outline" | "ghost" = plan.highlight
     ? "secondary"
     : dark
       ? "outline"
       : "primary";
-
-  if (!isCurrent && curRank > pRank) {
-    const downgradeLabels: Record<PlanTier, string> = {
-      seed: tr("Hạ cấp về Seed", "Downgrade to Seed"),
-      grow: tr("Hạ cấp về Grow", "Downgrade to Grow"),
-      bloom: tr("Hạ cấp về Bloom", "Downgrade to Bloom"),
-      elite: tr("Hạ cấp về Elite", "Downgrade to Elite"),
-    };
-    actionLabel = downgradeLabels[plan.id] ?? tr("Hạ cấp", "Downgrade");
-    actionVariant = dark ? "outline" : "secondary";
-  }
 
   return (
     <SurfaceCard
@@ -160,16 +165,46 @@ export function PricingCard({
 
         <div className="mt-6 pt-1">
           {isCurrent ? (
+            <div className="space-y-2">
+              <div
+                className={cn(
+                  "flex w-full items-center justify-center gap-2 rounded-md border py-2.5 text-body-sm font-semibold",
+                  isTopCurrent
+                    ? "border-leaf/50 bg-leaf/20 text-leaf"
+                    : "border-line bg-surface-soft text-ink-soft",
+                )}
+              >
+                <Check strokeWidth={2.5} className="h-4 w-4 shrink-0" aria-hidden />
+                {tr("Đang sử dụng", "Currently active")}
+              </div>
+              {expiryLabel ? (
+                <p className={cn("flex items-center justify-center gap-1.5 text-xs font-semibold", isEmphasized ? "text-on-forest-muted" : "text-ink-soft")}>
+                  <CalendarClock size={13} aria-hidden />
+                  {tr(`Hiệu lực đến ${expiryLabel}`, `Valid until ${expiryLabel}`)}
+                </p>
+              ) : null}
+            </div>
+          ) : isLowerTier ? (
             <div
               className={cn(
-                "flex w-full items-center justify-center gap-2 rounded-md border py-2.5 text-body-sm font-semibold",
-                isTopCurrent
-                  ? "border-leaf/50 bg-leaf/20 text-leaf"
-                  : "border-line bg-surface-soft text-ink-soft",
+                "rounded-md border px-4 py-3 text-center",
+                isEmphasized ? "border-on-forest/15 bg-on-forest/[0.06]" : "border-line bg-surface-soft",
               )}
             >
-              <Check strokeWidth={2.5} className="h-4 w-4 shrink-0" aria-hidden />
-              {tr("Đang sử dụng", "Currently active")}
+              <p className={cn("text-body-sm font-semibold", isEmphasized ? "text-on-forest" : "text-ink")}>
+                {tr("Chưa thể chuyển xuống gói này", "Cannot switch down to this plan")}
+              </p>
+              <p className={cn("mt-1 text-xs leading-6", isEmphasized ? "text-on-forest-muted" : "text-ink-soft")}>
+                {expiryLabel
+                  ? tr(
+                      `Gói hiện tại còn hiệu lực đến ${expiryLabel}. Sau ngày đó tài khoản tự về gói Seed và bạn có thể chọn gói này.`,
+                      `Your current plan runs until ${expiryLabel}. After that the account returns to Seed and you can choose this plan.`,
+                    )
+                  : tr(
+                      "Gói hiện tại vẫn còn hiệu lực. Khi hết hạn, tài khoản tự về gói Seed và bạn có thể chọn gói này.",
+                      "Your current plan is still active. When it ends, the account returns to Seed and you can choose this plan.",
+                    )}
+              </p>
             </div>
           ) : (
             <Button

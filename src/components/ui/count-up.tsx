@@ -21,7 +21,10 @@ export function CountUp({ value, duration = 800 }: { value: string; duration?: n
     }
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduced || target === 0) {
+    // requestAnimationFrame never fires while the document is hidden, so a
+    // dashboard opened in a background tab would sit on "0" — a wrong number
+    // shown as if it were the real one. Correctness beats the animation.
+    if (reduced || target === 0 || document.hidden) {
       setDisplay(value);
       return;
     }
