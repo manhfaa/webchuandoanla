@@ -575,6 +575,7 @@ export default function DashboardDiagnosisPage() {
   const [pendingCnnReview, setPendingCnnReview] = useState<PendingCnnReview | null>(null);
   const [symptomText, setSymptomText] = useState("");
   const [researchError, setResearchError] = useState<string | null>(null);
+  const [serviceError, setServiceError] = useState<string | null>(null);
   const [leafAnalysis, setLeafAnalysis] = useState<LeafDetectionResult | null>(null);
   const [inputMethod, setInputMethod] = useState<DiagnosisInputMethod | null>(null);
   const [runCount, setRunCount] = useState(0);
@@ -787,7 +788,7 @@ export default function DashboardDiagnosisPage() {
         state: checkState,
         detail:
           status === "invalid-image"
-            ? leafAnalysis?.reason ?? tr("Ảnh này chưa đủ điều kiện để xác nhận là lá cây.", "This image does not yet qualify as a plant leaf.")
+            ? serviceError ?? leafAnalysis?.reason ?? tr("Ảnh này chưa đủ điều kiện để xác nhận là lá cây.", "This image does not yet qualify as a plant leaf.")
             : status === "success" || status === "symptom-review"
               ? tr(
                   `Ảnh đã được xác nhận là lá cây với độ tin cậy ${formatConfidence(
@@ -823,7 +824,7 @@ export default function DashboardDiagnosisPage() {
           : tr("Hoàn tất các bước trước để xem kết quả.", "Complete the previous steps to view the result."),
       },
     ];
-  }, [leafAnalysis, previewUrl, status, tr]);
+  }, [leafAnalysis, previewUrl, serviceError, status, tr]);
 
   async function applySelectedFile(file: File, method: DiagnosisInputMethod) {
     try {
@@ -872,6 +873,7 @@ export default function DashboardDiagnosisPage() {
     setPendingCnnReview(null);
     setSymptomText("");
     setResearchError(null);
+    setServiceError(null);
     setLeafAnalysis(null);
 
     await delay(350);
@@ -926,7 +928,25 @@ export default function DashboardDiagnosisPage() {
             setStatus("invalid-image");
             return;
           }
-          // Keep the browser-side leaf validation result if backend CNN is unavailable.
+
+          // Offline is a designed path: the image is queued locally and the
+          // browser-side result is kept, so fall through and save the record.
+          const isOffline = error instanceof Error && error.message === "offline";
+          if (!isOffline) {
+            // The analysis service failed (asleep, timeout, outage). Surface it
+            // instead of saving a record that never went through the model —
+            // otherwise the user sees a "successful" check with no diagnosis.
+            setServiceError(
+              error instanceof Error && error.message
+                ? error.message
+                : tr(
+                    "Chưa phân tích được ảnh lúc này. Vui lòng thử lại sau ít phút.",
+                    "Could not analyze the image right now. Please try again in a few minutes.",
+                  ),
+            );
+            setStatus("invalid-image");
+            return;
+          }
         }
       }
 
@@ -1203,10 +1223,13 @@ export default function DashboardDiagnosisPage() {
             </div>
             <div>
               <h3 className="font-display text-2xl font-bold text-ink">
-                {tr("Chưa thể xác nhận rõ chiếc lá trong ảnh", "Could not clearly confirm a leaf in the image")}
+                {serviceError
+                  ? tr("Chưa phân tích được ảnh lúc này", "Could not analyze the image right now")
+                  : tr("Chưa thể xác nhận rõ chiếc lá trong ảnh", "Could not clearly confirm a leaf in the image")}
               </h3>
               <p className="mt-3 text-sm leading-7 text-ink-soft">
-                {leafAnalysis?.reason ??
+                {serviceError ??
+                  leafAnalysis?.reason ??
                   tr("Hãy thử chụp gần hơn vào lá, tăng ánh sáng hoặc đổi sang một ảnh rõ hơn.", "Try shooting closer to the leaf, adding light, or switching to a clearer image.")}
               </p>
             </div>

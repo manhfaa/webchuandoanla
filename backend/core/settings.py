@@ -148,6 +148,9 @@ REST_FRAMEWORK = {
         "payment_status": "120/minute",
         "login": "10/minute",
         "register": "5/hour",
+        # Inference runs on a single free CPU Space; cap it so one account
+        # cannot exhaust it for everyone else.
+        "cnn_inference": "60/hour",
     },
 }
 

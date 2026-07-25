@@ -1,6 +1,7 @@
 from rest_framework import generics, permissions, status
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .models import Diagnosis
@@ -31,7 +32,12 @@ class DiagnosisDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class DiagnosisCnnAPIView(APIView):
-    permission_classes = [permissions.AllowAny]
+    # Inference is the most expensive thing this service does and it runs on a
+    # free inference Space, so it must not be reachable anonymously. Every
+    # caller is inside the authenticated dashboard and already sends a token.
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "cnn_inference"
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def post(self, request):
