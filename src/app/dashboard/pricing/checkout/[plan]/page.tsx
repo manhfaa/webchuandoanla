@@ -441,12 +441,12 @@ export default function CheckoutPlanPage() {
         <div className="grid gap-6 lg:grid-cols-[1fr_0.85fr]">
           <Card variant="raised" padding="lg" className="rounded-xl">
             <p className="text-overline text-leaf-strong">{tr("Quyền lợi của gói", "Plan benefits")}</p>
-            <h2 className="mt-3 font-display text-2xl font-bold text-ink">{planInfo.tagline}</h2>
+            <h2 className="mt-3 font-display text-2xl font-bold text-ink">{tr(planInfo.tagline, planInfo.taglineEn)}</h2>
             <div className="mt-5 grid gap-2 sm:grid-cols-2">
-              {planInfo.features.map((feature) => (
+              {(planInfo.features as readonly string[]).map((feature, featureIndex) => (
                 <div key={feature} className="flex items-start gap-3 rounded-lg bg-surface-soft px-4 py-3 text-sm leading-6 text-ink">
                   <Check size={16} className="mt-1 shrink-0 text-leaf-strong" aria-hidden />
-                  {feature}
+                  {tr(feature, (planInfo.featuresEn as readonly string[])[featureIndex] ?? feature)}
                 </div>
               ))}
             </div>

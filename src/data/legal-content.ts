@@ -2,7 +2,7 @@
 // Lưu ý: đây là bản soạn sẵn chi tiết, nên được luật sư rà soát trước khi
 // dùng chính thức. Cập nhật CONTACT_EMAIL bằng email liên hệ thật của bạn.
 
-export const CONTACT_EMAIL = "hotro@agromindai.vercel.app";
+export const CONTACT_EMAIL = "phamduccmanhh@gmail.com";
 export const LEGAL_UPDATED = { vi: "Cập nhật lần cuối: 25/07/2026", en: "Last updated: July 25, 2026" };
 
 type Bi = { vi: string; en: string };
