@@ -10,7 +10,9 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-DEBUG = os.getenv("DEBUG", "True").lower() == "true"
+# Fail safe: an unset or misspelled DEBUG env var must not turn debug on in
+# production. Local development sets DEBUG=True explicitly in backend/.env.
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
 if not SECRET_KEY:
     if not DEBUG:
@@ -29,6 +31,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "users",
     "diagnoses",
     "engagement",
@@ -157,8 +160,11 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
-    "ROTATE_REFRESH_TOKENS": False,
-    "BLACKLIST_AFTER_ROTATION": False,
+    # Sessions previously died hard after 30 minutes because no refresh endpoint
+    # existed. With /api/auth/refresh/ in place, rotate on every refresh and
+    # blacklist the used token so a stolen refresh token can be invalidated.
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 
 # Render/Proxy friendly defaults
@@ -167,7 +173,9 @@ USE_X_FORWARDED_HOST = True
 SECURE_SSL_REDIRECT = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
-SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "3600")) if not DEBUG else 0
+SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000")) if not DEBUG else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
 
 CNN_MODEL_PATH = os.getenv("CNN_MODEL_PATH", "").strip()
 CNN_API_URL = os.getenv("CNN_API_URL", "").strip()

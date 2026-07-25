@@ -132,6 +132,12 @@ class EmailTokenSerializer(serializers.Serializer):
         if not user:
             raise serializers.ValidationError("Email hoặc mật khẩu không đúng.")
 
+        # Django's ModelBackend refuses inactive users; this serializer checks the
+        # password directly, so it has to enforce the same rule or a disabled
+        # account could still mint a valid JWT pair.
+        if not user.is_active:
+            raise serializers.ValidationError("Tài khoản này đã bị vô hiệu hóa.")
+
         return build_tokens_for_user(user)
 
 
@@ -165,6 +171,8 @@ class GoogleLoginSerializer(serializers.Serializer):
         avatar_url = str(google_payload.get("picture", "")).strip()
 
         user = User.objects.filter(email=email).first()
+        if user is not None and not user.is_active:
+            raise serializers.ValidationError("Tài khoản này đã bị vô hiệu hóa.")
         if user is None:
             user = User(
                 username=build_unique_username(email),

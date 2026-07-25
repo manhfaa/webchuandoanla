@@ -122,6 +122,17 @@ export async function djangoGoogleLogin(payload: { credential: string }) {
   });
 }
 
+/**
+ * Exchange a refresh token for a fresh access token. Refresh rotation is on, so
+ * the response may also carry a new refresh token that must replace the stored one.
+ */
+export async function djangoRefreshToken(refreshToken: string) {
+  return djangoFetch<{ access: string; refresh?: string }>("/api/auth/refresh/", {
+    method: "POST",
+    body: JSON.stringify({ refresh: refreshToken }),
+  });
+}
+
 export async function djangoRegister(payload: DjangoRegisterRequest) {
   return djangoFetch<{ id: number; email: string }>("/api/auth/register/", {
     method: "POST",

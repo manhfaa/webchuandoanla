@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import { djangoGoogleLogin, djangoLogin, djangoMe, djangoRegister, djangoUpdateMe } from "@/lib/django-client";
+import { djangoGoogleLogin, djangoLogin, djangoMe, djangoRefreshToken, djangoRegister, djangoUpdateMe } from "@/lib/django-client";
 import { normalizePlan } from "@/lib/plans";
 import { normalizeUserDisplayName } from "@/lib/user-profile";
 import type { PlanTier, UserProfile } from "@/types";
@@ -57,7 +57,32 @@ export const useSessionStore = create<SessionState>()(
 
         try {
           set({ status: "loading", error: null });
-          const user = await djangoMe(accessToken);
+          let activeToken = accessToken;
+          try {
+            const user = await djangoMe(activeToken);
+            set({
+              user,
+              isAuthenticated: true,
+              initialized: true,
+              status: "authenticated",
+              error: null,
+            });
+            return;
+          } catch (meError) {
+            // The 30-minute access token has likely expired. Try the refresh
+            // token before giving up, otherwise the user is signed out mid-session.
+            const storedRefresh = get().refreshToken;
+            if (!storedRefresh) throw meError;
+
+            const refreshed = await djangoRefreshToken(storedRefresh);
+            activeToken = refreshed.access;
+            set({
+              accessToken: refreshed.access,
+              ...(refreshed.refresh ? { refreshToken: refreshed.refresh } : {}),
+            });
+          }
+
+          const user = await djangoMe(activeToken);
           set({
             user,
             isAuthenticated: true,
