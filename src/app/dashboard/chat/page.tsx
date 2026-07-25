@@ -120,7 +120,7 @@ export default function DashboardChatPage() {
               <p className="mt-2 text-sm leading-7 text-ink-soft">{tr("Trợ lý sẽ dùng đúng cây, khả năng bệnh và độ tin cậy của kết quả được chọn.", "The assistant will use the exact plant, likely disease and confidence of the selected result.")}</p>
               {records.length ? (
                 <>
-                  <select value={selectedDiagnosis?.id ?? "none"} onChange={(event) => setSelectedDiagnosisId(event.target.value)} className="mt-4 h-12 w-full rounded-md border border-line bg-surface px-3.5 text-sm font-semibold text-ink outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20">
+                  <select aria-label={tr("Chọn kết quả đã lưu", "Pick a saved result")} value={selectedDiagnosis?.id ?? "none"} onChange={(event) => setSelectedDiagnosisId(event.target.value)} className="mt-4 h-12 w-full rounded-md border border-line bg-surface px-3.5 text-sm font-semibold text-ink outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20">
                     <option value="none">{tr("Không dùng kết quả cụ thể", "Do not use a specific result")}</option>
                     {records.map((record) => <option key={record.id} value={record.id}>{record.plant} · {record.disease} · {Math.round((record.cnnConfidence ?? record.confidence) * 100)}%</option>)}
                   </select>

@@ -113,11 +113,11 @@ export default function RegisterPage() {
           />
           <span id="terms-consent-text" className="text-xs leading-6 text-ink-soft sm:text-sm">
             {tr("Tôi đã đọc và đồng ý với ", "I have read and agree to the ")}
-            <Link href="/terms" target="_blank" className="font-semibold text-leaf-strong underline underline-offset-2 hover:text-leaf">
+            <Link href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-leaf-strong underline underline-offset-2 hover:text-leaf">
               {tr("Điều khoản sử dụng", "Terms of Service")}
             </Link>
             {tr(" và ", " and ")}
-            <Link href="/privacy" target="_blank" className="font-semibold text-leaf-strong underline underline-offset-2 hover:text-leaf">
+            <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-leaf-strong underline underline-offset-2 hover:text-leaf">
               {tr("Chính sách quyền riêng tư", "Privacy Policy")}
             </Link>
             {tr(

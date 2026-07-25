@@ -4,6 +4,7 @@ import { Be_Vietnam_Pro, Bricolage_Grotesque } from "next/font/google";
 import { BackendWakeup } from "@/components/system/backend-wakeup";
 import { ClarityAnalytics } from "@/components/system/clarity-analytics";
 import { brand } from "@/constants/brand";
+import { HtmlLangSync } from "@/components/layout/html-lang-sync";
 import { SkipLink } from "@/components/layout/skip-link";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 
@@ -47,6 +48,7 @@ export default function RootLayout({
           enableColorScheme
           disableTransitionOnChange
         >
+          <HtmlLangSync />
           <SkipLink />
           <BackendWakeup />
           {children}

@@ -14,14 +14,18 @@
   --ink: #10251A;
   --ink-strong: #071B10;
   --ink-soft: #586C5E;
-  --ink-muted: #6C7D70;
+  /* Darkened from #6C7D70 (4.03:1) to clear WCAG AA 4.5:1 on both --canvas
+     (4.83:1) and --surface-soft (4.53:1). */
+  --ink-muted: #617064;
   --line: #D7E6DA;
   --line-strong: #B8D5BF;
 
   --forest: #0B281A;
   --on-forest: #EFF9F1;
   --on-forest-muted: #BED2C4;
-  --leaf: #238B57;
+  /* Darkened from #238B57 so --on-leaf text on a primary button clears WCAG AA
+     (was 4.21:1, now 4.60:1). */
+  --leaf: #218452;
   --leaf-strong: #166A40;
   --on-leaf: #F7FFF9;
   --mint: #B8DFC2;
@@ -30,7 +34,8 @@
   --sun-soft: rgba(234, 182, 75, 0.16);
   --warning-ink: #654A05;
   --soil: #77563C;
-  --danger: #C9513E;
+  /* Darkened from #C9513E so --on-danger text clears WCAG AA (was 4.44:1). */
+  --danger: #C04D3B;
   --danger-soft: rgba(201, 81, 62, 0.12);
   --danger-ink: #A63E2F;
   --on-danger: #FFFFFF;

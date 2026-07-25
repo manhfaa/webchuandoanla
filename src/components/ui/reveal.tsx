@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 export function Reveal({
   children,
@@ -15,13 +15,15 @@ export function Reveal({
   className?: string;
 }) {
   const [mounted, setMounted] = useState(false);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Keep content visible on SSR. Animate only after client mount.
-  if (!mounted) {
+  // Keep content visible on SSR, and skip the animation entirely when the user
+  // asked for reduced motion. Animate only after client mount.
+  if (!mounted || reduceMotion) {
     return <div className={className}>{children}</div>;
   }
 
