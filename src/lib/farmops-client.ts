@@ -72,17 +72,33 @@ export type FarmAdvisory = {
     location_name?: string;
     crop?: string;
     message: string;
+    /** English variant of `message`; absent on older responses. */
+    message_en?: string | null;
     current: WeatherDay;
     forecast_3d: WeatherDay[];
     forecast_7d: WeatherDay[];
     warnings: string[];
+    /** English variant of `warnings`, same order; absent on older responses. */
+    warnings_en?: string[] | null;
   };
   pest_alerts: {
     risk_level: string;
-    alerts: Array<{ title: string; description: string; severity: string }>;
+    alerts: Array<{
+      title: string;
+      /** English variant of `title`; absent on older responses. */
+      title_en?: string | null;
+      description: string;
+      /** English variant of `description`; absent on older responses. */
+      description_en?: string | null;
+      severity: string;
+    }>;
   };
   recommendations: string[];
+  /** English variant of `recommendations`, same order; absent on older responses. */
+  recommendations_en?: string[] | null;
   disclaimer: string;
+  /** English variant of `disclaimer`; absent on older responses. */
+  disclaimer_en?: string | null;
 };
 
 export type WeatherDay = {
@@ -92,6 +108,8 @@ export type WeatherDay = {
   rain_probability_percent: number;
   wind_kmh: number;
   summary: string;
+  /** English variant of `summary`; absent on older responses. */
+  summary_en?: string | null;
 };
 
 export type AgriculturalInput = {
@@ -106,6 +124,14 @@ export type AgriculturalInput = {
   safety_notes: string[];
   withholding_period_days?: number | null;
   warning: string;
+  name_en?: string | null;
+  group_en?: string | null;
+  active_ingredient_en?: string | null;
+  usage_en?: string | null;
+  suitable_crops_en?: string[] | null;
+  related_diseases_en?: string[] | null;
+  safety_notes_en?: string[] | null;
+  warning_en?: string | null;
 };
 
 export type NutritionSymptom = {
@@ -115,6 +141,11 @@ export type NutritionSymptom = {
   affected_crops: string[];
   recommendation: string;
   safety_notes: string[];
+  nutrient_en?: string | null;
+  symptom_en?: string | null;
+  affected_crops_en?: string[] | null;
+  recommendation_en?: string | null;
+  safety_notes_en?: string[] | null;
 };
 
 async function apiFetch<T>(path: string, accessToken?: string | null, init?: RequestInit): Promise<T> {

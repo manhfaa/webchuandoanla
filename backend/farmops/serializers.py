@@ -119,9 +119,33 @@ class TraceabilityRecordSerializer(serializers.ModelSerializer):
         return plot
 
 
+AGRICULTURAL_INPUT_ENGLISH_FIELDS = (
+    "name_en",
+    "group_en",
+    "active_ingredient_en",
+    "usage_en",
+    "suitable_crops_en",
+    "related_diseases_en",
+    "safety_notes_en",
+    "warning_en",
+)
+
+NUTRITION_SYMPTOM_ENGLISH_FIELDS = (
+    "nutrient_en",
+    "symptom_en",
+    "affected_crops_en",
+    "recommendation_en",
+    "safety_notes_en",
+)
+
+
 class AgriculturalInputSerializer(serializers.ModelSerializer):
     class Meta:
         model = AgriculturalInput
+        # "__all__" already carries the Vietnamese fields plus the optional
+        # English variants listed in AGRICULTURAL_INPUT_ENGLISH_FIELDS; they may
+        # be empty on rows created before the bilingual rollout, and the client
+        # falls back to the Vietnamese value in that case.
         fields = "__all__"
         read_only_fields = ("id", "created_at", "updated_at")
 
@@ -129,5 +153,6 @@ class AgriculturalInputSerializer(serializers.ModelSerializer):
 class NutritionSymptomSerializer(serializers.ModelSerializer):
     class Meta:
         model = NutritionSymptom
+        # Same contract as above for NUTRITION_SYMPTOM_ENGLISH_FIELDS.
         fields = "__all__"
         read_only_fields = ("id", "created_at", "updated_at")

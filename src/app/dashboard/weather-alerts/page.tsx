@@ -65,6 +65,23 @@ function riskLabel(risk: string | undefined, tr: Tr) {
   return tr("Sẵn sàng", "Ready");
 }
 
+/**
+ * Backend advisory text ships a Vietnamese value plus an optional `*_en` twin.
+ * Older responses have no English data, so always fall back to Vietnamese.
+ */
+function bilingualText(vi: string | null | undefined, en: string | null | undefined, tr: Tr) {
+  const viText = vi ?? "";
+  return tr(viText, en || viText);
+}
+
+/** Pairs a Vietnamese list with its optional English twin, matched by index. */
+function bilingualList(vi: string[] | null | undefined, en: string[] | null | undefined, tr: Tr) {
+  return (vi ?? []).map((item, index) => ({
+    key: `${index}-${item}`,
+    text: bilingualText(item, en?.[index], tr),
+  }));
+}
+
 function coordinateText(lat: number | null | undefined, lon: number | null | undefined, tr: Tr) {
   if (lat == null || lon == null) return tr("Chưa có tọa độ", "No coordinates yet");
   return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
@@ -86,7 +103,7 @@ function WeatherDayCard({ day, tr }: { day: WeatherDay; tr: Tr }) {
   return (
     <div className="rounded-lg border border-line bg-surface p-4 text-ink shadow-sm">
       <p className="text-body-sm font-bold">{new Date(day.date).toLocaleDateString("vi-VN")}</p>
-      <p className="mt-1 text-caption text-ink-soft">{day.summary}</p>
+      <p className="mt-1 text-caption text-ink-soft">{bilingualText(day.summary, day.summary_en, tr)}</p>
       <div className="mt-3 grid grid-cols-2 gap-2 text-caption text-ink-soft">
         <span>{tr("Nhiệt", "Temp")}: {day.temperature_c}°C</span>
         <span>{tr("Ẩm", "Humidity")}: {day.humidity_percent}%</span>
@@ -397,7 +414,7 @@ export default function WeatherAlertsPage() {
 
           {current ? (
             <>
-              <h3 className="mt-4 text-h2 font-bold text-ink">{current.summary}</h3>
+              <h3 className="mt-4 text-h2 font-bold text-ink">{bilingualText(current.summary, current.summary_en, tr)}</h3>
               <div className="mt-5 grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
                 <WeatherMetric icon={ThermometerSun} label={tr("Nhiệt độ", "Temperature")} value={`${current.temperature_c}°C`} />
                 <WeatherMetric icon={CloudRain} label={tr("Mưa", "Rain")} value={`${current.rain_probability_percent}%`} />
@@ -405,7 +422,7 @@ export default function WeatherAlertsPage() {
                 <WeatherMetric icon={Wind} label={tr("Gió", "Wind")} value={`${current.wind_kmh} km/h`} />
               </div>
               <p className="mt-5 rounded-lg border border-line bg-surface-soft p-4 text-body-sm leading-relaxed text-ink-soft">
-                {advisory?.weather.message}
+                {bilingualText(advisory?.weather.message, advisory?.weather.message_en, tr)}
               </p>
             </>
           ) : (
@@ -448,10 +465,18 @@ export default function WeatherAlertsPage() {
               </div>
               <ul className="mt-4 space-y-3 text-body-sm leading-relaxed text-ink-soft">
                 {(advisory.weather.warnings.length
-                  ? advisory.weather.warnings
-                  : [tr("Chưa có cảnh báo thời tiết nghiêm trọng.", "No severe weather warning in the current data.")]
+                  ? bilingualList(advisory.weather.warnings, advisory.weather.warnings_en, tr)
+                  : [
+                      {
+                        key: "no-warning",
+                        text: tr(
+                          "Chưa có cảnh báo thời tiết nghiêm trọng.",
+                          "No severe weather warning in the current data.",
+                        ),
+                      },
+                    ]
                 ).map((item) => (
-                  <li key={item}>- {item}</li>
+                  <li key={item.key}>- {item.text}</li>
                 ))}
               </ul>
             </Card>
@@ -462,8 +487,10 @@ export default function WeatherAlertsPage() {
                 {advisory.pest_alerts.alerts.length ? (
                   advisory.pest_alerts.alerts.map((alert) => (
                     <div key={alert.title} className="rounded-lg border border-line bg-surface-soft p-3">
-                      <p className="font-semibold text-ink">{alert.title}</p>
-                      <p className="mt-1 text-body-sm leading-relaxed text-ink-soft">{alert.description}</p>
+                      <p className="font-semibold text-ink">{bilingualText(alert.title, alert.title_en, tr)}</p>
+                      <p className="mt-1 text-body-sm leading-relaxed text-ink-soft">
+                        {bilingualText(alert.description, alert.description_en, tr)}
+                      </p>
                     </div>
                   ))
                 ) : (
@@ -480,12 +507,12 @@ export default function WeatherAlertsPage() {
             <Card variant="soft" padding="lg" className="rounded-xl">
               <h3 className="text-h3 font-bold text-ink">{tr("Gợi ý thao tác hôm nay", "Today actions")}</h3>
               <ul className="mt-4 space-y-3 text-body-sm leading-relaxed text-ink-soft">
-                {advisory.recommendations.map((item) => (
-                  <li key={item}>- {item}</li>
+                {bilingualList(advisory.recommendations, advisory.recommendations_en, tr).map((item) => (
+                  <li key={item.key}>- {item.text}</li>
                 ))}
               </ul>
               <p className="mt-5 border-t border-line pt-4 text-caption leading-relaxed text-ink-soft">
-                {tr("Lưu ý an toàn", "Safety note")}: {advisory.disclaimer}
+                {tr("Lưu ý an toàn", "Safety note")}: {bilingualText(advisory.disclaimer, advisory.disclaimer_en, tr)}
               </p>
             </Card>
           </div>

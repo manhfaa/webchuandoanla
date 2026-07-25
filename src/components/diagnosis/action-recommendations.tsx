@@ -14,13 +14,17 @@ const riskMeta: Record<string, { label: string; labelEn: string; status: StatusB
   unknown: { label: "Chưa xác định", labelEn: "Not determined", status: "neutral", icon: AlertTriangle },
 };
 
-function ListBlock({ title, items, emphasized = false }: { title: string; items: string[]; emphasized?: boolean }) {
+function ListBlock({ title, items, itemsEn, emphasized = false }: { title: string; items: string[]; itemsEn?: string[]; emphasized?: boolean }) {
+  const tr = useTr();
   if (!items.length) return null;
   return (
     <section className={`rounded-lg border p-4 ${emphasized ? "border-leaf/25 bg-surface-soft" : "border-line bg-surface"}`}>
       <h4 className="text-sm font-bold text-ink">{title}</h4>
       <ul className="mt-3 space-y-2">
-        {items.map((item) => <li key={item} className="flex gap-2 text-sm leading-7 text-ink-soft"><span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-leaf" aria-hidden />{item}</li>)}
+        {items.map((item, index) => {
+          const itemEn = itemsEn?.[index]?.trim();
+          return <li key={item} className="flex gap-2 text-sm leading-7 text-ink-soft"><span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-leaf" aria-hidden />{tr(item, itemEn || item)}</li>;
+        })}
       </ul>
     </section>
   );
@@ -38,20 +42,20 @@ export function ActionRecommendations({ plan }: { plan?: ActionPlan | null }) {
         <StatusBadge status={meta.status} label={tr(meta.label, meta.labelEn)} />
       </div>
 
-      {plan.warning ? <div className="mt-5 rounded-lg border border-danger/30 bg-danger-soft px-4 py-3 text-sm leading-7 text-danger-ink">{plan.warning}</div> : null}
+      {plan.warning ? <div className="mt-5 rounded-lg border border-danger/30 bg-danger-soft px-4 py-3 text-sm leading-7 text-danger-ink">{tr(plan.warning, plan.warning_en?.trim() || plan.warning)}</div> : null}
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
-        <ListBlock title={tr("Việc cần làm ngay", "Do this now")} items={plan.immediate_actions ?? []} emphasized />
-        <ListBlock title={tr("Theo dõi trong những ngày tới", "Watch over the coming days")} items={plan.follow_up_actions ?? []} />
+        <ListBlock title={tr("Việc cần làm ngay", "Do this now")} items={plan.immediate_actions ?? []} itemsEn={plan.immediate_actions_en} emphasized />
+        <ListBlock title={tr("Theo dõi trong những ngày tới", "Watch over the coming days")} items={plan.follow_up_actions ?? []} itemsEn={plan.follow_up_actions_en} />
         <section className="rounded-lg border border-line bg-surface p-4 text-sm leading-7 text-ink-soft">
           <h4 className="flex items-center gap-2 font-bold text-ink"><Stethoscope className="h-4 w-4 text-leaf-strong" aria-hidden /> {tr("Khi nào hỏi chuyên gia", "When to ask an expert")}</h4>
           <p className="mt-3">{plan.expert_required ? tr("Nên hỏi chuyên gia nếu dấu hiệu lan nhanh, xuất hiện trên nhiều cây hoặc bạn cần chọn cách xử lý ngoài vườn.", "Consult an expert if the signs spread quickly, appear on many plants, or you need to choose a treatment beyond the garden.") : tr("Chưa bắt buộc hỏi chuyên gia, nhưng nên liên hệ nếu triệu chứng thay đổi hoặc lan rộng.", "Consulting an expert isn't required yet, but reach out if the symptoms change or spread.")}</p>
           <p className="mt-2">{plan.should_retake_photo ? tr("Nên chụp lại ảnh rõ hơn trước khi quyết định xử lý.", "Retake a clearer photo before deciding on treatment.") : tr(`Nên kiểm tra lại sau khoảng ${plan.recheck_after_days || 7} ngày.`, `Check again in about ${plan.recheck_after_days || 7} days.`)}</p>
         </section>
-        <ListBlock title={tr("Lưu ý an toàn", "Safety notes")} items={plan.safety_notes ?? []} />
+        <ListBlock title={tr("Lưu ý an toàn", "Safety notes")} items={plan.safety_notes ?? []} itemsEn={plan.safety_notes_en} />
       </div>
 
-      <p className="mt-5 border-t border-line pt-4 text-xs leading-6 text-ink-soft">{plan.disclaimer}</p>
+      <p className="mt-5 border-t border-line pt-4 text-xs leading-6 text-ink-soft">{tr(plan.disclaimer, plan.disclaimer_en?.trim() || plan.disclaimer)}</p>
     </Card>
   );
 }

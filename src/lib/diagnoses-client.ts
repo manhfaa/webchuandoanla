@@ -106,10 +106,24 @@ export function mapDiagnosisToRecord(item: DjangoDiagnosis): DiagnosisRecord {
       (classificationReady
         ? "Kết quả phân loại đã được lưu cùng bản ghi chẩn đoán."
         : "Ảnh đã qua bước xác thực lá và đang chờ phân loại chi tiết."),
+    // Only the generated fallbacks have an English twin; user- or RAG-written
+    // text is left alone so nothing the user typed is silently replaced.
+    symptomSummaryEn:
+      item.symptom_input || item.rag_summary
+        ? ""
+        : classificationReady
+          ? "The classification result has been saved with this diagnosis record."
+          : "The image passed leaf verification and is waiting for detailed classification.",
     causes: [
       item.cnn_payload?.class_name ? `Nhãn CNN: ${String(item.cnn_payload.class_name)}.` : "",
       item.model_version ? `Model: ${item.model_version}.` : "",
       item.yolo_confidence ? `Độ tin cậy xác thực lá: ${Math.round(item.yolo_confidence * 100)}%.` : "",
+    ].filter(Boolean),
+    // Parallel English list, same order and length, so the UI can pair by index.
+    causesEn: [
+      item.cnn_payload?.class_name ? `CNN label: ${String(item.cnn_payload.class_name)}.` : "",
+      item.model_version ? `Model: ${item.model_version}.` : "",
+      item.yolo_confidence ? `Leaf verification confidence: ${Math.round(item.yolo_confidence * 100)}%.` : "",
     ].filter(Boolean),
     recommendations,
     actionPlan,

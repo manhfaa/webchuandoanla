@@ -6,6 +6,7 @@ import { CheckCircle2, Clock3, FileText, MoveRight, NotebookText, TriangleAlert 
 import type { CropPlanStep } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { cropPlanStepEnglish, withViFallback, withViFallbackList } from "@/lib/crop-plan-labels";
 import { useTr } from "@/lib/use-tr";
 
 export function CropPlanStepPanel({
@@ -36,6 +37,10 @@ export function CropPlanStepPanel({
     );
   }
 
+  const stepEn = cropPlanStepEnglish(step);
+  const toolsNeededEn = withViFallbackList(step.tools_needed, stepEn.tools_needed_en);
+  const riskNotesEn = withViFallbackList(step.risk_notes, stepEn.risk_notes_en);
+
   return (
     <Card variant="raised" padding="lg" className="rounded-xl">
       <div className="flex items-start justify-between gap-4">
@@ -43,8 +48,12 @@ export function CropPlanStepPanel({
           <p className="text-overline text-leaf-strong">
             {tr("Bước ", "Step ")}{step.step_number}
           </p>
-          <h3 className="mt-3 font-display text-2xl font-bold text-ink">{step.title}</h3>
-          <p className="mt-2 text-sm leading-7 text-ink-soft">{step.description}</p>
+          <h3 className="mt-3 font-display text-2xl font-bold text-ink">
+            {tr(step.title, withViFallback(step.title, stepEn.title_en))}
+          </h3>
+          <p className="mt-2 text-sm leading-7 text-ink-soft">
+            {tr(step.description, withViFallback(step.description, stepEn.description_en))}
+          </p>
         </div>
         <span className="rounded-full bg-surface-soft px-3 py-1 text-xs font-semibold text-leaf-strong">
           {step.status}
@@ -69,7 +78,12 @@ export function CropPlanStepPanel({
             <MoveRight size={16} className="text-leaf-strong" />
             {tr("Vì sao bước này quan trọng", "Why this step matters")}
           </div>
-          <p className="mt-2 text-sm leading-7 text-ink-soft">{step.why_this_step_matters}</p>
+          <p className="mt-2 text-sm leading-7 text-ink-soft">
+            {tr(
+              step.why_this_step_matters,
+              withViFallback(step.why_this_step_matters, stepEn.why_this_step_matters_en),
+            )}
+          </p>
         </div>
 
         <div className="rounded-lg border border-line bg-surface p-4">
@@ -78,8 +92,8 @@ export function CropPlanStepPanel({
             {tr("Cần chuẩn bị", "What to prepare")}
           </div>
           <ul className="mt-3 space-y-2 text-sm leading-7 text-ink-soft">
-            {step.tools_needed.map((tool) => (
-              <li key={tool}>- {tool}</li>
+            {step.tools_needed.map((tool, index) => (
+              <li key={tool}>- {tr(tool, toolsNeededEn[index] ?? tool)}</li>
             ))}
           </ul>
         </div>
@@ -89,7 +103,9 @@ export function CropPlanStepPanel({
             <CheckCircle2 size={16} className="text-leaf-strong" />
             {tr("Dấu hiệu làm đúng", "Signs you did it right")}
           </div>
-          <p className="mt-2 text-sm leading-7 text-ink-soft">{step.completion_condition}</p>
+          <p className="mt-2 text-sm leading-7 text-ink-soft">
+            {tr(step.completion_condition, withViFallback(step.completion_condition, stepEn.completion_condition_en))}
+          </p>
         </div>
 
         <div className="rounded-lg border border-sun/30 bg-sun-soft p-4">
@@ -98,8 +114,8 @@ export function CropPlanStepPanel({
             {tr("Lưu ý rủi ro", "Risk notes")}
           </div>
           <ul className="mt-3 space-y-2 text-sm leading-7 text-ink-soft">
-            {step.risk_notes.map((risk) => (
-              <li key={risk}>- {risk}</li>
+            {step.risk_notes.map((risk, index) => (
+              <li key={risk}>- {tr(risk, riskNotesEn[index] ?? risk)}</li>
             ))}
           </ul>
         </div>

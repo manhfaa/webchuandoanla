@@ -5,6 +5,7 @@ import { BellRing, Clock3 } from "lucide-react";
 import type { ReminderItem } from "@/types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { withViFallback } from "@/lib/crop-plan-labels";
 import { useTr } from "@/lib/use-tr";
 
 export function ReminderCenter({
@@ -39,8 +40,8 @@ export function ReminderCenter({
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="font-bold text-ink">{reminder.title}</p>
-                <p className="mt-1 text-sm leading-6 text-ink-soft">{reminder.body}</p>
+                <p className="font-bold text-ink">{tr(reminder.title, withViFallback(reminder.title, reminder.title_en))}</p>
+                <p className="mt-1 text-sm leading-6 text-ink-soft">{tr(reminder.body, withViFallback(reminder.body, reminder.body_en))}</p>
                 <div className="mt-3 flex items-center gap-2 text-xs text-leaf-strong">
                   <Clock3 size={14} />
                   {new Date(reminder.trigger_time).toLocaleString("vi-VN")}

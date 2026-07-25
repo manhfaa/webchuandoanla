@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchCropCatalog, fetchCropLocations, previewCropPlan, createCropPlan } from "@/lib/crop-plans-client";
-import { getSuitabilityLabel } from "@/lib/crop-plan-labels";
+import { getSuitabilityLabel, withViFallback } from "@/lib/crop-plan-labels";
 import { useTr } from "@/lib/use-tr";
 import { useSessionStore } from "@/store/session-store";
 
@@ -227,8 +227,8 @@ export function CropPlanCreateWizard() {
                       </span>
                     ) : null}
                   </div>
-                  <h3 className="mt-6 font-display text-3xl font-bold text-ink">{crop.name}</h3>
-                  <p className="mt-3 text-sm leading-7 text-ink-soft">{crop.description}</p>
+                  <h3 className="mt-6 font-display text-3xl font-bold text-ink">{tr(crop.name, withViFallback(crop.name, crop.name_en))}</h3>
+                  <p className="mt-3 text-sm leading-7 text-ink-soft">{tr(crop.description, withViFallback(crop.description, crop.description_en))}</p>
                 </Card>
               </button>
             ))}
@@ -479,7 +479,7 @@ export function CropPlanCreateWizard() {
                     {tr("Kết quả phân tích", "Analysis result")}
                   </p>
                   <h2 className="mt-3 font-display text-3xl font-bold text-ink">
-                    {preview.crop.name}{tr(" tại ", " at ")}{preview.location.name}
+                    {tr(preview.crop.name, withViFallback(preview.crop.name, preview.crop.name_en))}{tr(" tại ", " at ")}{preview.location.name}
                   </h2>
                 </div>
                 <span className="rounded-full bg-surface px-4 py-2 text-sm font-semibold text-leaf-strong shadow-sm">

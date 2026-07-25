@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, CalendarRange, Filter, History, Leaf, SearchX } from "lucide-react";
 
+import { displayDiseaseName, displayPlantName, englishPlantName } from "@/components/diagnosis/result-card";
 import { Badge, StatusBadge, type StatusBadgeState } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -63,6 +64,17 @@ export default function DashboardHistoryPage() {
   }, [accessToken, setRecords]);
 
   const plantOptions = useMemo(() => ["all", ...new Set(records.map((item) => item.plant).filter(Boolean))], [records]);
+  /** Filter values stay the Vietnamese plant names; only the visible option label is translated. */
+  const plantNamesEn = useMemo(() => {
+    const names = new Map<string, string>();
+    for (const item of records) {
+      const vi = (item.plant ?? "").trim();
+      if (!vi || names.has(vi)) continue;
+      const en = englishPlantName(item);
+      if (en) names.set(vi, en);
+    }
+    return names;
+  }, [records]);
   const filtered = useMemo(
     () =>
       records.filter((item) => {
@@ -94,7 +106,7 @@ export default function DashboardHistoryPage() {
             <label className="block">
               <span className="mb-2 flex items-center gap-2 text-xs font-semibold text-ink-soft"><Filter size={15} aria-hidden /> {tr("Cây trồng", "Plant")}</span>
               <select value={plantFilter} onChange={(event) => setPlantFilter(event.target.value)} className="h-11 min-w-[180px] rounded-md border border-line bg-surface px-3.5 text-sm font-medium text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20">
-                {plantOptions.map((plant) => <option key={plant} value={plant}>{plant === "all" ? tr("Tất cả cây", "All plants") : plant}</option>)}
+                {plantOptions.map((plant) => <option key={plant} value={plant}>{plant === "all" ? tr("Tất cả cây", "All plants") : tr(plant, plantNamesEn.get(plant) || plant)}</option>)}
               </select>
             </label>
             <label className="block">
@@ -127,15 +139,15 @@ export default function DashboardHistoryPage() {
                 <Card variant="default" padding="sm" className="rounded-lg transition duration-180 group-hover:-translate-y-px group-hover:border-leaf/35 group-hover:shadow-md">
                   <div className="grid gap-4 sm:grid-cols-[92px_minmax(0,1fr)_auto] sm:items-center">
                     <div className="relative h-[88px] overflow-hidden rounded-md border border-line bg-surface-soft">
-                      {item.image ? <Image src={item.image} alt={tr(`Ảnh lá ${item.plant}`, `${item.plant} leaf image`)} fill sizes="92px" unoptimized className="object-cover transition duration-260 group-hover:scale-105" /> : <Leaf className="absolute inset-0 m-auto h-7 w-7 text-leaf" aria-hidden />}
+                      {item.image ? <Image src={item.image} alt={tr(`Ảnh lá ${item.plant}`, `${englishPlantName(item) || item.plant} leaf image`)} fill sizes="92px" unoptimized className="object-cover transition duration-260 group-hover:scale-105" /> : <Leaf className="absolute inset-0 m-auto h-7 w-7 text-leaf" aria-hidden />}
                     </div>
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="brand">{item.plant || tr("Chưa xác định cây", "Plant not identified")}</Badge>
+                        <Badge variant="brand">{displayPlantName(item, tr) || tr("Chưa xác định cây", "Plant not identified")}</Badge>
                         <StatusBadge status={state.status} label={state.label} />
                         {savedRecordIds.includes(item.id) ? <Badge variant="muted">{tr("Đã lưu", "Saved")}</Badge> : null}
                       </div>
-                      <h3 className="mt-3 truncate text-base font-bold tracking-[-0.015em] text-ink">{item.disease || tr("Chưa có gợi ý bệnh", "No disease suggestion yet")}</h3>
+                      <h3 className="mt-3 truncate text-base font-bold tracking-[-0.015em] text-ink">{displayDiseaseName(item, tr) || tr("Chưa có gợi ý bệnh", "No disease suggestion yet")}</h3>
                       <p className="mt-1 line-clamp-1 text-sm text-ink-soft">{toUserFacingText(item.note, tr("Mở kết quả để xem thông tin chi tiết.", "Open the result to see full details."))}</p>
                     </div>
                     <div className="flex items-center justify-between gap-5 border-t border-line pt-3 sm:flex-col sm:items-end sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">

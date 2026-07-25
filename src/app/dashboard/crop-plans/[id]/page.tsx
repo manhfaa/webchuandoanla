@@ -20,6 +20,7 @@ import {
   regenerateCropPlan,
   saveCropPlanStepNote,
 } from "@/lib/crop-plans-client";
+import { withViFallback } from "@/lib/crop-plan-labels";
 import { useTr } from "@/lib/use-tr";
 import { useSessionStore } from "@/store/session-store";
 import type { CropPlan } from "@/types";
@@ -116,12 +117,12 @@ export default function CropPlanDetailPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-overline text-leaf-strong">
-              {plan.crop.name} | {plan.location.name}
+              {tr(plan.crop.name, withViFallback(plan.crop.name, plan.crop.name_en))} | {plan.location.name}
             </p>
             <h2 className="mt-3 font-display text-3xl font-bold tracking-[-0.035em] text-ink sm:text-4xl">
-              {plan.title}
+              {tr(plan.title, withViFallback(plan.title, plan.title_en))}
             </h2>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-ink-soft">{plan.summary}</p>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-ink-soft">{tr(plan.summary, withViFallback(plan.summary, plan.summary_en))}</p>
           </div>
           <div className="flex flex-wrap gap-3">
             <span className="rounded-full bg-surface px-4 py-3 text-sm font-semibold text-leaf-strong shadow-sm">

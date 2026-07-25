@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, Leaf } from "lucide-react";
 
+import { displayDiseaseName, displayPlantName, englishPlantName } from "@/components/diagnosis/result-card";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { StatusBadge, type StatusBadgeState } from "@/components/ui/badge";
@@ -68,17 +69,17 @@ export function RecentDiagnosisPanel() {
             >
               <div className="relative h-14 w-16 shrink-0 overflow-hidden rounded-md border border-line bg-surface-soft">
                 {item.image ? (
-                  <Image src={item.image} alt={tr(`Ảnh lá ${item.plant}`, `Leaf image ${item.plant}`)} fill sizes="64px" unoptimized className="object-cover transition duration-260 group-hover:scale-105" />
+                  <Image src={item.image} alt={tr(`Ảnh lá ${item.plant}`, `Leaf image ${englishPlantName(item) || item.plant}`)} fill sizes="64px" unoptimized className="object-cover transition duration-260 group-hover:scale-105" />
                 ) : (
                   <Leaf className="absolute inset-0 m-auto h-5 w-5 text-leaf" aria-hidden />
                 )}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="brand">{item.plant || tr("Chưa xác định", "Not identified")}</Badge>
+                  <Badge variant="brand">{displayPlantName(item, tr) || tr("Chưa xác định", "Not identified")}</Badge>
                   <StatusBadge status={state.status} label={state.label} />
                 </div>
-                <p className="mt-2 truncate text-sm font-semibold text-ink">{item.disease || tr("Chưa có gợi ý bệnh", "No disease suggestion yet")}</p>
+                <p className="mt-2 truncate text-sm font-semibold text-ink">{displayDiseaseName(item, tr) || tr("Chưa có gợi ý bệnh", "No disease suggestion yet")}</p>
               </div>
               <div className="flex shrink-0 items-end justify-between gap-4 sm:flex-col sm:items-end">
                 <span className="text-xs font-medium text-ink-soft">{formatDate(item.createdAt)}</span>

@@ -7,7 +7,7 @@ import { useParams } from "next/navigation";
 import { Bookmark, Leaf, RefreshCcw, Volume2 } from "lucide-react";
 
 import { ActionRecommendations } from "@/components/diagnosis/action-recommendations";
-import { DiagnosisResultCard } from "@/components/diagnosis/result-card";
+import { DiagnosisResultCard, displayDiseaseName, displayPlantName, englishPlantName } from "@/components/diagnosis/result-card";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import { useTextToSpeech } from "@/hooks/use-text-to-speech";
 import { djangoClassifyLeafImage, type DjangoCnnResponse } from "@/lib/django-client";
 import { diagnosisPayloadFromRecord, fetchDiagnosisRecord, updateDiagnosisRecord } from "@/lib/diagnoses-client";
 import { fetchInputLibrary, type AgriculturalInput } from "@/lib/farmops-client";
+import { withViFallback } from "@/lib/crop-plan-labels";
 import { useTr } from "@/lib/use-tr";
 import { toUserFacingText } from "@/lib/user-facing-copy";
 import { formatConfidence, formatDate } from "@/lib/utils";
@@ -123,6 +124,8 @@ export default function ResultDetailPage() {
 
   const confidence = record.cnnConfidence ?? record.confidence ?? 0;
   const lowConfidence = confidence < 0.7;
+  const plantLabel = displayPlantName(record, tr);
+  const diseaseLabel = displayDiseaseName(record, tr);
   const sourceLabel = record.inputMethod === "capture" ? tr("Ảnh chụp", "Captured photo") : record.inputMethod === "upload" ? tr("Ảnh tải lên", "Uploaded image") : tr("Ảnh đã chọn", "Selected image");
 
   return (
@@ -130,8 +133,8 @@ export default function ResultDetailPage() {
       <Card variant="raised" padding="lg" className="rounded-xl">
         <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
           <div className="relative min-h-[320px] overflow-hidden rounded-xl border border-line bg-surface-soft sm:min-h-[430px]">
-            <Image src={record.image} alt={tr(`Ảnh lá ${record.plant}`, `${record.plant} leaf image`)} fill sizes="(max-width: 1280px) 100vw, 520px" unoptimized className="object-cover" />
-            <div className="absolute left-4 top-4 flex flex-wrap gap-2"><Badge className="bg-surface/90 text-ink shadow-sm">{record.plant || tr("Chưa xác định cây", "Plant not identified")}</Badge><Badge className="bg-surface/90 text-ink shadow-sm">{sourceLabel}</Badge></div>
+            <Image src={record.image} alt={tr(`Ảnh lá ${record.plant}`, `${englishPlantName(record) || record.plant} leaf image`)} fill sizes="(max-width: 1280px) 100vw, 520px" unoptimized className="object-cover" />
+            <div className="absolute left-4 top-4 flex flex-wrap gap-2"><Badge className="bg-surface/90 text-ink shadow-sm">{plantLabel || tr("Chưa xác định cây", "Plant not identified")}</Badge><Badge className="bg-surface/90 text-ink shadow-sm">{sourceLabel}</Badge></div>
           </div>
 
           <div className="flex flex-col justify-center">
@@ -141,7 +144,7 @@ export default function ResultDetailPage() {
               {refreshState === "loading" ? <StatusBadge status="processing" label={tr("Đang hoàn thiện kết quả", "Finalizing the result")} /> : null}
             </div>
             <p className="mt-6 text-overline text-leaf-strong">{tr("Kết luận chính", "Main conclusion")}</p>
-            <h2 className="mt-2 font-display text-[34px] font-bold leading-[1.14] tracking-[-0.04em] text-ink sm:text-[44px]">{record.disease || tr("Chưa có gợi ý bệnh", "No disease suggestion yet")}</h2>
+            <h2 className="mt-2 font-display text-[34px] font-bold leading-[1.14] tracking-[-0.04em] text-ink sm:text-[44px]">{diseaseLabel || tr("Chưa có gợi ý bệnh", "No disease suggestion yet")}</h2>
             <p className="mt-4 text-base leading-8 text-ink-soft">{toUserFacingText(record.note, tr("Mở phần thông tin bên dưới để xem chi tiết kết quả.", "Open the section below to see full result details."))}</p>
 
             <ConfidenceMeter score={confidence} className="mt-6 max-w-xl" />
@@ -177,7 +180,7 @@ export default function ResultDetailPage() {
           <p className="flex items-center gap-2 text-overline text-leaf-strong"><Leaf size={14} aria-hidden /> {tr("Vì sao có gợi ý này", "Why this suggestion")}</p>
           <h3 className="mt-2 text-h2 font-bold text-ink">{tr("Các thông tin hỗ trợ kết luận", "Details supporting the conclusion")}</h3>
           <div className="mt-5 grid gap-3 md:grid-cols-2">
-            {record.causes.map((cause) => <div key={cause} className="rounded-lg border border-line bg-surface-soft px-4 py-4 text-sm leading-7 text-ink-soft">{toUserFacingText(cause)}</div>)}
+            {record.causes.map((cause, index) => <div key={cause} className="rounded-lg border border-line bg-surface-soft px-4 py-4 text-sm leading-7 text-ink-soft">{toUserFacingText(tr(cause, withViFallback(cause, record.causesEn?.[index])))}</div>)}
           </div>
         </Card>
       ) : null}

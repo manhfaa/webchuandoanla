@@ -26,6 +26,21 @@ function trOffRender(vi: string, en: string) {
   return useLanguageStore.getState().language === "en" ? en : vi;
 }
 
+/**
+ * Backend content is Vietnamese-first: the English column is optional and is
+ * empty for every row created before the bilingual rollout. Always fall back
+ * to the Vietnamese value.
+ */
+function pickText(vi: string, en: string | null | undefined, isEnglish: boolean) {
+  if (!isEnglish) return vi;
+  return en && en.trim() ? en : vi;
+}
+
+function pickList(vi: string[], en: string[] | null | undefined, isEnglish: boolean) {
+  if (!isEnglish) return vi;
+  return en && en.length ? en : vi;
+}
+
 function categoryLabel(category: string, tr: Tr) {
   if (category === "pesticide") return tr("Thuốc BVTV", "Pesticide");
   if (category === "fertilizer") return tr("Phân bón", "Fertilizer");
@@ -34,6 +49,16 @@ function categoryLabel(category: string, tr: Tr) {
 }
 
 function InputCard({ item, tr }: { item: AgriculturalInput; tr: Tr }) {
+  const isEnglish = useLanguageStore((state) => state.language === "en");
+  const name = pickText(item.name, item.name_en, isEnglish);
+  const group = pickText(item.group, item.group_en, isEnglish);
+  const activeIngredient = pickText(item.active_ingredient, item.active_ingredient_en, isEnglish);
+  const usage = pickText(item.usage, item.usage_en, isEnglish);
+  const warning = pickText(item.warning, item.warning_en, isEnglish);
+  const suitableCrops = pickList(item.suitable_crops, item.suitable_crops_en, isEnglish);
+  const relatedDiseases = pickList(item.related_diseases, item.related_diseases_en, isEnglish);
+  const safetyNotes = pickList(item.safety_notes, item.safety_notes_en, isEnglish);
+
   return (
     <Card variant={item.category === "pesticide" ? "warning" : "default"} padding="lg" className="rounded-xl shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -41,24 +66,24 @@ function InputCard({ item, tr }: { item: AgriculturalInput; tr: Tr }) {
           <Badge variant={item.category === "pesticide" ? "warning" : "success"}>
             {categoryLabel(item.category, tr)}
           </Badge>
-          <h3 className="mt-3 text-h3 font-bold text-ink">{item.name}</h3>
-          <p className="mt-1 text-body-sm text-ink-soft">{item.group || item.active_ingredient}</p>
+          <h3 className="mt-3 text-h3 font-bold text-ink">{name}</h3>
+          <p className="mt-1 text-body-sm text-ink-soft">{group || activeIngredient}</p>
         </div>
         <FlaskConical strokeWidth={1.75} className="h-6 w-6 text-leaf-strong" />
       </div>
-      <p className="mt-4 text-body-sm leading-relaxed text-ink-soft">{item.usage}</p>
+      <p className="mt-4 text-body-sm leading-relaxed text-ink-soft">{usage}</p>
       <div className="mt-4 flex flex-wrap gap-2">
-        {item.suitable_crops.map((crop) => (
+        {suitableCrops.map((crop) => (
           <Badge key={crop} variant="muted">{crop}</Badge>
         ))}
-        {item.related_diseases.map((disease) => (
+        {relatedDiseases.map((disease) => (
           <Badge key={disease} variant="brand">{disease}</Badge>
         ))}
       </div>
-      {item.warning ? <p className="mt-4 text-body-sm leading-relaxed text-danger-ink">{item.warning}</p> : null}
-      {item.safety_notes.length ? (
+      {warning ? <p className="mt-4 text-body-sm leading-relaxed text-danger-ink">{warning}</p> : null}
+      {safetyNotes.length ? (
         <ul className="mt-4 space-y-1 text-caption leading-relaxed text-ink-soft">
-          {item.safety_notes.map((note) => (
+          {safetyNotes.map((note) => (
             <li key={note}>- {note}</li>
           ))}
         </ul>
@@ -68,16 +93,22 @@ function InputCard({ item, tr }: { item: AgriculturalInput; tr: Tr }) {
 }
 
 function SymptomCard({ item }: { item: NutritionSymptom }) {
+  const isEnglish = useLanguageStore((state) => state.language === "en");
+  const nutrient = pickText(item.nutrient, item.nutrient_en, isEnglish);
+  const symptom = pickText(item.symptom, item.symptom_en, isEnglish);
+  const recommendation = pickText(item.recommendation, item.recommendation_en, isEnglish);
+  const affectedCrops = pickList(item.affected_crops, item.affected_crops_en, isEnglish);
+
   return (
     <div className="rounded-lg border border-line bg-surface p-4">
       <div className="flex items-center gap-2">
         <Leaf strokeWidth={1.75} className="h-4 w-4 text-leaf-strong" />
-        <p className="font-semibold text-ink">{item.nutrient}</p>
+        <p className="font-semibold text-ink">{nutrient}</p>
       </div>
-      <p className="mt-3 text-body-sm leading-relaxed text-ink-soft">{item.symptom}</p>
-      <p className="mt-3 text-body-sm font-medium leading-relaxed text-leaf-strong">{item.recommendation}</p>
+      <p className="mt-3 text-body-sm leading-relaxed text-ink-soft">{symptom}</p>
+      <p className="mt-3 text-body-sm font-medium leading-relaxed text-leaf-strong">{recommendation}</p>
       <div className="mt-3 flex flex-wrap gap-2">
-        {item.affected_crops.map((crop) => (
+        {affectedCrops.map((crop) => (
           <Badge key={crop} variant="locked">{crop}</Badge>
         ))}
       </div>

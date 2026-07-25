@@ -101,6 +101,12 @@ export interface ActionPlan {
   disclaimer: string;
   warning?: string;
   severity?: string;
+  immediate_actions_en?: string[];
+  follow_up_actions_en?: string[];
+  safety_notes_en?: string[];
+  disclaimer_en?: string;
+  warning_en?: string;
+  severity_en?: string;
 }
 
 export interface DiagnosisRecord {
@@ -119,7 +125,9 @@ export interface DiagnosisRecord {
   inputMethod?: DiagnosisInputMethod;
   origin?: DiagnosisRecordOrigin;
   symptomSummary: string;
+  symptomSummaryEn?: string;
   causes: string[];
+  causesEn?: string[];
   recommendations: RecommendationBlock[];
   actionPlan?: ActionPlan;
   cnnConfidence?: number;
@@ -185,8 +193,10 @@ export interface CropCatalogItem {
   id: number;
   slug: string;
   name: string;
+  name_en?: string;
   category: string;
   description: string;
+  description_en?: string;
   default_planting_modes: string[];
   is_beginner_friendly: boolean;
 }
@@ -218,32 +228,43 @@ export interface CropPlanStep {
   phase_key: string;
   step_number: number;
   title: string;
+  title_en?: string;
   short_label: string;
+  short_label_en?: string;
   description: string;
+  description_en?: string;
   why_this_step_matters: string;
+  why_this_step_matters_en?: string;
   prerequisites: string[];
+  prerequisites_en?: string[];
   tools_needed: string[];
+  tools_needed_en?: string[];
   estimated_duration_minutes: number;
   suggested_start_time: string;
   suggested_end_time: string;
   repeat_rule: Record<string, unknown> | null;
   reminder_times: string[];
   completion_condition: string;
+  completion_condition_en?: string;
   risk_notes: string[];
+  risk_notes_en?: string[];
   weather_dependency: Record<string, unknown>;
   water_amount:
     | {
         value: number;
         unit: string;
+        unit_en?: string;
       }
     | null;
   fertilizer_amount:
     | {
         value: number;
         unit: string;
+        unit_en?: string;
       }
     | null;
   sunlight_requirement_text: string;
+  sunlight_requirement_text_en?: string;
   dependency_step_ids: number[];
   status: CropPlanStepStatus;
   delay_reason: string;
@@ -257,8 +278,11 @@ export interface ReminderItem {
   crop_plan: number;
   step: number | null;
   step_title: string;
+  step_title_en?: string;
   title: string;
+  title_en?: string;
   body: string;
+  body_en?: string;
   deep_link: string;
   trigger_time: string;
   fallback_trigger_time: string | null;
@@ -277,6 +301,7 @@ export interface CropPlan {
   location: CropLocation;
   weather_snapshot: WeatherSnapshot | null;
   title: string;
+  title_en?: string;
   planting_mode: string;
   area_value: string | number | null;
   area_unit: string;
@@ -287,7 +312,9 @@ export interface CropPlan {
   suitability_score: number;
   suitability_level: string;
   summary: string;
+  summary_en?: string;
   ai_reasoning_summary: string;
+  ai_reasoning_summary_en?: string;
   plan_goal: string;
   experience_level: string;
   plan_version: number;

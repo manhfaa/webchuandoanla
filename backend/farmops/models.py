@@ -125,6 +125,16 @@ class AgriculturalInput(models.Model):
     safety_notes = models.JSONField(default=list, blank=True)
     withholding_period_days = models.PositiveIntegerField(null=True, blank=True)
     warning = models.TextField(blank=True, default="")
+    # English variants. Optional by design: rows created before the bilingual
+    # rollout keep an empty value and the UI falls back to the Vietnamese text.
+    name_en = models.CharField(max_length=160, blank=True, default="")
+    group_en = models.CharField(max_length=120, blank=True, default="")
+    active_ingredient_en = models.CharField(max_length=160, blank=True, default="")
+    usage_en = models.TextField(blank=True, default="")
+    suitable_crops_en = models.JSONField(default=list, blank=True)
+    related_diseases_en = models.JSONField(default=list, blank=True)
+    safety_notes_en = models.JSONField(default=list, blank=True)
+    warning_en = models.TextField(blank=True, default="")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -142,6 +152,13 @@ class NutritionSymptom(models.Model):
     affected_crops = models.JSONField(default=list, blank=True)
     recommendation = models.TextField(blank=True, default="")
     safety_notes = models.JSONField(default=list, blank=True)
+    # English variants. Optional by design: rows created before the bilingual
+    # rollout keep an empty value and the UI falls back to the Vietnamese text.
+    nutrient_en = models.CharField(max_length=120, blank=True, default="")
+    symptom_en = models.TextField(blank=True, default="")
+    affected_crops_en = models.JSONField(default=list, blank=True)
+    recommendation_en = models.TextField(blank=True, default="")
+    safety_notes_en = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

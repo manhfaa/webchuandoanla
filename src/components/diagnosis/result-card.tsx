@@ -11,6 +11,7 @@ import { ConfidenceMeter } from "@/components/ui/confidence-meter";
 import { SourceList } from "@/components/ui/source-list";
 import { EmptyState } from "@/components/ui/states";
 import { toUserFacingText } from "@/lib/user-facing-copy";
+import { withViFallback } from "@/lib/crop-plan-labels";
 import { useTr } from "@/lib/use-tr";
 import type { DiagnosisRecord } from "@/types";
 
@@ -18,6 +19,105 @@ type Tr = (vi: string, en: string) => string;
 
 type ResearchSource = { id?: number; title?: string; url?: string };
 type ResearchPayload = { compatibilitySources?: ResearchSource[]; treatmentSources?: ResearchSource[] };
+
+/**
+ * Bilingual plant/disease names.
+ *
+ * The classifier stores its raw answer on `record.cnnPayload`, which is a loose
+ * `Record<string, unknown>`. Alongside the Vietnamese `plant_name`/`disease_name`
+ * it also carries `plant_name_en`/`disease_name_en` (top level and for every
+ * entry of `top_predictions`). Older records were saved before those English
+ * fields existed, so every reader below falls back to the Vietnamese value.
+ */
+type CnnNames = {
+  plant_name: string;
+  disease_name: string;
+  plant_name_en: string;
+  disease_name_en: string;
+};
+
+function readString(source: Record<string, unknown>, key: string): string {
+  const value = source[key];
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function toCnnNames(value: unknown): CnnNames | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  const source = value as Record<string, unknown>;
+  return {
+    plant_name: readString(source, "plant_name"),
+    disease_name: readString(source, "disease_name"),
+    plant_name_en: readString(source, "plant_name_en"),
+    disease_name_en: readString(source, "disease_name_en"),
+  };
+}
+
+/** The payload itself first, then each `top_predictions` entry. */
+function cnnNameEntries(record: DiagnosisRecord): CnnNames[] {
+  const payload = record.cnnPayload;
+  if (!payload) return [];
+  const entries: CnnNames[] = [];
+  const root = toCnnNames(payload);
+  if (root) entries.push(root);
+  const predictions = payload.top_predictions;
+  if (Array.isArray(predictions)) {
+    for (const prediction of predictions) {
+      const parsed = toCnnNames(prediction);
+      if (parsed) entries.push(parsed);
+    }
+  }
+  return entries;
+}
+
+function englishName(record: DiagnosisRecord, vietnamese: string, field: "plant" | "disease"): string {
+  const viKey = field === "plant" ? "plant_name" : "disease_name";
+  const enKey = field === "plant" ? "plant_name_en" : "disease_name_en";
+  const entries = cnnNameEntries(record);
+  if (!vietnamese) return entries[0]?.[enKey] ?? "";
+  return entries.find((entry) => entry[viKey] === vietnamese && entry[enKey])?.[enKey] ?? "";
+}
+
+/** Raw English plant name from the stored payload, or `""` when unavailable. */
+export function englishPlantName(record: DiagnosisRecord): string {
+  return englishName(record, (record.plant ?? "").trim(), "plant");
+}
+
+/** Raw English disease name from the stored payload, or `""` when unavailable. */
+export function englishDiseaseName(record: DiagnosisRecord): string {
+  return englishName(record, (record.disease ?? "").trim(), "disease");
+}
+
+export function displayPlantName(record: DiagnosisRecord, tr: Tr): string {
+  const vi = (record.plant ?? "").trim();
+  const en = englishPlantName(record);
+  return tr(vi || en, en || vi);
+}
+
+export function displayDiseaseName(record: DiagnosisRecord, tr: Tr): string {
+  const vi = (record.disease ?? "").trim();
+  const en = englishDiseaseName(record);
+  return tr(vi || en, en || vi);
+}
+
+/**
+ * The "other possibilities" list is stored as pre-rendered lines shaped like
+ * `"<plant> - <disease>: 92%"`. Only the leading name pair is swapped; the
+ * confidence tail is left untouched. Unmatched lines are returned as-is.
+ */
+export function translatePredictionLine(line: string, record: DiagnosisRecord, tr: Tr): string {
+  for (const entry of cnnNameEntries(record)) {
+    if (!entry.disease_name) continue;
+    const prefix = `${entry.plant_name || "Cây"} - ${entry.disease_name}`;
+    if (!line.startsWith(prefix)) continue;
+    const rest = line.slice(prefix.length);
+    if (rest && !rest.startsWith(":")) continue;
+    const plantEn = entry.plant_name_en || entry.plant_name;
+    const diseaseEn = entry.disease_name_en || entry.disease_name;
+    const translated = `${tr(entry.plant_name || "Cây", plantEn || "Plant")} - ${tr(entry.disease_name, diseaseEn)}`;
+    return `${translated}${rest}`;
+  }
+  return line;
+}
 
 function getResearchSources(record: DiagnosisRecord) {
   const payload = record.cnnPayload?.tavily_research as ResearchPayload | null | undefined;
@@ -48,8 +148,8 @@ function customerText(text: string) {
   return toUserFacingText(text);
 }
 
-function renderRecommendationItem(rawItem: string, tr: Tr) {
-  const item = customerText(rawItem);
+function renderRecommendationItem(rawItem: string, tr: Tr, record: DiagnosisRecord) {
+  const item = translatePredictionLine(customerText(rawItem), record, tr);
   const sourceMatch = item.match(/^(\[\d+\])\s*(.*?):\s*(https?:\/\/\S+)$/);
   if (sourceMatch) {
     const [, index, title, url] = sourceMatch;
@@ -111,9 +211,9 @@ export function DiagnosisResultCard({
       <div className="mt-6 grid gap-5 xl:grid-cols-[0.86fr_1.14fr]">
         <div className="space-y-4">
           {!detailsOnly ? <div className="fl-rise field-contours relative overflow-hidden rounded-xl bg-forest p-6 text-on-forest">
-            <Badge className="bg-on-forest/10 text-on-forest">{record.plant || tr("Chưa xác định cây", "Plant not identified")}</Badge>
+            <Badge className="bg-on-forest/10 text-on-forest">{displayPlantName(record, tr) || tr("Chưa xác định cây", "Plant not identified")}</Badge>
             <p className="mt-6 text-overline text-on-forest-muted">{tr("Khả năng cao nhất", "Most likely")}</p>
-            <h3 className="mt-2 font-display text-[30px] font-bold leading-tight tracking-[-0.03em] text-on-forest">{record.disease || tr("Chưa có gợi ý bệnh", "No disease suggestion yet")}</h3>
+            <h3 className="mt-2 font-display text-[30px] font-bold leading-tight tracking-[-0.03em] text-on-forest">{displayDiseaseName(record, tr) || tr("Chưa có gợi ý bệnh", "No disease suggestion yet")}</h3>
             <ConfidenceMeter score={confidence} tone="dark" className="mt-6" />
             <div className="mt-5 grid grid-cols-2 gap-3 border-t border-on-forest/10 pt-5 text-sm">
               <div><p className="text-xs text-on-forest-muted">{tr("Ảnh đầu vào", "Input photo")}</p><p className="mt-1 font-semibold text-on-forest">{tr("Ảnh lá hợp lệ", "Valid leaf photo")}</p></div>
@@ -133,7 +233,7 @@ export function DiagnosisResultCard({
         <div className="space-y-4">
           {!detailsOnly ? <div className="rounded-xl bg-surface-soft p-5">
             <p className="text-sm font-bold text-ink">{tr("Tình trạng hiện tại", "Current condition")}</p>
-            <p className="mt-3 text-sm leading-7 text-ink-soft">{customerText(record.symptomSummary)}</p>
+            <p className="mt-3 text-sm leading-7 text-ink-soft">{customerText(tr(record.symptomSummary, withViFallback(record.symptomSummary, record.symptomSummaryEn)))}</p>
           </div> : null}
 
           <div className="rounded-xl border border-line bg-surface p-5">
@@ -146,7 +246,7 @@ export function DiagnosisResultCard({
                     {section.items.slice(0, locked ? 1 : section.items.length).filter((item) => customerText(item).trim()).map((item) => (
                       <li key={item} className="flex gap-2 rounded-lg bg-surface-soft px-3 py-3 text-sm leading-7 text-ink-soft">
                         <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-leaf" aria-hidden />
-                        <span>{renderRecommendationItem(item, tr)}</span>
+                        <span>{renderRecommendationItem(item, tr, record)}</span>
                       </li>
                     ))}
                   </ul>

@@ -7,6 +7,7 @@ from urllib.request import Request, urlopen
 
 
 DISCLAIMER = "Thông tin chỉ mang tính tham khảo, không thay thế tư vấn của chuyên gia nông nghiệp."
+DISCLAIMER_EN = "This information is for reference only and does not replace advice from an agricultural expert."
 
 
 class WeatherDataUnavailable(RuntimeError):
@@ -142,6 +143,20 @@ def _weather_summary(code: int) -> str:
     return "Thời tiết thay đổi"
 
 
+def _weather_summary_en(code: int) -> str:
+    if code in {0, 1}:
+        return "Clear sky, light sunshine"
+    if code in {2, 3}:
+        return "Partly cloudy"
+    if code in {45, 48}:
+        return "Foggy"
+    if code in {51, 53, 55, 61, 63, 65, 80, 81, 82}:
+        return "Rain expected, keep an eye on humidity"
+    if code in {95, 96, 99}:
+        return "Risk of thunderstorms"
+    return "Changeable weather"
+
+
 def _fetch_open_meteo(location: Any) -> dict[str, Any]:
     lat = getattr(location, "latitude", None)
     lon = getattr(location, "longitude", None)
@@ -188,6 +203,7 @@ def _fetch_open_meteo(location: Any) -> dict[str, Any]:
                 "rain_probability_percent": rain_probability,
                 "wind_kmh": round(wind),
                 "summary": _weather_summary(weather_code),
+                "summary_en": _weather_summary_en(weather_code),
             }
         )
 
@@ -205,19 +221,49 @@ def _fetch_open_meteo(location: Any) -> dict[str, Any]:
     }
 
 
-def _weather_warnings(current: dict[str, Any], daily: list[dict[str, Any]]) -> list[str]:
-    warnings = []
+def _weather_warning_pairs(current: dict[str, Any], daily: list[dict[str, Any]]) -> list[tuple[str, str]]:
+    """Weather warnings as (Vietnamese, English) pairs, kept in the same order."""
+    warnings: list[tuple[str, str]] = []
     if current["rain_probability_percent"] >= 60:
-        warnings.append("Khả năng mưa cao, hạn chế phun thuốc ngoài trời hôm nay.")
+        warnings.append(
+            (
+                "Khả năng mưa cao, hạn chế phun thuốc ngoài trời hôm nay.",
+                "High chance of rain; limit outdoor spraying today.",
+            )
+        )
     if current["temperature_c"] >= 35:
-        warnings.append("Nắng nóng, ưu tiên tưới sáng sớm hoặc chiều mát.")
+        warnings.append(
+            (
+                "Nắng nóng, ưu tiên tưới sáng sớm hoặc chiều mát.",
+                "Hot weather; water in the early morning or the cool late afternoon.",
+            )
+        )
     if current["humidity_percent"] >= 80:
-        warnings.append("Độ ẩm cao, cần theo dõi nguy cơ nấm bệnh.")
+        warnings.append(
+            (
+                "Độ ẩm cao, cần theo dõi nguy cơ nấm bệnh.",
+                "High humidity; watch for fungal disease risk.",
+            )
+        )
     if any(day["rain_probability_percent"] >= 75 for day in daily[:3]):
-        warnings.append("Có ngày mưa lớn trong 3 ngày tới, kiểm tra rãnh thoát nước để giảm nguy cơ ngập úng.")
+        warnings.append(
+            (
+                "Có ngày mưa lớn trong 3 ngày tới, kiểm tra rãnh thoát nước để giảm nguy cơ ngập úng.",
+                "Heavy rain is expected in the next 3 days; check the drainage ditches to reduce the risk of waterlogging.",
+            )
+        )
     if not warnings:
-        warnings.append("Chưa có cảnh báo thời tiết nghiêm trọng trong hôm nay.")
+        warnings.append(
+            (
+                "Chưa có cảnh báo thời tiết nghiêm trọng trong hôm nay.",
+                "No severe weather warning for today.",
+            )
+        )
     return warnings
+
+
+def _weather_warnings(current: dict[str, Any], daily: list[dict[str, Any]]) -> list[str]:
+    return [vi for vi, _ in _weather_warning_pairs(current, daily)]
 
 
 def build_weather(location: Any, crop: str = "") -> dict[str, Any]:
@@ -226,12 +272,15 @@ def build_weather(location: Any, crop: str = "") -> dict[str, Any]:
 
     daily = weather["forecast_7d"]
     current = weather["current"]
+    warning_pairs = _weather_warning_pairs(current, daily)
     return {
         **weather,
         "location_name": getattr(location, "name", "Vị trí canh tác"),
         "crop": crop_name,
-        "warnings": _weather_warnings(current, daily),
+        "warnings": [vi for vi, _ in warning_pairs],
+        "warnings_en": [en for _, en in warning_pairs],
         "message": "Dữ liệu thời tiết thật lấy từ Open-Meteo theo tọa độ vị trí canh tác.",
+        "message_en": "Live weather data from Open-Meteo for your field coordinates.",
     }
 
 
@@ -251,7 +300,9 @@ def build_pest_alerts(location: Any, crop: str = "", weather: dict[str, Any] | N
         alerts.append(
             {
                 "title": "Nguy cơ nấm bệnh tăng",
+                "title_en": "Rising fungal disease risk",
                 "description": "Độ ẩm hoặc mưa cao có thể làm bệnh đốm lá, sương mai hoặc thán thư phát triển nhanh hơn.",
+                "description_en": "High humidity or rainfall can let leaf spot, downy mildew or anthracnose spread faster.",
                 "severity": "high",
             }
         )
@@ -259,7 +310,9 @@ def build_pest_alerts(location: Any, crop: str = "", weather: dict[str, Any] | N
         alerts.append(
             {
                 "title": "Cần theo dõi sâu bệnh",
+                "title_en": "Keep monitoring for pests and disease",
                 "description": "Điều kiện thời tiết ở mức cần quan sát thêm, đặc biệt ở lá non và mặt dưới lá.",
+                "description_en": "Weather conditions call for closer scouting, especially on young leaves and leaf undersides.",
                 "severity": "medium",
             }
         )
@@ -267,7 +320,9 @@ def build_pest_alerts(location: Any, crop: str = "", weather: dict[str, Any] | N
         alerts.append(
             {
                 "title": "Rủi ro sâu bệnh thấp",
+                "title_en": "Low pest and disease risk",
                 "description": "Điều kiện hiện tại tương đối ổn định, vẫn nên kiểm tra vườn định kỳ.",
+                "description_en": "Conditions are fairly stable right now, but keep scouting the field regularly.",
                 "severity": "low",
             }
         )
@@ -289,18 +344,52 @@ def build_farm_advisory(location: Any, crop: str = "") -> dict[str, Any]:
     should_fertilize = current["rain_probability_percent"] < 55
     should_spray = current["rain_probability_percent"] < 45 and current["wind_kmh"] <= 18
 
-    recommendations = [
-        "Nên tưới nước vào sáng sớm hoặc chiều mát." if should_water else "Không cần tưới nhiều nếu đất còn ẩm hoặc sắp mưa.",
-        "Có thể bón phân nếu đất đủ ẩm và không có mưa lớn." if should_fertilize else "Tạm hoãn bón phân nếu khả năng mưa cao.",
-        "Có thể phun thuốc khi cần thiết và gió nhẹ." if should_spray else "Không nên phun thuốc hôm nay vì mưa/gió có thể làm giảm hiệu quả.",
+    recommendation_pairs: list[tuple[str, str]] = [
+        (
+            ("Nên tưới nước vào sáng sớm hoặc chiều mát.", "Water in the early morning or the cool late afternoon.")
+            if should_water
+            else (
+                "Không cần tưới nhiều nếu đất còn ẩm hoặc sắp mưa.",
+                "No heavy watering needed if the soil is still moist or rain is on the way.",
+            )
+        ),
+        (
+            (
+                "Có thể bón phân nếu đất đủ ẩm và không có mưa lớn.",
+                "You can fertilise if the soil is moist enough and no heavy rain is expected.",
+            )
+            if should_fertilize
+            else (
+                "Tạm hoãn bón phân nếu khả năng mưa cao.",
+                "Hold off on fertilising while the chance of rain is high.",
+            )
+        ),
+        (
+            (
+                "Có thể phun thuốc khi cần thiết và gió nhẹ.",
+                "You can spray when needed while the wind stays light.",
+            )
+            if should_spray
+            else (
+                "Không nên phun thuốc hôm nay vì mưa/gió có thể làm giảm hiệu quả.",
+                "Avoid spraying today; rain or wind can reduce its effectiveness.",
+            )
+        ),
     ]
 
     if current["humidity_percent"] >= 78:
-        recommendations.append("Độ ẩm cao, tăng kiểm tra mặt dưới lá và vùng tán rậm.")
+        recommendation_pairs.append(
+            (
+                "Độ ẩm cao, tăng kiểm tra mặt dưới lá và vùng tán rậm.",
+                "Humidity is high; check leaf undersides and dense canopy areas more often.",
+            )
+        )
 
     return {
         "weather": weather,
         "pest_alerts": pest_alerts,
-        "recommendations": recommendations,
+        "recommendations": [vi for vi, _ in recommendation_pairs],
+        "recommendations_en": [en for _, en in recommendation_pairs],
         "disclaimer": DISCLAIMER,
+        "disclaimer_en": DISCLAIMER_EN,
     }

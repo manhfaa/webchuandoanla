@@ -4,6 +4,7 @@ import { CalendarClock, CircleAlert, ListTodo, Sprout } from "lucide-react";
 
 import type { CropPlan, CropPlanStepStatus, ReminderItem } from "@/types";
 import { Card } from "@/components/ui/card";
+import { withViFallback } from "@/lib/crop-plan-labels";
 import { useTr } from "@/lib/use-tr";
 
 const statusLabels: Record<CropPlanStepStatus, string> = {
@@ -49,7 +50,13 @@ export function CropPlanProgress({
     {
       label: "Bước hiện tại",
       labelEn: "Current step",
-      value: current ? `${current.step_number}. ${current.short_label || current.title}` : tr("Chưa có", "None"),
+      value: current
+        ? `${current.step_number}. ${
+            current.short_label
+              ? tr(current.short_label, withViFallback(current.short_label, current.short_label_en))
+              : tr(current.title, withViFallback(current.title, current.title_en))
+          }`
+        : tr("Chưa có", "None"),
       note: current ? tr(statusLabels[current.status], statusLabelsEn[current.status]) : tr("Đang chờ tạo kế hoạch", "Waiting for plan creation"),
       icon: ListTodo,
     },

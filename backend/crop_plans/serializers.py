@@ -10,8 +10,10 @@ class CropSerializer(serializers.ModelSerializer):
             "id",
             "slug",
             "name",
+            "name_en",
             "category",
             "description",
+            "description_en",
             "default_planting_modes",
             "is_beginner_friendly",
             "created_at",
@@ -43,22 +45,31 @@ class CropPlanStepSerializer(serializers.ModelSerializer):
             "phase_key",
             "step_number",
             "title",
+            "title_en",
             "short_label",
+            "short_label_en",
             "description",
+            "description_en",
             "why_this_step_matters",
+            "why_this_step_matters_en",
             "prerequisites",
+            "prerequisites_en",
             "tools_needed",
+            "tools_needed_en",
             "estimated_duration_minutes",
             "suggested_start_time",
             "suggested_end_time",
             "repeat_rule",
             "reminder_times",
             "completion_condition",
+            "completion_condition_en",
             "risk_notes",
+            "risk_notes_en",
             "weather_dependency",
             "water_amount",
             "fertilizer_amount",
             "sunlight_requirement_text",
+            "sunlight_requirement_text_en",
             "dependency_step_ids",
             "status",
             "delay_reason",
@@ -72,16 +83,25 @@ class CropPlanStepSerializer(serializers.ModelSerializer):
     def get_water_amount(self, obj):
         if obj.water_amount_value is None:
             return None
-        return {"value": float(obj.water_amount_value), "unit": obj.water_amount_unit}
+        return {
+            "value": float(obj.water_amount_value),
+            "unit": obj.water_amount_unit,
+            "unit_en": obj.water_amount_unit_en or "",
+        }
 
     def get_fertilizer_amount(self, obj):
         if obj.fertilizer_amount_value is None:
             return None
-        return {"value": float(obj.fertilizer_amount_value), "unit": obj.fertilizer_amount_unit}
+        return {
+            "value": float(obj.fertilizer_amount_value),
+            "unit": obj.fertilizer_amount_unit,
+            "unit_en": obj.fertilizer_amount_unit_en or "",
+        }
 
 
 class ReminderSerializer(serializers.ModelSerializer):
     step_title = serializers.CharField(source="step.title", read_only=True)
+    step_title_en = serializers.CharField(source="step.title_en", read_only=True)
 
     class Meta:
         model = Reminder
@@ -90,8 +110,11 @@ class ReminderSerializer(serializers.ModelSerializer):
             "crop_plan",
             "step",
             "step_title",
+            "step_title_en",
             "title",
+            "title_en",
             "body",
+            "body_en",
             "deep_link",
             "trigger_time",
             "fallback_trigger_time",
@@ -123,6 +146,7 @@ class CropPlanSerializer(serializers.ModelSerializer):
             "location",
             "weather_snapshot",
             "title",
+            "title_en",
             "planting_mode",
             "area_value",
             "area_unit",
@@ -133,7 +157,9 @@ class CropPlanSerializer(serializers.ModelSerializer):
             "suitability_score",
             "suitability_level",
             "summary",
+            "summary_en",
             "ai_reasoning_summary",
+            "ai_reasoning_summary_en",
             "plan_goal",
             "experience_level",
             "plan_version",

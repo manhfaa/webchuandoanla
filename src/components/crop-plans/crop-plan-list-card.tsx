@@ -5,6 +5,7 @@ import { ArrowUpRight, CalendarDays, MapPin, Sprout } from "lucide-react";
 
 import type { CropPlan } from "@/types";
 import { Card } from "@/components/ui/card";
+import { withViFallback } from "@/lib/crop-plan-labels";
 import { useTr } from "@/lib/use-tr";
 
 const planStatusTone: Record<string, string> = {
@@ -27,7 +28,7 @@ export function CropPlanListCard({ plan }: { plan: CropPlan }) {
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <span className="rounded-full bg-surface-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-leaf-strong">
-                {plan.crop.name}
+                {tr(plan.crop.name, withViFallback(plan.crop.name, plan.crop.name_en))}
               </span>
               <span
                 className={`rounded-full px-3 py-1 text-xs font-semibold ${planStatusTone[plan.status] ?? planStatusTone.active}`}
@@ -36,9 +37,9 @@ export function CropPlanListCard({ plan }: { plan: CropPlan }) {
               </span>
             </div>
             <h3 className="mt-4 font-display text-2xl font-bold text-ink">
-              {plan.title}
+              {tr(plan.title, withViFallback(plan.title, plan.title_en))}
             </h3>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-ink-soft">{plan.summary}</p>
+            <p className="mt-2 max-w-2xl text-sm leading-7 text-ink-soft">{tr(plan.summary, withViFallback(plan.summary, plan.summary_en))}</p>
           </div>
           <span className="rounded-md bg-surface-soft p-3 text-ink-soft shadow-sm transition duration-180 group-hover:bg-leaf group-hover:text-on-leaf">
             <ArrowUpRight size={18} />
@@ -66,7 +67,7 @@ export function CropPlanListCard({ plan }: { plan: CropPlan }) {
               {tr("Bước tiếp theo", "Next step")}
             </div>
             <p className="mt-2 text-sm font-semibold text-ink">
-              {nextStep ? `${nextStep.step_number}. ${nextStep.title}` : tr("Đang cập nhật", "Updating")}
+              {nextStep ? `${nextStep.step_number}. ${tr(nextStep.title, withViFallback(nextStep.title, nextStep.title_en))}` : tr("Đang cập nhật", "Updating")}
             </p>
           </div>
         </div>

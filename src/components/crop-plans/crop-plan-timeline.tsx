@@ -5,7 +5,12 @@ import { CheckCircle2, CircleDashed, Clock3, PauseCircle, TriangleAlert } from "
 import type { CropPlanStep, CropPlanStepStatus } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { getCropPhaseLabel } from "@/lib/crop-plan-labels";
+import {
+  cropPlanAmountUnitEn,
+  cropPlanStepEnglish,
+  getCropPhaseLabelPair,
+  withViFallback,
+} from "@/lib/crop-plan-labels";
 import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
 
@@ -78,12 +83,19 @@ export function CropPlanTimeline({
         const showPhase = step.phase_key !== previousPhase;
         previousPhase = step.phase_key;
 
+        const stepEn = cropPlanStepEnglish(step);
+        const title = tr(step.title, withViFallback(step.title, stepEn.title_en));
+        const shortLabel = step.short_label
+          ? tr(step.short_label, withViFallback(step.short_label, stepEn.short_label_en))
+          : title;
+        const waterUnitEn = cropPlanAmountUnitEn(step.water_amount);
+
         return (
           <div key={step.id}>
             {showPhase ? (
               <div className="mb-4 flex items-center gap-3">
                 <span className="rounded-full bg-surface-soft px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-leaf-strong">
-                  {getCropPhaseLabel(step.phase_key)}
+                  {tr(...getCropPhaseLabelPair(step.phase_key))}
                 </span>
               </div>
             ) : null}
@@ -109,16 +121,18 @@ export function CropPlanTimeline({
                   <div>
                     <div className="flex flex-wrap items-center gap-3">
                       <span className="rounded-full bg-surface-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">
-                        {step.short_label || step.title}
+                        {shortLabel}
                       </span>
                       <span className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-ink-soft">
                         {tr(meta.label, meta.labelEn)}
                       </span>
                     </div>
                     <h3 className="mt-3 font-display text-2xl font-bold text-ink">
-                      {step.title}
+                      {title}
                     </h3>
-                    <p className="mt-3 max-w-3xl text-sm leading-7 text-ink-soft">{step.description}</p>
+                    <p className="mt-3 max-w-3xl text-sm leading-7 text-ink-soft">
+                      {tr(step.description, withViFallback(step.description, stepEn.description_en))}
+                    </p>
                   </div>
                   <div className="rounded-lg bg-surface-soft px-4 py-3 text-right">
                     <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">{tr("Thời gian", "Time")}</p>
@@ -136,12 +150,21 @@ export function CropPlanTimeline({
                   <div className="rounded-lg border border-line bg-surface-soft px-4 py-3 text-sm text-ink-soft">
                     <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">{tr("Nước tưới", "Watering")}</p>
                     <p className="mt-2 font-medium text-ink">
-                      {step.water_amount ? `${step.water_amount.value} ${step.water_amount.unit}` : tr("Theo dõi ẩm đất", "Monitor soil moisture")}
+                      {step.water_amount
+                        ? `${step.water_amount.value} ${tr(step.water_amount.unit, withViFallback(step.water_amount.unit, waterUnitEn))}`
+                        : tr("Theo dõi ẩm đất", "Monitor soil moisture")}
                     </p>
                   </div>
                   <div className="rounded-lg border border-line bg-surface-soft px-4 py-3 text-sm text-ink-soft">
                     <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-strong">{tr("Nắng", "Sunlight")}</p>
-                    <p className="mt-2 font-medium text-ink">{step.sunlight_requirement_text || tr("Theo điều kiện thực tế", "Based on actual conditions")}</p>
+                    <p className="mt-2 font-medium text-ink">
+                      {step.sunlight_requirement_text
+                        ? tr(
+                            step.sunlight_requirement_text,
+                            withViFallback(step.sunlight_requirement_text, stepEn.sunlight_requirement_text_en),
+                          )
+                        : tr("Theo điều kiện thực tế", "Based on actual conditions")}
+                    </p>
                   </div>
                 </div>
 
