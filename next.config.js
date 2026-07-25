@@ -8,7 +8,7 @@ const cspDirectives = [
   "object-src 'none'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.clarity.ms https://c.bing.com",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://upload.wikimedia.org https://*.tile.openstreetmap.org https://api.qrserver.com https://qr.sepay.vn https://vietqr.app https://*.clarity.ms https://c.bing.com",
+  "img-src 'self' data: blob: https://upload.wikimedia.org https://lh3.googleusercontent.com https://*.tile.openstreetmap.org https://api.qrserver.com https://qr.sepay.vn https://vietqr.app https://*.clarity.ms https://c.bing.com",
   "font-src 'self' data:",
   "connect-src 'self' https://*.onrender.com https://*.vercel.app https://accounts.google.com https://oauth2.googleapis.com https://*.clarity.ms https://c.bing.com http://127.0.0.1:* http://localhost:*",
   "frame-src 'self' https://accounts.google.com",
@@ -68,6 +68,14 @@ const nextConfig = {
         protocol: "https",
         hostname: "upload.wikimedia.org",
         pathname: "/wikipedia/commons/**",
+      },
+      {
+        // Google sign-in stores the account picture here, so without this every
+        // Google user's avatar is blocked by next/image. The path is left open
+        // because Google's `picture` claim comes in several shapes (/a/…, /a-/…,
+        // and the older /-hash/…/photo.jpg); the host only serves avatars.
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
       },
     ],
   },
