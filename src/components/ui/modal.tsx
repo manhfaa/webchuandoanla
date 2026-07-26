@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -28,6 +29,9 @@ export function Modal({
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const descriptionId = useId();
+  // Portalled, so `document.body` has to exist first.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   // Escape to dismiss, focus moved into the dialog, focus kept inside while it
   // is open, and focus restored to the trigger on close (WCAG 2.1.2 / 2.4.3).
@@ -72,9 +76,15 @@ export function Modal({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  // Rendered into <body> rather than in place. Dashboard pages animate their
+  // children (`.fl-stagger > *` runs fl-rise-in with fill mode `both`, so the
+  // transform never goes away), and a transformed ancestor becomes the
+  // containing block for `position: fixed` — which silently turned `inset-0`
+  // from "the viewport" into "inside that animated element". The dialog ended up
+  // offset and taller than the screen with its top and bottom unreachable.
+  return createPortal(
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-forest/70 p-4 backdrop-blur-sm">
       <div
         className="absolute inset-0"
@@ -89,7 +99,12 @@ export function Modal({
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
         className={cn(
-          "relative z-[71] w-full max-w-3xl rounded-2xl border border-line bg-surface p-6 text-ink shadow-float focus:outline-none",
+          // Without a height cap and its own scroller, tall content — the plan
+          // grid is four cards with feature lists — overflows a centred dialog
+          // in both directions at once, so the top and bottom are simply
+          // unreachable. dvh, not vh, so a mobile browser's collapsing toolbar
+          // does not hide the close button.
+          "relative z-[71] flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col overflow-y-auto overscroll-contain rounded-2xl border border-line bg-surface p-6 text-ink shadow-float focus:outline-none",
           className,
         )}
       >
@@ -111,6 +126,7 @@ export function Modal({
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
