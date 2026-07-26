@@ -34,3 +34,7 @@ design-review/
 tsconfig.tsbuildinfo
 
 .vercel
+
+# Design hand-off: reference files, not application source.
+Living Leaf Intelligence redesign/
+Living Leaf Intelligence redesign.zip

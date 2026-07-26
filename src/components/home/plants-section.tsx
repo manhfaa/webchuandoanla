@@ -1,199 +1,219 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { ArrowUpRight } from "lucide-react";
-import { useReducedMotion } from "framer-motion";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
+import { ArrowLeft, ArrowRight, ArrowUpRight } from "lucide-react";
 
 import { Reveal } from "@/components/ui/reveal";
+import { NotebookSection } from "@/components/ui/field-notebook";
 import { supportedPlants } from "@/data/mock/plants";
 import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
 
+/* V2 — SECTION CÂY TRỒNG
+   Trước: GSAP ScrollTrigger pin + `lg:min-h-[100dvh] lg:overflow-hidden` ⇒ khóa
+          cuộn dọc gần 1 màn; card rộng không đều (58vw vs 40vw) và `lg:snap-none`
+          ⇒ trông như lỗi crop; card 470px cao trên mobile ⇒ 1 card/màn.
+   Sau  : carousel native, KHÔNG pin, mọi card cùng chiều rộng, snap ở mọi
+          breakpoint, có nút trước/sau, điều khiển bàn phím và progress bar.
+          Bỏ luôn gsap khỏi section này.
+   Giữ: dữ liệu cây, bộ lọc, link nguồn ảnh, thông báo aria-live. */
+
 const priorityPlantIds = ["tomato", "pepper", "grape", "corn", "potato", "squash"];
+const CARD_STEP = 336; // 320px card + 16px gap
 
 export function PlantsSection() {
   const tr = useTr();
   const [filter, setFilter] = useState<"priority" | "all">("priority");
-  const sectionRef = useRef<HTMLElement>(null);
+  const [progress, setProgress] = useState(0);
   const viewportRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const reduceMotion = useReducedMotion();
-  const visiblePlants = filter === "priority"
-    ? priorityPlantIds.flatMap((plantId) => supportedPlants.filter((plant) => plant.id === plantId))
-    : supportedPlants;
 
-  useLayoutEffect(() => {
-    const section = sectionRef.current;
+  const visiblePlants =
+    filter === "priority"
+      ? priorityPlantIds.flatMap((plantId) =>
+          supportedPlants.filter((plant) => plant.id === plantId),
+        )
+      : supportedPlants;
+
+  const syncProgress = useCallback(() => {
     const viewport = viewportRef.current;
-    const track = trackRef.current;
+    if (!viewport) return;
+    const max = viewport.scrollWidth - viewport.clientWidth;
+    setProgress(max > 0 ? viewport.scrollLeft / max : 0);
+  }, []);
 
-    if (!section || !viewport || !track || reduceMotion) return;
+  useEffect(() => {
+    viewportRef.current?.scrollTo({ left: 0 });
+    setProgress(0);
+  }, [filter]);
 
-    gsap.registerPlugin(ScrollTrigger);
-    const media = gsap.matchMedia();
-
-    media.add("(min-width: 1024px)", () => {
-      const getDistance = () => Math.max(0, track.scrollWidth - viewport.clientWidth);
-
-      gsap.set(track, { x: 0 });
-      const horizontalTween = gsap.to(track, {
-        x: () => -getDistance(),
-        ease: "none",
-        scrollTrigger: {
-          trigger: section,
-          start: "top top",
-          end: () => `+=${getDistance()}`,
-          pin: true,
-          scrub: 1,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-        },
-      });
-
-      return () => {
-        horizontalTween.scrollTrigger?.kill();
-        horizontalTween.kill();
-        gsap.set(track, { clearProps: "transform" });
-      };
-    });
-
-    const refreshFrame = window.requestAnimationFrame(() => ScrollTrigger.refresh());
-
-    return () => {
-      window.cancelAnimationFrame(refreshFrame);
-      media.revert();
-    };
-  }, [filter, reduceMotion]);
+  const scrollByCards = useCallback((direction: -1 | 1) => {
+    viewportRef.current?.scrollBy({ left: direction * CARD_STEP, behavior: "smooth" });
+  }, []);
 
   return (
-    <section
-      ref={sectionRef}
+    <NotebookSection
       id="cay-trong"
-      aria-label={tr("Cây trồng Agromind đang hỗ trợ", "Crops Agromind currently supports")}
-      className="living-veins relative scroll-mt-20 bg-canvas lg:min-h-[100dvh] lg:overflow-hidden"
-    >
-      <div className="flex min-h-[100dvh] flex-col justify-center py-20 sm:py-24 lg:py-20">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-          <Reveal>
-            <h2 className="max-w-3xl font-display text-3xl font-bold tracking-[-0.035em] text-ink sm:text-4xl lg:text-[40px] lg:leading-[1.15]">
-              {tr("Nhận biết dấu hiệu trên những cây quen thuộc", "Spot the signs on familiar crops")}
-            </h2>
-            <p className="mt-4 max-w-3xl text-base leading-7 text-ink-soft sm:text-lg sm:leading-8">
-              {tr(
-                "Bắt đầu từ các nhóm cây gần với nhu cầu canh tác tại Việt Nam, sau đó mở rộng khi cần.",
-                "Starting with crop groups close to farming needs in Vietnam, then expanding as needed.",
-              )}
-            </p>
-          </Reveal>
-
-          <Reveal className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="inline-flex w-fit rounded-[var(--r-md)] border border-line-strong bg-surface/90 p-1 shadow-sm backdrop-blur" role="group" aria-label={tr("Lọc cây trồng", "Filter crops")}>
-              <button
-                type="button"
-                onClick={() => setFilter("priority")}
-                aria-pressed={filter === "priority"}
-                className={cn(
-                  "min-h-11 rounded-[var(--r-sm)] px-4 text-sm font-semibold transition duration-180",
-                  filter === "priority"
-                    ? "bg-forest text-on-forest shadow-sm"
-                    : "text-ink-soft hover:bg-surface-soft hover:text-ink",
-                )}
-              >
-                {tr("Cây phổ biến", "Popular crops")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilter("all")}
-                aria-pressed={filter === "all"}
-                className={cn(
-                  "min-h-11 rounded-[var(--r-sm)] px-4 text-sm font-semibold transition duration-180",
-                  filter === "all"
-                    ? "bg-forest text-on-forest shadow-sm"
-                    : "text-ink-soft hover:bg-surface-soft hover:text-ink",
-                )}
-              >
-                {tr(`Tất cả ${supportedPlants.length} nhóm`, `All ${supportedPlants.length} groups`)}
-              </button>
-            </div>
-            <p className="text-sm leading-6 text-ink-soft">{tr("Mỗi ảnh đều dẫn tới nguồn tham khảo gốc.", "Every image links back to its original reference.")}</p>
-          </Reveal>
-        </div>
-
-        <div
-          ref={viewportRef}
-          className={cn(
-            "mt-9 overflow-x-auto overscroll-x-contain pb-4 [scrollbar-color:var(--line-strong)_transparent] [scrollbar-width:thin] lg:overflow-hidden lg:overscroll-auto lg:pb-0",
-            reduceMotion && "lg:overflow-x-auto lg:overscroll-x-contain lg:pb-4",
-          )}
-        >
+      tab={tr("Cây trồng", "Crops")}
+      title={tr(
+        "Nhận biết dấu hiệu trên những cây quen thuộc",
+        "Spot the signs on familiar crops",
+      )}
+      description={tr(
+        "Bắt đầu từ các nhóm cây gần với nhu cầu canh tác tại Việt Nam, sau đó mở rộng khi cần.",
+        "Starting with crop groups close to farming needs in Vietnam, then expanding as needed.",
+      )}
+      className="living-veins bg-canvas"
+      aside={
+        <div className="flex flex-wrap items-center gap-3">
           <div
-            ref={trackRef}
-            className="flex w-max snap-x snap-mandatory gap-5 px-4 sm:px-6 lg:snap-none lg:px-[max(2rem,calc((100vw-80rem)/2))]"
+            className="inline-flex w-fit rounded-[var(--r-md)] border border-line-strong bg-surface/90 p-1 shadow-sm backdrop-blur"
+            role="group"
+            aria-label={tr("Lọc cây trồng", "Filter crops")}
           >
-            {visiblePlants.map((plant, index) => {
-              const isWide = filter === "priority" && (index === 0 || index === visiblePlants.length - 1);
+            <button
+              type="button"
+              onClick={() => setFilter("priority")}
+              aria-pressed={filter === "priority"}
+              className={cn(
+                "min-h-11 rounded-[var(--r-sm)] px-4 text-sm font-semibold transition duration-180",
+                filter === "priority"
+                  ? "bg-panel-ink text-on-panel-ink shadow-sm"
+                  : "text-ink-soft hover:bg-surface-soft hover:text-ink",
+              )}
+            >
+              {tr("Cây phổ biến", "Popular crops")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter("all")}
+              aria-pressed={filter === "all"}
+              className={cn(
+                "min-h-11 rounded-[var(--r-sm)] px-4 text-sm font-semibold transition duration-180",
+                filter === "all"
+                  ? "bg-panel-ink text-on-panel-ink shadow-sm"
+                  : "text-ink-soft hover:bg-surface-soft hover:text-ink",
+              )}
+            >
+              {tr(`Tất cả ${supportedPlants.length} nhóm`, `All ${supportedPlants.length} groups`)}
+            </button>
+          </div>
 
-              return (
-                <article
-                  key={plant.id}
-                  data-horizontal-card
-                  className={cn(
-                    "group flex h-[470px] w-[84vw] flex-none snap-start flex-col overflow-hidden rounded-[var(--r-xl)] border border-line bg-surface-raised shadow-sm transition duration-260 hover:-translate-y-1 hover:border-line-strong hover:shadow-lg sm:w-[520px] lg:h-[500px] lg:will-change-transform lg:[scroll-snap-align:none]",
-                    isWide ? "lg:w-[min(58vw,720px)]" : "lg:w-[min(40vw,520px)]",
-                  )}
-                >
-                  <div className={cn(
-                    "relative h-[220px] shrink-0 overflow-hidden bg-surface-soft sm:h-[250px] lg:h-[260px]",
-                    isWide && "lg:h-[280px]",
-                  )}>
-                    <Image
-                      src={plant.image}
-                      alt={tr(plant.imageAlt, plant.imageAltEn ?? plant.imageAlt)}
-                      fill
-                      sizes={isWide
-                        ? "(min-width: 1024px) 58vw, (min-width: 640px) 520px, 84vw"
-                        : "(min-width: 1024px) 40vw, (min-width: 640px) 520px, 84vw"}
-                      className="object-cover transition duration-700 group-hover:scale-[1.04] motion-reduce:transition-none"
-                    />
-                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-forest/25 to-transparent transition-[background] duration-260 group-hover:from-forest/50" aria-hidden />
-                    <svg
-                      className="fl-plant-vein pointer-events-none right-3 top-3 h-9 w-9 text-mint"
-                      viewBox="0 0 40 40"
-                      fill="none"
-                      aria-hidden="true"
-                    >
-                      <path d="M6 34 C10 22 18 12 34 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.8" />
-                      <path d="M14 26 L20 20" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
-                    </svg>
-                  </div>
-
-                  <div className="flex min-h-0 flex-1 flex-col p-5 sm:p-6">
-                    <p className="text-xs font-semibold italic text-leaf-strong">{plant.latinLabel}</p>
-                    <h3 className="mt-1 font-display text-2xl font-extrabold tracking-[-0.03em] text-ink">{tr(plant.name, plant.nameEn ?? plant.name)}</h3>
-                    <p className="mt-3 text-sm leading-6 text-ink-soft">{tr(plant.insight, plant.insightEn ?? plant.insight)}</p>
-                    <a
-                      href={plant.imageSourceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-auto inline-flex min-h-11 items-center gap-2 self-start pt-3 text-xs font-semibold text-leaf-strong transition hover:text-ink"
-                    >
-                      {tr("Mở ảnh tham khảo", "Open reference image")}
-                      <ArrowUpRight size={14} aria-hidden />
-                    </a>
-                  </div>
-                </article>
-              );
-            })}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => scrollByCards(-1)}
+              aria-label={tr("Xem cây trước", "Previous crops")}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--r-md)] border border-line bg-surface text-ink transition hover:bg-surface-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/40"
+            >
+              <ArrowLeft size={18} aria-hidden />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollByCards(1)}
+              aria-label={tr("Xem cây tiếp theo", "Next crops")}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--r-md)] border border-line bg-surface text-ink transition hover:bg-surface-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/40"
+            >
+              <ArrowRight size={18} aria-hidden />
+            </button>
           </div>
         </div>
+      }
+    >
+      {/* Carousel tràn mép phải để lộ card kế tiếp — vẫn cuộn dọc bình thường */}
+      <div className="-mr-5 sm:-mr-6 lg:-mr-8">
+        <div
+          ref={viewportRef}
+          onScroll={syncProgress}
+          tabIndex={0}
+          role="region"
+          aria-label={tr("Danh sách cây trồng, cuộn ngang", "Crop list, scrolls horizontally")}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowRight") {
+              event.preventDefault();
+              scrollByCards(1);
+            } else if (event.key === "ArrowLeft") {
+              event.preventDefault();
+              scrollByCards(-1);
+            }
+          }}
+          className="overflow-x-auto overscroll-x-contain pb-3 [scrollbar-color:var(--line-strong)_transparent] [scrollbar-width:thin] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/40 focus-visible:ring-offset-4 focus-visible:ring-offset-canvas"
+        >
+          <div className="flex w-max snap-x snap-mandatory gap-4 pr-5 sm:pr-6 lg:pr-8">
+            {visiblePlants.map((plant) => (
+              <article
+                key={plant.id}
+                className="group flex h-[400px] w-[min(78vw,300px)] flex-none snap-start flex-col overflow-hidden rounded-[var(--r-lg)] border border-line bg-surface-raised shadow-sm transition duration-260 hover:-translate-y-[3px] hover:border-line-strong hover:shadow-md sm:w-[300px] lg:w-[320px]"
+              >
+                <div className="relative h-[190px] shrink-0 overflow-hidden bg-surface-soft">
+                  <Image
+                    src={plant.image}
+                    alt={tr(plant.imageAlt, plant.imageAltEn ?? plant.imageAlt)}
+                    fill
+                    sizes="(min-width: 1024px) 320px, (min-width: 640px) 300px, 78vw"
+                    className="object-cover transition duration-700 group-hover:scale-[1.04] motion-reduce:transition-none"
+                  />
+                  <div
+                    className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-forest/30 to-transparent transition-[background] duration-260 group-hover:from-forest/45"
+                    aria-hidden
+                  />
+                </div>
 
-        <span className="sr-only" aria-live="polite">
-          {tr(`Đang hiển thị ${visiblePlants.length} nhóm cây.`, `Showing ${visiblePlants.length} crop groups.`)}
-        </span>
+                <div className="flex min-h-0 flex-1 flex-col p-5">
+                  <p className="font-mono text-[11.5px] font-semibold tracking-[0.02em] text-leaf-strong">
+                    {plant.latinLabel}
+                  </p>
+                  <h3 className="mt-1 font-display text-[21px] font-extrabold tracking-[-0.025em] text-ink">
+                    {tr(plant.name, plant.nameEn ?? plant.name)}
+                  </h3>
+                  <p className="mt-2 text-[13.5px] leading-[1.6] text-ink-soft">
+                    {tr(plant.insight, plant.insightEn ?? plant.insight)}
+                  </p>
+                  <a
+                    href={plant.imageSourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-auto inline-flex min-h-11 items-center gap-2 self-start pt-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-leaf-strong transition hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/40"
+                  >
+                    {tr("Mở ảnh tham khảo", "Open reference image")}
+                    <ArrowUpRight size={13} aria-hidden />
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
       </div>
-    </section>
+
+      {/* Progress + chú thích */}
+      <div className="mt-5 flex items-center gap-4">
+        <div className="h-[2px] flex-1 overflow-hidden rounded-full bg-leaf/16">
+          <div
+            className="h-full rounded-full bg-leaf transition-[width] duration-150 ease-linear"
+            style={{ width: `${Math.max(8, progress * 100)}%` }}
+          />
+        </div>
+        <p className="whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft">
+          {tr(
+            `${visiblePlants.length} nhóm · kéo để xem thêm`,
+            `${visiblePlants.length} groups · drag to see more`,
+          )}
+        </p>
+      </div>
+
+      <p className="mt-3 text-sm leading-6 text-ink-soft">
+        {tr(
+          "Mỗi ảnh đều dẫn tới nguồn tham khảo gốc.",
+          "Every image links back to its original reference.",
+        )}
+      </p>
+
+      <span className="sr-only" aria-live="polite">
+        {tr(
+          `Đang hiển thị ${visiblePlants.length} nhóm cây.`,
+          `Showing ${visiblePlants.length} crop groups.`,
+        )}
+      </span>
+    </NotebookSection>
   );
 }

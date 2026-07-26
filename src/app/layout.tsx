@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Be_Vietnam_Pro, Bricolage_Grotesque } from "next/font/google";
+import { Be_Vietnam_Pro, Bricolage_Grotesque, IBM_Plex_Mono } from "next/font/google";
 
 import { BackendWakeup } from "@/components/system/backend-wakeup";
 import { ClarityAnalytics } from "@/components/system/clarity-analytics";
@@ -24,6 +24,15 @@ const bricolage = Bricolage_Grotesque({
   display: "swap",
 });
 
+// Chỉ dùng cho số hiệu, mã, phần trăm, nhãn mẫu vật và nội dung chuyển khoản.
+// Không đặt chữ tiếng Việt có dấu trong font này -> chỉ cần subset latin.
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "600"],
+  variable: "--font-plex-mono",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: `${brand.name} | Theo dõi sức khỏe cây từ ảnh lá`,
   description: brand.description,
@@ -40,7 +49,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" suppressHydrationWarning data-scroll-behavior="smooth">
-      <body className={`${beVietnamPro.variable} ${bricolage.variable} font-sans antialiased`}>
+      <body
+        className={`${beVietnamPro.variable} ${bricolage.variable} ${plexMono.variable} font-sans antialiased`}
+      >
         <ThemeProvider
           attribute="data-theme"
           defaultTheme="system"

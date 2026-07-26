@@ -251,9 +251,12 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   const [copied, setCopied] = useState(false);
   const resetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => () => {
-    if (resetRef.current) clearTimeout(resetRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (resetRef.current) clearTimeout(resetRef.current);
+    },
+    [],
+  );
 
   async function handleCopy() {
     const didCopy = await copyToClipboard(text);
@@ -268,10 +271,15 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       type="button"
       onClick={() => void handleCopy()}
       aria-label={tr(`Sao chép ${label}`, `Copy ${label}`)}
-      className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-line bg-surface px-3 text-xs font-bold text-ink transition hover:border-line-strong hover:bg-surface-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/35"
+      className={cn(
+        "inline-flex h-11 shrink-0 items-center gap-1.5 rounded-[var(--r-md)] border px-3.5 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/35",
+        copied
+          ? "border-leaf/40 bg-surface-soft text-leaf-strong"
+          : "border-line bg-surface text-ink hover:border-line-strong hover:bg-surface-soft",
+      )}
     >
       {copied ? <CheckCircle2 size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
-      <span className="hidden sm:inline">{copied ? tr("Đã chép", "Copied") : tr("Sao chép", "Copy")}</span>
+      <span>{copied ? tr("Đã chép", "Copied") : tr("Sao chép", "Copy")}</span>
     </button>
   );
 }
@@ -283,7 +291,11 @@ function PaymentProgress({ status, polling }: { status: OrderStatus; polling: bo
   const isTransferred = !isClosed && (polling || status !== "pending");
   const steps = [
     { label: tr("Yêu cầu đã tạo", "Request created"), complete: true, active: false },
-    { label: tr("Chờ giao dịch", "Awaiting transaction"), complete: isPaid, active: !isPaid && !isClosed },
+    {
+      label: tr("Chờ giao dịch", "Awaiting transaction"),
+      complete: isPaid,
+      active: !isPaid && !isClosed,
+    },
     { label: tr("Kích hoạt gói", "Activate plan"), complete: isPaid, active: isPaid },
   ];
 
@@ -294,11 +306,17 @@ function PaymentProgress({ status, polling }: { status: OrderStatus; polling: bo
         return (
           <li key={step.label} className="relative min-w-0 text-center">
             {index > 0 ? (
-              <span className={cn("absolute right-1/2 top-4 h-px w-full", emphasized ? "bg-leaf" : "bg-line")} aria-hidden />
+              <span
+                className={cn(
+                  "absolute right-1/2 top-4 h-px w-full",
+                  emphasized ? "bg-leaf" : "bg-line",
+                )}
+                aria-hidden
+              />
             ) : null}
             <span
               className={cn(
-                "relative z-10 mx-auto flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold",
+                "relative z-10 mx-auto flex h-8 w-8 items-center justify-center rounded-full border font-mono text-xs font-semibold tabular-nums",
                 step.complete
                   ? "border-leaf bg-leaf text-on-leaf"
                   : step.active
@@ -306,9 +324,14 @@ function PaymentProgress({ status, polling }: { status: OrderStatus; polling: bo
                     : "border-line bg-surface text-ink-soft",
               )}
             >
-              {step.complete ? <Check size={15} aria-hidden /> : index + 1}
+              {step.complete ? <Check size={15} aria-hidden /> : String(index + 1).padStart(2, "0")}
             </span>
-            <span className={cn("mt-2 block truncate px-1 text-[11px] font-semibold sm:text-xs", emphasized ? "text-ink" : "text-ink-soft")}>
+            <span
+              className={cn(
+                "mt-2 block truncate px-1 text-[11px] font-semibold sm:text-xs",
+                emphasized ? "text-ink" : "text-ink-soft",
+              )}
+            >
               {step.label}
             </span>
           </li>
@@ -330,10 +353,22 @@ function PaymentDetailRow({
   highlight?: boolean;
 }) {
   return (
-    <div className={cn("grid gap-2 border-b border-line py-3.5 last:border-0 sm:grid-cols-[138px_1fr] sm:items-center", highlight && "my-1 rounded-lg border border-sun/35 bg-sun-soft px-3 last:border-b")}>
+    <div
+      className={cn(
+        "grid gap-2 border-b border-paper-rule py-3.5 last:border-0 sm:grid-cols-[138px_1fr] sm:items-center",
+        highlight && "my-1 rounded-[var(--r-md)] border border-sun/40 bg-sun-soft px-3 last:border-b",
+      )}
+    >
       <span className="text-xs font-semibold text-ink-soft">{label}</span>
       <span className="flex min-w-0 items-center justify-between gap-3">
-        <strong className={cn("min-w-0 break-words text-sm text-ink", highlight && "text-base text-warning-ink")}>{value}</strong>
+        <strong
+          className={cn(
+            "min-w-0 break-words font-mono text-sm font-semibold tabular-nums tracking-[0.04em] text-ink",
+            highlight && "text-base tracking-[0.06em] text-warning-ink",
+          )}
+        >
+          {value}
+        </strong>
         {copyLabel ? <CopyButton text={value} label={copyLabel} /> : null}
       </span>
     </div>

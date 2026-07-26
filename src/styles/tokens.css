@@ -70,6 +70,18 @@
   --ring-leaf: rgba(35, 133, 84, 0.35);
 
   color-scheme: light;
+
+  /* ── Field notebook (V2) ──
+     --paper-rule: dòng kẻ sổ, mảnh hơn --line, có sắc đất.
+     --panel-ink : bề mặt panel nhấn. Ở light là forest; ở dark KHÔNG dùng
+                   forest vì --forest (#082418) chỉ chênh --canvas (#06160D)
+                   khoảng 2% lightness ⇒ panel tan vào nền. Ở dark chuyển sang
+                   surface-raised + border leaf để giữ phân cấp. */
+  --paper-rule:          color-mix(in srgb, var(--soil) 22%, transparent);
+  --panel-ink:           var(--forest);
+  --panel-ink-border:    var(--forest);
+  --on-panel-ink:        var(--on-forest);
+  --on-panel-ink-muted:  var(--on-forest-muted);
 }
 
 [data-theme="dark"] {
@@ -118,4 +130,11 @@
   --ring-leaf: rgba(83, 201, 130, 0.42);
 
   color-scheme: dark;
+
+  /* Field notebook (V2) — xem giải thích ở :root. */
+  --paper-rule:          color-mix(in srgb, var(--mint) 30%, transparent);
+  --panel-ink:           var(--surface-raised);
+  --panel-ink-border:    color-mix(in srgb, var(--leaf) 28%, transparent);
+  --on-panel-ink:        var(--ink);
+  --on-panel-ink-muted:  var(--ink-soft);
 }

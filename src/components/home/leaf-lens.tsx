@@ -7,6 +7,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Leaf, ScanSearch, Sparkles } from "lucide-react";
 
 import { LeafScanOverlay } from "@/components/home/leaf-scan-overlay";
+import { PaperStack, SpecimenLabel } from "@/components/ui/field-notebook";
 import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
 
@@ -415,6 +416,11 @@ export function LeafLens() {
     >
       <div className="absolute -inset-8 -z-10 rounded-[34px] bg-mint/35 blur-3xl" aria-hidden />
 
+      {/* Nhãn mẫu vật + lớp giấy lệch: đọc như một phiếu quan sát thực địa
+          thay vì một khung ảnh sản phẩm. */}
+      <SpecimenLabel code="MAU 01 · 23.07" tone="soil" />
+
+      <PaperStack offset={20}>
       <div className="overflow-hidden rounded-[var(--r-xl)] border border-line-strong bg-surface-raised shadow-lg">
         <div ref={mediaRef} data-leaf-media className="relative bg-forest">
           <div className="relative aspect-[4/3] overflow-hidden sm:aspect-[16/11]">
@@ -655,6 +661,7 @@ export function LeafLens() {
           </div>
         </div>
       </div>
+      </PaperStack>
 
       <p id="leaf-lesion-description" className="sr-only">
         {tr(
