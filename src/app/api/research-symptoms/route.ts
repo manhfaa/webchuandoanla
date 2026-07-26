@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { isAuthenticatedRequest } from "@/lib/api-auth";
+import { requirePlanFeature } from "@/lib/api-auth";
 
 type Prediction = {
   class_name?: string;
@@ -596,8 +596,17 @@ async function buildFinalConclusion({
 }
 
 export async function POST(request: Request) {
-  if (!(await isAuthenticatedRequest(request))) {
-    return NextResponse.json({ error: "Bạn cần đăng nhập để dùng tính năng này." }, { status: 401 });
+  // Checked before anything else: this route is the only place a Seed account
+  // could spend DeepSeek and Tavily credit on a feature the pricing card lists
+  // as paid. Authentication is covered by the same call.
+  const gate = await requirePlanFeature(request, "rag", {
+    vi:
+      "Đối chiếu triệu chứng với nguồn tham khảo chỉ có từ gói Grow trở lên. " +
+      "Bạn vẫn xem được kết quả nhận diện ảnh lá và các việc nên làm.",
+    upgradeTo: "grow",
+  });
+  if (!gate.allowed) {
+    return NextResponse.json(gate.body, { status: gate.status });
   }
 
   let body: ResearchRequest;
