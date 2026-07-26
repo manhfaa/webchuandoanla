@@ -238,7 +238,13 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
 # SePay payment gateway
 SEPAY_API_KEY = os.getenv("SEPAY_API_KEY", "").strip()
 SEPAY_WEBHOOK_SECRET = os.getenv("SEPAY_WEBHOOK_SECRET", "").strip()
-SEPAY_WEBHOOK_MAX_AGE_SECONDS = int(os.getenv("SEPAY_WEBHOOK_MAX_AGE_SECONDS", "300"))
+# One hour, not five minutes: SePay gives up after 30s and queues a retry, while
+# a sleeping free-tier instance takes ~35s just to wake, so the delivery that
+# actually lands is often a retry sent well after the original. Rejecting those
+# as stale loses a payment the customer already made. Replay is prevented by the
+# transaction id — a resent webhook answers "duplicate" and re-activates nothing
+# — so the window guards nothing that the dedup does not already guard.
+SEPAY_WEBHOOK_MAX_AGE_SECONDS = int(os.getenv("SEPAY_WEBHOOK_MAX_AGE_SECONDS", "3600"))
 SEPAY_BANK_CODE = os.getenv("SEPAY_BANK_CODE", "").strip()
 SEPAY_BANK_NAME = os.getenv("SEPAY_BANK_NAME", "").strip()
 SEPAY_ACCOUNT_NUMBER = os.getenv("SEPAY_ACCOUNT_NUMBER", "").strip()

@@ -7,6 +7,7 @@ import unittest
 from decimal import Decimal
 from pathlib import Path
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import override_settings
 from django.urls import reverse
@@ -79,7 +80,9 @@ class PaymentFlowTests(APITestCase):
         self.assertIn(response.status_code, (status.HTTP_200_OK, status.HTTP_201_CREATED))
         return PaymentOrder.objects.get(id=response.data["order"]["id"]), response
 
-    def signed_webhook(self, order, transaction_id, amount, **overrides):
+    def signed_webhook(self, order, transaction_id, amount, age_seconds=0, **overrides):
+        """`age_seconds` backdates the signature, to stand in for a SePay retry
+        that reaches us long after the delivery it is retrying."""
         payload = {
             "id": transaction_id,
             "gateway": "BIDV",
@@ -93,7 +96,7 @@ class PaymentFlowTests(APITestCase):
         }
         payload.update(overrides)
         raw_body = json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-        timestamp = str(int(time.time()))
+        timestamp = str(int(time.time()) - age_seconds)
         digest = hmac.new(
             b"test-webhook-secret",
             timestamp.encode("ascii") + b"." + raw_body,
@@ -184,9 +187,42 @@ class PaymentFlowTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertFalse(Payment.objects.filter(sepay_transaction_id="4001").exists())
 
+    def test_retry_signed_long_after_the_original_still_activates(self):
+        """SePay abandons a delivery after 30s and queues a retry, while a
+        sleeping free-tier instance needs ~35s just to wake. The delivery that
+        lands is often that retry; rejecting it loses a real payment."""
+        order, _ = self.create_order()
+        response = self.signed_webhook(order, "7101", 39000, age_seconds=50 * 60)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["result"], "paid")
+        order.refresh_from_db()
+        self.user.refresh_from_db()
+        self.assertEqual(order.status, PaymentOrder.Status.PAID)
+        self.assertEqual(self.user.current_plan, "bloom")
+
+    def test_a_replay_inside_the_window_never_activates_twice(self):
+        """The window is not what stops replay — the transaction id is. That is
+        the property that makes a wide window safe, so it is asserted here."""
+        order, _ = self.create_order()
+        self.assertEqual(self.signed_webhook(order, "7102", 39000).data["result"], "paid")
+        self.user.refresh_from_db()
+        expiry_after_payment = self.user.plan_expires_at
+
+        replay = self.signed_webhook(order, "7102", 39000, age_seconds=45 * 60)
+
+        self.assertEqual(replay.status_code, status.HTTP_200_OK)
+        self.assertEqual(replay.data["result"], "duplicate")
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.plan_expires_at, expiry_after_payment)
+        self.assertEqual(Payment.objects.filter(sepay_transaction_id="7102").count(), 1)
+
     def test_stale_webhook_is_rejected(self):
+        """Derived from the configured window rather than a fixed number, so
+        widening the window cannot quietly turn this into a no-op."""
         raw_body = b'{"id":"5001","transferAmount":39000}'
-        timestamp = str(int(time.time()) - 600)
+        beyond_window = int(settings.SEPAY_WEBHOOK_MAX_AGE_SECONDS) + 60
+        timestamp = str(int(time.time()) - beyond_window)
         digest = hmac.new(
             b"test-webhook-secret",
             timestamp.encode("ascii") + b"." + raw_body,
