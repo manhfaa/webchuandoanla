@@ -423,12 +423,22 @@ SEPAY_PAYMENT_PREFIX
 SEPAY_WEBHOOK_MAX_AGE_SECONDS
 SEPAY_ORDER_TTL_MINUTES
 SEPAY_SUBSCRIPTION_DAYS
+MAINTENANCE_TOKEN
 EMAIL_HOST
 EMAIL_PORT
 EMAIL_HOST_USER
 EMAIL_HOST_PASSWORD
 DEFAULT_FROM_EMAIL
 ```
+
+Scheduled work: Render's free tier has no cron jobs, so the schedule lives in
+`.github/workflows/`. `keep-warm.yml` pings the health endpoints during Vietnam's
+active hours; `housekeeping.yml` runs nightly and POSTs to
+`/api/maintenance/housekeeping/` with the `X-Maintenance-Token` header, which must
+match the `MAINTENANCE_TOKEN` env var on Render and the repository secret of the
+same name. Unset, that endpoint answers 503 and refuses everyone, so a missing
+secret fails closed. The same chores run by hand with
+`manage.py run_housekeeping`.
 
 Mail: the password-reset flow is the only sender. `EMAIL_HOST` decides the
 backend — set it and Django uses SMTP, leave it empty and the message goes to

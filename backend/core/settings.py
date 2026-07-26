@@ -236,6 +236,10 @@ CNN_API_TOKEN = os.getenv("CNN_API_TOKEN", "").strip()
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
 
 # SePay payment gateway
+# Shared secret for the scheduled-chores endpoint. Unset means the endpoint
+# refuses every caller, so forgetting it fails closed rather than open.
+MAINTENANCE_TOKEN = os.getenv("MAINTENANCE_TOKEN", "").strip()
+
 SEPAY_API_KEY = os.getenv("SEPAY_API_KEY", "").strip()
 SEPAY_WEBHOOK_SECRET = os.getenv("SEPAY_WEBHOOK_SECRET", "").strip()
 # One hour, not five minutes: SePay gives up after 30s and queues a retry, while

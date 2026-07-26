@@ -4,6 +4,7 @@ import json
 import re
 import time
 import unittest
+from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -22,6 +23,9 @@ from engagement.models import ServicePlan, UserSubscription
 from .admin import PaymentOrderAdmin
 from .entitlements import enforce_limit, PlanLimitExceeded, resolve_entitlements
 from .models import Payment, PaymentOrder
+from core.housekeeping import run_housekeeping
+from users.models import PasswordResetToken
+
 from .services import (
     PaymentRequestError,
     build_qr_url,
@@ -760,3 +764,120 @@ class WebhookPingTests(APITestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class HousekeepingTests(APITestCase):
+    """Several pieces of state here are only ever corrected when a request
+    happens to touch them, so nothing breaks and nobody notices. These cover the
+    scheduled pass that corrects them on a clock instead."""
+
+    URL = "/api/maintenance/housekeeping/"
+
+    def setUp(self):
+        cache.clear()
+        self.user = User.objects.create_user(
+            username="lapsed", email="lapsed@example.com", password="strong-password"
+        )
+        self.plan = ServicePlan.objects.update_or_create(
+            slug="bloom",
+            defaults={"name": "Bloom", "price_monthly": 39000, "currency": "VND", "is_active": True},
+        )[0]
+
+    def test_a_lapsed_plan_is_put_back_to_seed(self):
+        self.user.current_plan = "bloom"
+        self.user.plan_expires_at = timezone.now() - timedelta(days=1)
+        self.user.save(update_fields=["current_plan", "plan_expires_at"])
+        UserSubscription.objects.create(
+            user=self.user, plan=self.plan, status="active",
+            starts_at=timezone.now() - timedelta(days=40),
+            ends_at=timezone.now() - timedelta(days=1),
+        )
+
+        report = run_housekeeping()
+
+        self.user.refresh_from_db()
+        self.assertEqual(report["plans_expired"], 1)
+        self.assertEqual(self.user.current_plan, "seed")
+        self.assertIsNone(self.user.plan_expires_at)
+        self.assertEqual(UserSubscription.objects.get(user=self.user).status, "expired")
+
+    def test_a_plan_that_has_not_lapsed_is_left_alone(self):
+        self.user.current_plan = "bloom"
+        self.user.plan_expires_at = timezone.now() + timedelta(days=5)
+        self.user.save(update_fields=["current_plan", "plan_expires_at"])
+
+        report = run_housekeeping()
+
+        self.user.refresh_from_db()
+        self.assertEqual(report["plans_expired"], 0)
+        self.assertEqual(self.user.current_plan, "bloom")
+
+    def test_an_order_past_its_ttl_is_closed_but_one_holding_money_is_not(self):
+        """An order that received money is somebody's to reconcile, not ours to
+        close — closing it would strand a real payment."""
+        stale = PaymentOrder.objects.create(
+            user=self.user, plan=self.plan, payment_code="AGMSTALE0000001",
+            amount_expected=39000, expires_at=timezone.now() - timedelta(minutes=5),
+            status=PaymentOrder.Status.PENDING,
+        )
+        paid_but_unreconciled = PaymentOrder.objects.create(
+            user=self.user, plan=self.plan, payment_code="AGMOVERPAID0001",
+            amount_expected=39000, amount_received=40000,
+            expires_at=timezone.now() - timedelta(minutes=5),
+            status=PaymentOrder.Status.OVERPAID,
+        )
+
+        report = run_housekeeping()
+
+        stale.refresh_from_db()
+        paid_but_unreconciled.refresh_from_db()
+        self.assertEqual(report["orders_expired"], 1)
+        self.assertEqual(stale.status, PaymentOrder.Status.EXPIRED)
+        self.assertEqual(paid_but_unreconciled.status, PaymentOrder.Status.OVERPAID)
+
+    def test_dead_reset_tokens_are_pruned_and_live_ones_kept(self):
+        PasswordResetToken.issue(self.user)
+        dead = PasswordResetToken.objects.get(user=self.user)
+        dead.expires_at = timezone.now() - timedelta(hours=1)
+        dead.save(update_fields=["expires_at"])
+        PasswordResetToken.issue(self.user)
+        live_count_before = PasswordResetToken.objects.filter(
+            expires_at__gt=timezone.now()
+        ).count()
+
+        report = run_housekeeping()
+
+        self.assertGreaterEqual(report["reset_tokens_pruned"], 1)
+        self.assertFalse(PasswordResetToken.objects.filter(pk=dead.pk).exists())
+        self.assertEqual(
+            PasswordResetToken.objects.filter(expires_at__gt=timezone.now()).count(),
+            live_count_before,
+        )
+
+    @override_settings(MAINTENANCE_TOKEN="")
+    def test_the_endpoint_refuses_everyone_when_no_token_is_configured(self):
+        """Fail closed: forgetting the secret must not leave this open."""
+        response = self.client.post(self.URL, HTTP_X_MAINTENANCE_TOKEN="anything")
+        self.assertEqual(response.status_code, 503)
+
+    @override_settings(MAINTENANCE_TOKEN="scheduler-secret")
+    def test_the_endpoint_needs_the_right_token(self):
+        self.assertEqual(self.client.post(self.URL).status_code, 401)
+        self.assertEqual(
+            self.client.post(self.URL, HTTP_X_MAINTENANCE_TOKEN="wrong").status_code, 401
+        )
+        ok = self.client.post(self.URL, HTTP_X_MAINTENANCE_TOKEN="scheduler-secret")
+        self.assertEqual(ok.status_code, 200)
+        self.assertIn("plans_expired", ok.json()["report"])
+
+    @override_settings(MAINTENANCE_TOKEN="scheduler-secret")
+    def test_running_it_twice_changes_nothing_the_second_time(self):
+        self.user.current_plan = "bloom"
+        self.user.plan_expires_at = timezone.now() - timedelta(days=1)
+        self.user.save(update_fields=["current_plan", "plan_expires_at"])
+
+        first = run_housekeeping()
+        second = run_housekeeping()
+
+        self.assertEqual(first["plans_expired"], 1)
+        self.assertEqual(second["plans_expired"], 0)

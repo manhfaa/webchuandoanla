@@ -1,0 +1,72 @@
+name: Scheduled housekeeping
+
+# Render's free tier has no cron jobs — they are a separate paid service type —
+# so the schedule lives here and reaches Django over HTTPS, the same way
+# keep-warm.yml does.
+#
+# What it corrects, and why it matters that something does:
+#   * a lapsed paid plan keeps reading "bloom" in the database until that user
+#     happens to load their profile, so the table and any report off it are wrong
+#   * a payment order past its 30-minute TTL stays "pending" until someone opens
+#     it, so the pending count only ever grows
+#   * reset tokens, blacklisted refresh tokens (rotation adds one per login) and
+#     expired sessions are never removed at all
+#
+# None of that breaks a request, which is exactly why it would go unnoticed.
+#
+# Needs the MAINTENANCE_TOKEN repository secret to match the same env var on
+# Render. Without it the endpoint answers 503 and refuses everyone, so a missing
+# secret fails closed and shows up here as a failed run rather than silence.
+
+on:
+  schedule:
+    # 18:10 UTC = 01:10 Asia/Ho_Chi_Minh — after midnight local, so "expired
+    # today" means what a Vietnamese user would expect, and off the hour to avoid
+    # GitHub's busiest scheduling minute.
+    - cron: "10 18 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: housekeeping
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Wake the backend first
+        # A cold start takes ~35s, longer than curl would wait on the real call.
+        # Failing here must not fail the job: the retry below covers it.
+        continue-on-error: true
+        run: |
+          curl --silent --show-error --fail --max-time 90 \
+            https://webchuandoanla-backend.onrender.com/api/health/ || true
+
+      - name: Run housekeeping
+        env:
+          MAINTENANCE_TOKEN: ${{ secrets.MAINTENANCE_TOKEN }}
+        run: |
+          if [ -z "$MAINTENANCE_TOKEN" ]; then
+            echo "MAINTENANCE_TOKEN secret is not set — nothing would be authorised." >&2
+            exit 1
+          fi
+
+          # --fail so a 401/503 is a red run instead of a quiet no-op, and the
+          # body is printed either way so the report is visible in the log.
+          http_code=$(curl --silent --show-error \
+            --retry 3 --retry-all-errors --retry-delay 20 --max-time 120 \
+            --output response.json --write-out "%{http_code}" \
+            --request POST \
+            --header "X-Maintenance-Token: $MAINTENANCE_TOKEN" \
+            --header "Content-Length: 0" \
+            https://webchuandoanla-backend.onrender.com/api/maintenance/housekeeping/)
+
+          echo "HTTP $http_code"
+          cat response.json
+          echo
+
+          if [ "$http_code" != "200" ]; then
+            echo "Housekeeping did not run." >&2
+            exit 1
+          fi
