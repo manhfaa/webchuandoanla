@@ -673,3 +673,90 @@ class VirtualAccountTests(APITestCase):
         order = PaymentOrder.objects.get(id=response.data["order"]["id"])
         self.assertEqual(response.data["bank"]["account_number"], "8807986170")
         self.assertIn("acc=8807986170", build_qr_url(order))
+
+
+@override_settings(
+    SEPAY_WEBHOOK_SECRET="test-webhook-secret",
+    SEPAY_API_KEY="",
+    SEPAY_BANK_CODE="BIDV",
+    SEPAY_BANK_NAME="BIDV",
+    SEPAY_ACCOUNT_NUMBER="8807986170",
+    SEPAY_ACCOUNT_NAME="PHAM DUC MANH",
+    SEPAY_PAYMENT_PREFIX="AGM",
+    SEPAY_ORDER_TTL_MINUTES=30,
+    SEPAY_SUBSCRIPTION_DAYS=30,
+)
+class WebhookPingTests(APITestCase):
+    """SePay's test-send button posts a correctly signed payload with no
+    transaction in it. Answering 400 made every test send look like a failure
+    and counted towards the incident total that can suspend a webhook — for a
+    request that had just proved the signature was right."""
+
+    def setUp(self):
+        cache.clear()
+        self.user = User.objects.create_user(
+            username="ping", email="ping@example.com", password="strong-password"
+        )
+        ServicePlan.objects.update_or_create(
+            slug="grow",
+            defaults={"name": "Grow", "price_monthly": 9000, "currency": "VND", "is_active": True},
+        )
+
+    def post_signed(self, payload):
+        raw_body = json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        timestamp = str(int(time.time()))
+        digest = hmac.new(
+            b"test-webhook-secret",
+            timestamp.encode("ascii") + b"." + raw_body,
+            hashlib.sha256,
+        ).hexdigest()
+        return self.client.post(
+            reverse("sepay_webhook_v2"),
+            data=raw_body,
+            content_type="application/json",
+            HTTP_X_SEPAY_TIMESTAMP=timestamp,
+            HTTP_X_SEPAY_SIGNATURE=f"sha256={digest}",
+        )
+
+    def test_a_payload_with_no_transaction_id_is_acknowledged(self):
+        response = self.post_signed({"gateway": "BIDV", "transferAmount": 9000})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["success"])
+        self.assertEqual(response.data["result"], "no_transaction")
+        self.assertEqual(response.data["reason"], "no_transaction_id")
+        # Acknowledging must not look like processing.
+        self.assertFalse(Payment.objects.exists())
+
+    def test_a_payload_with_no_amount_is_acknowledged(self):
+        response = self.post_signed({"id": 1, "gateway": "BIDV", "transferAmount": 0})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["reason"], "no_transfer_amount")
+        self.assertFalse(Payment.objects.exists())
+
+    def test_a_payload_naming_an_order_is_never_treated_as_a_ping(self):
+        """The narrow bit that matters: quietly acknowledging a real transfer we
+        failed to parse would lose someone's money, so anything referencing an
+        order stays a 400 and stays visible."""
+        self.client.force_authenticate(self.user)
+        created = self.client.post(
+            reverse("payment_order_list_create"), {"plan": "grow"}, format="json"
+        )
+        payment_code = created.data["order"]["transfer_content"]
+
+        response = self.post_signed(
+            {"id": 1, "gateway": "BIDV", "content": payment_code, "transferAmount": 0}
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(response.data["success"])
+
+    def test_an_unsigned_ping_is_still_rejected(self):
+        """Relaxing the body must not relax the signature."""
+        response = self.client.post(
+            reverse("sepay_webhook_v2"),
+            data=b'{"gateway":"BIDV"}',
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

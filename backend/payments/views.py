@@ -27,6 +27,7 @@ from .services import (
     create_payment_order,
     expire_user_plan,
     payer_account_number,
+    ping_reason,
     process_sepay_payload,
     request_order_reconciliation,
 )
@@ -279,6 +280,17 @@ class SepayWebhookView(APIView):
                 {"success": False, "message": "Payload JSON không hợp lệ."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        # SePay's "Gửi thử" button posts a correctly signed payload carrying no
+        # transaction. Answering 400 made every test send look like a failure and
+        # counted towards the incident total that can suspend a webhook — for a
+        # request that had just proved the signature was right. Acknowledge it
+        # without acting on it, and name the reason in the body so a ping is never
+        # mistaken for a processed payment.
+        ping = ping_reason(payload)
+        if ping:
+            logger.info("Acknowledged SePay ping (%s): %s", ping, payload)
+            return Response({"success": True, "result": "no_transaction", "reason": ping})
 
         try:
             result = process_sepay_payload(payload)

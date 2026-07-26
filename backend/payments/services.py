@@ -33,6 +33,27 @@ def normalize_account_number(value):
     return re.sub(r"\s+", "", str(value or "")).upper()
 
 
+def ping_reason(payload):
+    """Why a signed payload carries nothing to act on, or "" if it does.
+
+    SePay's test-send button posts a correctly signed payload with no real
+    transaction in it. Acknowledging that is right; quietly acknowledging a real
+    transfer we failed to parse would lose someone's money, so the two are kept
+    apart deliberately narrowly: a payload counts as a ping only when it names no
+    order at all. Anything that references an order stays a 400 so a genuine
+    parsing problem cannot hide behind a green tick.
+    """
+    if _extract_payment_code(payload):
+        return ""
+    if not str(payload.get("id") or "").strip():
+        return "no_transaction_id"
+    try:
+        _parse_amount(payload.get("transferAmount"))
+    except PaymentRequestError:
+        return "no_transfer_amount"
+    return ""
+
+
 def payer_account_number():
     """The number to put in front of the payer.
 
