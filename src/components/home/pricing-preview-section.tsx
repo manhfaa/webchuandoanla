@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Check, Crown, ShieldCheck, Sprout, TrendingUp } from "lucide-react";
 
 import { SectionShell } from "@/components/layout/section-shell";
 import { buttonVariants } from "@/components/ui/button";
 import { Reveal } from "@/components/ui/reveal";
 import { pricingPlans } from "@/data/mock/plans";
+import { applyCatalogue, fetchServicePlans, type ServicePlanDto } from "@/lib/payments-client";
 import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
 
@@ -34,8 +36,27 @@ function Price({ value, featured = false }: { value: string; featured?: boolean 
 
 export function PricingPreviewSection() {
   const tr = useTr();
-  const featured = pricingPlans.find((plan) => plan.highlight) ?? pricingPlans[0];
-  const alternatives = pricingPlans.filter((plan) => plan.id !== featured.id);
+  const [catalogue, setCatalogue] = useState<ServicePlanDto[] | null>(null);
+
+  // The catalogue is public, so the landing page can advertise the real prices
+  // and the real quotas instead of a checked-in copy of them.
+  useEffect(() => {
+    let cancelled = false;
+    void fetchServicePlans()
+      .then((live) => {
+        if (!cancelled) setCatalogue(live);
+      })
+      .catch(() => {
+        // Offline: the checked-in copy below still describes the plans.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const plans = useMemo(() => applyCatalogue(pricingPlans, catalogue), [catalogue]);
+  const featured = plans.find((plan) => plan.highlight) ?? plans[0];
+  const alternatives = plans.filter((plan) => plan.id !== featured.id);
   const FeaturedIcon = planIcons[featured.id as keyof typeof planIcons] ?? ShieldCheck;
 
   return (

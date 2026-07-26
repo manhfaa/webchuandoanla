@@ -1,3 +1,4 @@
+import { raiseIfPlanLimited, type LimitKey } from "@/lib/plan-limit";
 import type {
   CreateCropPlanPayload,
   CropCatalogItem,
@@ -108,6 +109,8 @@ async function djangoCropFetch<T>(
   path: string,
   init?: RequestInit,
   accessToken?: string | null,
+  /** Which plan cap this call spends, so a 402 can name it. */
+  limitKey?: LimitKey,
 ): Promise<T> {
   const [rawPath, query] = path.split("?");
   const normalizedPath = rawPath.replace(/^\//, "").replace(/\/+$/, "");
@@ -123,11 +126,16 @@ async function djangoCropFetch<T>(
 
   if (!res.ok) {
     let message = `HTTP ${res.status}`;
+    let data: unknown = null;
     try {
-      message = extractErrorMessage(await res.json()) || message;
+      data = await res.json();
     } catch {
       // ignore parse errors
     }
+    // A plan cap answers 402 with limit/used/upgrade_to; keep it structured so
+    // the upgrade prompt can say which plan lifts it.
+    raiseIfPlanLimited(res.status, data, limitKey);
+    message = extractErrorMessage(data) || message;
     throw new Error(message);
   }
 
@@ -199,6 +207,7 @@ export function createCropPlan(accessToken: string | null, payload: CreateCropPl
       body: JSON.stringify(payload),
     },
     accessToken,
+    "crop_plans",
   );
 }
 

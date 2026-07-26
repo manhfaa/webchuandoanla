@@ -1,3 +1,5 @@
+import { catalogueFeatureLines, planNamed } from "@/lib/plan-catalogue";
+import { raiseIfPlanLimited, type LimitKey } from "@/lib/plan-limit";
 import type { PlanTier, PricingPlan } from "@/types";
 
 /** A plan row from the backend catalogue (`GET /api/engagement/plans/`). */
@@ -65,6 +67,12 @@ export type SubscriptionSummary = {
   plan_expires_at: string | null;
   days_remaining: number | null;
   entitlements: PlanEntitlements;
+  /**
+   * How much of each cap is already spent. Optional: the endpoint does not
+   * report it yet, and the quota hints degrade to showing the cap alone rather
+   * than inventing a count the server never confirmed.
+   */
+  usage?: Partial<Record<LimitKey, number>>;
   subscription: {
     id: number;
     plan: string;
@@ -126,6 +134,9 @@ async function apiFetch<T>(path: string, accessToken?: string | null, init?: Req
 
   if (!response.ok) {
     const data = await response.json().catch(() => null);
+    // A plan cap answers 402 with limit/used/upgrade_to; letting that collapse
+    // into a plain message would drop everything the upgrade prompt needs.
+    raiseIfPlanLimited(response.status, data);
     throw new PaymentsApiError(response.status, readServerMessage(data));
   }
   if (response.status === 204) return undefined as T;
@@ -216,8 +227,13 @@ export function planAmount(catalogue: ServicePlanDto[] | null, slug: string): nu
  * backend has retired disappears from the page. `payments/tests.py` asserts the
  * two price lists are identical, so a one-sided edit fails CI rather than
  * quietly charging a different amount than the card advertises.
+ *
+ * The quota bullets are generated the same way. They used to be typed out on
+ * the card ("5 lần/ngày"), which is the same number `entitlements.py` enforces —
+ * two copies that drift the first time a cap changes. The card now carries only
+ * the copy that has no number in it and the caps arrive from the catalogue.
  */
-export function applyCataloguePrices(
+export function applyCatalogue(
   plans: PricingPlan[],
   catalogue: ServicePlanDto[] | null,
 ): PricingPlan[] {
@@ -227,13 +243,20 @@ export function applyCataloguePrices(
     // the answer has been retired and must stop being advertised.
     .filter((plan) => catalogue.some((item) => item.slug === plan.id && item.is_active))
     .map((plan) => {
+      const entry = planNamed(catalogue, plan.id);
       const amount = planAmount(catalogue, plan.id);
-      if (amount === null) return plan;
-      if (amount <= 0) return plan;
+      const lines = entry
+        ? catalogueFeatureLines(
+            entry,
+            plan.features.map((feature, index) => ({ vi: feature, en: plan.featuresEn?.[index] ?? feature })),
+          )
+        : null;
       return {
         ...plan,
-        price: `${formatVnd(amount, "vi")}/tháng`,
-        priceEn: `${formatVnd(amount, "en")}/month`,
+        ...(amount !== null && amount > 0
+          ? { price: `${formatVnd(amount, "vi")}/tháng`, priceEn: `${formatVnd(amount, "en")}/month` }
+          : {}),
+        ...(lines ? { features: lines.map((line) => line.vi), featuresEn: lines.map((line) => line.en) } : {}),
       };
     });
 }

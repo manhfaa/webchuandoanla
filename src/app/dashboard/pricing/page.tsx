@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/card";
 import { ListSkeleton } from "@/components/ui/skeleton";
 import { pricingPlans } from "@/data/mock/plans";
 import {
-  applyCataloguePrices,
+  applyCatalogue,
   fetchPaymentOrders,
   fetchServicePlans,
   fetchSubscriptionSummary,
@@ -109,7 +109,7 @@ export default function DashboardPricingPage() {
     void loadAccount();
   }, [loadAccount]);
 
-  const plans = useMemo(() => applyCataloguePrices(pricingPlans, catalogue), [catalogue]);
+  const plans = useMemo(() => applyCatalogue(pricingPlans, catalogue), [catalogue]);
   const currentPlan = normalizePlan(summary?.current_plan ?? user?.currentPlan);
   const currentPlanInfo = PLANS[currentPlan];
   const planExpiresAt = summary?.plan_expires_at ?? null;

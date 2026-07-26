@@ -8,17 +8,25 @@ import { ChatComposer } from "@/components/chat/chat-composer";
 import { ChatWindow } from "@/components/chat/chat-window";
 import { LockedPanel } from "@/components/chat/locked-panel";
 import { QuickPrompts } from "@/components/chat/quick-prompts";
+import { QuotaHint } from "@/components/plan/quota-hint";
 import { UpgradeModal } from "@/components/pricing/upgrade-modal";
 import { StatusBadge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ErrorState, LoadingState } from "@/components/ui/states";
 import { Tabs } from "@/components/ui/tabs";
 import { assistantQuickPrompts, expertQuickPrompts } from "@/data/mock/chat";
 import { useVoiceInput } from "@/hooks/use-voice-input";
+import { isPlanLimitError, raiseIfPlanLimited } from "@/lib/plan-limit";
+import { useEntitlements } from "@/lib/use-entitlements";
 import { useTr } from "@/lib/use-tr";
 import { useDiagnosisStore } from "@/store/diagnosis-store";
 import { useSessionStore } from "@/store/session-store";
 import type { ChatApiResponse, ChatMessage, ChatMode, ChatWorkspace, QuickPrompt } from "@/types";
+
+function readConversationId(value: unknown): number | null {
+  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null;
+}
 
 function getWorkspaceSubtitle(workspace: ChatWorkspace, tr: (vi: string, en: string) => string) {
   return workspace === "assistant"
@@ -34,7 +42,7 @@ function getWorkspaceSubtitle(workspace: ChatWorkspace, tr: (vi: string, en: str
 
 export default function DashboardChatPage() {
   const tr = useTr();
-  const { user, accessToken } = useSessionStore();
+  const { accessToken } = useSessionStore();
   const { records, latestRecordId } = useDiagnosisStore();
   const [workspace, setWorkspace] = useState<ChatWorkspace>("assistant");
   const [selectedDiagnosisId, setSelectedDiagnosisId] = useState("");
@@ -42,9 +50,19 @@ export default function DashboardChatPage() {
   const [typingMode, setTypingMode] = useState<ChatMode | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [messagesByMode, setMessagesByMode] = useState<Record<ChatMode, ChatMessage[]>>({ assistant: [], expert: [] });
+  /**
+   * The conversation each workspace is writing into. Sending it back keeps a
+   * session in one conversation; the server still checks that it belongs to
+   * this account and to this workspace before reusing it.
+   */
+  const [conversationByMode, setConversationByMode] = useState<Record<ChatMode, number | null>>({ assistant: null, expert: null });
 
-  const currentPlan = String(user?.currentPlan ?? "seed");
-  const expertUnlocked = currentPlan === "bloom" || currentPlan === "elite";
+  // Read from the plan catalogue instead of naming the tiers here: which plans
+  // include advanced advice is sold by `expert_chat_enabled`, and repeating the
+  // list in the UI is how the gate ends up disagreeing with what was paid for.
+  const { features, ready: entitlementsReady, loading: entitlementsLoading, error: entitlementsError, refresh: refreshEntitlements, unlockFor } = useEntitlements();
+  const expertUnlocked = features.expert_chat;
+  const expertPlan = unlockFor((plan) => plan.expert_chat_enabled);
   const latestDiagnosis = useMemo(() => records.find((item) => item.id === latestRecordId) ?? records[0] ?? null, [latestRecordId, records]);
   const selectedDiagnosis = useMemo(() => {
     if (selectedDiagnosisId === "none") return null;
@@ -55,6 +73,12 @@ export default function DashboardChatPage() {
 
   function setComposer(mode: ChatMode, value: string) {
     setComposerByMode((current) => ({ ...current, [mode]: value }));
+  }
+
+  function rememberConversation(mode: ChatMode, value: unknown) {
+    const id = readConversationId(value);
+    if (id === null) return;
+    setConversationByMode((current) => (current[mode] === id ? current : { ...current, [mode]: id }));
   }
 
   const handleVoiceTranscript = useCallback((value: string) => setComposer(activeMode, value), [activeMode]);
@@ -75,15 +99,31 @@ export default function DashboardChatPage() {
           "Content-Type": "application/json",
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
-        body: JSON.stringify({ query: content, mode, latestDiagnosis: diagnosisForRequest, selectedDiagnosis: diagnosisForRequest }),
+        body: JSON.stringify({ query: content, mode, latestDiagnosis: diagnosisForRequest, selectedDiagnosis: diagnosisForRequest, conversationId: conversationByMode[mode] }),
       });
-      if (!response.ok) throw new Error("Chat request failed");
+      if (!response.ok) {
+        const failure = (await response.json().catch(() => null)) as (ChatApiResponse & Record<string, unknown>) | null;
+        // Keep the conversation the server opened, so a refused question does
+        // not leave a new empty conversation behind on every retry.
+        rememberConversation(mode, failure?.conversationId);
+        // A plan cap answers 402 with the cap, what is used and the plan that
+        // lifts it; that opens the shared upgrade dialog instead of collapsing
+        // into "chưa gửi được câu hỏi".
+        raiseIfPlanLimited(response.status, failure, "daily_chat_messages");
+        throw new Error("Chat request failed");
+      }
       const data = (await response.json()) as ChatApiResponse;
+      rememberConversation(mode, data.conversationId ?? null);
       setMessagesByMode((current) => ({ ...current, [mode]: [...current[mode], { id: `${mode}-${Date.now()}-assistant`, role: "assistant", content: data.answer, createdAt: data.generatedAt }] }));
-    } catch {
+    } catch (err) {
+      // The backend sentence already names the cap and the plan that lifts it,
+      // so show it rather than the generic connection copy.
+      const message = isPlanLimitError(err)
+        ? err.info.message
+        : tr("Hiện chưa gửi được câu hỏi. Hãy kiểm tra kết nối và thử lại sau ít phút.", "Could not send your question right now. Please check your connection and try again in a few minutes.");
       setMessagesByMode((current) => ({
         ...current,
-        [mode]: [...current[mode], { id: `${mode}-${Date.now()}-error`, role: "assistant", content: tr("Hiện chưa gửi được câu hỏi. Hãy kiểm tra kết nối và thử lại sau ít phút.", "Could not send your question right now. Please check your connection and try again in a few minutes."), createdAt: new Date().toISOString() }],
+        [mode]: [...current[mode], { id: `${mode}-${Date.now()}-error`, role: "assistant", content: message, createdAt: new Date().toISOString() }],
       }));
     } finally {
       setTypingMode(null);
@@ -102,7 +142,12 @@ export default function DashboardChatPage() {
             <h2 className="mt-2 max-w-3xl font-display text-[30px] font-bold leading-tight tracking-[-0.035em] text-ink sm:text-[36px]">{tr("Hỏi đúng bối cảnh, nhận câu trả lời dễ thực hiện", "Ask with the right context, get answers that are easy to act on")}</h2>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-ink-soft">{getWorkspaceSubtitle(workspace, tr)}</p>
           </div>
-          <Tabs value={workspace} onChange={(value) => setWorkspace(value as ChatWorkspace)} tabs={[{ value: "assistant", label: tr("Hỏi theo kết quả", "Ask about a result") }, { value: "expert", label: tr("Tư vấn nông nghiệp", "Agriculture advice") }]} />
+          <div className="flex flex-wrap items-center gap-3">
+            <QuotaHint limitKey="daily_chat_messages" />
+            {/* The locked tab names the plan that opens it, so the upsell is
+                readable before the grower clicks into a dead end. */}
+            <Tabs value={workspace} onChange={(value) => setWorkspace(value as ChatWorkspace)} tabs={[{ value: "assistant", label: tr("Hỏi theo kết quả", "Ask about a result") }, { value: "expert", label: !expertUnlocked && expertPlan ? tr(`Tư vấn nông nghiệp · ${expertPlan.name}`, `Agriculture advice · ${expertPlan.name}`) : tr("Tư vấn nông nghiệp", "Agriculture advice") }]} />
+          </div>
         </div>
       </Card>
 
@@ -143,6 +188,13 @@ export default function DashboardChatPage() {
             </Card>
           </aside>
         </div>
+      ) : !entitlementsReady && entitlementsLoading ? (
+        // Never flash the locked panel at someone who paid for this workspace.
+        <LoadingState title={tr("Đang kiểm tra quyền lợi của gói", "Checking what your plan includes")} />
+      ) : !entitlementsReady ? (
+        // Unreadable entitlements are not proof the workspace is locked, so ask
+        // again instead of telling a Bloom subscriber to upgrade.
+        <ErrorState title={tr("Chưa đọc được quyền lợi của gói", "Could not read what your plan includes")} description={entitlementsError ?? tr("Vui lòng thử lại sau ít phút.", "Please try again in a few minutes.")} onRetry={() => void refreshEntitlements()} />
       ) : expertUnlocked ? (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
           <div className="space-y-4">
@@ -157,7 +209,7 @@ export default function DashboardChatPage() {
           </aside>
         </div>
       ) : (
-        <div className="space-y-4"><LockedPanel onUpgrade={() => setUpgradeOpen(true)} /><Link href="/dashboard/pricing" className={buttonVariants({ variant: "tertiary", size: "sm" })}>{tr("Xem chi tiết các gói", "See plan details")}</Link></div>
+        <div className="space-y-4"><LockedPanel planName={expertPlan?.name ?? null} onUpgrade={() => setUpgradeOpen(true)} /><Link href="/dashboard/pricing" className={buttonVariants({ variant: "tertiary", size: "sm" })}>{tr("Xem chi tiết các gói", "See plan details")}</Link></div>
       )}
 
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />

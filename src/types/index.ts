@@ -134,6 +134,12 @@ export interface DiagnosisRecord {
   cnnPayload?: Record<string, unknown>;
   modelVersion?: string;
   savedByUser?: boolean;
+  /**
+   * The record is older than the plan's history window. It is still stored and
+   * still opens by id — only the history list hides it — so the result screen
+   * can say so instead of leaving the user to assume it was deleted.
+   */
+  beyondRetention?: boolean;
 }
 
 export interface ChatMessage {
@@ -166,12 +172,21 @@ export interface ChatApiRequest {
   mode: ChatMode;
   latestDiagnosis?: DiagnosisRecord | null;
   selectedDiagnosis?: DiagnosisRecord | null;
+  /**
+   * The conversation the previous answer was written into. Sending it back keeps
+   * one workspace session in one conversation instead of opening a new one per
+   * question. It is only a hint: the server checks who owns it and which
+   * workspace it belongs to before reusing it.
+   */
+  conversationId?: number | null;
 }
 
 export interface ChatApiResponse {
   mode: ChatMode;
   answer: string;
   generatedAt: string;
+  /** The conversation this question was recorded in, to send with the next one. */
+  conversationId?: number | null;
 }
 
 export type CropPlanStatus =

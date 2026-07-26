@@ -27,7 +27,9 @@ import { StatusBadge, type StatusBadgeState } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState, LoadingState } from "@/components/ui/states";
+import { pricingPlans } from "@/data/mock/plans";
 import {
+  applyCatalogue,
   blocksNewOrder,
   createPaymentOrder,
   fetchPaymentOrder,
@@ -597,12 +599,23 @@ export default function CheckoutPlanPage() {
     }
   }
 
-  const planFeatures = useMemo(() => (planInfo ? (planInfo.features as readonly string[]) : []), [planInfo]);
+  // Benefits come from the catalogue the account is actually billed against, so
+  // the checkout screen cannot promise a quota the plan does not include.
+  const planCopy = useMemo(
+    () => applyCatalogue(pricingPlans, catalogue).find((entry) => entry.id === planParam) ?? null,
+    [catalogue, planParam],
+  );
+  const planFeatures = planCopy?.features ?? [];
 
   if (!planInfo) return null;
 
   const PlanIcon = { grow: TrendingUp, bloom: ShieldCheck, elite: Crown }[planParam] ?? Sprout;
-  const displayPrice = catalogueAmount ?? planInfo.price;
+  // The live amount wins; the checked-in label is the only sanctioned fallback
+  // (payments/tests.py pins it to the catalogue) so no price is typed twice.
+  const displayPrice =
+    catalogueAmount !== null
+      ? formatCurrency(catalogueAmount)
+      : tr(planCopy?.price ?? "", planCopy?.priceEn ?? planCopy?.price ?? "");
 
   if (success) {
     return (
@@ -677,7 +690,7 @@ export default function CheckoutPlanPage() {
             </div>
             <div className="rounded-lg border border-on-forest/15 bg-on-forest/[0.06] px-5 py-4 text-left lg:text-right">
               <p className="text-xs font-semibold text-on-forest-muted">{tr("Thanh toán một lần", "One-time payment")}</p>
-              <p className="mt-1 font-display text-3xl font-bold text-on-forest">{formatCurrency(displayPrice)}</p>
+              <p className="mt-1 font-display text-3xl font-bold text-on-forest">{displayPrice}</p>
               <p className="mt-1 text-xs text-on-forest-muted">{tr("Sử dụng trong 30 ngày", "Valid for 30 days")}</p>
             </div>
           </div>
@@ -691,7 +704,7 @@ export default function CheckoutPlanPage() {
               {planFeatures.map((feature, featureIndex) => (
                 <div key={feature} className="flex items-start gap-3 rounded-lg bg-surface-soft px-4 py-3 text-sm leading-6 text-ink">
                   <Check size={16} className="mt-1 shrink-0 text-leaf-strong" aria-hidden />
-                  {tr(feature, (planInfo.featuresEn as readonly string[])[featureIndex] ?? feature)}
+                  {tr(feature, planCopy?.featuresEn?.[featureIndex] ?? feature)}
                 </div>
               ))}
             </div>

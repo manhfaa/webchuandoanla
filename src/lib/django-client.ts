@@ -1,4 +1,5 @@
 import type { ActionPlan, PlanTier, UserProfile } from "@/types";
+import { raiseIfPlanLimited, type LimitKey } from "@/lib/plan-limit";
 import { normalizePlan } from "@/lib/plans";
 import { normalizeUserDisplayName } from "@/lib/user-profile";
 
@@ -156,11 +157,13 @@ function readErrorBody(data: unknown, statusCode: number) {
 
 type DjangoFetchInit = RequestInit & {
   timeoutMs?: number;
+  /** Which plan cap this call spends, so a 402 can name it. */
+  limitKey?: LimitKey;
 };
 
 async function djangoFetch<T>(path: string, init?: DjangoFetchInit): Promise<T> {
   const normalizedPath = path.replace(/^\//, "").replace(/\/+$/, "");
-  const { timeoutMs = 30000, ...fetchInit } = init ?? {};
+  const { timeoutMs = 30000, limitKey, ...fetchInit } = init ?? {};
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   let res: Response;
@@ -189,6 +192,9 @@ async function djangoFetch<T>(path: string, init?: DjangoFetchInit): Promise<T> 
     } catch {
       // A proxy or gateway may answer with something that is not JSON.
     }
+    // A plan cap answers 402 with limit/used/upgrade_to. Reading only `detail`
+    // here would throw away everything the upgrade prompt needs to be useful.
+    raiseIfPlanLimited(res.status, data, limitKey);
     const { message, fieldErrors } = readErrorBody(data, res.status);
     throw new DjangoApiError(
       res.status === 429 ? describeThrottle(message) : message,
@@ -281,7 +287,10 @@ export async function djangoLogout(refreshToken: string) {
 }
 
 export async function djangoRequestPasswordReset(email: string) {
-  return djangoFetch<{ detail: string }>("/api/auth/password-reset/", {
+  // delivery_enabled is false when no mail provider is configured: the link
+  // would only reach the server log, so the screen must say the feature is off
+  // rather than tell the user to watch an inbox.
+  return djangoFetch<{ detail: string; delivery_enabled?: boolean }>("/api/auth/password-reset/", {
     method: "POST",
     body: JSON.stringify({ email }),
   });
@@ -382,5 +391,6 @@ export async function djangoClassifyLeafImage(payload: { imageDataUrl: string; a
       top_k: 5,
     }),
     timeoutMs: 120000,
+    limitKey: "daily_diagnoses",
   });
 }

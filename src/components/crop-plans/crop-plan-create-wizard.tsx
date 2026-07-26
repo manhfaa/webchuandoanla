@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -15,12 +16,14 @@ import {
 } from "lucide-react";
 
 import type { CreateCropPlanPayload, CropCatalogItem, CropLocation, CropPlanPreview } from "@/types";
-import { Button } from "@/components/ui/button";
+import { QuotaHint } from "@/components/plan/quota-hint";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   fetchCropCatalog,
   fetchCropLocations,
+  fetchCropPlans,
   previewCropPlan,
   createCropPlan,
   deleteCropLocation,
@@ -28,6 +31,7 @@ import {
   type ClimateConfidence,
 } from "@/lib/crop-plans-client";
 import { getSuitabilityLabel, withViFallback } from "@/lib/crop-plan-labels";
+import { useEntitlements } from "@/lib/use-entitlements";
 import { useTr } from "@/lib/use-tr";
 import { useSessionStore } from "@/store/session-store";
 
@@ -73,6 +77,9 @@ export function CropPlanCreateWizard() {
   const [loadingIndex, setLoadingIndex] = useState(0);
   const [locationBusy, setLocationBusy] = useState(false);
   const [deletingLocation, setDeletingLocation] = useState<CropLocation | null>(null);
+  const [planCountUsed, setPlanCountUsed] = useState<number | null>(null);
+  const { quota, upgradeFor } = useEntitlements();
+  const planQuota = quota("crop_plans", planCountUsed);
 
   const [selectedCrop, setSelectedCrop] = useState<string>("");
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
@@ -93,12 +100,16 @@ export function CropPlanCreateWizard() {
     void (async () => {
       try {
         setLoading(true);
-        const [cropData, locationData] = await Promise.all([
+        const [cropData, locationData, planPage] = await Promise.all([
           fetchCropCatalog(accessToken),
           fetchCropLocations(accessToken),
+          // Only the total is needed: it says whether another plan may be
+          // created before the grower spends time filling in this form.
+          fetchCropPlans(accessToken, { pageSize: 1 }),
         ]);
         setCrops(cropData);
         setLocations(locationData);
+        setPlanCountUsed(planPage.count);
         if (cropData[0]) setSelectedCrop(cropData[0].slug);
         if (locationData[0]) {
           setSelectedLocationId(locationData[0].id);
@@ -280,6 +291,46 @@ export function CropPlanCreateWizard() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  // Checked before the first step rather than at save time: the cap is already
+  // known, so nobody fills in four screens only to be refused at the end. It
+  // stays quiet until the entitlements are actually loaded, and the backend 402
+  // remains the enforcement either way.
+  if (!loading && planQuota.exhausted) {
+    const upgradePlan = upgradeFor("crop_plans");
+    return (
+      <div className="fl-stagger mx-auto max-w-[1320px] space-y-6">
+        <Card variant="soft" padding="lg" className="flex min-h-[380px] flex-col items-center justify-center rounded-xl text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-lg bg-surface text-leaf-strong shadow-sm">
+            <Sparkles size={22} aria-hidden />
+          </span>
+          <h1 className="mt-5 font-display text-2xl font-bold tracking-[-0.025em] text-ink">
+            {planQuota.limit === 0
+              ? tr("Gói hiện tại chưa có kế hoạch trồng cây", "Your current plan does not include crop plans")
+              : tr("Bạn đã dùng hết số kế hoạch của gói", "You have used every plan your subscription includes")}
+          </h1>
+          <p className="mt-3 max-w-xl text-sm leading-7 text-ink-soft">
+            {tr(
+              "Các kế hoạch bạn đã tạo vẫn được giữ nguyên và mở xem bình thường. Nâng cấp để lập thêm lịch chăm cây theo từng bước, kèm nhắc việc và cảnh báo thời tiết.",
+              "The plans you already created are kept and stay readable. Upgrade to build more step-by-step care schedules with reminders and weather alerts.",
+            )}
+          </p>
+          <QuotaHint limitKey="crop_plans" used={planCountUsed} className="mt-5" showUpgrade={false} />
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Link href="/dashboard/crop-plans" className={buttonVariants({ variant: "secondary" })}>
+              {tr("Về danh sách kế hoạch", "Back to your plans")}
+            </Link>
+            <Link
+              href={upgradePlan ? `/dashboard/pricing/checkout/${upgradePlan.slug}` : "/dashboard/pricing"}
+              className={buttonVariants({ variant: "primary" })}
+            >
+              {upgradePlan ? tr(`Nâng cấp lên ${upgradePlan.name}`, `Upgrade to ${upgradePlan.name}`) : tr("Xem các gói", "See the plans")}
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
   }
 
   return (

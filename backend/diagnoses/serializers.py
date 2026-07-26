@@ -4,6 +4,12 @@ from .models import Diagnosis
 
 
 class DiagnosisSerializer(serializers.ModelSerializer):
+    # Retention keeps an older record out of the history list without touching
+    # the row. This flag lets the result page say "vẫn được lưu, chỉ nằm ngoài
+    # khoảng lịch sử của gói" instead of leaving the user to guess why a record
+    # they just opened is missing from the list.
+    beyond_retention = serializers.SerializerMethodField()
+
     class Meta:
         model = Diagnosis
         fields = (
@@ -33,7 +39,12 @@ class DiagnosisSerializer(serializers.ModelSerializer):
             "rag_payload",
             "saved_by_user",
             "model_version",
+            "beyond_retention",
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "created_at", "updated_at")
+        read_only_fields = ("id", "beyond_retention", "created_at", "updated_at")
+
+    def get_beyond_retention(self, obj) -> bool:
+        cutoff = self.context.get("history_cutoff")
+        return bool(cutoff and obj.created_at and obj.created_at < cutoff)

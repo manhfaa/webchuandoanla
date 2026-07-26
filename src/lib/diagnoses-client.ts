@@ -1,3 +1,4 @@
+import { raiseIfPlanLimited, type LimitKey } from "@/lib/plan-limit";
 import type { ActionPlan, DiagnosisInputMethod, DiagnosisRecord, RecommendationBlock } from "@/types";
 
 type DjangoDiagnosis = {
@@ -27,15 +28,69 @@ type DjangoDiagnosis = {
   rag_payload: Record<string, unknown>;
   saved_by_user: boolean;
   model_version: string;
+  /** True when the record sits outside the plan's history window (still stored). */
+  beyond_retention?: boolean;
   created_at: string;
   updated_at: string;
+};
+
+/** Reported by `GET /api/diagnoses/usage/`; `limit: null` means no cap. */
+export type QuotaBlock = { limit: number | null; used: number; remaining: number | null };
+
+/**
+ * The retention window in the server's own words. `hidden` is what the list is
+ * holding back — never what was deleted — and `notice` is the Vietnamese
+ * sentence that says so.
+ */
+export type HistoryWindow = {
+  retention_days: number | null;
+  cutoff: string | null;
+  total: number;
+  visible: number;
+  hidden: number;
+  notice: string;
+};
+
+export type DiagnosisUsage = {
+  plan: string;
+  plan_name: string;
+  upgrade_to: string;
+  upgrade_to_name: string;
+  daily_diagnoses: QuotaBlock;
+  monthly_diagnoses: QuotaBlock;
+  history: HistoryWindow;
 };
 
 function authHeaders(accessToken?: string | null): Record<string, string> {
   return accessToken ? { authorization: `Bearer ${accessToken}` } : {};
 }
 
-async function diagnosesFetch<T>(path: string, accessToken?: string | null, init?: RequestInit): Promise<T> {
+/** First usable sentence in a DRF error body, at any nesting depth. */
+function firstText(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      const text = firstText(entry);
+      if (text) return text;
+    }
+    return "";
+  }
+  if (value && typeof value === "object") {
+    for (const entry of Object.values(value as Record<string, unknown>)) {
+      const text = firstText(entry);
+      if (text) return text;
+    }
+  }
+  return "";
+}
+
+async function diagnosesFetch<T>(
+  path: string,
+  accessToken?: string | null,
+  init?: RequestInit,
+  /** Which plan cap this call spends, so a 402 can name it. */
+  limitKey?: LimitKey,
+): Promise<T> {
   const res = await fetch(`/api/django/${path.replace(/^\//, "").replace(/\/+$/, "")}`, {
     ...init,
     headers: {
@@ -48,11 +103,19 @@ async function diagnosesFetch<T>(path: string, accessToken?: string | null, init
 
   if (!res.ok) {
     let message = `HTTP ${res.status}`;
+    let data: unknown = null;
     try {
-      const data = await res.json();
-      message = data.detail || data.error || message;
+      data = await res.json();
     } catch {
       // keep HTTP status message
+    }
+    // A plan cap answers 402 with limit/used/upgrade_to; keep it structured.
+    raiseIfPlanLimited(res.status, data, limitKey);
+    if (data && typeof data === "object") {
+      const body = data as Record<string, unknown>;
+      // DRF also reports field problems ({"image_data_url": ["..."]}), which
+      // used to surface as the literal "HTTP 400".
+      message = firstText(body.detail) || firstText(body.error) || firstText(body) || message;
     }
     throw new Error(message);
   }
@@ -131,6 +194,7 @@ export function mapDiagnosisToRecord(item: DjangoDiagnosis): DiagnosisRecord {
     cnnPayload: item.cnn_payload,
     modelVersion: item.model_version,
     savedByUser: item.saved_by_user,
+    beyondRetention: Boolean(item.beyond_retention),
   };
 }
 
@@ -165,6 +229,16 @@ export function diagnosisPayloadFromRecord(record: DiagnosisRecord) {
   };
 }
 
+/**
+ * How much of the leaf-check quota is already spent, straight from the server.
+ * The screens show this instead of counting locally, so the number on screen is
+ * the number the 402 is measured against.
+ */
+export async function fetchDiagnosisUsage(accessToken: string | null | undefined) {
+  if (!accessToken) return null;
+  return diagnosesFetch<DiagnosisUsage>("/api/diagnoses/usage", accessToken);
+}
+
 export async function fetchDiagnosisRecords(accessToken: string | null | undefined) {
   if (!accessToken) return [];
   const items = await diagnosesFetch<DjangoDiagnosis[]>("/api/diagnoses", accessToken);
@@ -179,10 +253,12 @@ export async function fetchDiagnosisRecord(accessToken: string | null | undefine
 
 export async function createDiagnosisRecord(accessToken: string | null | undefined, record: DiagnosisRecord) {
   if (!accessToken) return record;
-  const item = await diagnosesFetch<DjangoDiagnosis>("/api/diagnoses", accessToken, {
-    method: "POST",
-    body: JSON.stringify(diagnosisPayloadFromRecord(record)),
-  });
+  const item = await diagnosesFetch<DjangoDiagnosis>(
+    "/api/diagnoses",
+    accessToken,
+    { method: "POST", body: JSON.stringify(diagnosisPayloadFromRecord(record)) },
+    "daily_diagnoses",
+  );
   return mapDiagnosisToRecord(item);
 }
 

@@ -1,3 +1,5 @@
+import { raiseIfPlanLimited } from "@/lib/plan-limit";
+
 export type FarmLocation = {
   id: number;
   name: string;
@@ -234,11 +236,15 @@ async function apiFetch<T>(path: string, accessToken?: string | null, init?: Req
 
   if (!res.ok) {
     let message = `HTTP ${res.status}`;
+    let data: unknown = null;
     try {
-      message = unwrapApiError(await res.json(), message);
+      data = await res.json();
     } catch {
       // ignore
     }
+    // A plan cap answers 402 with limit/used/upgrade_to; keep it structured.
+    raiseIfPlanLimited(res.status, data);
+    message = unwrapApiError(data, message);
     throw new Error(message);
   }
 

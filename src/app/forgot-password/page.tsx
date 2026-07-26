@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowRight, MailCheck, SendHorizontal } from "lucide-react";
+import { ArrowRight, MailCheck, SendHorizontal, TriangleAlert } from "lucide-react";
 
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -16,13 +16,17 @@ export default function ForgotPasswordPage() {
   const [sending, setSending] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [unavailable, setUnavailable] = useState<string | null>(null);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setSending(true);
     try {
-      await djangoRequestPasswordReset(email.trim());
+      const result = await djangoRequestPasswordReset(email.trim());
+      // The backend is the authority on whether a link can actually be
+      // delivered; it also sends the sentence to show when it cannot.
+      setUnavailable(result.delivery_enabled === false ? result.detail : null);
       setSentTo(email.trim());
     } catch (err) {
       setError(err instanceof Error ? err.message : tr("Chưa gửi được yêu cầu. Vui lòng thử lại.", "Could not send the request. Please try again."));
@@ -45,7 +49,24 @@ export default function ForgotPasswordPage() {
         "All your leaf photos, check results and care plans stay exactly where you left them.",
       )}
     >
-      {sentTo ? (
+      {sentTo && unavailable ? (
+        <div className="space-y-5">
+          <div className="flex items-start gap-3 rounded-lg border border-warning/40 bg-sun-soft p-4">
+            <TriangleAlert size={20} className="mt-0.5 shrink-0 text-warning-ink" aria-hidden />
+            <div>
+              <p className="text-sm font-semibold text-ink">{tr("Chưa gửi được email", "Email not available")}</p>
+              {/* Shown verbatim from the backend so the reason cannot drift out
+                  of step with what the server can actually do. */}
+              <p className="mt-1.5 text-sm leading-6 text-ink-soft">
+                {tr(unavailable, "Password reset by email is not enabled yet. If you can still sign in, change your password on the Profile page. Otherwise please contact the administrator for help.")}
+              </p>
+            </div>
+          </div>
+          <Link href="/login" className={buttonVariants({ variant: "primary" })}>
+            {tr("Quay lại đăng nhập", "Back to sign in")} <ArrowRight size={17} aria-hidden />
+          </Link>
+        </div>
+      ) : sentTo ? (
         <div className="space-y-5">
           <div className="flex items-start gap-3 rounded-lg border border-leaf/30 bg-surface-soft p-4">
             <MailCheck size={20} className="mt-0.5 shrink-0 text-leaf-strong" aria-hidden />

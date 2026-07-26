@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, Leaf, Plus, Sprout } from "lucide-react";
+import { ChevronLeft, ChevronRight, Leaf, Plus, Sparkles } from "lucide-react";
 
 import { ConfirmDialog } from "@/components/crop-plans/confirm-dialog";
 import { CropPlanListCard } from "@/components/crop-plans/crop-plan-list-card";
 import { ReminderCenter } from "@/components/crop-plans/reminder-center";
-import { Button } from "@/components/ui/button";
+import { QuotaHint } from "@/components/plan/quota-hint";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ListSkeleton } from "@/components/ui/skeleton";
 import { EmptyState, ErrorState } from "@/components/ui/states";
@@ -19,6 +20,7 @@ import {
   updateCropPlan,
   type CropPlanListItem,
 } from "@/lib/crop-plans-client";
+import { useEntitlements } from "@/lib/use-entitlements";
 import { useTr } from "@/lib/use-tr";
 import { useSessionStore } from "@/store/session-store";
 
@@ -43,6 +45,15 @@ export default function CropPlansPage() {
   const [confirming, setConfirming] = useState<PendingConfirm>(null);
   const [actionPending, setActionPending] = useState(false);
   const [reminderKey, setReminderKey] = useState(0);
+  /**
+   * Plans that count against the cap. Taken from the unarchived listing only,
+   * so switching "show archived" on cannot make the quota look bigger than it
+   * is. A 402 overwrites this with the server's own count.
+   */
+  const [quotaUsed, setQuotaUsed] = useState<number | null>(null);
+  const { quota, upgradeFor } = useEntitlements();
+  const planQuota = quota("crop_plans", quotaUsed);
+  const upgradePlan = planQuota.exhausted ? upgradeFor("crop_plans") : null;
 
   const loadPlans = useCallback(async () => {
     if (!accessToken) {
@@ -60,6 +71,7 @@ export default function CropPlansPage() {
       setTotal(planData.count);
       setHasNext(Boolean(planData.next));
       setTodayCount(reminderData.count);
+      if (!includeArchived) setQuotaUsed(planData.count);
     } catch (err) {
       setError(err instanceof Error ? err.message : tr("Không tải được danh sách kế hoạch.", "Could not load the plan list."));
     } finally {
@@ -114,6 +126,27 @@ export default function CropPlansPage() {
 
   const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  // The cap applies to creating a new plan only — every plan already saved stays
+  // listed and openable — so the create control is what changes, nothing else.
+  const createAction = planQuota.exhausted ? (
+    <Link
+      href={upgradePlan ? `/dashboard/pricing/checkout/${upgradePlan.slug}` : "/dashboard/pricing"}
+      className={buttonVariants({ variant: "secondary" })}
+    >
+      <Sparkles strokeWidth={1.75} className="h-4 w-4" aria-hidden />
+      {upgradePlan
+        ? tr(`Nâng cấp ${upgradePlan.name} để tạo thêm`, `Upgrade to ${upgradePlan.name} to create more`)
+        : tr("Xem gói để tạo thêm kế hoạch", "See plans to create more")}
+    </Link>
+  ) : (
+    <Link href="/dashboard/crop-plans/new" className="no-underline">
+      <Button>
+        <Plus strokeWidth={1.75} className="h-4 w-4" aria-hidden />
+        {tr("Tạo kế hoạch mới", "Create new plan")}
+      </Button>
+    </Link>
+  );
+
   return (
     <div className="fl-stagger mx-auto max-w-[1320px] space-y-6">
       <Card variant="raised" padding="lg" className="field-contours rounded-xl">
@@ -124,13 +157,9 @@ export default function CropPlansPage() {
             <p className="mt-3 max-w-3xl text-body text-ink-soft sm:text-body-lg">
               {tr("Xem các vụ đang chạy, việc cần làm hôm nay và mở nhanh timeline chăm cây theo địa điểm.", "See active crops, today's tasks, and quickly open the care timeline by location.")}
             </p>
+            <QuotaHint limitKey="crop_plans" used={quotaUsed} className="mt-4" showUpgrade={false} />
           </div>
-          <Link href="/dashboard/crop-plans/new" className="no-underline">
-            <Button>
-              <Plus strokeWidth={1.75} className="h-4 w-4" aria-hidden />
-              {tr("Tạo kế hoạch mới", "Create new plan")}
-            </Button>
-          </Link>
+          {createAction}
         </div>
       </Card>
 
@@ -181,7 +210,19 @@ export default function CropPlansPage() {
       {loading ? <ListSkeleton count={3} itemClassName="h-[220px]" /> : null}
 
       {!loading && !error && !plans.length ? (
-        <EmptyState title={tr("Chưa có kế hoạch trồng nào", "No crop plans yet")} description={tr("Tạo kế hoạch đầu tiên để theo dõi mùa vụ, nhắc việc và thời tiết cho từng bước chăm cây.", "Create your first plan to track the season, reminders, and weather for each care step.")} icon={Leaf} action={<Link href="/dashboard/crop-plans/new" className="no-underline"><Button><Sprout strokeWidth={1.75} className="h-4 w-4" aria-hidden /> {tr("Tạo kế hoạch mới", "Create new plan")}</Button></Link>} />
+        <EmptyState
+          title={tr("Chưa có kế hoạch trồng nào", "No crop plans yet")}
+          description={
+            planQuota.exhausted
+              ? tr(
+                  "Gói hiện tại chưa kèm kế hoạch trồng cây. Nâng cấp để lập lịch chăm cây theo từng bước, có nhắc việc và cảnh báo thời tiết.",
+                  "Your current plan does not include crop plans. Upgrade to build a step-by-step care schedule with reminders and weather alerts.",
+                )
+              : tr("Tạo kế hoạch đầu tiên để theo dõi mùa vụ, nhắc việc và thời tiết cho từng bước chăm cây.", "Create your first plan to track the season, reminders, and weather for each care step.")
+          }
+          icon={Leaf}
+          action={createAction}
+        />
       ) : null}
 
       {!loading && plans.length ? (

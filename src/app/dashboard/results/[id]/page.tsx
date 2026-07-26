@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { Bookmark, Leaf, RefreshCcw, Volume2 } from "lucide-react";
+import { Archive, Bookmark, Leaf, RefreshCcw, Volume2 } from "lucide-react";
 
 import { ActionRecommendations } from "@/components/diagnosis/action-recommendations";
 import { DiagnosisResultCard, displayDiseaseName, displayPlantName, englishPlantName } from "@/components/diagnosis/result-card";
@@ -130,6 +130,24 @@ export default function ResultDetailPage() {
 
   return (
     <div className="fl-stagger mx-auto max-w-[1320px] space-y-6">
+      {/* The record loaded fine — it is only older than the window the plan
+          lists. Saying so here is the difference between "outside my plan's
+          history" and "my data was deleted". */}
+      {record.beyondRetention ? (
+        <Card variant="warning" padding="md" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg text-sm leading-6">
+          <Archive size={16} className="shrink-0 text-warning-ink" aria-hidden />
+          <span>
+            {tr(
+              "Kết quả này cũ hơn khoảng lịch sử mà gói hiện tại hiển thị, nên không xuất hiện trong danh sách. Bản ghi vẫn được lưu đầy đủ và bạn luôn mở lại được bằng đường dẫn này.",
+              "This result is older than the history window your current plan lists, so it does not appear in the list. The record is still stored in full and this link always opens it.",
+            )}
+          </span>
+          <Link href="/dashboard/pricing" className="font-semibold text-leaf-strong underline-offset-2 hover:underline">
+            {tr("Xem gói để hiện lại trong lịch sử", "See plans to bring it back into the list")}
+          </Link>
+        </Card>
+      ) : null}
+
       <Card variant="raised" padding="lg" className="rounded-xl">
         <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
           <div className="relative min-h-[320px] overflow-hidden rounded-xl border border-line bg-surface-soft sm:min-h-[430px]">

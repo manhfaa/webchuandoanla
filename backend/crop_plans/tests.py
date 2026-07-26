@@ -19,6 +19,7 @@ from crop_plans.services.planner import (
     regenerate_plan,
     reopen_step,
 )
+from payments.entitlements import limit_for
 
 
 def _row(day: date, **overrides) -> dict:
@@ -386,6 +387,291 @@ class WeatherRefreshTests(PlannerTestCase):
         self.assertLessEqual(len(body["results"]), 5)
         self.assertGreater(body["count"], 5)
         self.assertIsNotNone(body["next"])
+
+
+class CropPlanQuotaTests(PlannerTestCase):
+    """The published cap: Seed none, Grow 2, Bloom 10, Elite unlimited.
+
+    The numbers are asserted against the billing catalogue, not retyped, so a
+    catalogue change moves the test with the product instead of breaking it.
+    """
+
+    def _limit(self):
+        return limit_for(self.user, "crop_plans")
+
+    def _set_plan(self, slug):
+        self.user.current_plan = slug
+        self.user.plan_expires_at = None if slug == "seed" else timezone.now() + timedelta(days=30)
+        self.user.save(update_fields=["current_plan", "plan_expires_at", "updated_at"])
+
+    def _seed_plans(self, count, status=CropPlan.Status.ACTIVE):
+        """Cheap fixtures: the cap counts rows, so no schedule is needed."""
+        return [
+            CropPlan.objects.create(
+                user=self.user,
+                crop=self.tomato,
+                location=self.location,
+                title=f"Kế hoạch cũ {index}",
+                planned_start_date=timezone.localdate(),
+                status=status,
+            )
+            for index in range(count)
+        ]
+
+    def _post_plan(self, **overrides):
+        payload = {
+            "crop_type": self.tomato.slug,
+            "location_id": self.location.id,
+            "planting_mode": "pot",
+            "plant_count": 3,
+            "start_date": (timezone.localdate() + timedelta(days=3)).isoformat(),
+        }
+        payload.update(overrides)
+        return self.client.post(
+            "/api/crop-plans/plans/",
+            # A None override drops the key, so "no saved area" sends a real
+            # payload the serializer would accept rather than a null field.
+            data={key: value for key, value in payload.items() if value is not None},
+            content_type="application/json",
+            **self._auth(),
+        )
+
+    def test_seed_cannot_create_a_plan_and_is_told_which_plan_lifts_it(self):
+        self.assertEqual(self._limit(), 0)
+        response = self._post_plan()
+
+        self.assertEqual(response.status_code, 402)
+        body = response.json()
+        self.assertEqual(body["upgrade_to"], "grow")
+        self.assertEqual(body["limit"], 0)
+        self.assertIn("Grow", body["detail"])
+        self.assertIn("kế hoạch", body["detail"])
+        self.assertFalse(CropPlan.objects.filter(user=self.user).exists())
+
+    def test_plans_created_before_the_cap_stay_fully_usable(self):
+        # The user is on Seed (cap 0) yet already owns a plan, exactly like the
+        # accounts that existed before the cap was introduced.
+        plan = create_plan_from_payload(self.user, self._context(self.tomato))
+        step = plan.steps.order_by("step_number").first()
+
+        listed = self.client.get("/api/crop-plans/plans/", **self._auth()).json()
+        detail = self.client.get(f"/api/crop-plans/plans/{plan.id}/", **self._auth())
+        completed = self.client.post(
+            f"/api/crop-plans/steps/{step.id}/complete/",
+            data={"note": "xong"},
+            content_type="application/json",
+            **self._auth(),
+        )
+        reminders = self.client.get(f"/api/crop-plans/reminders/?plan={plan.id}", **self._auth()).json()
+
+        self.assertEqual(listed["count"], 1)
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(completed.status_code, 200)
+        self.assertGreater(reminders["count"], 0)
+        # Only creating another one is refused, and the copy says the old plan stays.
+        refused = self._post_plan()
+        self.assertEqual(refused.status_code, 402)
+        self.assertIn("giữ nguyên", refused.json()["detail"])
+        self.assertTrue(CropPlan.objects.filter(pk=plan.id).exists())
+
+    def test_grow_allows_the_catalogue_count_and_refuses_the_next_one(self):
+        self._set_plan("grow")
+        limit = self._limit()
+        self.assertEqual(limit, 2)
+
+        self._seed_plans(limit - 1)
+        self.assertEqual(self._post_plan().status_code, 201)
+
+        refused = self._post_plan()
+        body = refused.json()
+        self.assertEqual(refused.status_code, 402)
+        self.assertEqual(body["limit"], limit)
+        self.assertEqual(body["used"], limit)
+        self.assertEqual(body["upgrade_to"], "bloom")
+        self.assertEqual(CropPlan.objects.filter(user=self.user).count(), limit)
+
+    def test_archiving_a_finished_plan_frees_a_slot(self):
+        self._set_plan("grow")
+        plans = self._seed_plans(self._limit())
+        self.assertEqual(self._post_plan().status_code, 402)
+
+        CropPlan.objects.filter(pk=plans[0].pk).update(status=CropPlan.Status.ARCHIVED)
+
+        self.assertEqual(self._post_plan().status_code, 201)
+        # The archived season is kept, just out of the way.
+        self.assertTrue(CropPlan.objects.filter(pk=plans[0].pk).exists())
+
+    def test_bloom_caps_higher_and_elite_is_unlimited(self):
+        self._set_plan("bloom")
+        bloom_limit = self._limit()
+        self.assertEqual(bloom_limit, 10)
+        self._seed_plans(bloom_limit)
+
+        refused = self._post_plan()
+        self.assertEqual(refused.status_code, 402)
+        self.assertEqual(refused.json()["upgrade_to"], "elite")
+
+        self._set_plan("elite")
+        self.assertIsNone(self._limit())
+        self.assertEqual(self._post_plan().status_code, 201)
+
+    def test_previewing_stays_free_when_the_cap_is_full(self):
+        self._seed_plans(3)  # still Seed, so far past the cap
+        response = self.client.post(
+            "/api/crop-plans/plans/preview/",
+            data={
+                "crop_type": self.tomato.slug,
+                "location_id": self.location.id,
+                "planting_mode": "pot",
+                "plant_count": 3,
+                "start_date": (timezone.localdate() + timedelta(days=3)).isoformat(),
+            },
+            content_type="application/json",
+            **self._auth(),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("steps", response.json())
+
+    def test_a_refused_create_leaves_no_growing_area_behind(self):
+        before = CropLocation.objects.filter(user=self.user).count()
+        response = self._post_plan(location_id=None, lat=11.9, lon=108.4, location_name="Khu mới")
+
+        self.assertEqual(response.status_code, 402)
+        self.assertEqual(CropLocation.objects.filter(user=self.user).count(), before)
+
+    def _patch_plan(self, pk, **payload):
+        return self.client.patch(
+            f"/api/crop-plans/plans/{pk}/",
+            data=payload,
+            content_type="application/json",
+            **self._auth(),
+        )
+
+    def test_archiving_and_creating_in_a_loop_cannot_hold_more_than_the_cap(self):
+        """The cap counts a set the user can shrink at will, so every way back
+        into that set has to be checked - otherwise create -> archive -> create
+        accumulates plans and un-archiving them all lands far past the cap."""
+        self._set_plan("grow")
+        limit = self._limit()
+
+        created = []
+        for _ in range(limit + 3):
+            created_response = self._post_plan()
+            if created_response.status_code == 201:
+                pk = created_response.json()["id"]
+                created.append(pk)
+                self.assertEqual(self._patch_plan(pk, status="archived").status_code, 200)
+
+        # Closing a season and starting a new one is allowed as often as the
+        # grower likes; what is capped is how many run at the same time.
+        self.assertEqual(len(created), limit + 3)
+
+        restored = [pk for pk in created if self._patch_plan(pk, status="active").status_code == 200]
+        held = CropPlan.objects.filter(user=self.user).exclude(status=CropPlan.Status.ARCHIVED).count()
+        self.assertEqual(len(restored), limit)
+        self.assertEqual(held, limit)
+        # Nothing was deleted along the way.
+        self.assertEqual(CropPlan.objects.filter(user=self.user).count(), len(created))
+
+    def test_restoring_over_the_cap_is_refused_without_touching_the_plan(self):
+        self._set_plan("grow")
+        plans = self._seed_plans(self._limit())
+        archived = self._seed_plans(1, status=CropPlan.Status.ARCHIVED)[0]
+
+        refused = self._patch_plan(archived.pk, title="Tên mới", status="active")
+        body = refused.json()
+        archived.refresh_from_db()
+
+        self.assertEqual(refused.status_code, 402)
+        self.assertEqual(body["limit"], self._limit())
+        self.assertEqual(body["used"], len(plans))
+        # The refusal must not read as "my plan is gone", and must not half-apply.
+        self.assertIn("giữ nguyên", body["detail"])
+        self.assertEqual(archived.status, CropPlan.Status.ARCHIVED)
+        self.assertNotEqual(archived.title, "Tên mới")
+        # Archived or not, the grower can still open it.
+        self.assertEqual(
+            self.client.get(f"/api/crop-plans/plans/{archived.pk}/", **self._auth()).status_code, 200
+        )
+
+    def test_restoring_is_allowed_once_a_slot_is_free(self):
+        self._set_plan("grow")
+        self._seed_plans(self._limit() - 1)
+        archived = self._seed_plans(1, status=CropPlan.Status.ARCHIVED)[0]
+
+        self.assertEqual(self._patch_plan(archived.pk, status="active").status_code, 200)
+        archived.refresh_from_db()
+        self.assertEqual(archived.status, CropPlan.Status.ACTIVE)
+
+    def test_editing_a_plan_over_the_cap_still_works(self):
+        # Seed with grandfathered plans: renaming or archiving must never be
+        # blocked, only moving one back into the tracked list.
+        plans = self._seed_plans(2)
+        self.assertEqual(self._patch_plan(plans[0].pk, title="Vụ xuân").status_code, 200)
+        self.assertEqual(self._patch_plan(plans[1].pk, status="archived").status_code, 200)
+        plans[0].refresh_from_db()
+        self.assertEqual(plans[0].title, "Vụ xuân")
+
+    def test_regenerating_an_archived_plan_respects_the_cap(self):
+        self._set_plan("grow")
+        self._seed_plans(self._limit())
+        archived = self._seed_plans(1, status=CropPlan.Status.ARCHIVED)[0]
+
+        refused = self.client.post(
+            f"/api/crop-plans/plans/{archived.pk}/regenerate/",
+            data={},
+            content_type="application/json",
+            **self._auth(),
+        )
+        archived.refresh_from_db()
+        self.assertEqual(refused.status_code, 402)
+        self.assertEqual(archived.status, CropPlan.Status.ARCHIVED)
+
+    def test_a_weather_refresh_does_not_pull_an_archived_plan_back(self):
+        plan = create_plan_from_payload(self.user, self._context(self.tomato))
+        CropPlan.objects.filter(pk=plan.pk).update(status=CropPlan.Status.ARCHIVED)
+
+        def wet(lat, lon, start_date, end_date):
+            rows = [
+                _row(start_date + timedelta(days=index), precipitation=12.0, rh2m=90.0)
+                for index in range((end_date - start_date).days + 1)
+            ]
+            return {
+                "source": nasa_power.SOURCE_OBSERVED,
+                "raw_payload": {},
+                "daily_series": rows,
+                "derived_metrics": nasa_power.derive_metrics(rows),
+                "coverage": {},
+            }
+
+        with mock.patch("crop_plans.services.planner.fetch_nasa_power", side_effect=wet):
+            body = self.client.post(
+                f"/api/crop-plans/plans/{plan.pk}/weather-refresh/",
+                data={},
+                content_type="application/json",
+                **self._auth(),
+            ).json()
+
+        plan.refresh_from_db()
+        # The warning is still reported; the plan just stays where the grower put it.
+        self.assertTrue(body["warnings"])
+        self.assertEqual(body["status"], CropPlan.Status.ARCHIVED)
+        self.assertEqual(plan.status, CropPlan.Status.ARCHIVED)
+
+    def test_a_lapsed_paid_plan_falls_back_to_the_seed_cap(self):
+        self._set_plan("bloom")
+        self.user.plan_expires_at = timezone.now() - timedelta(minutes=1)
+        self.user.save(update_fields=["plan_expires_at", "updated_at"])
+        plans = self._seed_plans(3)
+
+        refused = self._post_plan()
+        self.assertEqual(refused.status_code, 402)
+        self.assertEqual(refused.json()["plan"], "seed")
+        # Everything bought while Bloom was active is still there.
+        self.assertEqual(CropPlan.objects.filter(user=self.user).count(), len(plans))
+        self.assertEqual(
+            self.client.get(f"/api/crop-plans/plans/{plans[0].pk}/", **self._auth()).status_code, 200
+        )
 
 
 class DefaultLocationTests(PlannerTestCase):

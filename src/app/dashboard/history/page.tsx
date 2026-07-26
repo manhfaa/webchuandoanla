@@ -6,12 +6,13 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, CalendarRange, Filter, History, Leaf, SearchX } from "lucide-react";
 
 import { displayDiseaseName, displayPlantName, englishPlantName } from "@/components/diagnosis/result-card";
+import { RetentionNotice } from "@/components/plan/quota-hint";
 import { Badge, StatusBadge, type StatusBadgeState } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ListSkeleton } from "@/components/ui/skeleton";
 import { EmptyState, ErrorState } from "@/components/ui/states";
-import { fetchDiagnosisRecords } from "@/lib/diagnoses-client";
+import { fetchDiagnosisRecords, fetchDiagnosisUsage, type HistoryWindow } from "@/lib/diagnoses-client";
 import { useTr } from "@/lib/use-tr";
 import { toUserFacingText } from "@/lib/user-facing-copy";
 import { formatConfidence, formatDate } from "@/lib/utils";
@@ -37,6 +38,7 @@ export default function DashboardHistoryPage() {
   const [dateFilter, setDateFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retention, setRetention] = useState<HistoryWindow | null>(null);
 
   useEffect(() => {
     if (!accessToken) {
@@ -45,6 +47,15 @@ export default function DashboardHistoryPage() {
     }
     let cancelled = false;
     setLoading(true);
+    // How many older results the window is holding back is something only the
+    // server can answer — the list it returns is already trimmed.
+    void fetchDiagnosisUsage(accessToken)
+      .then((usage) => {
+        if (!cancelled && usage) setRetention(usage.history);
+      })
+      .catch(() => {
+        // The notice falls back to describing the window from the plan's caps.
+      });
     void fetchDiagnosisRecords(accessToken)
       .then((items) => {
         if (cancelled) return;
@@ -126,6 +137,10 @@ export default function DashboardHistoryPage() {
         </div>
       </Card>
 
+      {/* A shorter window is a display limit, never a deletion: say so here so a
+          grower whose plan lapsed does not think their records were removed. */}
+      <RetentionNotice window={retention} />
+
       {loading ? <ListSkeleton count={4} itemClassName="h-[128px]" /> : null}
       {!loading && error ? <ErrorState title={tr("Chưa tải được lịch sử", "Could not load history")} description={error} onRetry={() => window.location.reload()} /> : null}
 
@@ -165,7 +180,26 @@ export default function DashboardHistoryPage() {
         </div>
       ) : null}
 
-      {!loading && !error && !records.length ? (
+      {/* An empty list with saved results behind it means the plan's window is
+          shorter than the account's history — never that anything was removed. */}
+      {!loading && !error && !records.length && retention && retention.total > 0 ? (
+        <EmptyState
+          title={tr("Không có kết quả nào trong khoảng lịch sử của gói", "No results inside your plan's history window")}
+          description={tr(
+            `${retention.total} kết quả của bạn vẫn được lưu đầy đủ, chỉ nằm ngoài khoảng ${retention.retention_days} ngày mà gói hiện tại hiển thị. Nâng cấp để xem lại toàn bộ, hoặc kiểm tra một ảnh lá mới.`,
+            `All ${retention.total} of your results are still stored in full — they simply fall outside the ${retention.retention_days}-day window your current plan shows. Upgrade to see them all, or check a new leaf image.`,
+          )}
+          icon={History}
+          action={
+            <div className="flex flex-wrap justify-center gap-3">
+              <Link href="/dashboard/pricing" className={buttonVariants({ variant: "secondary", size: "md" })}>{tr("Xem các gói", "See the plans")}</Link>
+              <Link href="/dashboard/diagnosis" className={buttonVariants({ variant: "primary", size: "md" })}>{tr("Kiểm tra ảnh lá", "Check a leaf image")}</Link>
+            </div>
+          }
+        />
+      ) : null}
+
+      {!loading && !error && !records.length && !(retention && retention.total > 0) ? (
         <EmptyState title={tr("Chưa có kết quả kiểm tra nào", "No check results yet")} description={tr("Hãy tải ảnh lá đầu tiên để Agromind AI hỗ trợ phân tích và bắt đầu lưu lịch sử theo dõi.", "Upload your first leaf image so Agromind AI can help analyze it and start building your history.")} icon={History} action={<Link href="/dashboard/diagnosis" className={buttonVariants({ variant: "primary", size: "md" })}>{tr("Kiểm tra ảnh lá", "Check a leaf image")}</Link>} />
       ) : null}
 

@@ -9,16 +9,18 @@ import type { StepItem } from "@/components/diagnosis/ai-process-stepper";
 import { CameraFrame } from "@/components/diagnosis/camera-frame";
 import { DiagnosisResultCard } from "@/components/diagnosis/result-card";
 import { UploadPanel } from "@/components/diagnosis/upload-panel";
+import { QuotaHint } from "@/components/plan/quota-hint";
 import { UpgradeModal } from "@/components/pricing/upgrade-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { djangoClassifyLeafImage, type DjangoCnnPrediction, type DjangoCnnResponse } from "@/lib/django-client";
-import { createDiagnosisRecord } from "@/lib/diagnoses-client";
+import { createDiagnosisRecord, fetchDiagnosisUsage } from "@/lib/diagnoses-client";
 import { compressImage } from "@/lib/image-compression";
 import { createPreviewDataUrl, detectLeafInImage, type LeafDetectionResult } from "@/lib/leaf-detector";
 import { addOfflineDiagnosis, clearOfflineDiagnosis, getOfflineQueue } from "@/lib/offline-queue";
 import { formatConfidence } from "@/lib/utils";
+import { useEntitlements } from "@/lib/use-entitlements";
 import { useTr } from "@/lib/use-tr";
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useVoiceInput } from "@/hooks/use-voice-input";
@@ -592,9 +594,16 @@ export default function DashboardDiagnosisPage() {
   const online = useOnlineStatus();
   const voice = useVoiceInput({ onTranscript: (value) => setVoiceNote(value) });
 
+  const { reportUsage, quota } = useEntitlements();
   const currentPlan = user?.currentPlan ?? "seed";
   const busy = status === "uploading" || status === "scanning";
-  const chatLocked = currentPlan === "seed";
+  // "Chat theo kết quả" is a cap in the catalogue, not a tier: the published
+  // table sells Seed 3 câu/ngày. Naming the tier here was a second copy of that
+  // cap and it disagreed with it — a Seed grower was shown an upgrade wall and
+  // one bullet per recommendation for something the plan already includes. Only
+  // a plan that sells none of it locks the panel.
+  const resultChat = quota("daily_chat_messages");
+  const chatLocked = resultChat.known && resultChat.limit === 0;
 
   useEffect(() => {
     setCameraSupported(
@@ -603,6 +612,26 @@ export default function DashboardDiagnosisPage() {
         typeof navigator.mediaDevices.getUserMedia === "function",
     );
   }, []);
+
+  // The server counts the saved leaf checks, so the remaining quota shown here
+  // is the one the 402 is measured against. `runCount` re-reads it after each
+  // check, which is also what makes the number tick down as the user works.
+  useEffect(() => {
+    if (!accessToken) return;
+    let cancelled = false;
+    void fetchDiagnosisUsage(accessToken)
+      .then((usage) => {
+        if (cancelled || !usage) return;
+        reportUsage("daily_diagnoses", usage.daily_diagnoses.used);
+        reportUsage("monthly_diagnoses", usage.monthly_diagnoses.used);
+      })
+      .catch(() => {
+        // The hint falls back to stating the cap; the 402 still enforces it.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, reportUsage, runCount]);
 
   useEffect(() => {
     return () => {
@@ -1052,6 +1081,8 @@ export default function DashboardDiagnosisPage() {
 
       <div className="flex flex-wrap items-center gap-3">
         <Badge variant="brand">{tr("Gói hiện tại", "Current plan")}: {currentPlan.toUpperCase()}</Badge>
+        {/* Says how many checks the plan still allows before the upload is refused. */}
+        <QuotaHint limitKey="daily_diagnoses" />
         <Badge variant={online ? "success" : "warning"}>{online ? tr("Đang online", "Online") : tr("Mất mạng", "Offline")}</Badge>
         {offlineCount ? <Badge variant="warning">{tr(`${offlineCount} ảnh đang chờ gửi lại`, `${offlineCount} images waiting to resend`)}</Badge> : null}
         <Button

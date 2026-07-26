@@ -151,13 +151,25 @@ EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Agromind AI <no-reply@agromindai.vercel.app>")
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
-if EMAIL_HOST:
+# Render blocks outbound SMTP — a connection to smtp.gmail.com:587 from a
+# deployed service hangs until EMAIL_TIMEOUT every time — so the HTTPS provider
+# wins when both are configured.
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "").strip()
+
+if BREVO_API_KEY:
+    EMAIL_BACKEND = "core.mail.BrevoAPIBackend"
+elif EMAIL_HOST:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    if not DEBUG:
+        logging.getLogger(__name__).warning(
+            "Đang dùng SMTP: nếu máy chủ chặn cổng SMTP thì email sẽ không gửi được. "
+            "Đặt BREVO_API_KEY để gửi qua HTTPS."
+        )
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
     if not DEBUG:
         logging.getLogger(__name__).warning(
-            "EMAIL_HOST chưa được cấu hình: liên kết đặt lại mật khẩu chỉ hiện trong log "
+            "Chưa cấu hình gửi email: liên kết đặt lại mật khẩu chỉ hiện trong log "
             "máy chủ, người dùng sẽ không nhận được email."
         )
 

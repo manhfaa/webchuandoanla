@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 import { LoaderCircle, Sprout } from "lucide-react";
 import { Toaster } from "sonner";
 
+import { PlanLimitDialog } from "@/components/plan/plan-limit-dialog";
 import { UpgradeModal } from "@/components/pricing/upgrade-modal";
 import { useSessionStore } from "@/store/session-store";
 import { useLanguageStore } from "@/store/language-store";
@@ -165,6 +166,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+      {/* Mounted once so a 402 from any screen becomes an actionable prompt. */}
+      <PlanLimitDialog />
     </div>
   );
 }

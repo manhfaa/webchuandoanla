@@ -5,7 +5,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .emails import send_password_reset_email
+from .emails import delivery_is_configured, send_password_reset_email
 from .models import PasswordResetToken, UserSetting
 from .serializers import (
     AccountDeleteSerializer,
@@ -27,6 +27,13 @@ from .throttling import LoginEmailRateThrottle, LoginIPRateThrottle, PasswordRes
 RESET_REQUEST_MESSAGE = (
     "Nếu địa chỉ email này có tài khoản Agromind AI, chúng tôi đã gửi liên kết đặt lại mật khẩu. "
     "Vui lòng kiểm tra hộp thư (kể cả mục spam)."
+)
+
+# Promising an email that cannot be sent is worse than saying the feature is off:
+# the person waits for a message that will never arrive.
+RESET_UNAVAILABLE_MESSAGE = (
+    "Đặt lại mật khẩu qua email hiện chưa được bật. Nếu bạn còn đăng nhập được, "
+    "hãy đổi mật khẩu trong trang Hồ sơ. Nếu không, vui lòng liên hệ quản trị viên để được hỗ trợ."
 )
 
 
@@ -100,13 +107,17 @@ class PasswordResetRequestAPIView(APIView):
         serializer = PasswordResetRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        # No provider means the link would only reach the server log, so issuing
+        # a token would just burn the throttle and leave the user waiting.
+        if not delivery_is_configured():
+            return Response({"detail": RESET_UNAVAILABLE_MESSAGE, "delivery_enabled": False})
+
         user = serializer.get_user()
         if user is not None:
+            # The link is never echoed in the response.
             _, raw_token = PasswordResetToken.issue(user, requested_ip=_client_ip(request))
-            # The link is never echoed in the response: with no SMTP provider
-            # configured it goes to the server console instead (see emails.py).
             send_password_reset_email(user, raw_token)
-        return Response({"detail": RESET_REQUEST_MESSAGE})
+        return Response({"detail": RESET_REQUEST_MESSAGE, "delivery_enabled": True})
 
 
 class PasswordResetConfirmAPIView(APIView):

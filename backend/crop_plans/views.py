@@ -5,6 +5,15 @@ from rest_framework import generics, permissions, response, status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 
+# The crop-plan cap is sold on the pricing page and resolved from the billing
+# catalogue, so it is never re-typed here: a number written twice drifts.
+from payments.entitlements import (
+    PLAN_DISPLAY_NAMES,
+    enforce_limit,
+    next_plan_slug,
+    resolve_entitlements,
+)
+
 from .models import Crop, CropLocation, CropPlan, CropPlanStep, Reminder
 from .serializers import (
     CreateCropPlanSerializer,
@@ -41,6 +50,88 @@ class ReminderPagination(PageNumberPagination):
     page_size = 20
     page_size_query_param = "page_size"
     max_page_size = 100
+
+
+def _crop_plan_quota_message(entitlements, used: int, *, restoring: bool = False) -> str | None:
+    """Vietnamese copy for the 402, naming the cap and the plan that lifts it.
+
+    Every number and plan name comes from the resolved entitlements, so the
+    message can never contradict the cap that is actually enforced.
+    """
+    limit = entitlements["limits"].get("crop_plans")
+    if limit is None:
+        return None
+
+    plan_name = entitlements["plan_name"]
+    upgrade_slug = next_plan_slug(entitlements["plan"])
+    upgrade_name = PLAN_DISPLAY_NAMES.get(upgrade_slug, upgrade_slug.title())
+
+    if restoring:
+        # The plan being restored is untouched and still readable in the
+        # archive; the refusal is only about the tracked list, and the copy has
+        # to say so or it reads as "my plan is gone".
+        if limit == 0:
+            return (
+                f"Gói {plan_name} chưa bao gồm tính năng kế hoạch trồng cây nên chưa thể đưa "
+                f"kế hoạch này trở lại danh sách đang theo dõi. Kế hoạch vẫn được giữ nguyên "
+                f"trong mục đã lưu trữ và bạn vẫn xem được đầy đủ. "
+                f"Hãy nâng cấp lên gói {upgrade_name} để theo dõi lại."
+            )
+        return (
+            f"Gói {plan_name} cho phép tối đa {limit} kế hoạch đang theo dõi, bạn đang có {used}. "
+            f"Kế hoạch này vẫn được giữ nguyên trong mục đã lưu trữ. "
+            f"Hãy lưu trữ một kế hoạch khác để trống chỗ, "
+            f"hoặc nâng cấp lên gói {upgrade_name} để theo dõi lại."
+        )
+
+    if limit == 0:
+        message = (
+            f"Gói {plan_name} chưa bao gồm tính năng kế hoạch trồng cây. "
+            f"Vui lòng nâng cấp lên gói {upgrade_name} để tạo kế hoạch."
+        )
+        if used:
+            # These plans predate the cap. Say plainly that nothing was taken
+            # away, otherwise a refusal reads as "my data was deleted".
+            message += (
+                f" {used} kế hoạch bạn đã tạo trước đó vẫn được giữ nguyên và dùng bình thường."
+            )
+        return message
+
+    return (
+        f"Gói {plan_name} cho phép tối đa {limit} kế hoạch đang theo dõi, bạn đang có {used}. "
+        f"Hãy lưu trữ một kế hoạch đã xong để trống chỗ, "
+        f"hoặc nâng cấp lên gói {upgrade_name} để tạo thêm."
+    )
+
+
+def _enforce_crop_plan_quota(user, *, exclude_pk: int | None = None, restoring: bool = False) -> None:
+    """Refuse (HTTP 402) an action that would put the grower over the plan cap.
+
+    What fills a slot is the set this app lists by default: every plan that is
+    not archived. Archiving is the grower's own reversible way to close a
+    finished season and it frees a slot — which is exactly why *every* way back
+    into that set has to be counted, not just creation. Checking only creation
+    left `create -> archive -> create -> archive ...` walking past the cap and
+    then un-archiving the lot, so a Grow account could hold any number of
+    active plans.
+
+    Nothing already created is touched. Existing plans stay listed, stay
+    openable and keep their steps and reminders even when the user is over the
+    cap (a lapsed Bloom, or a Seed account from before the cap existed); only
+    adding to the tracked set is refused.
+    """
+    queryset = CropPlan.objects.filter(user=user).exclude(status=CropPlan.Status.ARCHIVED)
+    if exclude_pk is not None:
+        # The plan being restored must not count against itself.
+        queryset = queryset.exclude(pk=exclude_pk)
+    used = queryset.count()
+    entitlements = resolve_entitlements(user)
+    enforce_limit(
+        user,
+        "crop_plans",
+        used,
+        message=_crop_plan_quota_message(entitlements, used, restoring=restoring),
+    )
 
 
 def _int_param(request, name: str) -> int | None:
@@ -121,6 +212,10 @@ class CropPlanListCreateAPIView(generics.ListCreateAPIView):
         return CropPlanListSerializer
 
     def create(self, request, *args, **kwargs):
+        # Checked before anything is validated or written: committing a plan
+        # also creates a growing area and a weather snapshot, and a refused
+        # request must leave none of that behind.
+        _enforce_crop_plan_quota(request.user)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         validated = serializer.validated_data
@@ -148,6 +243,9 @@ class CropPlanListCreateAPIView(generics.ListCreateAPIView):
 class CropPlanPreviewAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    # Deliberately not capped: a preview writes nothing and is how a grower
+    # finds out whether the crop even suits their weather. Only committing the
+    # plan in CropPlanListCreateAPIView consumes a slot.
     def post(self, request):
         serializer = CreateCropPlanSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -200,11 +298,23 @@ class CropPlanDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        # No cap filtering here on purpose: a plan the user owns always opens,
+        # even when they are over the cap of their current plan.
         return (
             CropPlan.objects.filter(user=self.request.user)
             .select_related("crop", "location", "weather_snapshot")
             .prefetch_related("steps")
         )
+
+    def perform_update(self, serializer):
+        plan = serializer.instance
+        next_status = serializer.validated_data.get("status", plan.status)
+        # Taking a plan out of the archive fills a slot exactly like creating
+        # one, so it is checked the same way. Runs after validation and before
+        # the write, so a refusal leaves the plan (and its title) untouched.
+        if plan.status == CropPlan.Status.ARCHIVED and next_status != CropPlan.Status.ARCHIVED:
+            _enforce_crop_plan_quota(self.request.user, exclude_pk=plan.pk, restoring=True)
+        serializer.save()
 
 
 class CropPlanRegenerateAPIView(APIView):
@@ -214,6 +324,10 @@ class CropPlanRegenerateAPIView(APIView):
         plan = generics.get_object_or_404(
             CropPlan.objects.filter(user=request.user).select_related("crop", "location"), pk=pk
         )
+        # regenerate_plan always leaves the plan ACTIVE, so regenerating an
+        # archived one is a restore and has to fit the cap like any other.
+        if plan.status == CropPlan.Status.ARCHIVED:
+            _enforce_crop_plan_quota(request.user, exclude_pk=plan.pk, restoring=True)
         refreshed = regenerate_plan(plan)
         return response.Response(CropPlanSerializer(refreshed, context={"request": request}).data)
 
@@ -223,7 +337,15 @@ class CropPlanWeatherRefreshAPIView(APIView):
 
     def post(self, request, pk: int):
         plan = generics.get_object_or_404(CropPlan.objects.filter(user=request.user).select_related("crop", "location"), pk=pk)
+        was_archived = plan.status == CropPlan.Status.ARCHIVED
         result = refresh_plan_weather(plan)
+        # A bad forecast flags the plan "needs review" whatever it was before,
+        # which would pull an archived plan back into the tracked list — past
+        # the cap and without the grower asking. Archiving is their decision;
+        # only they undo it. The warnings are still returned and still stored.
+        if was_archived and plan.status != CropPlan.Status.ARCHIVED:
+            CropPlan.objects.filter(pk=plan.pk).update(status=CropPlan.Status.ARCHIVED)
+            result["status"] = CropPlan.Status.ARCHIVED
         return response.Response(result)
 
 

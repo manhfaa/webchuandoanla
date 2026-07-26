@@ -9,6 +9,21 @@ logger = logging.getLogger(__name__)
 RESET_SUBJECT = "Đặt lại mật khẩu Agromind AI"
 
 
+CONSOLE_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+
+def delivery_is_configured() -> bool:
+    """Whether a reset link can actually reach a user's inbox.
+
+    With no provider configured the message goes to the server log, which is
+    invisible to the person who asked for it. Telling the caller lets the UI say
+    so instead of promising an email that will never arrive. This is global
+    configuration, identical for every address, so it reveals nothing about
+    whether any particular account exists.
+    """
+    return getattr(settings, "EMAIL_BACKEND", CONSOLE_BACKEND) != CONSOLE_BACKEND
+
+
 def build_password_reset_url(raw_token: str) -> str:
     base = (getattr(settings, "FRONTEND_ORIGIN", "") or "").rstrip("/")
     return f"{base}/reset-password?token={quote(raw_token, safe='')}"

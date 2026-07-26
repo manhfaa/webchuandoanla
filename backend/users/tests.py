@@ -3,6 +3,7 @@ from datetime import timedelta
 from io import StringIO
 from unittest.mock import patch
 
+from django.conf import settings as django_settings
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.core.cache import cache
@@ -614,3 +615,110 @@ class LoginThrottleTests(APITestCase):
             reverse("login"), {"email": "bystander@example.com", "password": PASSWORD}, format="json"
         )
         self.assertEqual(allowed.status_code, status.HTTP_200_OK)
+
+
+@override_settings(
+    EMAIL_BACKEND="core.mail.BrevoAPIBackend",
+    BREVO_API_KEY="test-key",
+    DEFAULT_FROM_EMAIL="Agromind AI <no-reply@agromindai.example>",
+)
+class BrevoMailBackendTests(APITestCase):
+    """Render blocks outbound SMTP, so delivery goes over HTTPS instead. These
+    cover the shape Brevo expects and the failure paths, without a network call."""
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="brevo", email="brevo@example.com", password=PASSWORD
+        )
+
+    def test_password_reset_posts_the_expected_payload(self):
+        captured = {}
+
+        class Response:
+            status_code = 201
+
+            def raise_for_status(self):
+                return None
+
+        def fake_post(url, json=None, headers=None, timeout=None):
+            captured.update(url=url, body=json, headers=headers, timeout=timeout)
+            return Response()
+
+        with patch("core.mail.requests.post", fake_post):
+            response = self.client.post(
+                reverse("password-reset"), {"email": self.user.email}, format="json"
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(captured["url"], "https://api.brevo.com/v3/smtp/email")
+        self.assertEqual(captured["headers"]["api-key"], "test-key")
+        # A stalled provider must not pin the single free-tier worker.
+        self.assertEqual(captured["timeout"], django_settings.EMAIL_TIMEOUT)
+        body = captured["body"]
+        self.assertEqual(body["sender"], {"email": "no-reply@agromindai.example", "name": "Agromind AI"})
+        self.assertEqual(body["to"], [{"email": self.user.email}])
+        self.assertIn("reset-password?token=", body["textContent"])
+
+    def test_provider_failure_never_reaches_the_caller(self):
+        """The endpoint must answer identically whether or not delivery worked,
+        or the response time alone would reveal which addresses have accounts."""
+        with patch("core.mail.requests.post", side_effect=RuntimeError("provider down")):
+            response = self.client.post(
+                reverse("password-reset"), {"email": self.user.email}, format="json"
+            )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # The token is still issued, so a retry once the provider recovers works.
+        self.assertTrue(PasswordResetToken.objects.filter(user=self.user).exists())
+
+    def test_missing_api_key_is_reported_not_swallowed(self):
+        from core.mail import BrevoAPIBackend
+
+        with override_settings(BREVO_API_KEY=""):
+            backend = BrevoAPIBackend()
+            message = mail.EmailMessage(subject="x", body="y", to=["a@example.com"])
+            with self.assertRaises(ValueError):
+                backend.send_messages([message])
+
+
+class PasswordResetDeliveryGateTests(APITestCase):
+    """Without a mail provider the link only reaches the server log, so the
+    endpoint must say the feature is off rather than promise an email."""
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="gate", email="gate@example.com", password=PASSWORD
+        )
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.console.EmailBackend")
+    def test_unconfigured_delivery_is_declared_and_issues_no_token(self):
+        response = self.client.post(
+            reverse("password-reset"), {"email": self.user.email}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["delivery_enabled"])
+        self.assertIn("chưa được bật", response.data["detail"])
+        # Issuing one would spend the throttle and invalidate any live token
+        # for a link nobody can receive.
+        self.assertFalse(PasswordResetToken.objects.filter(user=self.user).exists())
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_configured_delivery_behaves_as_before(self):
+        response = self.client.post(
+            reverse("password-reset"), {"email": self.user.email}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["delivery_enabled"])
+        self.assertTrue(PasswordResetToken.objects.filter(user=self.user).exists())
+        self.assertEqual(len(mail.outbox), 1)
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.console.EmailBackend")
+    def test_answer_does_not_depend_on_whether_the_account_exists(self):
+        """The unavailable answer must stay uniform, or it becomes the account
+        enumeration oracle the original design set out to avoid."""
+        known = self.client.post(
+            reverse("password-reset"), {"email": self.user.email}, format="json"
+        )
+        unknown = self.client.post(
+            reverse("password-reset"), {"email": "nobody@example.com"}, format="json"
+        )
+        self.assertEqual(known.data, unknown.data)

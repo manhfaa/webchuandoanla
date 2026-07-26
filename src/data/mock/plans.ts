@@ -5,10 +5,15 @@ import { PricingPlan } from "@/types";
  *
  * The catalogue at `GET /api/engagement/plans/` is the source of truth for what
  * an account is actually charged: the pricing screens overwrite the price
- * strings below with the live values (see `applyCataloguePrices`) and only fall
+ * strings below with the live values (see `applyCatalogue`) and only fall
  * back to them when the server cannot be reached. `payments/tests.py` asserts
  * that these prices still match the catalogue, so editing one side alone fails
  * the test suite instead of quietly advertising the wrong amount.
+ *
+ * `features` deliberately holds NO quota. Every cap ("5 lần/ngày", "2 kế
+ * hoạch", …) is generated from the catalogue by `catalogueFeatureLines`, so the
+ * number the card advertises is the same number `entitlements.py` enforces.
+ * What stays here is the copy that has no number in it.
  */
 export const pricingPlans: PricingPlan[] = [
   {
@@ -22,16 +27,12 @@ export const pricingPlans: PricingPlan[] = [
     cta: "Dùng miễn phí",
     ctaEn: "Use for free",
     features: [
-      "Kiểm tra ảnh lá cây (5 lần/ngày)",
-      "Lưu lịch sử 7 ngày gần nhất",
-      "Chat AI (3 câu/ngày)",
       "Tải ảnh hoặc chụp trực tiếp",
+      "Xem lại kết quả đã lưu bất cứ lúc nào",
     ],
     featuresEn: [
-      "Leaf image check (5 times/day)",
-      "Keep the last 7 days of history",
-      "AI chat (3 messages/day)",
       "Upload a photo or capture directly",
+      "Reopen any saved result at any time",
     ],
   },
   {
@@ -45,16 +46,12 @@ export const pricingPlans: PricingPlan[] = [
     cta: "Nâng cấp Grow",
     ctaEn: "Upgrade to Grow",
     features: [
-      "Kiểm tra ảnh lá cây (30 lần/ngày)",
-      "Lưu lịch sử 30 ngày",
-      "Chat AI (20 câu/ngày)",
-      "Lập kế hoạch trồng cây (2 kế hoạch)",
+      "Tải ảnh hoặc chụp trực tiếp",
+      "Nhắc việc theo từng bước chăm cây",
     ],
     featuresEn: [
-      "Leaf image check (30 times/day)",
-      "Keep 30 days of history",
-      "AI chat (20 messages/day)",
-      "Planting plans (2 plans)",
+      "Upload a photo or capture directly",
+      "Reminders for each plant-care step",
     ],
   },
   {
@@ -71,20 +68,10 @@ export const pricingPlans: PricingPlan[] = [
     badge: "Phổ biến nhất",
     badgeEn: "Most popular",
     features: [
-      "Kiểm tra ảnh lá không giới hạn",
-      "Lưu toàn bộ lịch sử",
-      "Chat AI không giới hạn",
-      "Tư vấn nông nghiệp nâng cao",
-      "Lập kế hoạch trồng cây (10 kế hoạch)",
       "Ưu tiên tốc độ xử lý",
       "Hỗ trợ qua email",
     ],
     featuresEn: [
-      "Unlimited leaf image checks",
-      "Keep your entire history",
-      "Unlimited AI chat",
-      "Advanced agriculture advice",
-      "Planting plans (10 plans)",
       "Priority processing speed",
       "Email support",
     ],
@@ -101,16 +88,12 @@ export const pricingPlans: PricingPlan[] = [
     ctaEn: "Upgrade to Elite",
     features: [
       "Tất cả tính năng Bloom",
-      "Xuất báo cáo PDF",
       "Quyền tích hợp dữ liệu nâng cao",
-      "Kế hoạch trồng cây không giới hạn",
       "Hỗ trợ ưu tiên qua email + chat",
     ],
     featuresEn: [
       "All Bloom features",
-      "Export PDF reports",
       "Advanced data integration access",
-      "Unlimited planting plans",
       "Priority support via email + chat",
     ],
   },

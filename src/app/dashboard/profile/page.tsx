@@ -30,6 +30,8 @@ import {
   type DjangoAccountDeletionPreview,
   type DjangoUserSettings,
 } from "@/lib/django-client";
+import { applyCatalogue } from "@/lib/payments-client";
+import { useEntitlements } from "@/lib/use-entitlements";
 import { useTr } from "@/lib/use-tr";
 import { normalizeUserDisplayName } from "@/lib/user-profile";
 import { useLanguageStore } from "@/store/language-store";
@@ -122,9 +124,13 @@ export default function DashboardProfilePage() {
     void loadAccount();
   }, [loadAccount]);
 
+  // Same catalogue the dashboard already loaded, so the cards here advertise
+  // the live prices and quotas rather than a checked-in copy of them.
+  const { catalogue } = useEntitlements();
+  const plans = useMemo(() => applyCatalogue(pricingPlans, catalogue), [catalogue]);
   const currentPlan = useMemo(
-    () => pricingPlans.find((plan) => plan.id === user?.currentPlan),
-    [user?.currentPlan],
+    () => plans.find((plan) => plan.id === user?.currentPlan),
+    [plans, user?.currentPlan],
   );
 
   const displayName = normalizeUserDisplayName(user?.name);
@@ -522,7 +528,7 @@ export default function DashboardProfilePage() {
         </div>
 
         <div className="mt-6 grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
-          {pricingPlans.map((plan) => (
+          {plans.map((plan) => (
             <PricingCard
               key={plan.id}
               plan={plan}

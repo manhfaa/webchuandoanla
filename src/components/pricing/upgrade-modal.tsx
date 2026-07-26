@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { pricingPlans } from "@/data/mock/plans";
 import {
-  applyCataloguePrices,
+  applyCatalogue,
   fetchServicePlans,
   fetchSubscriptionSummary,
   type ServicePlanDto,
@@ -56,7 +56,7 @@ export function UpgradeModal({
     };
   }, [open, catalogue, accessToken]);
 
-  const plans = useMemo(() => applyCataloguePrices(pricingPlans, catalogue), [catalogue]);
+  const plans = useMemo(() => applyCatalogue(pricingPlans, catalogue), [catalogue]);
   const currentPlan = normalizePlan(summary?.current_plan ?? user?.currentPlan);
   const planExpiresAt = summary?.plan_expires_at ?? null;
 
