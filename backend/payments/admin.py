@@ -6,6 +6,7 @@ from .services import (
     close_order_as_refunded,
     order_needs_reconciliation,
     reconcile_order,
+    settle_order_from_bank_statement,
 )
 
 
@@ -41,7 +42,7 @@ class PaymentOrderAdmin(admin.ModelAdmin):
     )
     list_filter = ("status", "plan", "provider", NeedsReconciliationFilter)
     search_fields = ("payment_code", "user__email", "user__username")
-    actions = ("reconcile_and_activate", "mark_refunded_and_close")
+    actions = ("reconcile_and_activate", "settle_from_bank_statement", "mark_refunded_and_close")
     readonly_fields = (
         "id",
         "payment_code",
@@ -67,6 +68,35 @@ class PaymentOrderAdmin(admin.ModelAdmin):
             activated += 1
         if activated:
             self.message_user(request, f"Đã kích hoạt gói cho {activated} đơn.", level=messages.SUCCESS)
+
+    @admin.action(description="Đã thấy tiền trên sao kê - kích hoạt gói")
+    def settle_from_bank_statement(self, request, queryset):
+        """For a transfer that reached the bank but never reached the webhook.
+
+        Only use it after seeing the transfer on the statement: nothing here can
+        check the bank, so the person running it is the one vouching for it. The
+        amount is taken as the amount the order asked for, since that is what the
+        payment code was quoted against.
+        """
+        activated = 0
+        for order in queryset:
+            try:
+                settle_order_from_bank_statement(
+                    order,
+                    order.amount_expected,
+                    actor=request.user,
+                    note="Xác nhận theo sao kê ngân hàng từ trang quản trị.",
+                )
+            except PaymentRequestError as exc:
+                self.message_user(request, f"{order.payment_code}: {exc}", level=messages.WARNING)
+                continue
+            activated += 1
+        if activated:
+            self.message_user(
+                request,
+                f"Đã ghi nhận tiền theo sao kê và kích hoạt gói cho {activated} đơn.",
+                level=messages.SUCCESS,
+            )
 
     @admin.action(description="Đã hoàn tiền - đóng đơn")
     def mark_refunded_and_close(self, request, queryset):

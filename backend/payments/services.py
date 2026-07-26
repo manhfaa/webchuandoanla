@@ -334,6 +334,91 @@ def reconcile_order(order, actor=None, note=""):
 
 
 @transaction.atomic
+def settle_order_from_bank_statement(order, amount, actor=None, note=""):
+    """Record money that reached the bank but never reached us, then activate.
+
+    ``reconcile_order`` refuses an order with ``amount_received == 0``, and that
+    field is only ever written by the webhook. So when the webhook never fires
+    at all — the provider loses the transaction, or its delivery is abandoned —
+    a customer who really paid has no way through, not even an admin one.
+
+    This is that way through, and it is deliberately manual: the operator is
+    asserting they have seen the transfer on the bank statement, because nothing
+    in this system can see it. The amount they state is recorded as the received
+    amount and the payment is written with a ``manual`` provider so it is never
+    mistaken for something the gateway confirmed.
+    """
+    amount = _parse_amount(amount)
+
+    locked_order = (
+        PaymentOrder.objects.select_for_update()
+        .select_related("plan", "user")
+        .get(pk=order.pk)
+    )
+    if locked_order.status == PaymentOrder.Status.PAID:
+        raise PaymentRequestError("Đơn thanh toán này đã được kích hoạt trước đó.")
+    if locked_order.amount_received > 0:
+        raise PaymentRequestError(
+            "Đơn này đã ghi nhận tiền qua cổng thanh toán. Hãy dùng thao tác đối soát thông thường."
+        )
+    if amount < locked_order.amount_expected:
+        raise PaymentRequestError(
+            f"So tien ghi nhan ({amount}) nho hon so tien can tra ({locked_order.amount_expected})."
+        )
+
+    now = timezone.now()
+    actor_label = getattr(actor, "email", "") or getattr(actor, "username", "") or "system"
+
+    _, created = Payment.objects.get_or_create(
+        # Unique per order, so a second attempt collides instead of paying twice.
+        sepay_transaction_id=f"manual-{locked_order.payment_code}",
+        defaults={
+            "order": locked_order,
+            "user": locked_order.user,
+            "amount": amount,
+            "content": locked_order.payment_code,
+            "status": Payment.Status.SUCCESS,
+            # Never "sepay": this was attested by a person reading a statement,
+            # not confirmed by the gateway, and the two must stay tellable apart.
+            "gateway": "manual",
+            "transfer_type": "in",
+            "plan_requested": locked_order.plan.slug,
+            "processed_at": now,
+            "raw_payload": {
+                "source": "bank_statement",
+                "recorded_by": actor_label,
+                "recorded_at": now.isoformat(),
+                "note": note[:500],
+            },
+        },
+    )
+    if not created:
+        raise PaymentRequestError("Đơn này đã được ghi nhận thủ công trước đó.")
+    locked_order.amount_received = amount
+    locked_order.save(update_fields=["amount_received", "updated_at"])
+
+    old_plan, ends_at = _activate_locked_order(locked_order, now)
+
+    metadata = dict(locked_order.metadata or {})
+    reconciliation = dict(metadata.get("reconciliation") or {})
+    reconciliation.update(
+        {
+            "resolved_at": now.isoformat(),
+            "resolved_by": actor_label,
+            "amount_difference": amount - locked_order.amount_expected,
+            "plan_before": old_plan,
+            "action": "activated_from_bank_statement",
+        }
+    )
+    if note:
+        reconciliation["admin_note"] = note[:500]
+    metadata["reconciliation"] = reconciliation
+    locked_order.metadata = metadata
+    locked_order.save(update_fields=["metadata", "updated_at"])
+    return locked_order, old_plan, ends_at
+
+
+@transaction.atomic
 def close_order_as_refunded(order, actor=None, note=""):
     """Close a stuck order after the money was returned outside the app."""
     locked_order = PaymentOrder.objects.select_for_update().get(pk=order.pk)

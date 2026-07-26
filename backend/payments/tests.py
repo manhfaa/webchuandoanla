@@ -21,7 +21,7 @@ from engagement.models import ServicePlan, UserSubscription
 from .admin import PaymentOrderAdmin
 from .entitlements import enforce_limit, PlanLimitExceeded, resolve_entitlements
 from .models import Payment, PaymentOrder
-from .services import reconcile_order
+from .services import PaymentRequestError, reconcile_order, settle_order_from_bank_statement
 
 FRONTEND_PLAN_CATALOGUE = Path(__file__).resolve().parents[2] / "src" / "data" / "mock" / "plans.ts"
 
@@ -459,3 +459,100 @@ class PaymentFlowTests(APITestCase):
                     expected,
                     f"{slug}: frontend shows {price_label} but the catalogue charges {plan.price_monthly}",
                 )
+
+
+@override_settings(
+    SEPAY_WEBHOOK_SECRET="test-webhook-secret",
+    SEPAY_API_KEY="",
+    SEPAY_BANK_CODE="BIDV",
+    SEPAY_BANK_NAME="BIDV",
+    SEPAY_ACCOUNT_NUMBER="123456789",
+    SEPAY_ACCOUNT_NAME="AGROMIND AI",
+    SEPAY_PAYMENT_PREFIX="AGM",
+    SEPAY_ORDER_TTL_MINUTES=30,
+    SEPAY_SUBSCRIPTION_DAYS=30,
+)
+class BankStatementSettlementTests(APITestCase):
+    """When the gateway loses a transaction entirely, amount_received stays 0
+    and reconcile_order refuses — so a customer who really paid has no way
+    through, not even an admin one. This is that way through."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="paid", email="paid@example.com", password="strong-password"
+        )
+        self.admin = User.objects.create_user(
+            username="operator", email="operator@example.com", password="strong-password"
+        )
+        self.plan = ServicePlan.objects.update_or_create(
+            slug="grow",
+            defaults={"name": "Grow", "price_monthly": 9000, "currency": "VND", "is_active": True},
+        )[0]
+        self.client.force_authenticate(self.user)
+        response = self.client.post(reverse("payment_order_list_create"), {"plan": "grow"}, format="json")
+        self.order = PaymentOrder.objects.get(id=response.data["order"]["id"])
+
+    def test_reconcile_alone_cannot_rescue_an_order_the_webhook_never_saw(self):
+        """The gap this exists to close, asserted so it cannot silently return."""
+        with self.assertRaises(PaymentRequestError):
+            reconcile_order(self.order, actor=self.admin)
+
+    def test_settling_from_the_statement_activates_the_plan(self):
+        settle_order_from_bank_statement(
+            self.order, self.order.amount_expected, actor=self.admin, note="Sao kê BIDV 26/07."
+        )
+
+        self.order.refresh_from_db()
+        self.user.refresh_from_db()
+        self.assertEqual(self.order.status, PaymentOrder.Status.PAID)
+        self.assertEqual(self.order.amount_received, 9000)
+        self.assertEqual(self.user.current_plan, "grow")
+        self.assertIsNotNone(self.user.plan_expires_at)
+        self.assertEqual(UserSubscription.objects.filter(user=self.user, status="active").count(), 1)
+
+    def test_the_record_is_marked_manual_not_gateway_confirmed(self):
+        """A person vouching for a statement is not the gateway confirming a
+        transfer, and an audit has to be able to tell them apart."""
+        settle_order_from_bank_statement(
+            self.order, self.order.amount_expected, actor=self.admin, note="Sao kê BIDV."
+        )
+
+        payment = Payment.objects.get(sepay_transaction_id=f"manual-{self.order.payment_code}")
+        self.assertEqual(payment.gateway, "manual")
+        self.assertEqual(payment.raw_payload["source"], "bank_statement")
+        self.assertEqual(payment.raw_payload["recorded_by"], self.admin.email)
+        self.order.refresh_from_db()
+        self.assertEqual(
+            self.order.metadata["reconciliation"]["action"], "activated_from_bank_statement"
+        )
+        self.assertEqual(self.order.metadata["reconciliation"]["resolved_by"], self.admin.email)
+
+    def test_running_it_twice_does_not_pay_the_plan_twice(self):
+        settle_order_from_bank_statement(self.order, self.order.amount_expected, actor=self.admin)
+        self.user.refresh_from_db()
+        first_expiry = self.user.plan_expires_at
+
+        with self.assertRaises(PaymentRequestError):
+            settle_order_from_bank_statement(self.order, self.order.amount_expected, actor=self.admin)
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.plan_expires_at, first_expiry)
+        self.assertEqual(Payment.objects.filter(order=self.order).count(), 1)
+
+    def test_it_refuses_to_undercharge(self):
+        with self.assertRaises(PaymentRequestError):
+            settle_order_from_bank_statement(self.order, 5000, actor=self.admin)
+
+        self.order.refresh_from_db()
+        self.user.refresh_from_db()
+        self.assertEqual(self.order.status, PaymentOrder.Status.PENDING)
+        self.assertEqual(self.user.current_plan, "seed")
+
+    def test_it_defers_to_the_gateway_when_the_gateway_did_report(self):
+        """An order the webhook already touched must go through the normal
+        reconcile path, so the two never both write the received amount."""
+        self.order.amount_received = 9000
+        self.order.save(update_fields=["amount_received"])
+
+        with self.assertRaises(PaymentRequestError):
+            settle_order_from_bank_statement(self.order, 9000, actor=self.admin)
