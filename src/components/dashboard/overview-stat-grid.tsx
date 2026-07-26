@@ -64,10 +64,8 @@ export function OverviewStatGrid() {
     },
   ];
 
-  // Four across from lg, not xl: on a 1024–1279px laptop the 2×2 stack cost a
-  // whole extra row of vertical space for no gain in legibility.
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
       {stats.map((item) => (
         <Stat
           key={item.id}

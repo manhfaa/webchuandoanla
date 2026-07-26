@@ -61,11 +61,6 @@ const config: Config = {
         "sun-soft": "var(--sun-soft)",
         "warning-ink": "var(--warning-ink)",
         soil: "var(--soil)",
-        "paper-rule": "var(--paper-rule)",
-        "panel-ink": "var(--panel-ink)",
-        "panel-ink-border": "var(--panel-ink-border)",
-        "on-panel-ink": "var(--on-panel-ink)",
-        "on-panel-ink-muted": "var(--on-panel-ink-muted)",
         danger: "var(--danger)",
         "danger-soft": "var(--danger-soft)",
         "danger-ink": "var(--danger-ink)",
@@ -167,7 +162,6 @@ const config: Config = {
       fontFamily: {
         display: ["var(--font-bricolage)", "var(--font-be-vietnam)", "system-ui", "sans-serif"],
         sans: ["var(--font-be-vietnam)", "system-ui", "sans-serif"],
-        mono: ["var(--font-plex-mono)", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       transitionDuration: {
         150: "150ms",

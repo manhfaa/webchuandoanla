@@ -4,21 +4,13 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Check, Crown, ShieldCheck, Sprout, TrendingUp } from "lucide-react";
 
-import { NotebookSection } from "@/components/ui/field-notebook";
+import { SectionShell } from "@/components/layout/section-shell";
 import { buttonVariants } from "@/components/ui/button";
 import { Reveal } from "@/components/ui/reveal";
 import { pricingPlans } from "@/data/mock/plans";
 import { applyCatalogue, fetchServicePlans, type ServicePlanDto } from "@/lib/payments-client";
 import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
-
-/* V2 — BẢNG GIÁ
-   Trước: Bloom là khối forest 7 cột + 3 gói phụ nhỏ ⇒ so sánh khó, Bloom tách
-          rời, giá hai cỡ khác nhau, CTA lệch baseline.
-   Sau  : 4 cột ngang bằng nhau, cùng thang giá, CTA cùng baseline.
-          Bloom nổi bật bằng nền botanical + border leaf + badge nắng,
-          KHÔNG bằng cách biến thành khối tối.
-   Giá, tên gói, quyền lợi, CTA: giữ nguyên dữ liệu từ catalogue/mock. */
 
 const planIcons = {
   seed: Sprout,
@@ -27,14 +19,16 @@ const planIcons = {
   elite: Crown,
 };
 
-/** Giá luôn nowrap: "39.000đ" + "/tháng" trên cùng một dòng ở mọi breakpoint. */
-function Price({ value }: { value: string }) {
+function Price({ value, featured = false }: { value: string; featured?: boolean }) {
   const [amount, cadence] = value.split("/");
+
   return (
-    <p className="whitespace-nowrap font-display text-[30px] font-extrabold tracking-[-0.04em] text-ink sm:text-[32px]">
-      {amount}
+    <p className={cn("font-display font-extrabold tracking-[-0.045em]", featured ? "text-on-forest" : "text-ink")}>
+      <span className={featured ? "text-5xl sm:text-6xl" : "text-2xl sm:text-[28px]"}>{amount}</span>
       {cadence ? (
-        <span className="ml-1 text-sm font-semibold tracking-normal text-ink-soft">/{cadence}</span>
+        <span className={cn("ml-1 tracking-[-0.02em]", featured ? "text-base text-on-forest-muted sm:text-lg" : "text-sm text-ink-soft")}>
+          /{cadence}
+        </span>
       ) : null}
     </p>
   );
@@ -61,121 +55,132 @@ export function PricingPreviewSection() {
   }, []);
 
   const plans = useMemo(() => applyCatalogue(pricingPlans, catalogue), [catalogue]);
+  const featured = plans.find((plan) => plan.highlight) ?? plans[0];
+  const alternatives = plans.filter((plan) => plan.id !== featured.id);
+  const FeaturedIcon = planIcons[featured.id as keyof typeof planIcons] ?? ShieldCheck;
 
   return (
-    <NotebookSection
+    <SectionShell
       id="goi-dich-vu"
-      tab={tr("Bảng giá", "Pricing")}
-      title={tr(
-        "Bắt đầu vừa đủ. Nâng cấp khi khu vườn cần nhiều hơn",
-        "Start with just enough. Upgrade when your garden needs more",
-      )}
-      description={tr(
-        "Giới hạn sử dụng và quyền lợi được trình bày rõ trước khi bạn lựa chọn.",
-        "Usage limits and benefits are shown clearly before you choose.",
-      )}
+      title={tr("Bắt đầu vừa đủ. Nâng cấp khi khu vườn cần nhiều hơn", "Start with just enough. Upgrade when your garden needs more")}
+      description={tr("Giới hạn sử dụng và quyền lợi được trình bày rõ trước khi bạn lựa chọn.", "Usage limits and benefits are shown clearly before you choose.")}
       className="bg-surface"
     >
-      <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {plans.map((plan, index) => {
-          const PlanIcon = planIcons[plan.id as keyof typeof planIcons] ?? Sprout;
-          const featured = Boolean(plan.highlight);
+      <div className="grid gap-4 lg:grid-cols-12 lg:items-stretch">
+        <Reveal className="lg:col-span-7">
+          <article
+            aria-label={tr(`Gói ${featured.name}, ${featured.price}`, `Plan ${featured.name}, ${featured.priceEn ?? featured.price}`)}
+            className="living-veins relative flex h-full min-h-[560px] flex-col overflow-hidden rounded-[var(--r-2xl)] border border-line-strong bg-forest p-6 text-on-forest shadow-lg sm:p-8 lg:p-9"
+          >
+            <div className="pointer-events-none absolute -right-28 -top-32 h-80 w-80 rounded-full border border-on-forest/10" aria-hidden />
+            <div className="pointer-events-none absolute -right-14 -top-20 h-56 w-56 rounded-full border border-on-forest/10" aria-hidden />
 
-          return (
-            <Reveal key={plan.id} delay={index * 0.05} className="h-full">
-              <article
-                aria-label={tr(
-                  `Gói ${plan.name}, ${plan.price}`,
-                  `Plan ${plan.name}, ${plan.priceEn ?? plan.price}`,
-                )}
-                className={cn(
-                  "relative flex h-full flex-col rounded-[var(--r-lg)] border p-6 transition duration-260",
-                  featured
-                    ? "border-[1.5px] border-leaf bg-surface-soft shadow-md"
-                    : "border-line bg-surface-raised shadow-sm hover:-translate-y-[3px] hover:border-line-strong hover:shadow-md",
-                )}
-              >
-                {featured && plan.badge ? (
-                  <span className="absolute -top-3 left-6 rounded-[4px] bg-sun px-3 py-1 text-[11.5px] font-bold text-forest shadow-sm">
-                    {tr(plan.badge, plan.badgeEn ?? plan.badge)}
+            <header className="relative flex items-start justify-between gap-5">
+              <div className="flex items-center gap-4">
+                <span className="flex h-12 w-12 items-center justify-center rounded-[var(--r-md)] border border-on-forest/20 bg-on-forest/10 text-on-forest">
+                  <FeaturedIcon size={22} strokeWidth={1.8} aria-hidden />
+                </span>
+                <div>
+                  <p className="text-xs font-semibold text-on-forest-muted">{tr("Gói được lựa chọn nhiều", "Popular choice")}</p>
+                  <h3 className="mt-0.5 font-display text-2xl font-extrabold tracking-[-0.03em]">{featured.name}</h3>
+                </div>
+              </div>
+              {featured.badge ? (
+                <span className="rounded-[var(--r-pill)] border border-on-forest/20 bg-on-forest/10 px-3 py-1.5 text-xs font-semibold text-on-forest">
+                  {tr(featured.badge, featured.badgeEn ?? featured.badge)}
+                </span>
+              ) : null}
+            </header>
+
+            <div className="relative mt-10 border-b border-on-forest/15 pb-8">
+              <Price value={tr(featured.price, featured.priceEn ?? featured.price)} featured />
+              <p className="mt-4 max-w-[52ch] text-sm font-medium leading-7 text-on-forest-muted sm:text-base">
+                {tr(featured.description, featured.descriptionEn ?? featured.description)}
+              </p>
+            </div>
+
+            <ul className="relative mt-7 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+              {featured.features.slice(0, 6).map((feature, i) => (
+                <li key={feature} className="flex items-start gap-3 text-sm font-semibold leading-6">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-leaf text-on-leaf">
+                    <Check size={12} strokeWidth={3} aria-hidden />
                   </span>
-                ) : null}
+                  {tr(feature, featured.featuresEn?.[i] ?? feature)}
+                </li>
+              ))}
+            </ul>
 
-                {/* Icon inline 18px trong dòng tiêu đề — không còn chip 44x44 */}
-                <div className="flex items-center gap-2.5">
-                  <PlanIcon size={18} strokeWidth={1.8} aria-hidden className="text-leaf-strong" />
-                  <h3 className="font-display text-[19px] font-extrabold tracking-[-0.02em] text-ink">
-                    {plan.name}
-                  </h3>
-                </div>
+            <div className="relative mt-auto pt-9">
+              <Link
+                href="/login?next=/dashboard/pricing"
+                className={`${buttonVariants({ variant: "primary", size: "lg" })} w-full sm:w-fit`}
+              >
+                {tr(featured.cta, featured.ctaEn ?? featured.cta)}
+                <ArrowRight size={17} aria-hidden />
+              </Link>
+            </div>
+          </article>
+        </Reveal>
 
-                <div className="mt-5">
-                  <Price value={tr(plan.price, plan.priceEn ?? plan.price)} />
-                </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:col-span-5">
+          {alternatives.map((plan, index) => {
+            const PlanIcon = planIcons[plan.id as keyof typeof planIcons] ?? Sprout;
+            const isElite = plan.id === "elite";
+            const isGrow = plan.id === "grow";
 
-                <p className="mt-4 text-[13.5px] leading-[1.6] text-ink-soft">
-                  {tr(plan.description, plan.descriptionEn ?? plan.description)}
-                </p>
-
-                <ul className="mt-5 space-y-2.5 border-t border-paper-rule pt-5">
-                  {plan.features.slice(0, 6).map((feature, i) => (
-                    <li
-                      key={feature}
-                      className={cn(
-                        "flex items-start gap-2.5 text-[13.5px] leading-[1.55] text-ink",
-                        featured && "font-medium",
-                      )}
-                    >
-                      <Check
-                        size={15}
-                        strokeWidth={2.6}
-                        aria-hidden
-                        className={cn(
-                          "mt-[3px] shrink-0",
-                          featured ? "text-leaf-strong" : "text-leaf",
-                        )}
-                      />
-                      {tr(feature, plan.featuresEn?.[i] ?? feature)}
-                    </li>
-                  ))}
-                </ul>
-
-                {/* mt-auto => mọi CTA nằm cùng baseline dù danh sách dài khác nhau */}
-                <Link
-                  href="/login?next=/dashboard/pricing"
+            return (
+              <Reveal key={plan.id} delay={0.05 + index * 0.045} className={isElite ? "sm:col-span-2" : undefined}>
+                <article
+                  aria-label={tr(`Gói ${plan.name}, ${plan.price}`, `Plan ${plan.name}, ${plan.priceEn ?? plan.price}`)}
                   className={cn(
-                    buttonVariants({ variant: featured ? "primary" : "secondary" }),
-                    "mt-auto w-full",
+                    "group flex h-full min-h-[260px] flex-col rounded-[var(--r-2xl)] border p-5 shadow-sm transition duration-260 hover:-translate-y-1 hover:border-line-strong hover:shadow-md sm:p-6",
+                    isGrow ? "border-line-strong bg-surface-soft" : "border-line bg-surface-raised",
+                    isElite && "sm:min-h-[276px] sm:grid sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-start sm:gap-x-5",
                   )}
-                  style={{ marginTop: "auto" }}
                 >
-                  {tr(plan.cta, plan.ctaEn ?? plan.cta)}
-                </Link>
-              </article>
-            </Reveal>
-          );
-        })}
+                  <span className={cn(
+                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--r-md)] bg-surface-soft text-leaf-strong",
+                    isGrow && "bg-surface-raised",
+                  )}>
+                    <PlanIcon size={20} strokeWidth={1.8} aria-hidden />
+                  </span>
+
+                  <div className={cn("mt-6", isElite && "sm:mt-0")}>
+                    <h3 className="font-display text-xl font-extrabold tracking-[-0.025em] text-ink">{plan.name}</h3>
+                    <p className="mt-2 text-sm leading-6 text-ink-soft">{tr(plan.description, plan.descriptionEn ?? plan.description)}</p>
+                  </div>
+
+                  <div className={cn("mt-5", isElite && "sm:mt-0 sm:text-right")}>
+                    <Price value={tr(plan.price, plan.priceEn ?? plan.price)} />
+                  </div>
+
+                  <Link
+                    href="/login?next=/dashboard/pricing"
+                    className={cn(
+                      "mt-auto inline-flex min-h-11 items-center gap-2 pt-4 text-sm font-semibold text-leaf-strong transition hover:text-ink",
+                      isElite && "sm:col-start-2 sm:mt-6 sm:pt-0",
+                    )}
+                  >
+                    {tr(plan.cta, plan.ctaEn ?? plan.cta)}
+                    <ArrowRight size={16} className="transition duration-180 group-hover:translate-x-1" aria-hidden />
+                  </Link>
+                </article>
+              </Reveal>
+            );
+          })}
+        </div>
       </div>
 
-      <Reveal delay={0.18}>
-        <div className="mt-6 flex flex-col items-center justify-center gap-2 text-center sm:flex-row sm:gap-3">
-          <div>
-            <p className="text-sm font-semibold text-ink">
-              {tr("Muốn xem toàn bộ quyền lợi?", "Want to see all the benefits?")}
-            </p>
-            <p className="mt-0.5 text-sm leading-6 text-ink-soft">
-              {tr("Mở bảng so sánh chi tiết trước khi quyết định nâng cấp.", "Open the detailed comparison table before deciding to upgrade.")}
-            </p>
-          </div>
-          <Link
-            href="/login?next=/dashboard/pricing"
-            className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-leaf-strong transition hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-          >
-            {tr("So sánh các gói", "Compare plans")}
-            <ArrowRight size={15} aria-hidden />
-          </Link>
+      <Reveal delay={0.15} className="mt-4 flex flex-col items-start justify-between gap-4 rounded-[var(--r-xl)] bg-surface-soft px-5 py-5 sm:flex-row sm:items-center sm:px-6">
+        <div>
+          <p className="font-semibold text-ink">{tr("Muốn xem toàn bộ quyền lợi?", "Want to see all the benefits?")}</p>
+          <p className="mt-1 text-sm leading-6 text-ink-soft">{tr("Mở bảng so sánh chi tiết trước khi quyết định nâng cấp.", "Open the detailed comparison table before deciding to upgrade.")}</p>
         </div>
+        <Link href="/login?next=/dashboard/pricing" className={buttonVariants({ variant: "secondary" })}>
+          {tr("So sánh các gói", "Compare plans")}
+          <ArrowRight size={16} aria-hidden />
+        </Link>
       </Reveal>
-    </NotebookSection>
+    </SectionShell>
   );
 }
