@@ -33,6 +33,18 @@ def normalize_account_number(value):
     return re.sub(r"\s+", "", str(value or "")).upper()
 
 
+def payer_account_number():
+    """The number to put in front of the payer.
+
+    Some banks — BIDV among them — only report a transfer to SePay when it
+    arrives through a virtual account, so quoting the master account produces a
+    transfer that reaches the bank and is never seen by the gateway. When a
+    virtual account is configured it is what the payer must use.
+    """
+    virtual = normalize_account_number(getattr(settings, "SEPAY_VIRTUAL_ACCOUNT", ""))
+    return virtual or normalize_account_number(getattr(settings, "SEPAY_ACCOUNT_NUMBER", ""))
+
+
 def ensure_payment_configuration():
     required = {
         "SEPAY_BANK_CODE": getattr(settings, "SEPAY_BANK_CODE", ""),
@@ -166,7 +178,7 @@ def build_qr_url(order):
     query = urlencode(
         {
             "bank": settings.SEPAY_BANK_CODE,
-            "acc": settings.SEPAY_ACCOUNT_NUMBER,
+            "acc": payer_account_number(),
             "amount": order.amount_expected,
             "des": order.payment_code,
             "template": "compact",
@@ -479,8 +491,16 @@ def process_sepay_payload(payload):
         payment.save(update_fields=["status", "processed_at", "updated_at"])
         return {"result": "ignored", "payment": payment, "order": None}
 
-    expected_account = normalize_account_number(getattr(settings, "SEPAY_ACCOUNT_NUMBER", ""))
-    if not expected_account or account_number != expected_account:
+    # SePay reports the master account in `accountNumber` and the virtual one in
+    # `subAccount`, but which field carries which varies by bank, so accept the
+    # transfer when either configured number appears in either field. Both are
+    # ours; what must never pass is a transfer into somebody else's account.
+    expected_accounts = {
+        normalize_account_number(getattr(settings, "SEPAY_ACCOUNT_NUMBER", "")),
+        normalize_account_number(getattr(settings, "SEPAY_VIRTUAL_ACCOUNT", "")),
+    } - {""}
+    reported_accounts = {account_number, normalize_account_number(payload.get("subAccount"))} - {""}
+    if not expected_accounts or not (reported_accounts & expected_accounts):
         payment.status = Payment.Status.FAILED
         payment.processed_at = now
         payment.save(update_fields=["status", "processed_at", "updated_at"])

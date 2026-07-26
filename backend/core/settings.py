@@ -245,6 +245,18 @@ SEPAY_WEBHOOK_SECRET = os.getenv("SEPAY_WEBHOOK_SECRET", "").strip()
 # transaction id — a resent webhook answers "duplicate" and re-activates nothing
 # — so the window guards nothing that the dedup does not already guard.
 SEPAY_WEBHOOK_MAX_AGE_SECONDS = int(os.getenv("SEPAY_WEBHOOK_MAX_AGE_SECONDS", "3600"))
+# The number a payer transfers to, when the bank does not accept transfers
+# straight to the master account. BIDV is one of these: SePay's own QR builder
+# says "BIDV yêu cầu chọn VA để tạo QR" and puts the virtual account in the QR,
+# and SePay only records transfers that arrive through it — money sent directly
+# to the master account reaches the bank but never appears in SePay at all, so
+# the webhook never fires and the plan never activates.
+#
+# Kept separate from SEPAY_ACCOUNT_NUMBER because the webhook still reports the
+# master account in `accountNumber` (the virtual one arrives as `subAccount`),
+# so one value cannot serve both the payer and the incoming validation.
+# Leave empty for banks that take transfers on the master account directly.
+SEPAY_VIRTUAL_ACCOUNT = os.getenv("SEPAY_VIRTUAL_ACCOUNT", "").strip()
 SEPAY_BANK_CODE = os.getenv("SEPAY_BANK_CODE", "").strip()
 SEPAY_BANK_NAME = os.getenv("SEPAY_BANK_NAME", "").strip()
 SEPAY_ACCOUNT_NUMBER = os.getenv("SEPAY_ACCOUNT_NUMBER", "").strip()

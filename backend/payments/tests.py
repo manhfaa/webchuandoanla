@@ -8,6 +8,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from django.conf import settings
+from django.core.cache import cache
 from django.contrib.auth import get_user_model
 from django.test import override_settings
 from django.urls import reverse
@@ -21,7 +22,12 @@ from engagement.models import ServicePlan, UserSubscription
 from .admin import PaymentOrderAdmin
 from .entitlements import enforce_limit, PlanLimitExceeded, resolve_entitlements
 from .models import Payment, PaymentOrder
-from .services import PaymentRequestError, reconcile_order, settle_order_from_bank_statement
+from .services import (
+    PaymentRequestError,
+    build_qr_url,
+    reconcile_order,
+    settle_order_from_bank_statement,
+)
 
 FRONTEND_PLAN_CATALOGUE = Path(__file__).resolve().parents[2] / "src" / "data" / "mock" / "plans.ts"
 
@@ -41,6 +47,10 @@ User = get_user_model()
 )
 class PaymentFlowTests(APITestCase):
     def setUp(self):
+        # Order creation is throttled at 30/hour and the counter lives in a
+        # cache that survives between tests, so without this the suite fails
+        # or passes depending on how many orders the tests before it made.
+        cache.clear()
         self.user = User.objects.create_user(
             username="farmer",
             email="farmer@example.com",
@@ -478,6 +488,10 @@ class BankStatementSettlementTests(APITestCase):
     through, not even an admin one. This is that way through."""
 
     def setUp(self):
+        # Order creation is throttled at 30/hour and the counter lives in a
+        # cache that survives between tests, so without this the suite fails
+        # or passes depending on how many orders the tests before it made.
+        cache.clear()
         self.user = User.objects.create_user(
             username="paid", email="paid@example.com", password="strong-password"
         )
@@ -556,3 +570,106 @@ class BankStatementSettlementTests(APITestCase):
 
         with self.assertRaises(PaymentRequestError):
             settle_order_from_bank_statement(self.order, 9000, actor=self.admin)
+
+
+@override_settings(
+    SEPAY_WEBHOOK_SECRET="test-webhook-secret",
+    SEPAY_API_KEY="",
+    SEPAY_BANK_CODE="BIDV",
+    SEPAY_BANK_NAME="BIDV",
+    SEPAY_ACCOUNT_NUMBER="8807986170",
+    SEPAY_VIRTUAL_ACCOUNT="96247DCJZK",
+    SEPAY_ACCOUNT_NAME="PHAM DUC MANH",
+    SEPAY_PAYMENT_PREFIX="AGM",
+    SEPAY_ORDER_TTL_MINUTES=30,
+    SEPAY_SUBSCRIPTION_DAYS=30,
+)
+class VirtualAccountTests(APITestCase):
+    """BIDV only reports a transfer to SePay when it arrives through a virtual
+    account — SePay's own QR builder states it — so quoting the master account
+    produced transfers that reached the bank and were never seen by the gateway.
+    The payer must be given the virtual account, while the webhook still reports
+    the master one, so validation has to accept either."""
+
+    def setUp(self):
+        # Order creation is throttled at 30/hour and the counter lives in a
+        # cache that survives between tests, so without this the suite fails
+        # or passes depending on how many orders the tests before it made.
+        cache.clear()
+        self.user = User.objects.create_user(
+            username="va", email="va@example.com", password="strong-password"
+        )
+        ServicePlan.objects.update_or_create(
+            slug="grow",
+            defaults={"name": "Grow", "price_monthly": 9000, "currency": "VND", "is_active": True},
+        )
+        self.client.force_authenticate(self.user)
+        response = self.client.post(
+            reverse("payment_order_list_create"), {"plan": "grow"}, format="json"
+        )
+        self.response = response
+        self.order = PaymentOrder.objects.get(id=response.data["order"]["id"])
+
+    def webhook(self, transaction_id, **overrides):
+        payload = {
+            "id": transaction_id,
+            "gateway": "BIDV",
+            "accountNumber": "8807986170",
+            "code": self.order.payment_code,
+            "content": self.order.payment_code,
+            "transferType": "in",
+            "transferAmount": 9000,
+            "referenceCode": f"REF{transaction_id}",
+        }
+        payload.update(overrides)
+        raw_body = json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        timestamp = str(int(time.time()))
+        digest = hmac.new(
+            b"test-webhook-secret",
+            timestamp.encode("ascii") + b"." + raw_body,
+            hashlib.sha256,
+        ).hexdigest()
+        return self.client.post(
+            reverse("sepay_webhook_v2"),
+            data=raw_body,
+            content_type="application/json",
+            HTTP_X_SEPAY_TIMESTAMP=timestamp,
+            HTTP_X_SEPAY_SIGNATURE=f"sha256={digest}",
+        )
+
+    def test_the_payer_is_given_the_virtual_account(self):
+        self.assertEqual(self.response.data["bank"]["account_number"], "96247DCJZK")
+        self.assertIn("acc=96247DCJZK", build_qr_url(self.order))
+        # Quoting the master account is what silently lost the payment.
+        self.assertNotIn("8807986170", self.response.data["bank"]["account_number"])
+
+    def test_webhook_reporting_the_master_account_is_accepted(self):
+        """The shape SePay actually sends: master account in accountNumber."""
+        self.assertEqual(self.webhook("8101").data["result"], "paid")
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.current_plan, "grow")
+
+    def test_webhook_reporting_the_virtual_account_is_accepted(self):
+        self.assertEqual(self.webhook("8102", accountNumber="96247DCJZK").data["result"], "paid")
+
+    def test_webhook_carrying_the_virtual_account_in_sub_account_is_accepted(self):
+        response = self.webhook("8103", accountNumber="8807986170", subAccount="96247DCJZK")
+        self.assertEqual(response.data["result"], "paid")
+
+    def test_a_transfer_into_somebody_elses_account_is_still_refused(self):
+        """Accepting either of our own numbers must not accept a third one."""
+        response = self.webhook("8104", accountNumber="999999999", subAccount="999999999")
+
+        self.assertEqual(response.data["result"], "account_mismatch")
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.current_plan, "seed")
+
+    @override_settings(SEPAY_VIRTUAL_ACCOUNT="")
+    def test_without_a_virtual_account_the_master_account_is_quoted(self):
+        """Banks that accept transfers on the master account keep working."""
+        response = self.client.post(
+            reverse("payment_order_list_create"), {"plan": "grow"}, format="json"
+        )
+        order = PaymentOrder.objects.get(id=response.data["order"]["id"])
+        self.assertEqual(response.data["bank"]["account_number"], "8807986170")
+        self.assertIn("acc=8807986170", build_qr_url(order))

@@ -26,6 +26,7 @@ from .services import (
     build_qr_url,
     create_payment_order,
     expire_user_plan,
+    payer_account_number,
     process_sepay_payload,
     request_order_reconciliation,
 )
@@ -44,7 +45,9 @@ def _bank_details():
     return {
         "name": getattr(settings, "SEPAY_BANK_NAME", "") or settings.SEPAY_BANK_CODE,
         "code": settings.SEPAY_BANK_CODE,
-        "account_number": settings.SEPAY_ACCOUNT_NUMBER,
+        # The virtual account when there is one: it is the only number a payer
+        # can use and still have the gateway see the transfer.
+        "account_number": payer_account_number(),
         "account_name": settings.SEPAY_ACCOUNT_NAME,
     }
 
