@@ -3,8 +3,13 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
+// `ring-leaf-strong/40` compiled to nothing: every colour in tailwind.config.ts
+// is a bare `var(--token)` with no `<alpha-value>` slot, so Tailwind cannot
+// build an opacity variant from it and silently drops the rule. The ring then
+// fell back to preflight's default — every button in the app focused BLUE.
+// `--ring-leaf` is already themed for both schemes (tokens.css:70 and :118).
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition duration-180 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf-strong/40 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:pointer-events-none disabled:opacity-70 active:scale-[0.98] active:duration-80",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition duration-180 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-leaf)] focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:pointer-events-none disabled:opacity-70 active:scale-[0.98] active:duration-80",
   {
     variants: {
       variant: {
