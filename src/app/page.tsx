@@ -10,32 +10,36 @@ import { PricingPreviewSection } from "@/components/home/pricing-preview-section
 import { PromoBand } from "@/components/home/promo-band";
 import { TeamSection } from "@/components/home/team-section";
 import { AppShell } from "@/components/layout/layout-components";
-import { fetchPromotedPlan } from "@/lib/server-offer";
+import { resolveCampaign } from "@/lib/campaign";
 
 export default async function HomePage() {
-  // Resolved on the server so the band ships in the first HTML. Rendering it
-  // conditionally here — rather than letting the band decide for itself — also
-  // keeps the band's hooks unconditional: a component that returns early before
-  // its own effects would change hook count between the campaign being off and
-  // on, and crash the page at exactly the moment the campaign starts.
-  const promoted = await fetchPromotedPlan();
+  // Resolved on the server so both surfaces ship in the first HTML. Rendering
+  // them conditionally here — rather than letting each decide for itself — also
+  // keeps their hooks unconditional: a component that returned early before its
+  // own effects would change hook count between the campaign being off and on,
+  // and crash the page at exactly the moment the campaign starts.
+  const campaign = await resolveCampaign();
+  const heroPlan = campaign?.surfaces.has("hero") ? campaign.plan : null;
+  const bandPlan = campaign?.surfaces.has("band") ? campaign.plan : null;
 
   return (
     <AppShell>
       <Navbar />
       <main id="main-content">
-        <HeroSection />
+        <HeroSection campaign={heroPlan} />
         <CapabilityStrip />
+        {/* Screen two, right after the capability claims. Previously this sat
+            after TeamSection, roughly ten screens down on a phone. The comment
+            there claimed PlantsSection's GSAP pin forbade anything above it —
+            that was over-cautious: the trigger is built in useLayoutEffect with
+            invalidateOnRefresh and refreshed in a mount rAF, so server-rendered
+            markup is in the DOM before GSAP ever measures. */}
+        {bandPlan ? <PromoBand plan={bandPlan} /> : null}
         <LeafDiagnosisStory />
         <FeaturesSection />
         <PlantsSection />
         <MissionSection />
         <TeamSection />
-        {/* Directly above the pricing block, so the offer lands where the
-            grower is already deciding — and below PlantsSection, whose GSAP pin
-            measures document height on mount and would be offset by a section
-            inserted above it. */}
-        {promoted ? <PromoBand plan={promoted} /> : null}
         <PricingPreviewSection />
       </main>
       <Footer />

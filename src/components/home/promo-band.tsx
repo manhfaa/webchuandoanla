@@ -48,16 +48,20 @@ export function PromoBand({ plan }: { plan: PricingPlan }) {
               <Sprout size={20} aria-hidden />
             </span>
             <div className="min-w-0">
+              {/* Deliberately not the hero line's sentence. Both surfaces can
+                  appear on the same page, and repeating one phrase twice reads
+                  as a duplicated banner rather than two steps of one story: the
+                  hero states the offer, this states which plan it applies to. */}
               <p className="font-display text-xl font-extrabold tracking-[-0.03em] text-ink">
                 {tr(
-                  `Trả một kỳ, dùng ${period.replace(/^cho /, "")}`,
-                  `Pay for one period, use it ${period.replace(/^for /, "for ")}`,
+                  `Gói ${plan.name} đang bán theo kỳ ${period.replace(/^cho /, "")}`,
+                  `${plan.name} is currently sold ${period}`,
                 )}
               </p>
               <p className="mt-1 max-w-[46ch] text-xs font-medium leading-5 text-ink-soft">
                 {tr(
-                  `Gói ${plan.name} đang bán theo kỳ dài hơn. Cùng số tiền, cùng quyền lợi — chỉ dài hơn.`,
-                  `${plan.name} is on a longer term right now. Same amount, same benefits — just longer.`,
+                  "Cùng số tiền của một kỳ, cùng quyền lợi — chỉ dài hơn.",
+                  "The same amount as one period, the same benefits — just longer.",
                 )}
               </p>
             </div>

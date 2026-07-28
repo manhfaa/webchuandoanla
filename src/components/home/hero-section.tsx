@@ -5,14 +5,17 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import { ArrowDownRight, ArrowRight, Leaf } from "lucide-react";
 
+import { CampaignLine } from "@/components/home/campaign-line";
 import { LeafFieldBackground } from "@/components/home/leaf-field-background";
 import { LeafLens } from "@/components/home/leaf-lens";
 import { buttonVariants } from "@/components/ui/button";
 import { Reveal } from "@/components/ui/reveal";
 import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
+import type { PricingPlan } from "@/types";
 
-export function HeroSection() {
+/** `campaign` arrives resolved from the server; absent means nothing to say. */
+export function HeroSection({ campaign }: { campaign?: PricingPlan | null }) {
   const tr = useTr();
   return (
     <section
@@ -56,6 +59,11 @@ export function HeroSection() {
               <ArrowDownRight size={18} aria-hidden />
             </a>
           </div>
+
+          {/* Below the CTAs, never above: someone arriving with a sick plant is
+              here to upload a photo, and a price offer must not compete with
+              that. It is a link, not a button, for the same reason. */}
+          {campaign ? <CampaignLine plan={campaign} /> : null}
         </div>
 
         <Reveal
