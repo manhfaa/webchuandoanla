@@ -121,6 +121,31 @@ export function PricingCard({
             >
               {tr(plan.price, plan.priceEn ?? plan.price)}
             </h3>
+            {plan.promo ? (
+              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span
+                  className={cn(
+                    "text-sm line-through",
+                    isEmphasized ? "text-on-forest-muted" : "text-ink-soft",
+                  )}
+                >
+                  {tr(plan.promo.strikePrice, plan.promo.strikePriceEn)}
+                </span>
+                <span className={cn("text-sm font-semibold", isEmphasized ? "text-on-forest" : "text-ink")}>
+                  {tr(plan.promo.periodLabel, plan.promo.periodLabelEn)}
+                </span>
+                {plan.promo.savePercent > 0 ? (
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[11px] font-bold",
+                      isEmphasized ? "bg-on-forest/15 text-on-forest" : "bg-leaf/15 text-leaf-strong",
+                    )}
+                  >
+                    {tr(`Tiết kiệm ${plan.promo.savePercent}%`, `Save ${plan.promo.savePercent}%`)}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
             <p
               className={cn(
                 "mt-3 text-sm leading-7",

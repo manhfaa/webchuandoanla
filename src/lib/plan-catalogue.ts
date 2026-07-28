@@ -81,6 +81,45 @@ function priceOf(plan: ServicePlanDto): number {
   return Number.isFinite(amount) ? amount : Number.POSITIVE_INFINITY;
 }
 
+/* ------------------------------------------------------- billing period --- */
+
+/** What `price_monthly` is priced against when no promotion is running. */
+export const STANDARD_PERIOD_DAYS = 30;
+
+/**
+ * Days one purchase actually buys, as the catalogue reports it.
+ *
+ * The backend applies `SEPAY_SUBSCRIPTION_DAYS` to every activation and writes
+ * the result to `plan_expires_at`, so a promotion is one env var rather than a
+ * new SKU — and the same env var is what this reads. An older backend that does
+ * not publish the field falls back to the standard period, which is what it was
+ * granting anyway.
+ */
+export function subscriptionDays(plan: ServicePlanDto | null | undefined): number {
+  const raw = plan?.subscription_days;
+  const amount = typeof raw === "number" ? raw : Number(raw);
+  if (!Number.isFinite(amount) || amount <= 0) return STANDARD_PERIOD_DAYS;
+  return Math.floor(amount);
+}
+
+/**
+ * How many standard periods one purchase now covers, or `null` when the term is
+ * the ordinary one. Used to decide whether there is a promotion to announce at
+ * all — nothing in the UI hardcodes "90".
+ */
+export function periodMultiple(plan: ServicePlanDto | null | undefined): number | null {
+  const days = subscriptionDays(plan);
+  if (days <= STANDARD_PERIOD_DAYS) return null;
+  return days / STANDARD_PERIOD_DAYS;
+}
+
+/** Whole percent saved against buying the same span one standard period at a time. */
+export function periodSavingsPercent(plan: ServicePlanDto | null | undefined): number {
+  const multiple = periodMultiple(plan);
+  if (!multiple) return 0;
+  return Math.round((1 - 1 / multiple) * 100);
+}
+
 /** Catalogue order the user actually shops in: cheapest first. */
 export function byPrice(catalogue: ServicePlanDto[]): ServicePlanDto[] {
   return [...catalogue].filter((plan) => plan.is_active).sort((a, b) => priceOf(a) - priceOf(b));

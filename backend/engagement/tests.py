@@ -127,6 +127,33 @@ class ServicePlanCatalogueTests(APITestCase):
         self.assertEqual(metadata["seed"]["history_days"], 7)
         self.assertEqual(metadata["seed"]["chat_daily"], 3)
         self.assertTrue(metadata["elite"]["reports"])
+
+    def test_catalogue_publishes_the_term_a_purchase_actually_buys(self):
+        """A promotion is a change to SEPAY_SUBSCRIPTION_DAYS, so the pricing
+        screens have to read the term from here rather than print a fixed 30.
+        Otherwise the site keeps advertising a term the backend stopped granting
+        the moment the setting went back."""
+        with self.settings(SEPAY_SUBSCRIPTION_DAYS=30):
+            response = self.client.get(reverse("plan-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(all(row["subscription_days"] == 30 for row in response.data))
+
+        with self.settings(SEPAY_SUBSCRIPTION_DAYS=90):
+            promo = self.client.get(reverse("plan-list"))
+        self.assertTrue(all(row["subscription_days"] == 90 for row in promo.data))
+        # The promotion lengthens the term; it must not quietly change the price.
+        before = {row["slug"]: row["price_monthly"] for row in response.data}
+        after = {row["slug"]: row["price_monthly"] for row in promo.data}
+        self.assertEqual(before, after)
+
+    def test_a_nonsense_term_setting_cannot_publish_a_zero_day_plan(self):
+        with self.settings(SEPAY_SUBSCRIPTION_DAYS=0):
+            response = self.client.get(reverse("plan-list"))
+
+        # `_activate_locked_order` clamps with max(1, ...) before writing an
+        # expiry, so the catalogue has to clamp identically or the screen would
+        # promise a term the activation does not grant.
+        self.assertTrue(all(row["subscription_days"] == 1 for row in response.data))
         self.assertTrue(all(row["expert_chat_enabled"] for row in response.data if row["slug"] in ("bloom", "elite")))
 
     def test_the_crop_plan_cap_is_data_rather_than_code(self):

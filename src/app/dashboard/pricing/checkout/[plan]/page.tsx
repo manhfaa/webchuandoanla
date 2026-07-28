@@ -46,6 +46,7 @@ import {
   type PaymentOrderStatus,
   type ServicePlanDto,
 } from "@/lib/payments-client";
+import { planNamed, subscriptionDays } from "@/lib/plan-catalogue";
 import { PLANS } from "@/lib/plans";
 import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
@@ -616,6 +617,11 @@ export default function CheckoutPlanPage() {
     catalogueAmount !== null
       ? formatCurrency(catalogueAmount)
       : tr(planCopy?.price ?? "", planCopy?.priceEn ?? planCopy?.price ?? "");
+  // The term the backend will actually write to `plan_expires_at`, not a number
+  // typed into copy. A promotion is a change to SEPAY_SUBSCRIPTION_DAYS, and
+  // this is the screen where the customer commits money against it — so it is
+  // the one place a stale "30 ngày" would be a promise the product breaks.
+  const termDays = subscriptionDays(planNamed(catalogue, planParam));
 
   if (success) {
     return (
@@ -691,7 +697,7 @@ export default function CheckoutPlanPage() {
             <div className="rounded-lg border border-on-forest/15 bg-on-forest/[0.06] px-5 py-4 text-left lg:text-right">
               <p className="text-xs font-semibold text-on-forest-muted">{tr("Thanh toán một lần", "One-time payment")}</p>
               <p className="mt-1 font-display text-3xl font-bold text-on-forest">{displayPrice}</p>
-              <p className="mt-1 text-xs text-on-forest-muted">{tr("Sử dụng trong 30 ngày", "Valid for 30 days")}</p>
+              <p className="mt-1 text-xs text-on-forest-muted">{tr(`Sử dụng trong ${termDays} ngày`, `Valid for ${termDays} days`)}</p>
             </div>
           </div>
         </Card>
@@ -954,7 +960,7 @@ export default function CheckoutPlanPage() {
               <p className="ml-auto text-right font-display text-xl font-bold text-leaf-strong">{formatCurrency(orderData.order.price)}</p>
             </div>
             <dl className="mt-5 space-y-3 border-t border-line pt-5 text-sm">
-              <div className="flex justify-between gap-4"><dt className="text-ink-soft">{tr("Thời hạn gói", "Plan duration")}</dt><dd className="font-semibold text-ink">{tr("30 ngày", "30 days")}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-ink-soft">{tr("Thời hạn gói", "Plan duration")}</dt><dd className="font-semibold text-ink">{tr(`${termDays} ngày`, `${termDays} days`)}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-ink-soft">{tr("Gói hiện tại", "Current plan")}</dt><dd className="font-semibold uppercase text-ink">{user?.currentPlan ?? "seed"}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-ink-soft">{tr("Yêu cầu hết hạn", "Request expires")}</dt><dd className="text-right font-semibold text-ink">{formatExpiry(orderData.order.expires_at)}</dd></div>
             </dl>

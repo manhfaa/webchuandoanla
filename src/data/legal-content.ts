@@ -114,17 +114,17 @@ export const termsDoc: LegalDoc = {
       heading: { vi: "8. Gói dịch vụ, thanh toán và hoàn tiền", en: "8. Plans, payment and refunds" },
       list: {
         vi: [
-          "Gói Seed miễn phí; các gói Grow, Bloom, Elite có tính phí theo chu kỳ 30 ngày.",
+          "Gói Seed miễn phí; các gói Grow, Bloom, Elite tính phí theo chu kỳ trả trước. Thời hạn của mỗi lần thanh toán được ghi rõ trên trang Bảng giá và trên màn hình thanh toán trước khi bạn chuyển tiền.",
           "Thanh toán được xử lý qua chuyển khoản ngân hàng thông qua đối tác SePay. Gói chỉ được kích hoạt sau khi hệ thống xác nhận nhận đủ tiền với đúng nội dung chuyển khoản.",
-          "Gói KHÔNG tự động gia hạn; khi hết 30 ngày bạn cần chủ động thanh toán lại nếu muốn tiếp tục.",
+          "Gói KHÔNG tự động gia hạn; khi hết thời hạn bạn cần chủ động thanh toán lại nếu muốn tiếp tục.",
           "Chuyển khoản thiếu, thừa, sai nội dung hoặc quá hạn có thể cần đối soát thủ công và làm chậm kích hoạt.",
           "Do đặc thù dịch vụ số kích hoạt ngay, các khoản đã thanh toán thường không được hoàn lại, trừ trường hợp lỗi kỹ thuật từ phía chúng tôi khiến bạn không sử dụng được gói. Yêu cầu hỗ trợ vui lòng gửi trong 7 ngày.",
           "Giá và quyền lợi từng gói có thể thay đổi; thay đổi không áp dụng hồi tố cho chu kỳ đã thanh toán.",
         ],
         en: [
-          "The Seed plan is free; Grow, Bloom and Elite are paid on a 30-day cycle.",
+          "The Seed plan is free; Grow, Bloom and Elite are prepaid. The term each payment buys is stated on the Pricing page and on the checkout screen before you transfer any money.",
           "Payments are processed by bank transfer through our partner SePay. A plan is activated only after the system confirms the correct amount has been received with the correct transfer content.",
-          "Plans do NOT auto-renew; after 30 days you must actively pay again to continue.",
+          "Plans do NOT auto-renew; when the term ends you must actively pay again to continue.",
           "Underpaid, overpaid, mislabeled or late transfers may require manual reconciliation and delay activation.",
           "Because this is a digital service activated immediately, paid amounts are generally non-refundable, except where a technical fault on our side prevents you from using the plan. Support requests should be sent within 7 days.",
           "Prices and plan benefits may change; changes do not apply retroactively to an already-paid cycle.",

@@ -68,6 +68,27 @@ export interface WorkflowStep {
   description: string;
 }
 
+/**
+ * Set only while one purchase buys more than the standard 30 days.
+ *
+ * The period lives here rather than inside `price` because the price line is
+ * `whitespace-nowrap` inside an `overflow-hidden` card: at four columns the
+ * longest existing amount already uses 217 of 244 available pixels, so
+ * lengthening it to "99.000đ/90 ngày" would clip rather than wrap.
+ */
+export interface PricingPromo {
+  /** Days one purchase lasts, straight from the catalogue. */
+  days: number;
+  /** "cho 90 ngày" — rendered under the amount, not inside it. */
+  periodLabel: string;
+  periodLabelEn: string;
+  /** What that many days costs at the standard rate, e.g. "27.000đ". */
+  strikePrice: string;
+  strikePriceEn: string;
+  /** Whole percent saved against the standard rate. */
+  savePercent: number;
+}
+
 export interface PricingPlan {
   id: PlanTier;
   name: string;
@@ -83,6 +104,8 @@ export interface PricingPlan {
   badgeEn?: string;
   features: string[];
   featuresEn?: string[];
+  /** Absent unless the catalogue reports a longer-than-standard term. */
+  promo?: PricingPromo;
 }
 
 export interface RecommendationBlock {

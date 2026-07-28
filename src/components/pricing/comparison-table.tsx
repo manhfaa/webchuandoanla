@@ -68,14 +68,18 @@ const rows: Row[] = [
       return quotaCell(amount, { vi: "kế hoạch", en: "plans" }, { vi: "Không giới hạn", en: "Unlimited" });
     },
   },
-  { feature: "Ưu tiên tốc độ xử lý", featureEn: "Priority processing speed", seed: false, grow: false, bloom: true, elite: true },
+  // "Ưu tiên tốc độ xử lý", "Tích hợp dữ liệu nâng cao" and the Email/Chat
+  // support tier used to sit here. They were the only rows with no
+  // `fromCatalogue`, which is exactly what made them wrong: nothing in the
+  // backend grants a faster queue, an integration surface or a support channel,
+  // so the table was selling three things that do not exist. Every remaining
+  // row resolves against the live catalogue, so it cannot drift from what
+  // `entitlements.py` enforces.
   {
     feature: "Xuất báo cáo PDF", featureEn: "Export PDF reports",
     seed: false, grow: false, bloom: false, elite: true,
     fromCatalogue: (plan) => ({ value: plan.metadata?.reports === true }),
   },
-  { feature: "Tích hợp dữ liệu nâng cao", featureEn: "Advanced data integration", seed: false, grow: false, bloom: false, elite: true },
-  { feature: "Hỗ trợ", featureEn: "Support", seed: false, grow: false, bloom: "Email", bloomEn: "Email", elite: "Email + Chat", eliteEn: "Email + Chat" },
 ];
 
 function Cell({ value }: { value: CellValue }) {

@@ -1,4 +1,10 @@
-import { catalogueFeatureLines, planNamed } from "@/lib/plan-catalogue";
+import {
+  catalogueFeatureLines,
+  periodMultiple,
+  periodSavingsPercent,
+  planNamed,
+  subscriptionDays,
+} from "@/lib/plan-catalogue";
 import { raiseIfPlanLimited, type LimitKey } from "@/lib/plan-limit";
 import type { PlanTier, PricingPlan } from "@/types";
 
@@ -17,6 +23,11 @@ export type ServicePlanDto = {
   max_diagnoses_per_month: number;
   metadata: Record<string, unknown>;
   is_active: boolean;
+  /**
+   * Days one purchase buys. Optional because a backend deployed before this
+   * field existed simply omits it, and 30 is what it was granting.
+   */
+  subscription_days?: number;
 };
 
 export type PaymentOrderStatus =
@@ -251,10 +262,28 @@ export function applyCatalogue(
             plan.features.map((feature, index) => ({ vi: feature, en: plan.featuresEn?.[index] ?? feature })),
           )
         : null;
+      // A term longer than the standard one is a promotion. The amount stays on
+      // the price line and the term moves below it, because the price line is
+      // whitespace-nowrap inside an overflow-hidden card and would clip.
+      const multiple = amount !== null && amount > 0 ? periodMultiple(entry) : null;
+      const days = subscriptionDays(entry);
       return {
         ...plan,
         ...(amount !== null && amount > 0
-          ? { price: `${formatVnd(amount, "vi")}/tháng`, priceEn: `${formatVnd(amount, "en")}/month` }
+          ? multiple
+            ? {
+                price: formatVnd(amount, "vi"),
+                priceEn: formatVnd(amount, "en"),
+                promo: {
+                  days,
+                  periodLabel: `cho ${days} ngày`,
+                  periodLabelEn: `for ${days} days`,
+                  strikePrice: formatVnd(Math.round(amount * multiple), "vi"),
+                  strikePriceEn: formatVnd(Math.round(amount * multiple), "en"),
+                  savePercent: periodSavingsPercent(entry),
+                },
+              }
+            : { price: `${formatVnd(amount, "vi")}/tháng`, priceEn: `${formatVnd(amount, "en")}/month` }
           : {}),
         ...(lines ? { features: lines.map((line) => line.vi), featuresEn: lines.map((line) => line.en) } : {}),
       };

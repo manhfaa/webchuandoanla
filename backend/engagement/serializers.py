@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import serializers
 
 from .models import (
@@ -10,10 +11,21 @@ from .models import (
 
 
 class ServicePlanSerializer(serializers.ModelSerializer):
+    # How many days one purchase actually buys. `_activate_locked_order` reads
+    # `SEPAY_SUBSCRIPTION_DAYS` and writes the result to `plan_expires_at`, so
+    # publishing the same setting here is what lets the pricing screens say
+    # "90 ngày" during a promotion without anyone editing copy — and stop
+    # saying it the moment the setting goes back to 30. A hardcoded duration in
+    # the frontend would keep advertising a term the backend no longer grants.
+    subscription_days = serializers.SerializerMethodField()
+
     class Meta:
         model = ServicePlan
         fields = "__all__"
         read_only_fields = ("id", "created_at", "updated_at")
+
+    def get_subscription_days(self, _plan) -> int:
+        return max(1, int(getattr(settings, "SEPAY_SUBSCRIPTION_DAYS", 30)))
 
 
 class UserSubscriptionSerializer(serializers.ModelSerializer):
