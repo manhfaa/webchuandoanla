@@ -21,7 +21,12 @@ export function SectionShell({
   contentClassName?: string;
 }) {
   return (
-    <section id={id} className={cn("px-4 py-16 sm:px-6 lg:px-8 lg:py-20", className)}>
+    // The navbar is `fixed` (navbar.tsx:32) and roughly 68px tall on mobile,
+    // 76px from md up. Two of the five contract nav anchors land here —
+    // #tinh-nang and #goi-dich-vu — and had no scroll offset at all, so their
+    // headings arrived underneath the navbar. The other landing sections each
+    // carry their own scroll-mt-*; this gives the shared shell the same.
+    <section id={id} className={cn("scroll-mt-[68px] px-4 py-16 sm:px-6 md:scroll-mt-[76px] lg:px-8 lg:py-20", className)}>
       <div className="mx-auto max-w-7xl">
         <Reveal className="mb-9 max-w-4xl">
           {eyebrow ? (
