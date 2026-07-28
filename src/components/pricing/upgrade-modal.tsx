@@ -66,7 +66,7 @@ export function UpgradeModal({
       onClose={onClose}
       title={tr("Chọn gói phù hợp", "Choose the right plan")}
       description={tr("Chọn gói bạn muốn dùng để mở thêm tính năng và lưu lịch sử đầy đủ hơn.", "Pick the plan you want to unlock more features and keep a fuller history.")}
-      className="max-w-5xl"
+      className="max-w-7xl"
     >
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <span className="inline-flex items-center gap-2 rounded-full bg-surface-soft px-4 py-2 text-sm font-semibold text-ink-soft">
@@ -80,7 +80,12 @@ export function UpgradeModal({
           </span>
         ) : null}
       </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {/* Four plans, so four columns — at xl:grid-cols-3 Elite dropped onto a
+          second row on its own. Needs max-w-7xl on the dialog to match: at
+          max-w-5xl each card falls to ~232px, and the price line is
+          whitespace-nowrap inside an overflow-hidden card, so "39.000đ/tháng"
+          is clipped rather than wrapped. */}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {plans.map((plan) => (
           <PricingCard
             key={plan.id}
