@@ -122,14 +122,15 @@ export function PricingCard({
               {tr(plan.price, plan.priceEn ?? plan.price)}
             </h3>
             {plan.promo ? (
-              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span
-                  className={cn(
-                    "text-sm line-through",
-                    isEmphasized ? "text-on-forest-muted" : "text-ink-soft",
-                  )}
-                >
-                  {tr(plan.promo.strikePrice, plan.promo.strikePriceEn)}
+              // The struck amount is a rate, not a price this plan was ever sold
+              // at — it is `price_monthly × the period multiple`. Labelling it
+              // "giá thường" keeps it an honest comparison instead of an implied
+              // former price. Fills use color-mix() because Tailwind cannot build
+              // an opacity variant from a bare `var(--token)` and drops the rule.
+              <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span className={cn("text-sm", isEmphasized ? "text-on-forest-muted" : "text-ink-soft")}>
+                  {tr("giá thường", "standard rate")}{" "}
+                  <span className="line-through">{tr(plan.promo.strikePrice, plan.promo.strikePriceEn)}</span>
                 </span>
                 <span className={cn("text-sm font-semibold", isEmphasized ? "text-on-forest" : "text-ink")}>
                   {tr(plan.promo.periodLabel, plan.promo.periodLabelEn)}
@@ -138,7 +139,9 @@ export function PricingCard({
                   <span
                     className={cn(
                       "rounded-full px-2 py-0.5 text-[11px] font-bold",
-                      isEmphasized ? "bg-on-forest/15 text-on-forest" : "bg-leaf/15 text-leaf-strong",
+                      isEmphasized
+                        ? "bg-[color-mix(in_srgb,var(--on-forest)_15%,transparent)] text-on-forest"
+                        : "bg-[color-mix(in_srgb,var(--leaf)_15%,transparent)] text-leaf-strong",
                     )}
                   >
                     {tr(`Tiết kiệm ${plan.promo.savePercent}%`, `Save ${plan.promo.savePercent}%`)}

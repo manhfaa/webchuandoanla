@@ -69,15 +69,18 @@ export function PricingPreviewSection() {
       <div className="grid gap-4 lg:grid-cols-12 lg:items-stretch">
         <Reveal className="lg:col-span-7">
           <article
-            aria-label={tr(`Gói ${featured.name}, ${featured.price}`, `Plan ${featured.name}, ${featured.priceEn ?? featured.price}`)}
+            aria-label={tr(
+              `Gói ${featured.name}, ${featured.price}${featured.promo ? ` ${featured.promo.periodLabel}` : ""}`,
+              `Plan ${featured.name}, ${featured.priceEn ?? featured.price}${featured.promo ? ` ${featured.promo.periodLabelEn}` : ""}`,
+            )}
             className="living-veins relative flex h-full min-h-[560px] flex-col overflow-hidden rounded-[var(--r-2xl)] border border-line-strong bg-forest p-6 text-on-forest shadow-lg sm:p-8 lg:p-9"
           >
-            <div className="pointer-events-none absolute -right-28 -top-32 h-80 w-80 rounded-full border border-on-forest/10" aria-hidden />
-            <div className="pointer-events-none absolute -right-14 -top-20 h-56 w-56 rounded-full border border-on-forest/10" aria-hidden />
+            <div className="pointer-events-none absolute -right-28 -top-32 h-80 w-80 rounded-full border border-[color-mix(in_srgb,var(--on-forest)_10%,transparent)]" aria-hidden />
+            <div className="pointer-events-none absolute -right-14 -top-20 h-56 w-56 rounded-full border border-[color-mix(in_srgb,var(--on-forest)_10%,transparent)]" aria-hidden />
 
             <header className="relative flex items-start justify-between gap-5">
               <div className="flex items-center gap-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-[var(--r-md)] border border-on-forest/20 bg-on-forest/10 text-on-forest">
+                <span className="flex h-12 w-12 items-center justify-center rounded-[var(--r-md)] border border-[color-mix(in_srgb,var(--on-forest)_20%,transparent)] bg-[color-mix(in_srgb,var(--on-forest)_10%,transparent)] text-on-forest">
                   <FeaturedIcon size={22} strokeWidth={1.8} aria-hidden />
                 </span>
                 <div>
@@ -86,14 +89,27 @@ export function PricingPreviewSection() {
                 </div>
               </div>
               {featured.badge ? (
-                <span className="rounded-[var(--r-pill)] border border-on-forest/20 bg-on-forest/10 px-3 py-1.5 text-xs font-semibold text-on-forest">
+                <span className="rounded-[var(--r-pill)] border border-[color-mix(in_srgb,var(--on-forest)_20%,transparent)] bg-[color-mix(in_srgb,var(--on-forest)_10%,transparent)] px-3 py-1.5 text-xs font-semibold text-on-forest">
                   {tr(featured.badge, featured.badgeEn ?? featured.badge)}
                 </span>
               ) : null}
             </header>
 
-            <div className="relative mt-10 border-b border-on-forest/15 pb-8">
+            <div className="relative mt-10 border-b border-[color-mix(in_srgb,var(--on-forest)_15%,transparent)] pb-8">
               <Price value={tr(featured.price, featured.priceEn ?? featured.price)} featured />
+              {/* Under a promotion `applyCatalogue` drops the "/tháng" suffix and
+                  moves the term into `promo`, so `Price` alone would render a bare
+                  amount with no period at all — a 9.000đ that looks permanent. */}
+              {featured.promo ? (
+                <p className="mt-2 text-sm text-on-forest-muted">
+                  {tr("giá thường", "standard rate")}{" "}
+                  <span className="line-through">{tr(featured.promo.strikePrice, featured.promo.strikePriceEn)}</span>
+                  {" · "}
+                  <span className="font-semibold text-on-forest">
+                    {tr(featured.promo.periodLabel, featured.promo.periodLabelEn)}
+                  </span>
+                </p>
+              ) : null}
               <p className="mt-4 max-w-[52ch] text-sm font-medium leading-7 text-on-forest-muted sm:text-base">
                 {tr(featured.description, featured.descriptionEn ?? featured.description)}
               </p>
@@ -131,7 +147,10 @@ export function PricingPreviewSection() {
             return (
               <Reveal key={plan.id} delay={0.05 + index * 0.045} className={isElite ? "sm:col-span-2" : undefined}>
                 <article
-                  aria-label={tr(`Gói ${plan.name}, ${plan.price}`, `Plan ${plan.name}, ${plan.priceEn ?? plan.price}`)}
+                  aria-label={tr(
+                    `Gói ${plan.name}, ${plan.price}${plan.promo ? ` ${plan.promo.periodLabel}` : ""}`,
+                    `Plan ${plan.name}, ${plan.priceEn ?? plan.price}${plan.promo ? ` ${plan.promo.periodLabelEn}` : ""}`,
+                  )}
                   className={cn(
                     "group flex h-full min-h-[260px] flex-col rounded-[var(--r-2xl)] border p-5 shadow-sm transition duration-260 hover:-translate-y-1 hover:border-line-strong hover:shadow-md sm:p-6",
                     isGrow ? "border-line-strong bg-surface-soft" : "border-line bg-surface-raised",
@@ -152,6 +171,16 @@ export function PricingPreviewSection() {
 
                   <div className={cn("mt-5", isElite && "sm:mt-0 sm:text-right")}>
                     <Price value={tr(plan.price, plan.priceEn ?? plan.price)} />
+                    {plan.promo ? (
+                      <p className="mt-1 text-xs leading-5 text-ink-soft">
+                        {tr("giá thường", "standard rate")}{" "}
+                        <span className="line-through">{tr(plan.promo.strikePrice, plan.promo.strikePriceEn)}</span>
+                        {" · "}
+                        <span className="font-semibold text-ink">
+                          {tr(plan.promo.periodLabel, plan.promo.periodLabelEn)}
+                        </span>
+                      </p>
+                    ) : null}
                   </div>
 
                   <Link
