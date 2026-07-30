@@ -2,33 +2,27 @@
 
 import { useEffect } from "react";
 
-const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-const RETRY_DELAYS_MS = [0, 8000, 20000];
+import { resolveDjangoBaseUrl } from "@/lib/backend-url";
+
+const BACKEND_BASE_URL = resolveDjangoBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL);
 
 export function BackendWakeup() {
   useEffect(() => {
     if (!BACKEND_BASE_URL) return;
 
     const controller = new AbortController();
-    const timers: ReturnType<typeof setTimeout>[] = [];
     const healthUrl = `${BACKEND_BASE_URL.replace(/\/+$/, "")}/api/health/`;
 
-    RETRY_DELAYS_MS.forEach((delay) => {
-      const timer = setTimeout(() => {
-        void fetch(healthUrl, {
-          method: "GET",
-          cache: "no-store",
-          signal: controller.signal,
-        }).catch(() => {
-          // A sleeping Render instance may time out once; later retries wake it.
-        });
-      }, delay);
-      timers.push(timer);
+    void fetch(healthUrl, {
+      method: "GET",
+      cache: "no-store",
+      signal: controller.signal,
+    }).catch(() => {
+      // The health check is best-effort; normal API requests still surface errors.
     });
 
     return () => {
       controller.abort();
-      timers.forEach(clearTimeout);
     };
   }, []);
 

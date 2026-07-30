@@ -1,4 +1,6 @@
-const DJANGO_BASE_URL = process.env.DJANGO_BASE_URL ?? "http://127.0.0.1:8000";
+import { resolveDjangoBaseUrl } from "@/lib/backend-url";
+
+const DJANGO_BASE_URL = resolveDjangoBaseUrl(process.env.DJANGO_BASE_URL);
 
 function djangoUrl(path: string) {
   const base = DJANGO_BASE_URL.endsWith("/") ? DJANGO_BASE_URL : `${DJANGO_BASE_URL}/`;

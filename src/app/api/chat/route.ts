@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 
+import { resolveDjangoBaseUrl } from "@/lib/backend-url";
 import { buildChatApiResponse } from "@/lib/chat-assistant";
 import { ChatApiRequest, ChatMode, DiagnosisRecord } from "@/types";
 
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL ?? "deepseek-v4-flash";
 const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
-const DJANGO_BASE_URL = process.env.DJANGO_BASE_URL ?? "http://127.0.0.1:8000";
+const DJANGO_BASE_URL = resolveDjangoBaseUrl(process.env.DJANGO_BASE_URL);
 
 /**
  * `ChatConversation.mode` in Django. The UI calls the diagnosis workspace

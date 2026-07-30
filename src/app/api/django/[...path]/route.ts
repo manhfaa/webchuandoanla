@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
-const DJANGO_BASE_URL = process.env.DJANGO_BASE_URL ?? "http://127.0.0.1:8000";
+import { resolveDjangoBaseUrl } from "@/lib/backend-url";
+
+const DJANGO_BASE_URL = resolveDjangoBaseUrl(process.env.DJANGO_BASE_URL);
 const BASE = DJANGO_BASE_URL.endsWith("/") ? DJANGO_BASE_URL : `${DJANGO_BASE_URL}/`;
 const ALLOWED_ORIGIN = new URL(BASE).origin;
 

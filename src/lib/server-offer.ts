@@ -1,4 +1,5 @@
 import { pricingPlans } from "@/data/mock/plans";
+import { resolveDjangoBaseUrl } from "@/lib/backend-url";
 import { applyCatalogue, type ServicePlanDto } from "@/lib/payments-client";
 import { periodMultiple } from "@/lib/plan-catalogue";
 import type { PricingPlan } from "@/types";
@@ -14,14 +15,14 @@ import type { PricingPlan } from "@/types";
  */
 export const MIN_ANNOUNCEABLE_SAVING = 20;
 
-const DJANGO_BASE_URL = process.env.DJANGO_BASE_URL ?? "http://127.0.0.1:8000";
+const DJANGO_BASE_URL = resolveDjangoBaseUrl(process.env.DJANGO_BASE_URL);
 
 /**
  * The cheapest paid plan currently sold on a longer-than-standard term.
  *
  * Read on the server so the band is in the first HTML rather than appearing
- * later: the backend is a Render free service whose cold start runs to tens of
- * seconds, and a ~150px band materialising above a grower mid-scroll is worse
+ * later: waiting on a remote backend can still delay the first render, and a
+ * ~150px band materialising above a grower mid-scroll is worse
  * than no band at all. Failure is silent and returns null, which is also what
  * "no campaign" looks like — the surface is absent by default and has to be
  * switched on by the catalogue, never the other way round.
