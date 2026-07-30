@@ -1,4 +1,4 @@
-export const DEFAULT_DJANGO_BASE_URL = "https://api.103-124-94-97.sslip.io";
+export const DEFAULT_DJANGO_BASE_URL = "https://api.agromind.io.vn";
 
 const LEGACY_RENDER_BASE_URL = "https://webchuandoanla-backend.onrender.com";
 

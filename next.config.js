@@ -10,7 +10,7 @@ const cspDirectives = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://upload.wikimedia.org https://lh3.googleusercontent.com https://*.tile.openstreetmap.org https://api.qrserver.com https://qr.sepay.vn https://vietqr.app https://*.clarity.ms https://c.bing.com",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.sslip.io https://*.vercel.app https://accounts.google.com https://oauth2.googleapis.com https://*.clarity.ms https://c.bing.com http://127.0.0.1:* http://localhost:*",
+  "connect-src 'self' https://*.agromind.io.vn https://*.sslip.io https://*.vercel.app https://accounts.google.com https://oauth2.googleapis.com https://*.clarity.ms https://c.bing.com http://127.0.0.1:* http://localhost:*",
   "frame-src 'self' https://accounts.google.com",
   "media-src 'self' data: blob:",
   "worker-src 'self' blob:",
