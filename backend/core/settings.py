@@ -148,7 +148,7 @@ if EMAIL_USE_SSL and EMAIL_USE_TLS:
 # Without a timeout a stalled provider holds the request until the gunicorn
 # worker is killed, which on a single-worker free tier stalls the whole API.
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Agromind AI <no-reply@agromindai.vercel.app>")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Agromind AI <no-reply@agromind.io.vn>")
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 # Render blocks outbound SMTP — a connection to smtp.gmail.com:587 from a

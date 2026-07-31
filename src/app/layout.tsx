@@ -3,6 +3,7 @@ import { Be_Vietnam_Pro, Bricolage_Grotesque } from "next/font/google";
 
 import { BackendWakeup } from "@/components/system/backend-wakeup";
 import { ClarityAnalytics } from "@/components/system/clarity-analytics";
+import { GoogleAnalytics } from "@/components/system/google-analytics";
 import { brand } from "@/constants/brand";
 import { HtmlLangSync } from "@/components/layout/html-lang-sync";
 import { SkipLink } from "@/components/layout/skip-link";
@@ -25,6 +26,11 @@ const bricolage = Bricolage_Grotesque({
 });
 
 export const metadata: Metadata = {
+  // Without this, every relative URL Next.js resolves for Open Graph and
+  // canonical tags falls back to localhost in the built output — so a shared
+  // link renders no preview. Overridable per environment so Vercel previews
+  // describe themselves rather than production.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://agromind.io.vn"),
   title: `${brand.name} | Theo dõi sức khỏe cây từ ảnh lá`,
   description: brand.description,
   icons: {
@@ -53,6 +59,7 @@ export default function RootLayout({
           <BackendWakeup />
           {children}
           <ClarityAnalytics />
+          <GoogleAnalytics />
         </ThemeProvider>
       </body>
     </html>

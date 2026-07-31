@@ -39,7 +39,7 @@ The AI result is advisory. Never claim 100% accuracy. When disease spreads quick
 - GitHub: `https://github.com/manhfaa/webchuandoanla`
 - Remote: `origin`
 - Branch: `main`
-- Production frontend: `https://agromindai.vercel.app`
+- Production frontend: `https://agromind.io.vn` (also reachable at `https://agromindai.vercel.app`)
 - Production backend: `https://webchuandoanla-backend.onrender.com`
 - Hugging Face API: `https://phamducmanh-agromind-cnn-api.hf.space`
 - Hugging Face Space: `https://huggingface.co/spaces/phamducmanh/agromind-cnn-api`

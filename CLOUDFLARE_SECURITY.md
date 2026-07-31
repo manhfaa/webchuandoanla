@@ -65,7 +65,7 @@ Do not duplicate conflicting CSP rules in Cloudflare Transform Rules unless you 
 
 ## Environment values
 
-If the final Cloudflare domain is not `agromindai.vercel.app`, update:
+If the final Cloudflare domain is not `agromind.io.vn`, update:
 
 ```env
 NEXT_PUBLIC_SITE_URL=https://your-domain.com

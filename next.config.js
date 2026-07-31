@@ -6,11 +6,17 @@ const cspDirectives = [
   "form-action 'self'",
   "frame-ancestors 'none'",
   "object-src 'none'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.clarity.ms https://c.bing.com",
+  // googletagmanager serves the GA4 tag itself; google-analytics receives the
+  // hits. GA needs all three directives — script to load, img for the legacy
+  // collect pixel, connect for the modern fetch/beacon transport. Miss one and
+  // GA fails silently: the tag loads but reports nothing.
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.clarity.ms https://c.bing.com https://www.googletagmanager.com",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://upload.wikimedia.org https://lh3.googleusercontent.com https://*.tile.openstreetmap.org https://api.qrserver.com https://qr.sepay.vn https://vietqr.app https://*.clarity.ms https://c.bing.com",
+  "img-src 'self' data: blob: https://upload.wikimedia.org https://lh3.googleusercontent.com https://*.tile.openstreetmap.org https://api.qrserver.com https://qr.sepay.vn https://vietqr.app https://*.clarity.ms https://c.bing.com https://www.google-analytics.com",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.agromind.io.vn https://*.sslip.io https://*.vercel.app https://accounts.google.com https://oauth2.googleapis.com https://*.clarity.ms https://c.bing.com http://127.0.0.1:* http://localhost:*",
+  // `https://*.agromind.io.vn` does NOT match the apex `agromind.io.vn` — a
+  // CSP wildcard covers subdomains only — so the apex is listed separately.
+  "connect-src 'self' https://agromind.io.vn https://*.agromind.io.vn https://*.sslip.io https://*.vercel.app https://accounts.google.com https://oauth2.googleapis.com https://*.clarity.ms https://c.bing.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com http://127.0.0.1:* http://localhost:*",
   "frame-src 'self' https://accounts.google.com",
   "media-src 'self' data: blob:",
   "worker-src 'self' blob:",

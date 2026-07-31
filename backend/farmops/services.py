@@ -48,7 +48,7 @@ def _geocode_with_nominatim(query: str) -> dict[str, Any] | None:
     request = Request(
         url,
         headers={
-            "User-Agent": "AgromindAI/1.0 (https://agromindai.vercel.app)",
+            "User-Agent": "AgromindAI/1.0 (https://agromind.io.vn)",
         },
     )
 

@@ -15,14 +15,18 @@ services:
         value: False
       - key: ALLOWED_HOSTS
         value: .onrender.com
+      # Singular: this one builds the password-reset link, so it must be the
+      # canonical public site, not a list.
       - key: FRONTEND_ORIGIN
-        value: https://agromindai.vercel.app
+        value: https://agromind.io.vn
+      # The Vercel origin stays listed alongside the custom domain — it still
+      # serves the site, and dropping it would break preview deployments.
       - key: CORS_ALLOWED_ORIGINS
-        value: https://agromindai.vercel.app
+        value: https://agromind.io.vn,https://www.agromind.io.vn,https://agromindai.vercel.app
       - key: CORS_ALLOWED_ORIGIN_REGEXES
         value: ^https://.*\.vercel\.app$
       - key: CSRF_TRUSTED_ORIGINS
-        value: https://webchuandoanla-backend.onrender.com,https://*.vercel.app
+        value: https://webchuandoanla-backend.onrender.com,https://agromind.io.vn,https://www.agromind.io.vn,https://*.vercel.app
       - key: CNN_API_URL
         value: https://phamducmanh-agromind-cnn-api.hf.space
       - key: SECRET_KEY
