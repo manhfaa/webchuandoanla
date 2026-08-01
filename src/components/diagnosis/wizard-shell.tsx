@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Check } from "lucide-react";
 
 import { useTr } from "@/lib/use-tr";
@@ -44,9 +44,36 @@ export function WizardShell({
 }) {
   const tr = useTr();
   const activeIndex = WIZARD_STEPS.findIndex((item) => item.id === step);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const seenRef = useRef<WizardStepId | null>(null);
+
+  // Bring the new step to the top of the viewport the moment it replaces the old
+  // one. Without this the step swaps in place: a grower who had scrolled down to
+  // reach the button that advanced them is still scrolled down afterwards, so
+  // the next step is off screen and they have to scroll back up to find work
+  // that is already waiting for them.
+  //
+  // Skipped on the very first step the component sees, because yanking the page
+  // on arrival is disorienting and there is nothing above to scroll past yet.
+  useEffect(() => {
+    const first = seenRef.current === null;
+    const changed = seenRef.current !== step;
+    seenRef.current = step;
+    if (first || !changed) return;
+
+    const node = rootRef.current;
+    if (!node) return;
+    const reduce =
+      typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    node.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    // Move focus to the step heading too, so a screen-reader or keyboard user is
+    // told what changed instead of being left wherever the old button was.
+    const heading = node.querySelector<HTMLElement>("[data-step-heading]");
+    heading?.focus({ preventScroll: true });
+  }, [step]);
 
   return (
-    <div className="flex min-h-[calc(100dvh-11rem)] flex-col gap-5">
+    <div ref={rootRef} className="flex min-h-[calc(100dvh-11rem)] scroll-mt-4 flex-col gap-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <ol className="flex w-full items-center gap-1.5 sm:w-auto" aria-label={tr("Tiến trình kiểm tra", "Check progress")}>
           {WIZARD_STEPS.map((item, index) => {
@@ -93,7 +120,15 @@ export function WizardShell({
 
       <div className="flex flex-1 flex-col rounded-[var(--r-xl)] border border-line bg-surface-raised p-4 shadow-sm sm:p-6">
         <div>
-          <h2 className="font-display text-2xl font-bold tracking-[-0.03em] text-ink sm:text-3xl">{title}</h2>
+          {/* tabIndex -1 so focus can be moved here on a step change without
+              putting the heading into the tab order. */}
+          <h2
+            data-step-heading
+            tabIndex={-1}
+            className="font-display text-2xl font-bold tracking-[-0.03em] text-ink outline-none sm:text-3xl"
+          >
+            {title}
+          </h2>
           {description ? (
             <p className="mt-2 max-w-2xl text-sm leading-7 text-ink-soft">{description}</p>
           ) : null}

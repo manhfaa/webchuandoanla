@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AlertTriangle, MessageSquareText, Mic, PlayCircle, Sparkles } from "lucide-react";
 
 import { AIProcessStepper } from "@/components/diagnosis/ai-process-stepper";
@@ -1191,314 +1191,318 @@ export default function DashboardDiagnosisPage() {
     setManualStep("photo");
   }
 
-  return (
-    <>
-      {wizardStep === "crop" ? (
-        <WizardShell
-          step="crop"
-          title={tr("Bạn đang kiểm tra cây gì?", "Which crop are you checking?")}
-          description={tr(
-            "Chọn cây trồng để kết quả chỉ hiện các bệnh của đúng loại cây đó. Bỏ qua nếu bạn chưa chắc.",
-            "Pick the crop so results only cover that plant's diseases. Skip it if you are not sure.",
-          )}
-          aside={contextChips}
-          footer={
-            <Button size="lg" onClick={() => setManualStep("photo")} className="w-full sm:w-auto">
-              {tr("Tiếp tục", "Continue")}
-            </Button>
-          }
+  // ONE shell instance for all four steps. Rendering a separate <WizardShell>
+  // per branch unmounted it on every step change, which reset the shell's own
+  // "have I been here before" ref — so its scroll-to-new-step effect always
+  // thought it was the first render and never fired. Switching the contents
+  // instead keeps the instance alive, and the effect sees a real change.
+  let stepTitle: string;
+  let stepDescription: string;
+  let stepFooter: ReactNode = null;
+  let stepBody: ReactNode = null;
+
+  if (wizardStep === "crop") {
+    stepTitle = tr("Bạn đang kiểm tra cây gì?", "Which crop are you checking?");
+    stepDescription = tr(
+      "Chọn cây trồng để kết quả chỉ hiện các bệnh của đúng loại cây đó. Bỏ qua nếu bạn chưa chắc.",
+      "Pick the crop so results only cover that plant's diseases. Skip it if you are not sure.",
+    );
+    stepFooter = (
+      <Button size="lg" onClick={() => setManualStep("photo")} className="w-full sm:w-auto">
+        {tr("Tiếp tục", "Continue")}
+      </Button>
+    );
+    stepBody = (
+      <div className="space-y-4">
+        <CropPicker value={cropId} onChange={handleCropChange} className="sm:max-w-md" />
+        <p className="max-w-2xl text-sm leading-7 text-ink-soft">
+          {cropId
+            ? tr(
+                `Kết quả sẽ chỉ hiện các bệnh trên ${findCrop(cropId)?.name}. Nếu ảnh không giống bệnh nào của cây này, hệ thống sẽ nói rõ thay vì đoán bừa.`,
+                `Results will show only diseases of ${findCrop(cropId)?.nameEn}. If the photo matches none of them, you will be told plainly rather than given a guess.`,
+              )
+            : tr(
+                "Chưa chọn thì hệ thống giữ đủ 5 khả năng từ ảnh.",
+                "Left unset, all five possibilities from the photo are kept.",
+              )}
+        </p>
+      </div>
+    );
+  } else if (wizardStep === "photo") {
+    stepTitle = tr("Chụp hoặc chọn một ảnh lá", "Take or choose a leaf photo");
+    stepDescription = tr(
+      "Một chiếc lá, đủ sáng, chiếm phần lớn khung hình.",
+      "One leaf, well lit, filling most of the frame.",
+    );
+    stepFooter = (
+      <>
+        <Button variant="ghost" onClick={() => setManualStep("crop")} disabled={busy} className="w-full sm:w-auto">
+          {tr("Quay lại", "Back")}
+        </Button>
+        <Button
+          size="lg"
+          loading={busy}
+          disabled={busy || !previewUrl}
+          onClick={() => {
+            void handleStartDiagnosis();
+          }}
+          className="w-full sm:w-auto"
         >
-          <div className="space-y-4">
-            <CropPicker value={cropId} onChange={handleCropChange} className="sm:max-w-md" />
-            <p className="max-w-2xl text-sm leading-7 text-ink-soft">
-              {cropId
-                ? tr(
-                    `Kết quả sẽ chỉ hiện các bệnh trên ${findCrop(cropId)?.name}. Nếu ảnh không giống bệnh nào của cây này, hệ thống sẽ nói rõ thay vì đoán bừa.`,
-                    `Results will show only diseases of ${findCrop(cropId)?.nameEn}. If the photo matches none of them, you will be told plainly rather than given a guess.`,
-                  )
-                : tr(
-                    "Chưa chọn thì hệ thống giữ đủ 5 khả năng từ ảnh.",
-                    "Left unset, all five possibilities from the photo are kept.",
+          <PlayCircle size={18} aria-hidden /> {tr("Bắt đầu kiểm tra", "Start check")}
+        </Button>
+      </>
+    );
+    stepBody = (
+      <div className="space-y-4">
+        {showCameraSurface ? (
+          <CameraFrame
+            previewUrl={previewUrl}
+            busy={busy}
+            cameraState={cameraState}
+            cameraError={cameraError}
+            videoRef={videoRef}
+            onOpenCamera={() => {
+              void openCamera();
+            }}
+            onCapture={() => {
+              void captureFromCamera();
+            }}
+            onCloseCamera={() => stopCameraStream()}
+            onSwitchCamera={handleSwitchCamera}
+          />
+        ) : (
+          <UploadPanel
+            busy={busy}
+            cameraSupported={cameraSupported}
+            onFileSelected={applySelectedFile}
+            onOpenCamera={() => {
+              void openCamera();
+            }}
+          />
+        )}
+
+        {previewUrl && !busy ? (
+          <button
+            type="button"
+            onClick={() => {
+              setPreviewUrl(null);
+              setInputMethod(null);
+              setLeafAnalysis(null);
+              setStatus("idle");
+            }}
+            className="text-sm font-semibold text-leaf-strong underline underline-offset-4"
+          >
+            {tr("Chọn ảnh khác", "Choose a different photo")}
+          </button>
+        ) : null}
+
+        {status === "invalid-image" ? (
+          <div className="flex items-start gap-3 rounded-[var(--r-md)] border border-[color-mix(in_srgb,var(--sun)_45%,transparent)] bg-sun-soft p-4">
+            <AlertTriangle size={20} className="mt-0.5 shrink-0 text-warning-ink" aria-hidden />
+            <div>
+              <p className="font-semibold text-ink">{tr("Ảnh chưa dùng được", "This photo cannot be used")}</p>
+              <p className="mt-1 text-sm leading-6 text-ink-soft">
+                {serviceError ??
+                  leafAnalysis?.reason ??
+                  tr(
+                    "Hãy thử chụp gần hơn vào lá, tăng ánh sáng hoặc đổi sang một ảnh rõ hơn.",
+                    "Try shooting closer to the leaf, adding light, or switching to a clearer image.",
                   )}
-            </p>
+              </p>
+            </div>
           </div>
-        </WizardShell>
-      ) : null}
+        ) : null}
 
-      {wizardStep === "photo" ? (
-        <WizardShell
-          step="photo"
-          title={tr("Chụp hoặc chọn một ảnh lá", "Take or choose a leaf photo")}
-          description={tr(
-            "Một chiếc lá, đủ sáng, chiếm phần lớn khung hình.",
-            "One leaf, well lit, filling most of the frame.",
-          )}
-          aside={contextChips}
-          footer={
-            <>
-              <Button variant="ghost" onClick={() => setManualStep("crop")} disabled={busy} className="w-full sm:w-auto">
-                {tr("Quay lại", "Back")}
-              </Button>
-              <Button
-                size="lg"
-                loading={busy}
-                disabled={busy || !previewUrl}
-                onClick={() => {
-                  void handleStartDiagnosis();
-                }}
-                className="w-full sm:w-auto"
-              >
-                <PlayCircle size={18} aria-hidden /> {tr("Bắt đầu kiểm tra", "Start check")}
-              </Button>
-            </>
-          }
+        {busy ? <AIProcessStepper steps={processSteps} /> : null}
+      </div>
+    );
+  } else if (wizardStep === "symptoms") {
+    stepTitle = tr("Bạn nhìn thấy dấu hiệu gì trên cây?", "What signs do you see on the plant?");
+    stepDescription = tr(
+      "Mô tả đốm, màu sắc, vị trí trên lá hoặc thời tiết gần đây. Có thể bỏ qua.",
+      "Describe spots, colours, position on the leaf, or recent weather. Skippable.",
+    );
+    stepFooter = (
+      <>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            void finalizeDiagnosisWithSymptoms("");
+          }}
+          disabled={busy}
+          className="w-full sm:w-auto"
         >
-          <div className="space-y-4">
-            {showCameraSurface ? (
-              <CameraFrame
-                previewUrl={previewUrl}
-                busy={busy}
-                cameraState={cameraState}
-                cameraError={cameraError}
-                videoRef={videoRef}
-                onOpenCamera={() => {
-                  void openCamera();
-                }}
-                onCapture={() => {
-                  void captureFromCamera();
-                }}
-                onCloseCamera={() => stopCameraStream()}
-                onSwitchCamera={handleSwitchCamera}
-              />
-            ) : (
-              <UploadPanel
-                busy={busy}
-                cameraSupported={cameraSupported}
-                onFileSelected={applySelectedFile}
-                onOpenCamera={() => {
-                  void openCamera();
-                }}
-              />
-            )}
-
-            {previewUrl && !busy ? (
+          {tr("Bỏ qua bước này", "Skip this step")}
+        </Button>
+        <Button
+          size="lg"
+          onClick={() => {
+            void finalizeDiagnosisWithSymptoms(symptomText);
+          }}
+          disabled={!symptomText.trim() || busy}
+          className="w-full sm:w-auto"
+        >
+          {tr("Xem kết quả", "See the result")}
+        </Button>
+      </>
+    );
+    stepBody = (
+      <div className="space-y-4">
+        {/* The five possibilities are deliberately NOT shown here. Reading
+            "Cà chua · Đốm vi khuẩn 31%" before writing a description makes the
+            grower describe that disease back to the system, and the symptom
+            cross-check then agrees with the model by construction. The
+            predictions still travel with the request — they are just not on
+            screen while the observation is being written. */}
+        <div>
+          {/* The mic shares the label's row rather than taking one of its own:
+              a separate button row pushed this step 15px past a 390x844
+              screen, which is the whole point of the wizard. */}
+          <div className="flex items-center justify-between gap-3">
+            <label htmlFor="symptom-text" className="text-sm font-bold text-ink">
+              {tr("Mô tả triệu chứng", "Describe the symptoms")}
+            </label>
+            {voice.supported ? (
               <button
                 type="button"
                 onClick={() => {
-                  setPreviewUrl(null);
-                  setInputMethod(null);
-                  setLeafAnalysis(null);
-                  setStatus("idle");
+                  if (voice.listening) voice.stop();
+                  else voice.start();
                 }}
-                className="text-sm font-semibold text-leaf-strong underline underline-offset-4"
+                aria-pressed={voice.listening}
+                className="inline-flex min-h-11 items-center gap-2 rounded-[var(--r-md)] border border-line bg-surface px-3 text-sm font-semibold text-ink transition hover:bg-surface-soft"
               >
-                {tr("Chọn ảnh khác", "Choose a different photo")}
+                <Mic size={16} className="text-leaf-strong" aria-hidden />
+                {voice.listening ? tr("Dừng", "Stop") : tr("Nói", "Speak")}
               </button>
             ) : null}
-
-            {status === "invalid-image" ? (
-              <div className="flex items-start gap-3 rounded-[var(--r-md)] border border-[color-mix(in_srgb,var(--sun)_45%,transparent)] bg-sun-soft p-4">
-                <AlertTriangle size={20} className="mt-0.5 shrink-0 text-warning-ink" aria-hidden />
-                <div>
-                  <p className="font-semibold text-ink">{tr("Ảnh chưa dùng được", "This photo cannot be used")}</p>
-                  <p className="mt-1 text-sm leading-6 text-ink-soft">
-                    {serviceError ??
-                      leafAnalysis?.reason ??
-                      tr(
-                        "Hãy thử chụp gần hơn vào lá, tăng ánh sáng hoặc đổi sang một ảnh rõ hơn.",
-                        "Try shooting closer to the leaf, adding light, or switching to a clearer image.",
-                      )}
-                  </p>
-                </div>
-              </div>
-            ) : null}
-
-            {busy ? <AIProcessStepper steps={processSteps} /> : null}
           </div>
-        </WizardShell>
-      ) : null}
+          <textarea
+            id="symptom-text"
+            value={symptomText}
+            onChange={(event) => {
+              setSymptomText(event.target.value);
+              setResearchError(null);
+            }}
+            rows={4}
+            className="mt-2 min-h-[160px] w-full resize-none rounded-[var(--r-md)] border border-line bg-surface-soft px-4 py-3 text-base leading-7 text-ink outline-none transition placeholder:text-ink-muted focus:border-leaf focus:bg-surface focus:ring-2 focus:ring-[color-mix(in_srgb,var(--leaf)_20%,transparent)]"
+            placeholder={tr(
+              "Ví dụ: lá có đốm nâu lan từ mép, mặt dưới hơi mốc trắng, cây mới mưa nhiều 3 ngày...",
+              "e.g. brown spots spreading from the edges, slight white mould underneath, heavy rain for the last 3 days...",
+            )}
+          />
+        </div>
 
-      {wizardStep === "symptoms" ? (
-        <WizardShell
-          step="symptoms"
-          title={tr("Bạn nhìn thấy dấu hiệu gì trên cây?", "What signs do you see on the plant?")}
-          description={tr(
-            "Mô tả đốm, màu sắc, vị trí trên lá hoặc thời tiết gần đây. Có thể bỏ qua.",
-            "Describe spots, colours, position on the leaf, or recent weather. Skippable.",
-          )}
-          aside={contextChips}
-          footer={
-            <>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  void finalizeDiagnosisWithSymptoms("");
-                }}
-                disabled={busy}
-                className="w-full sm:w-auto"
-              >
-                {tr("Bỏ qua bước này", "Skip this step")}
-              </Button>
-              <Button
-                size="lg"
-                onClick={() => {
-                  void finalizeDiagnosisWithSymptoms(symptomText);
-                }}
-                disabled={!symptomText.trim() || busy}
-                className="w-full sm:w-auto"
-              >
-                {tr("Xem kết quả", "See the result")}
-              </Button>
-            </>
-          }
-        >
-          <div className="space-y-4">
-            {/* The five possibilities are deliberately NOT shown here. Reading
-                "Cà chua · Đốm vi khuẩn 31%" before writing a description makes
-                the grower describe that disease back to the system, and the
-                symptom text then agrees with the model by construction. The
-                predictions still travel with the request — they are just not on
-                screen while the observation is being written. */}
-            <div>
-              <label htmlFor="symptom-text" className="text-sm font-bold text-ink">
-                {tr("Mô tả triệu chứng", "Describe the symptoms")}
-              </label>
-              <textarea
-                id="symptom-text"
-                value={symptomText}
-                onChange={(event) => {
-                  setSymptomText(event.target.value);
-                  setResearchError(null);
-                }}
-                rows={4}
-                className="mt-2 min-h-[160px] w-full resize-none rounded-[var(--r-md)] border border-line bg-surface-soft px-4 py-3 text-base leading-7 text-ink outline-none transition placeholder:text-ink-muted focus:border-leaf focus:bg-surface focus:ring-2 focus:ring-[color-mix(in_srgb,var(--leaf)_20%,transparent)]"
-                placeholder={tr(
-                  "Ví dụ: lá có đốm nâu lan từ mép, mặt dưới hơi mốc trắng, cây mới mưa nhiều 3 ngày...",
-                  "e.g. brown spots spreading from the edges, slight white mould underneath, heavy rain for the last 3 days...",
-                )}
-              />
-            </div>
-
-            {voice.supported ? (
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    if (voice.listening) voice.stop();
-                    else voice.start();
-                  }}
-                >
-                  <Mic size={16} aria-hidden />
-                  {voice.listening ? tr("Dừng ghi âm", "Stop recording") : tr("Nói thay vì gõ", "Speak instead of typing")}
-                </Button>
-                {voiceNote || voice.transcript ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const spoken = (voice.transcript || voiceNote).trim();
-                      if (!spoken) return;
-                      setSymptomText((current) => (current.trim() ? `${current.trim()} ${spoken}` : spoken));
-                    }}
-                    className="text-sm font-semibold text-leaf-strong underline underline-offset-4"
-                  >
-                    {tr("Chèn lời vừa nói vào mô tả", "Insert what you said")}
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
-
-            {voice.listening || voiceNote || voice.transcript ? (
-              <p className="rounded-[var(--r-md)] border border-line bg-surface-soft px-4 py-3 text-sm leading-6 text-ink-soft">
-                {voice.listening
-                  ? tr("Đang nghe...", "Listening...")
-                  : voice.transcript || voiceNote}
-              </p>
-            ) : null}
-
-            {researchError ? (
-              <div className="rounded-[var(--r-md)] border border-[color-mix(in_srgb,var(--danger)_30%,transparent)] bg-danger-soft px-4 py-3 text-sm leading-6 text-danger-ink">
-                {researchError}
-              </div>
-            ) : null}
-
-            <p className="text-xs leading-6 text-ink-soft">
-              {tr(
-                "Chỉ khi bạn mô tả triệu chứng, hệ thống mới đi tìm và tổng hợp nguồn tham khảo. Các nguồn được lưu cùng kết quả để bạn mở kiểm tra lại.",
-                "Only when you describe symptoms does the system search and compile reference sources. They are saved with the result so you can open them later.",
-              )}
+        {voice.listening || voiceNote || voice.transcript ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--r-md)] border border-line bg-surface-soft px-4 py-3">
+            <p className="min-w-0 flex-1 text-sm leading-6 text-ink-soft">
+              {voice.listening ? tr("Đang nghe...", "Listening...") : voice.transcript || voiceNote}
             </p>
-          </div>
-        </WizardShell>
-      ) : null}
-
-      {wizardStep === "result" ? (
-        <WizardShell
-          step="result"
-          title={tr("Kết quả kiểm tra", "Check result")}
-          description={tr(
-            "Kết quả là gợi ý để bạn tiếp tục quan sát, không thay thế đánh giá tại vườn.",
-            "The result is a suggestion to keep observing, not a substitute for judgement in the field.",
-          )}
-          aside={contextChips}
-          footer={
-            <>
-              <Button variant="ghost" onClick={restartCheck} className="w-full sm:w-auto">
-                {tr("Kiểm tra ảnh khác", "Check another photo")}
-              </Button>
-              {selectedRecord ? (
-                <Link href="/dashboard/chat" className={cn(buttonVariants({ variant: "secondary" }), "w-full sm:w-auto")}>
-                  <MessageSquareText size={16} aria-hidden /> {tr("Hỏi thêm", "Ask a follow-up")}
-                </Link>
-              ) : null}
-              {selectedRecord ? (
-                <Link
-                  href={`/dashboard/results/${selectedRecord.id}`}
-                  className={cn(buttonVariants({ variant: "primary" }), "w-full sm:w-auto")}
-                >
-                  {tr("Xem chi tiết", "View details")}
-                </Link>
-              ) : null}
-            </>
-          }
-        >
-          <div className="space-y-4">
-            <DiagnosisResultCard
-              record={selectedRecord}
-              locked={chatLocked && status === "success"}
-              onUpgrade={() => setUpgradeOpen(true)}
-            />
-
-            {leafAnalysis ? (
-              <div className="grid gap-3 sm:grid-cols-3">
-                {[
-                  [tr("Độ tin cậy", "Confidence"), leafAnalysis.confidence],
-                  [tr("Vùng lá trong ảnh", "Leaf area"), leafAnalysis.plantLikeRatio],
-                  [tr("Nhận biết màu lá", "Leaf colour"), leafAnalysis.greenRatio],
-                ].map(([label, value]) => (
-                  <div key={String(label)} className="rounded-[var(--r-md)] border border-line bg-surface p-4">
-                    <p className="text-overline text-leaf-strong">{label}</p>
-                    <p className="mt-2 font-display text-2xl font-bold text-ink">
-                      {formatConfidence(Number(value))}
-                    </p>
-                  </div>
-                ))}
-              </div>
+            {!voice.listening && (voice.transcript || voiceNote) ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const spoken = (voice.transcript || voiceNote).trim();
+                  if (!spoken) return;
+                  setSymptomText((current) => (current.trim() ? `${current.trim()} ${spoken}` : spoken));
+                }}
+                className="shrink-0 text-sm font-semibold text-leaf-strong underline underline-offset-4"
+              >
+                {tr("Chèn vào mô tả", "Insert")}
+              </button>
             ) : null}
-
-            <div className="flex items-start gap-3 rounded-[var(--r-md)] border border-line bg-surface-soft p-4">
-              <Sparkles size={18} className="mt-0.5 shrink-0 text-leaf-strong" aria-hidden />
-              <p className="text-sm leading-7 text-ink-soft">
-                {tr(
-                  "Nếu dấu hiệu lan nhanh, xuất hiện trên nhiều cây hoặc bạn định dùng thuốc, hãy hỏi chuyên gia nông nghiệp địa phương trước khi xử lý.",
-                  "If signs spread quickly, appear on many plants, or you plan to use pesticides, consult a local agriculture expert before acting.",
-                )}
-              </p>
-            </div>
-
-            <AIProcessStepper steps={processSteps} />
           </div>
-        </WizardShell>
-      ) : null}
+        ) : null}
+
+        {researchError ? (
+          <div className="rounded-[var(--r-md)] border border-[color-mix(in_srgb,var(--danger)_30%,transparent)] bg-danger-soft px-4 py-3 text-sm leading-6 text-danger-ink">
+            {researchError}
+          </div>
+        ) : null}
+
+        <p className="text-xs leading-6 text-ink-soft">
+          {tr(
+            "Chỉ khi bạn mô tả triệu chứng, hệ thống mới đi tìm và tổng hợp nguồn tham khảo. Các nguồn được lưu cùng kết quả để bạn mở kiểm tra lại.",
+            "Only when you describe symptoms does the system search and compile reference sources. They are saved with the result so you can open them later.",
+          )}
+        </p>
+      </div>
+    );
+  } else {
+    stepTitle = tr("Kết quả kiểm tra", "Check result");
+    stepDescription = tr(
+      "Kết quả là gợi ý để bạn tiếp tục quan sát, không thay thế đánh giá tại vườn.",
+      "The result is a suggestion to keep observing, not a substitute for judgement in the field.",
+    );
+    stepFooter = (
+      <>
+        <Button variant="ghost" onClick={restartCheck} className="w-full sm:w-auto">
+          {tr("Kiểm tra ảnh khác", "Check another photo")}
+        </Button>
+        {selectedRecord ? (
+          <Link href="/dashboard/chat" className={cn(buttonVariants({ variant: "secondary" }), "w-full sm:w-auto")}>
+            <MessageSquareText size={16} aria-hidden /> {tr("Hỏi thêm", "Ask a follow-up")}
+          </Link>
+        ) : null}
+        {selectedRecord ? (
+          <Link
+            href={`/dashboard/results/${selectedRecord.id}`}
+            className={cn(buttonVariants({ variant: "primary" }), "w-full sm:w-auto")}
+          >
+            {tr("Xem chi tiết", "View details")}
+          </Link>
+        ) : null}
+      </>
+    );
+    stepBody = (
+      <div className="space-y-4">
+        <DiagnosisResultCard
+          record={selectedRecord}
+          locked={chatLocked && status === "success"}
+          onUpgrade={() => setUpgradeOpen(true)}
+        />
+
+        {leafAnalysis ? (
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              [tr("Độ tin cậy", "Confidence"), leafAnalysis.confidence],
+              [tr("Vùng lá trong ảnh", "Leaf area"), leafAnalysis.plantLikeRatio],
+              [tr("Nhận biết màu lá", "Leaf colour"), leafAnalysis.greenRatio],
+            ].map(([label, value]) => (
+              <div key={String(label)} className="rounded-[var(--r-md)] border border-line bg-surface p-4">
+                <p className="text-overline text-leaf-strong">{label}</p>
+                <p className="mt-2 font-display text-2xl font-bold text-ink">{formatConfidence(Number(value))}</p>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        <div className="flex items-start gap-3 rounded-[var(--r-md)] border border-line bg-surface-soft p-4">
+          <Sparkles size={18} className="mt-0.5 shrink-0 text-leaf-strong" aria-hidden />
+          <p className="text-sm leading-7 text-ink-soft">
+            {tr(
+              "Nếu dấu hiệu lan nhanh, xuất hiện trên nhiều cây hoặc bạn định dùng thuốc, hãy hỏi chuyên gia nông nghiệp địa phương trước khi xử lý.",
+              "If signs spread quickly, appear on many plants, or you plan to use pesticides, consult a local agriculture expert before acting.",
+            )}
+          </p>
+        </div>
+
+        <AIProcessStepper steps={processSteps} />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <WizardShell
+        step={wizardStep}
+        title={stepTitle}
+        description={stepDescription}
+        aside={contextChips}
+        footer={stepFooter}
+      >
+        {stepBody}
+      </WizardShell>
 
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </>
