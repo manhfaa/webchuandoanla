@@ -85,7 +85,11 @@ export function Modal({
   // from "the viewport" into "inside that animated element". The dialog ended up
   // offset and taller than the screen with its top and bottom unreachable.
   return createPortal(
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-forest/70 p-4 backdrop-blur-sm">
+    // `bg-forest/70` compiled to nothing: colour tokens are bare `var(--token)`
+    // with no <alpha-value>, so the modifier produced invalid CSS that Tailwind
+    // dropped. The scrim was simply absent and only the blur separated the
+    // dialog from the page behind it. color-mix() is the working form.
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[color-mix(in_srgb,var(--forest)_70%,transparent)] p-4 backdrop-blur-sm">
       <div
         className="absolute inset-0"
         aria-hidden="true"
@@ -118,7 +122,10 @@ export function Modal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-line p-2 text-ink-soft transition hover:bg-surface-soft hover:text-ink"
+            // 44x44 minimum. At `p-2` around an 18px icon this was a 34px
+            // target — below the threshold for a thumb, and it is the only way
+            // out of a dialog for anyone not using a keyboard.
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line text-ink-soft transition hover:bg-surface-soft hover:text-ink"
             aria-label={tr("Đóng", "Close")}
           >
             <X size={18} />

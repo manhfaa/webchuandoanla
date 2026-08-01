@@ -7,6 +7,7 @@ import { AlertTriangle, MessageSquareText, Sparkles } from "lucide-react";
 import { AIProcessStepper } from "@/components/diagnosis/ai-process-stepper";
 import type { StepItem } from "@/components/diagnosis/ai-process-stepper";
 import { CameraFrame } from "@/components/diagnosis/camera-frame";
+import { CropPicker } from "@/components/diagnosis/crop-picker";
 import { DiagnosisResultCard } from "@/components/diagnosis/result-card";
 import { UploadPanel } from "@/components/diagnosis/upload-panel";
 import { QuotaHint } from "@/components/plan/quota-hint";
@@ -15,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { djangoClassifyLeafImage, type DjangoCnnPrediction, type DjangoCnnResponse } from "@/lib/django-client";
+import { findCrop, scopePredictionsToCrop } from "@/lib/crop-filter";
 import { createDiagnosisRecord, fetchDiagnosisUsage } from "@/lib/diagnoses-client";
 import { compressImage } from "@/lib/image-compression";
 import { createPreviewDataUrl, detectLeafInImage, type LeafDetectionResult } from "@/lib/leaf-detector";
@@ -34,6 +36,8 @@ import {
 } from "@/types";
 import { useDiagnosisStore } from "@/store/diagnosis-store";
 import { useSessionStore } from "@/store/session-store";
+
+const CROP_STORAGE_KEY = "agromind-diagnosis-crop";
 
 const inputMethodLabelMap: Record<DiagnosisInputMethod, string> = {
   upload: "ảnh tải lên",
@@ -160,8 +164,13 @@ function scorePredictionBySymptoms(prediction: DjangoCnnPrediction, symptoms: st
   return prediction.confidence + Math.min(boost, 0.26);
 }
 
-function selectCnnResult(cnn: DjangoCnnResponse, symptoms: string) {
-  const candidates = (cnn.top_predictions.length ? cnn.top_predictions : [cnn]).slice(0, 5);
+function selectCnnResult(cnn: DjangoCnnResponse, symptoms: string, cropId?: string | null) {
+  const everything = (cnn.top_predictions.length ? cnn.top_predictions : [cnn]).slice(0, 5);
+  // Narrow to the declared crop. On a miss this hands back the full list with
+  // cropMatched === false rather than an empty one, so the UI can say "none of
+  // these are <crop>" instead of showing a blank panel or promoting the crop's
+  // best guess from somewhere deep in the ranking.
+  const { candidates, cropMatched } = scopePredictionsToCrop(everything, cropId);
   const ranked = [...candidates].sort((a, b) => {
     return scorePredictionBySymptoms(b, symptoms) - scorePredictionBySymptoms(a, symptoms);
   });
@@ -172,6 +181,7 @@ function selectCnnResult(cnn: DjangoCnnResponse, symptoms: string) {
     ...selected,
     confidence: selected.confidence,
     top_predictions: candidates,
+    cropFilter: { cropId: cropId ?? null, matched: cropMatched, allPredictions: everything },
   };
 }
 
@@ -471,14 +481,19 @@ async function researchSymptomsWithSources({
   symptoms,
   cnn,
   accessToken,
+  cropId,
 }: {
   symptoms: string;
   cnn: DjangoCnnResponse;
   accessToken: string | null;
+  cropId?: string | null;
 }) {
   if (!symptoms.trim()) return null;
 
-  const selectedPrediction = selectCnnResult(cnn, symptoms);
+  // Same narrowing the UI applied, so the web research is done on the disease
+  // the user is actually being shown rather than on a candidate the crop filter
+  // already ruled out.
+  const selectedPrediction = selectCnnResult(cnn, symptoms, cropId);
   const response = await fetch("/api/research-symptoms", {
     method: "POST",
     headers: {
@@ -503,8 +518,10 @@ function applyCnnResult(
   cnn: DjangoCnnResponse,
   symptoms = "",
   research?: SymptomResearchResult | null,
+  cropId?: string | null,
 ): DiagnosisRecord {
-  const finalCnn = selectCnnResult(cnn, symptoms);
+  const finalCnn = selectCnnResult(cnn, symptoms, cropId);
+  const crop = findCrop(cropId);
   const actionPlan = buildDiseaseActionPlan(finalCnn);
   const topItems = finalCnn.top_predictions.slice(0, 5).map((item) => {
     const symptomScore = symptoms.trim() ? `, điểm triệu chứng ${formatConfidence(Math.min(scorePredictionBySymptoms(item, symptoms), 1))}` : "";
@@ -534,6 +551,11 @@ function applyCnnResult(
     causes: [
       `Khả năng được chọn: ${finalCnn.class_name}.`,
       `Độ tin cậy: ${formatConfidence(finalCnn.confidence)}.`,
+      crop
+        ? finalCnn.cropFilter.matched
+          ? `Đã lọc theo cây trồng bạn chọn: ${crop.name}.`
+          : `Bạn chọn ${crop.name}, nhưng không khả năng nào trong 5 kết quả thuộc cây này.`
+        : "",
       symptoms.trim()
         ? "Đã đối chiếu triệu chứng người dùng nhập với 5 khả năng từ ảnh."
         : "Không dùng triệu chứng bổ sung; giữ khả năng có độ tin cậy cao nhất.",
@@ -545,8 +567,21 @@ function applyCnnResult(
     ].filter(Boolean),
     recommendations: [
       {
-        title: symptoms.trim() ? "Các khả năng sau khi đối chiếu triệu chứng" : "Các khả năng từ ảnh",
-        items: topItems.length ? topItems : ["Hệ thống đã tìm được một khả năng chính cho ảnh này."],
+        title: crop
+          ? finalCnn.cropFilter.matched
+            ? `Các khả năng trên ${crop.name}`
+            : `Không có khả năng nào thuộc ${crop.name}`
+          : symptoms.trim()
+            ? "Các khả năng sau khi đối chiếu triệu chứng"
+            : "Các khả năng từ ảnh",
+        items: [
+          // State the miss before listing anything, so the numbers underneath are
+          // never read as "these are your crop's diseases" when they are not.
+          crop && finalCnn.cropFilter.matched === false
+            ? `Ảnh này không giống bệnh nào trên ${crop.name} mà hệ thống nhận biết được. Dưới đây là 5 khả năng gốc từ ảnh, chưa lọc theo cây trồng — hãy kiểm tra lại loại cây đã chọn hoặc chụp lại rõ hơn.`
+            : "",
+          ...(topItems.length ? topItems : ["Hệ thống đã tìm được một khả năng chính cho ảnh này."]),
+        ].filter(Boolean),
       },
       ...buildResearchRecommendationBlocks(research),
       {
@@ -588,6 +623,7 @@ export default function DashboardDiagnosisPage() {
   const [cameraFacingMode, setCameraFacingMode] = useState<"environment" | "user">("environment");
   const [offlineCount, setOfflineCount] = useState(0);
   const [voiceNote, setVoiceNote] = useState("");
+  const [cropId, setCropId] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const syncingOfflineRef = useRef(false);
@@ -612,6 +648,30 @@ export default function DashboardDiagnosisPage() {
         typeof navigator.mediaDevices.getUserMedia === "function",
     );
   }, []);
+
+  // A grower usually tends the same two or three crops, so re-picking on every
+  // visit is pure friction on a phone. Read after mount rather than in the
+  // initial state so the server and first client render agree. Validated on the
+  // way in: a stale id from an older catalogue must not silently filter results
+  // against a crop that no longer exists.
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(CROP_STORAGE_KEY);
+      if (saved && findCrop(saved)) setCropId(saved);
+    } catch {
+      // Private mode or blocked storage: the picker just starts unset.
+    }
+  }, []);
+
+  function handleCropChange(next: string | null) {
+    setCropId(next);
+    try {
+      if (next) window.localStorage.setItem(CROP_STORAGE_KEY, next);
+      else window.localStorage.removeItem(CROP_STORAGE_KEY);
+    } catch {
+      // Non-fatal: the choice still applies for this session.
+    }
+  }
 
   // The server counts the saved leaf checks, so the remaining quota shown here
   // is the one the 402 is measured against. `runCount` re-reads it after each
@@ -672,7 +732,12 @@ export default function DashboardDiagnosisPage() {
             detection,
             inputMethod: "upload",
           });
-          const savedRecord = await createDiagnosisRecord(accessToken, applyCnnResult(baseRecord, cnn));
+          // item.cropId, not the current selection: this photo was queued earlier,
+          // possibly from a different plot.
+          const savedRecord = await createDiagnosisRecord(
+            accessToken,
+            applyCnnResult(baseRecord, cnn, "", null, item.cropId ?? null),
+          );
           addGeneratedRecord(savedRecord);
           clearOfflineDiagnosis(item.id);
         } catch {
@@ -744,9 +809,32 @@ export default function DashboardDiagnosisPage() {
       return;
     }
 
+    // Capture exactly what the preview shows, not the whole sensor frame.
+    // The stream is requested at 1280x720 (aspect 1.78) but the preview is
+    // `object-cover` in a box roughly 300x320 on a phone (aspect ~0.94), so CSS
+    // was hiding about half the frame's width. Drawing the full frame meant the
+    // leaf the grower had carefully centred inside the mint guides came out
+    // small and off-centre, and YOLO then cropped from that wider scene — the
+    // photo they framed was never the photo that got diagnosed.
+    const box = video.getBoundingClientRect();
+    const sourceAspect = video.videoWidth / video.videoHeight;
+    const boxAspect = box.width && box.height ? box.width / box.height : sourceAspect;
+
+    let sourceWidth = video.videoWidth;
+    let sourceHeight = video.videoHeight;
+    if (boxAspect < sourceAspect) {
+      // Box is narrower than the frame: object-cover trims the sides.
+      sourceWidth = Math.round(video.videoHeight * boxAspect);
+    } else if (boxAspect > sourceAspect) {
+      // Box is wider: object-cover trims top and bottom.
+      sourceHeight = Math.round(video.videoWidth / boxAspect);
+    }
+    const sourceX = Math.round((video.videoWidth - sourceWidth) / 2);
+    const sourceY = Math.round((video.videoHeight - sourceHeight) / 2);
+
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = sourceWidth;
+    canvas.height = sourceHeight;
 
     const context = canvas.getContext("2d");
     if (!context) {
@@ -755,7 +843,17 @@ export default function DashboardDiagnosisPage() {
       return;
     }
 
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    context.drawImage(
+      video,
+      sourceX,
+      sourceY,
+      sourceWidth,
+      sourceHeight,
+      0,
+      0,
+      canvas.width,
+      canvas.height,
+    );
 
     const blob = await new Promise<Blob | null>((resolve) => {
       canvas.toBlob(resolve, "image/jpeg", 0.92);
@@ -927,7 +1025,9 @@ export default function DashboardDiagnosisPage() {
       if (activePreview.startsWith("data:")) {
         try {
           if (!online) {
-            addOfflineDiagnosis(activePreview);
+            // Capture the crop alongside the photo so the replay filters against
+            // what was declared here, not whatever is selected days later.
+            addOfflineDiagnosis(activePreview, undefined, cropId);
             throw new Error("offline");
           }
           const cnn = await djangoClassifyLeafImage({
@@ -1010,13 +1110,14 @@ export default function DashboardDiagnosisPage() {
           symptoms,
           cnn: pendingCnnReview.cnn,
           accessToken,
+          cropId,
         });
         if (!research || research.skipped) {
           throw new Error("Chưa thể hoàn tất bước đối chiếu nguồn. Vui lòng thử lại sau ít phút.");
         }
       }
 
-      const finalRecord = applyCnnResult(pendingCnnReview.baseRecord, pendingCnnReview.cnn, symptoms, research);
+      const finalRecord = applyCnnResult(pendingCnnReview.baseRecord, pendingCnnReview.cnn, symptoms, research, cropId);
       const savedRecord = await createDiagnosisRecord(accessToken, finalRecord);
       setSelectedRecord(savedRecord);
       addGeneratedRecord(savedRecord);
@@ -1049,6 +1150,23 @@ export default function DashboardDiagnosisPage() {
 
   return (
     <div className="space-y-6">
+      {/* Declared before the photo, because that is the order the user thinks in:
+          they know what they planted long before they know what is wrong with it. */}
+      <div className="grid gap-3 rounded-[var(--r-lg)] border border-line bg-surface-raised p-4 sm:grid-cols-[minmax(0,320px)_minmax(0,1fr)] sm:items-center sm:gap-4">
+        <CropPicker value={cropId} onChange={handleCropChange} />
+        <p className="text-sm leading-6 text-ink-soft">
+          {cropId
+            ? tr(
+                `Kết quả sẽ chỉ hiện các bệnh trên ${findCrop(cropId)?.name}. Nếu ảnh không giống bệnh nào của cây này, hệ thống sẽ nói rõ thay vì đoán bừa.`,
+                `Results will show only diseases of ${findCrop(cropId)?.nameEn}. If the photo matches none of them, you will be told plainly rather than given a guess.`,
+              )
+            : tr(
+                "Chọn cây trồng để thu hẹp kết quả về đúng loại cây bạn đang chụp. Bỏ trống thì hệ thống giữ đủ 5 khả năng từ ảnh.",
+                "Pick a crop to narrow results to the plant you are photographing. Leave it unset and all five possibilities are kept.",
+              )}
+        </p>
+      </div>
+
       <div className="grid gap-6 xl:grid-cols-[0.96fr_1.04fr]">
         <UploadPanel
           status={status}

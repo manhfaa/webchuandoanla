@@ -9,6 +9,15 @@ export type OfflineDiagnosisItem = {
   createdAt: string;
   note: string;
   status: "pending" | "sent";
+  /**
+   * The crop declared when this photo was taken, not when it is finally sent.
+   * A queued photo may sit here for days while the user moves on to a different
+   * plot, so replaying it against whatever crop is selected at reconnect time
+   * would filter the wrong plant's diseases. Optional: entries queued before
+   * this field existed replay unfiltered, which is the correct reading of "no
+   * crop was declared".
+   */
+  cropId?: string | null;
 };
 
 export function getOfflineQueue(): OfflineDiagnosisItem[] {
@@ -46,7 +55,11 @@ function writeOfflineQueue(items: OfflineDiagnosisItem[]) {
   }
 }
 
-export function addOfflineDiagnosis(imageDataUrl: string, note = "Chờ gửi lại khi có mạng") {
+export function addOfflineDiagnosis(
+  imageDataUrl: string,
+  note = "Chờ gửi lại khi có mạng",
+  cropId: string | null = null,
+) {
   if (typeof window === "undefined") return;
   writeOfflineQueue([
     {
@@ -55,6 +68,7 @@ export function addOfflineDiagnosis(imageDataUrl: string, note = "Chờ gửi l�
       createdAt: new Date().toISOString(),
       note,
       status: "pending" as const,
+      cropId,
     },
     ...getOfflineQueue(),
   ]);

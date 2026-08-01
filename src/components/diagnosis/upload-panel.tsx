@@ -113,11 +113,20 @@ export function UploadPanel({
         </div>
       </div>
 
-      <MobileBottomAction>
-        <Button type="button" size="lg" loading={busy} disabled={busy} onClick={onStart} className="w-full">
-          <PlayCircle size={18} aria-hidden /> {tr("Bắt đầu kiểm tra", "Start check")}
-        </Button>
-      </MobileBottomAction>
+      {/* Hidden once the check has produced something.
+          `onStart` runs handleStartDiagnosis, which clears pendingCnnReview and
+          symptomText before re-running. During `symptom-review` the grower has a
+          finished CNN result on screen and is typing symptoms into it, so the
+          biggest green control on the phone was silently discarding that result
+          and spending another daily quota unit. There is nothing to "start" in
+          the review and success states, so the bar has no business being there. */}
+      {status === "symptom-review" || status === "success" ? null : (
+        <MobileBottomAction>
+          <Button type="button" size="lg" loading={busy} disabled={busy} onClick={onStart} className="w-full">
+            <PlayCircle size={18} aria-hidden /> {tr("Bắt đầu kiểm tra", "Start check")}
+          </Button>
+        </MobileBottomAction>
+      )}
 
       <input ref={uploadRef} type="file" accept="image/*" className="hidden" onChange={(event) => handleFileChange(event, "upload")} />
       <input ref={captureRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(event) => handleFileChange(event, "capture")} />

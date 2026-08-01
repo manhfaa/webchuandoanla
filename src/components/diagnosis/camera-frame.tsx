@@ -130,8 +130,16 @@ export function CameraFrame({
         ) : null}
 
         {isLive ? (
-          <div className="absolute inset-x-6 bottom-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-on-forest/15 bg-forest/85 p-4 text-on-forest backdrop-blur">
-            <div>
+          // Three labelled buttons plus a two-line hint wrapped to three rows at
+          // 390px, making this bar ~259px tall over a 320px preview: it covered
+          // the frame the grower is being told to centre the leaf in, and buried
+          // the corner guides. Below sm the hint is dropped and the buttons go
+          // icon-only, which fits one row and leaves the preview visible.
+          // bg-forest/85 and border-on-forest/15 compiled to nothing — bare
+          // `var(--token)` colours take no opacity modifier — so the text was
+          // sitting directly on moving video with no panel behind it at all.
+          <div className="absolute inset-x-4 bottom-4 flex items-center justify-between gap-3 rounded-lg border border-[color-mix(in_srgb,var(--on-forest)_15%,transparent)] bg-[color-mix(in_srgb,var(--forest)_85%,transparent)] p-3 text-on-forest backdrop-blur sm:inset-x-6 sm:bottom-6 sm:p-4">
+            <div className="hidden min-w-0 sm:block">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-mint">
                 {tr("Camera sẵn sàng", "Camera ready")}
               </p>
@@ -140,18 +148,30 @@ export function CameraFrame({
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <Button variant="secondary" onClick={onCapture} disabled={busy}>
-                <Camera size={18} />
-                {tr("Chụp ảnh", "Capture")}
+            <div className="flex w-full items-center justify-center gap-3 sm:w-auto sm:justify-end">
+              <Button variant="secondary" onClick={onCapture} disabled={busy} aria-label={tr("Chụp ảnh", "Capture")}>
+                <Camera size={18} aria-hidden />
+                <span className="hidden sm:inline">{tr("Chụp ảnh", "Capture")}</span>
               </Button>
-              <Button variant="ghost" className="text-on-forest hover:bg-on-forest/10" onClick={onSwitchCamera} disabled={busy}>
-                <SwitchCamera size={18} />
-                {tr("Đổi camera", "Switch camera")}
+              <Button
+                variant="ghost"
+                className="text-on-forest hover:bg-[color-mix(in_srgb,var(--on-forest)_10%,transparent)]"
+                onClick={onSwitchCamera}
+                disabled={busy}
+                aria-label={tr("Đổi camera", "Switch camera")}
+              >
+                <SwitchCamera size={18} aria-hidden />
+                <span className="hidden sm:inline">{tr("Đổi camera", "Switch camera")}</span>
               </Button>
-              <Button variant="ghost" className="text-on-forest hover:bg-on-forest/10" onClick={onCloseCamera} disabled={busy}>
-                <CameraOff size={18} />
-                {tr("Tắt camera", "Turn off camera")}
+              <Button
+                variant="ghost"
+                className="text-on-forest hover:bg-[color-mix(in_srgb,var(--on-forest)_10%,transparent)]"
+                onClick={onCloseCamera}
+                disabled={busy}
+                aria-label={tr("Tắt camera", "Turn off camera")}
+              >
+                <CameraOff size={18} aria-hidden />
+                <span className="hidden sm:inline">{tr("Tắt camera", "Turn off camera")}</span>
               </Button>
             </div>
           </div>

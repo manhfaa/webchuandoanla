@@ -269,10 +269,17 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       type="button"
       onClick={() => void handleCopy()}
       aria-label={tr(`Sao chép ${label}`, `Copy ${label}`)}
-      className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-line bg-surface px-3 text-xs font-bold text-ink transition hover:border-line-strong hover:bg-surface-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/35"
+      // 44px minimum, and the word stays at every width. Three of these sit
+      // stacked ~54px apart copying the account number, the amount and the AGM
+      // transfer note. At h-9 with `hidden sm:inline` they collapsed to three
+      // identical 14px glyphs on a phone; a mis-tap puts the account number into
+      // the transfer-note field, and per the payment contract a wrong note means
+      // the webhook cannot match the transfer — the money leaves and the plan
+      // never activates. focus ring: `ring-leaf/35` compiled to nothing.
+      className="inline-flex h-11 min-w-[44px] shrink-0 items-center gap-1.5 rounded-md border border-line bg-surface px-3 text-xs font-bold text-ink transition hover:border-line-strong hover:bg-surface-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--leaf)_35%,transparent)]"
     >
       {copied ? <CheckCircle2 size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
-      <span className="hidden sm:inline">{copied ? tr("Đã chép", "Copied") : tr("Sao chép", "Copy")}</span>
+      <span>{copied ? tr("Đã chép", "Copied") : tr("Sao chép", "Copy")}</span>
     </button>
   );
 }

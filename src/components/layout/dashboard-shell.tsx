@@ -160,7 +160,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         />
         <main
           id="main-content"
-          className="page-content relative z-0 flex-1 scroll-mt-[80px] px-4 pb-10 pt-6 sm:px-6 lg:px-8"
+          // Bottom padding clears the pinned mobile action bar, which is
+          // pt-3 (12) + a size-lg button (48) + pb-[max(12px,safe-area)] — 72px
+          // plus the home-indicator inset. At pb-10 the last card on any screen
+          // that renders MobileBottomAction sat permanently underneath it.
+          className="page-content relative z-0 flex-1 scroll-mt-[80px] px-4 pb-[calc(88px+env(safe-area-inset-bottom))] pt-6 sm:px-6 md:pb-10 lg:px-8"
         >
           {children}
         </main>
