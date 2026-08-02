@@ -8,6 +8,7 @@ import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ConfidenceMeter } from "@/components/ui/confidence-meter";
+import { PredictionBands, type BandPrediction } from "@/components/diagnosis/prediction-bands";
 import { SourceList } from "@/components/ui/source-list";
 import { EmptyState } from "@/components/ui/states";
 import { toUserFacingText } from "@/lib/user-facing-copy";
@@ -50,6 +51,17 @@ function toCnnNames(value: unknown): CnnNames | null {
     plant_name_en: readString(source, "plant_name_en"),
     disease_name_en: readString(source, "disease_name_en"),
   };
+}
+
+/**
+ * The raw candidate list, for the severity bands. Read straight off the saved
+ * payload rather than parsed back out of the recommendation strings, which are
+ * prose and were never meant to be a data format.
+ */
+function bandPredictions(record: DiagnosisRecord): BandPrediction[] {
+  const raw = record.cnnPayload?.top_predictions;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((item): item is BandPrediction => Boolean(item) && typeof item === "object");
 }
 
 /** The payload itself first, then each `top_predictions` entry. */
@@ -239,19 +251,45 @@ export function DiagnosisResultCard({
           <div className="rounded-xl border border-line bg-surface p-5">
             <p className="flex items-center gap-2 text-sm font-bold text-ink"><Sparkles size={16} className="text-leaf-strong" aria-hidden /> {detailsOnly ? tr("Thông tin đã đối chiếu", "Cross-checked information") : tr("Giải thích và việc nên làm", "Explanation and what to do")}</p>
             <div className="mt-5 space-y-5">
-              {recommendationSections.map((section, sectionIndex) => (
-                <section key={section.title} className="fl-rise" style={{ "--fl-i": sectionIndex + 1 } as CSSProperties}>
-                  <h4 className="text-sm font-bold text-ink">{customerTitle(section.title)}</h4>
-                  <ul className="mt-2 space-y-2">
-                    {section.items.slice(0, locked ? 1 : section.items.length).filter((item) => customerText(item).trim()).map((item) => (
-                      <li key={item} className="flex gap-2 rounded-lg bg-surface-soft px-3 py-3 text-sm leading-7 text-ink-soft">
-                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-leaf" aria-hidden />
-                        <span>{renderRecommendationItem(item, tr, record)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ))}
+              {recommendationSections.map((section, sectionIndex) => {
+                // The candidate list is the one block rendered from structured
+                // data rather than its prose. Its saved strings still carry the
+                // percentages so history and chat context are unchanged; they
+                // are just not what gets drawn.
+                const isCandidateList = /khả năng/i.test(section.title);
+                const bands = isCandidateList ? bandPredictions(record) : [];
+                const looksLikeCandidateLine = (item: string) => /:\s*\d+([.,]\d+)?\s*%/.test(item);
+                const proseItems = section.items
+                  .filter((item) => customerText(item).trim())
+                  .filter((item) => !(isCandidateList && bands.length && looksLikeCandidateLine(item)));
+
+                return (
+                  <section key={section.title} className="fl-rise" style={{ "--fl-i": sectionIndex + 1 } as CSSProperties}>
+                    <h4 className="text-sm font-bold text-ink">{customerTitle(section.title)}</h4>
+                    {proseItems.length ? (
+                      <ul className="mt-2 space-y-2">
+                        {proseItems.slice(0, locked ? 1 : proseItems.length).map((item) => (
+                          <li key={item} className="flex gap-2 rounded-lg bg-surface-soft px-3 py-3 text-sm leading-7 text-ink-soft">
+                            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-leaf" aria-hidden />
+                            <span>{renderRecommendationItem(item, tr, record)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    {isCandidateList && bands.length && !locked ? (
+                      <div className="mt-2">
+                        <PredictionBands predictions={bands} />
+                        <p className="mt-2 text-xs leading-6 text-ink-muted">
+                          {tr(
+                            "Màu cho biết mức độ nặng của bệnh, độ dài cho biết ảnh khớp đến đâu.",
+                            "Colour shows how serious the disease is; length shows how well the photo matches.",
+                          )}
+                        </p>
+                      </div>
+                    ) : null}
+                  </section>
+                );
+              })}
             </div>
           </div>
         </div>
