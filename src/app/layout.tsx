@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   // canonical tags falls back to localhost in the built output — so a shared
   // link renders no preview. Overridable per environment so Vercel previews
   // describe themselves rather than production.
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://agromind.io.vn"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.agromind.farm"),
   title: `${brand.name} | Theo dõi sức khỏe cây từ ảnh lá`,
   description: brand.description,
   icons: {
