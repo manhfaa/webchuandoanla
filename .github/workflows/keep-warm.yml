@@ -1,14 +1,8 @@
-name: Keep services warm
+name: Check production services
 
-# Render free web services sleep after 15 minutes of inactivity and take ~40-60s
-# to cold start, which is longer than the 45s timeout the Django backend uses for
-# the inference call — so the first diagnosis after an idle period fails outright.
-# Pinging the health endpoints on a schedule keeps that from happening.
-#
-# Coverage is limited to Vietnam's active hours (05:00-24:00 ICT = 22:00-16:59 UTC)
-# so we use roughly 570 of Render's 750 free instance-hours per month instead of
-# burning all 744. Pinging /api/health/ also runs a DB query, which keeps the free
-# Supabase project from pausing after 7 days of inactivity.
+# The Django backend is always on at the Nhân Hòa VPS. This scheduled check still
+# exercises Django plus the Supabase connection and keeps the Hugging Face Space
+# responsive during Vietnam's active hours.
 #
 # This repository is public, so scheduled GitHub Actions minutes are free.
 
@@ -27,16 +21,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
-      - name: Wake Django backend (Render) and Supabase
+      - name: Check Django VPS and Supabase
         run: |
-          # --retry-all-errors covers the case where this ping is the one that
-          # triggers the cold start and the first attempt times out.
           curl --silent --show-error --fail \
                --max-time 90 \
                --retry 3 --retry-delay 20 --retry-all-errors \
-               --write-out 'render: HTTP %{http_code} in %{time_total}s\n' \
+               --write-out 'vps: HTTP %{http_code} in %{time_total}s\n' \
                --output /dev/null \
-               https://webchuandoanla-backend.onrender.com/api/health/
+               https://api.agromind.farm/api/health/
 
       - name: Wake inference Space (Hugging Face)
         run: |

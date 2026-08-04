@@ -1,8 +1,7 @@
 name: Scheduled housekeeping
 
-# Render's free tier has no cron jobs — they are a separate paid service type —
-# so the schedule lives here and reaches Django over HTTPS, the same way
-# keep-warm.yml does.
+# The schedule lives in GitHub Actions and reaches Django on the Nhân Hòa VPS
+# over HTTPS.
 #
 # What it corrects, and why it matters that something does:
 #   * a lapsed paid plan keeps reading "bloom" in the database until that user
@@ -15,7 +14,7 @@ name: Scheduled housekeeping
 # None of that breaks a request, which is exactly why it would go unnoticed.
 #
 # Needs the MAINTENANCE_TOKEN repository secret to match the same env var on
-# Render. Without it the endpoint answers 503 and refuses everyone, so a missing
+# VPS backend. Without it the endpoint answers 503 and refuses everyone, so a missing
 # secret fails closed and shows up here as a failed run rather than silence.
 
 on:
@@ -35,13 +34,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - name: Wake the backend first
-        # A cold start takes ~35s, longer than curl would wait on the real call.
-        # Failing here must not fail the job: the retry below covers it.
+      - name: Check the backend first
         continue-on-error: true
         run: |
           curl --silent --show-error --fail --max-time 90 \
-            https://webchuandoanla-backend.onrender.com/api/health/ || true
+            https://api.agromind.farm/api/health/ || true
 
       - name: Run housekeeping
         env:
@@ -60,7 +57,7 @@ jobs:
             --request POST \
             --header "X-Maintenance-Token: $MAINTENANCE_TOKEN" \
             --header "Content-Length: 0" \
-            https://webchuandoanla-backend.onrender.com/api/maintenance/housekeeping/)
+            https://api.agromind.farm/api/maintenance/housekeeping/)
 
           echo "HTTP $http_code"
           cat response.json

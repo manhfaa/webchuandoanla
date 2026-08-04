@@ -16,7 +16,7 @@ const cspDirectives = [
   "font-src 'self' data:",
   // Wildcards do not match apex domains, so list both canonical hosts explicitly.
   // CSP wildcard covers subdomains only — so the apex is listed separately.
-  "connect-src 'self' https://agromind.farm https://*.agromind.farm https://agromind.io.vn https://*.agromind.io.vn https://*.sslip.io https://*.vercel.app https://accounts.google.com https://oauth2.googleapis.com https://*.clarity.ms https://c.bing.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com http://127.0.0.1:* http://localhost:*",
+  "connect-src 'self' https://agromind.farm https://*.agromind.farm https://*.sslip.io https://*.vercel.app https://accounts.google.com https://oauth2.googleapis.com https://*.clarity.ms https://c.bing.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com http://127.0.0.1:* http://localhost:*",
   "frame-src 'self' https://accounts.google.com",
   "media-src 'self' data: blob:",
   "worker-src 'self' blob:",

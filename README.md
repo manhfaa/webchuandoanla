@@ -31,7 +31,7 @@ Repo GitHub: https://github.com/manhfaa/webchuandoanla
 - Backend: Django, Django REST Framework, Simple JWT.
 - Database: SQLite local mặc định hoặc PostgreSQL/Supabase qua `SUPABASE_DB_URL`.
 - CNN: chạy local bằng `agromindaimodel.pth` hoặc gọi Hugging Face Space qua `CNN_API_URL`.
-- Deploy free: Vercel cho frontend, Render cho backend, Hugging Face Space cho CNN FastAPI.
+- Production: Vercel cho frontend, Nhân Hòa VPS cho backend Django, Supabase PostgreSQL và Hugging Face Space cho CNN/YOLO.
 
 ## Cấu trúc chính
 
@@ -56,7 +56,7 @@ Repo GitHub: https://github.com/manhfaa/webchuandoanla
 ├─ hf_space/                    FastAPI Space cho CNN
 ├─ scripts/deploy_hf_space.py   Script deploy Hugging Face Space
 ├─ DEPLOY_FREE.md               Ghi chú deploy miễn phí
-├─ render.yaml                  Cấu hình Render backend
+├─ render.yaml                  Cấu hình Render cũ, không dùng cho production hiện tại
 ├─ vercel.json                  Cấu hình Vercel frontend
 ├─ agromindaimodel.pth          CNN checkpoint local
 └─ README.md
@@ -183,7 +183,7 @@ URL local:
 
 Đăng ký tài khoản người dùng tại `/register`. Không lưu hoặc công khai thông tin đăng nhập thật trong mã nguồn và tài liệu.
 
-Để cấp tài khoản quản trị khi triển khai, cấu hình `DJANGO_SUPERUSER_USERNAME`, `DJANGO_SUPERUSER_EMAIL` và `DJANGO_SUPERUSER_PASSWORD` trong biến môi trường của Render. Lệnh `python manage.py provision_admin` sẽ tạo hoặc cập nhật tài khoản mà không ghi mật khẩu vào Git hay log triển khai.
+Để cấp tài khoản quản trị khi triển khai, cấu hình `DJANGO_SUPERUSER_USERNAME`, `DJANGO_SUPERUSER_EMAIL` và `DJANGO_SUPERUSER_PASSWORD` trong biến môi trường backend trên VPS. Lệnh `python manage.py provision_admin` sẽ tạo hoặc cập nhật tài khoản mà không ghi mật khẩu vào Git hay log triển khai.
 
 ## CNN model
 
@@ -285,27 +285,27 @@ Engagement:
 - `POST /api/engagement/messages/`
 - `GET /api/engagement/expert-consultations/`
 
-## Deploy miễn phí
+## Production deployment
 
-Tài liệu nhanh nằm ở `DEPLOY_FREE.md`.
+`DEPLOY_FREE.md` mô tả cấu hình Render cũ và chỉ còn giá trị tham khảo lịch sử.
 
 Gợi ý cấu hình:
 
 - Frontend: Vercel, build `npm run build`.
-- Backend: Render free, dùng `render.yaml`.
+- Backend: Nhân Hòa Ubuntu VPS, Nginx + Gunicorn + systemd service `agromind-backend`.
 - Database: Supabase Postgres hoặc SQLite cho local.
 - CNN: Hugging Face Space free.
 - DeepSeek: set `DEEPSEEK_API_KEY` và `DEEPSEEK_MODEL` trong Vercel env.
 - Cloudflare: xem `CLOUDFLARE_SECURITY.md` để bật proxy, SSL strict, WAF/rate limit và cập nhật domain production.
 
-Backend Render cần các biến chính:
+Backend VPS cần các biến chính:
 
 ```env
 DEBUG=False
-ALLOWED_HOSTS=.onrender.com
-FRONTEND_ORIGIN=https://your-vercel-project.vercel.app
-CORS_ALLOWED_ORIGINS=https://your-vercel-project.vercel.app
-CSRF_TRUSTED_ORIGINS=https://your-backend.onrender.com,https://*.vercel.app
+ALLOWED_HOSTS=api.agromind.farm
+FRONTEND_ORIGIN=https://agromind.farm
+CORS_ALLOWED_ORIGINS=https://agromind.farm,https://www.agromind.farm
+CSRF_TRUSTED_ORIGINS=https://api.agromind.farm,https://agromind.farm,https://www.agromind.farm
 SUPABASE_DB_URL=postgresql://...
 CNN_API_URL=https://username-agromind-cnn-api.hf.space
 ```

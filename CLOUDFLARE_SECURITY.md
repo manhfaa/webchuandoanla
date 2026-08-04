@@ -6,7 +6,7 @@ Use this checklist after the production domain is added to Cloudflare.
 
 - Add the production frontend hostname as a proxied `CNAME` to Vercel.
 - Keep the cloud orange/proxied for the public website.
-- Keep backend API domains proxied only if they are intended to be accessed through Cloudflare. Render's default domain can stay direct.
+- Keep `api.agromind.farm` proxied only if the VPS origin, TLS mode and webhook traffic have been verified through Cloudflare.
 
 ## SSL/TLS
 
@@ -65,13 +65,13 @@ Do not duplicate conflicting CSP rules in Cloudflare Transform Rules unless you 
 
 ## Environment values
 
-If the final Cloudflare domain is not `agromind.io.vn`, update:
+If the final Cloudflare domain is not `agromind.farm`, update:
 
 ```env
 NEXT_PUBLIC_SITE_URL=https://your-domain.com
 FRONTEND_ORIGIN=https://your-domain.com
 CORS_ALLOWED_ORIGINS=https://your-domain.com
-CSRF_TRUSTED_ORIGINS=https://webchuandoanla-backend.onrender.com,https://your-domain.com
+CSRF_TRUSTED_ORIGINS=https://api.your-domain.com,https://your-domain.com
 ```
 
-Set frontend values in Vercel and backend values in Render, then redeploy both services.
+Set frontend URL values in Vercel and backend origin values in the VPS environment file loaded by `agromind-backend`, then restart the systemd service.

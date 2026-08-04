@@ -1,6 +1,6 @@
 # Agromind AI - Context for Claude
 
-Last verified: 2026-07-23 (Asia/Ho_Chi_Minh)
+Last verified: 2026-08-04 (Asia/Ho_Chi_Minh)
 
 This file is the operational handoff for Claude Code. Read it before changing the repository.
 
@@ -39,8 +39,8 @@ The AI result is advisory. Never claim 100% accuracy. When disease spreads quick
 - GitHub: `https://github.com/manhfaa/webchuandoanla`
 - Remote: `origin`
 - Branch: `main`
-- Production frontend: `https://agromind.io.vn` (also reachable at `https://agromindai.vercel.app`)
-- Production backend: `https://webchuandoanla-backend.onrender.com`
+- Production frontend: `https://www.agromind.farm` (the apex `https://agromind.farm` 308-redirects to it; also reachable at `https://agromindai.vercel.app`)
+- Production backend: `https://api.agromind.farm`
 - Hugging Face API: `https://phamducmanh-agromind-cnn-api.hf.space`
 - Hugging Face Space: `https://huggingface.co/spaces/phamducmanh/agromind-cnn-api`
 - Supabase project ID observed during setup: `emuitcpdfudfpjsjwjar`
@@ -48,16 +48,20 @@ The AI result is advisory. Never claim 100% accuracy. When disease spreads quick
 Production infrastructure:
 
 - Frontend: Vercel, Next.js.
-- Backend: Render free web service, root directory `backend`.
+- Backend: Nhân Hòa Ubuntu VPS (`103.124.94.97`), with Nginx terminating TLS and proxying to Gunicorn-managed Django.
+- Process manager: systemd service `agromind-backend`; this deployment does not use Docker, Coolify or Dokploy.
 - Database: Supabase PostgreSQL through `SUPABASE_DB_URL`.
 - AI inference: Hugging Face Docker Space.
-- Payment notifications: SePay webhook to Render.
+- Payment notifications: SePay webhook to `https://api.agromind.farm/api/payments/webhooks/sepay/`.
 
-Render commands:
+VPS backend lifecycle:
 
 ```text
-Build: pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput
-Start: gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 60
+Reverse proxy/TLS: Nginx + Let's Encrypt
+Application server: Gunicorn
+Process manager: systemd unit agromind-backend
+Restart: systemctl restart agromind-backend
+Status: systemctl status agromind-backend
 ```
 
 Vercel commands:
@@ -68,21 +72,35 @@ Build: npm run build
 Dev: npm run dev
 ```
 
-Latest pushed `origin/main` at the time of this handoff:
+Latest pushed `origin/main` verified during the 2026-07-31 infrastructure migration:
 
 ```text
-a81f1ca6941b384470335a7f013e7c4e65fbcdf3 Allow SePay QR images in frontend CSP
+b7f3319 Trigger production deployment for agromind.farm
 ```
 
-Important: the working tree is dirty and contains a large redesign plus AI/backend changes that are not all committed. Do not reset, checkout, clean, or overwrite these files. Inspect `git status` and `git diff` before every edit.
+Important: the worktree may contain user changes. Do not reset, checkout, clean or overwrite them. Inspect `git status` and `git diff` before every edit.
 
 ## 3. Current deployment state
 
-Verified on 2026-07-23:
+The domain moved on 2026-08-04. `agromind.io.vn` lost its delegation at VNNIC and
+returns NXDOMAIN with no NS record, while whois still shows it registered — the
+signature of a registrant-profile suspension, not an expiry. Nothing was wrong with
+the servers: Vercel, the VPS and the Hugging Face Space all answered normally
+throughout. The site now runs on `agromind.farm`. Do not restore any
+`agromind.io.vn` URL without first confirming the domain resolves again.
 
-- `GET https://webchuandoanla-backend.onrender.com/api/health/` returned `status=ok`, `database=ok`.
+Verified on 2026-08-04 against the new domain:
+
+- `GET https://api.agromind.farm/api/health/` returned `status=ok`, `database=ok`.
+- An unsigned POST to the SePay webhook returned `Thiếu chữ ký webhook.`, so the
+  secret is loaded on the new host and the endpoint is still fail-closed.
+- CORS answers correctly for `https://www.agromind.farm`, `https://agromind.farm`
+  and `https://agromindai.vercel.app`, including the preflight that carries
+  `authorization`.
+- The apex 308-redirects to `www`, so the browser's Origin is the `www` host —
+  both must stay in `CORS_ALLOWED_ORIGINS`.
 - Unauthenticated payment-order access returned `401`, as expected.
-- Unsigned SePay webhook POST returned `401` with `Thiếu chữ ký webhook.`, proving webhook signature protection is enabled.
+- The SePay webhook URL is `https://api.agromind.farm/api/payments/webhooks/sepay/`; HMAC-SHA256 is configured on both SePay and the VPS. SePay's dashboard test returned HTTP 200 in 382 ms. An unsigned request returns `401` with `Thiếu chữ ký webhook.`, confirming fail-closed authentication.
 - `GET https://phamducmanh-agromind-cnn-api.hf.space/health` returned HTTP 200 with:
   - `model_ready=true`
   - `classes=89`
@@ -91,9 +109,9 @@ Verified on 2026-07-23:
   - `yolo_enabled=true`
 - Production frontend returned HTTP 200 and CSP allows SePay/VietQR images.
 
-The payment backend is deployed. A real-money end-to-end payment has not yet been confirmed. Use the lowest paid plan for the first controlled test and do not claim payment is fully proven until the webhook activates that user's plan.
+The payment backend and signed webhook transport are deployed and verified. A real-money end-to-end payment has not yet been confirmed, so do not claim automatic plan activation is fully proven until one controlled payment succeeds.
 
-The polished checkout currently in the working tree passed ESLint and `npm run build`, but it has not been committed or deployed at this handoff.
+The checkout UI is deployed. Webhook delivery is verified, but payment completion remains unverified until a controlled payment succeeds.
 
 ## 4. Technology stack
 
@@ -150,7 +168,7 @@ backend/farmops/                 Farms, logs, traceability and input library
 hf_space/                        Docker Space application
 moduleyolola/                    YOLO training/export artifacts
 scripts/deploy_hf_space.py       Hugging Face deployment script
-render.yaml                      Render deployment declaration
+render.yaml                      Legacy Render deployment declaration; not current production
 vercel.json                      Vercel build declaration
 next.config.js                   CSP and security headers
 ```
@@ -267,7 +285,7 @@ Hugging Face behavior:
 - YOLO threshold currently `0.35`.
 - YOLO crop padding ratio currently `0.08`.
 - CNN returns top predictions with plant, disease and confidence.
-- `/detect-leaf` and `/predict` require `Authorization: Bearer <CNN_API_TOKEN>` when the `CNN_API_TOKEN` secret is set on the Space, and stay open when it is not. Set the same value as the Render `CNN_API_TOKEN` env var. `/health` is always public so the keep-warm cron can reach it.
+- `/detect-leaf` and `/predict` require `Authorization: Bearer <CNN_API_TOKEN>` when the `CNN_API_TOKEN` secret is set on the Space, and stay open when it is not. Set the same value in the VPS backend environment. `/health` is always public so health monitoring can reach it.
 
 Required behavior:
 
@@ -338,7 +356,7 @@ POST     /api/payments/webhooks/sepay/
 SePay webhook configured URL:
 
 ```text
-https://webchuandoanla-backend.onrender.com/api/payments/webhooks/sepay/
+https://api.agromind.farm/api/payments/webhooks/sepay/
 ```
 
 Expected authentication: HMAC-SHA256 using timestamp and shared webhook secret. API-key authentication remains only as a temporary compatibility fallback.
@@ -401,7 +419,7 @@ NEXT_PUBLIC_CLARITY_PROJECT_ID
 
 `NEXT_PUBLIC_CLARITY_PROJECT_ID` is the Microsoft Clarity project id (public, from `https://clarity.microsoft.com/projects`). A default id is baked into `src/components/system/clarity-analytics.tsx`; this var only overrides it. Clarity loads in production builds only (skipped in dev/preview). CSP in `next.config.js` already allows `*.clarity.ms` and `c.bing.com`.
 
-Render/backend:
+Nhân Hòa VPS backend (set in the environment file loaded by the `agromind-backend` systemd unit, then restart that service):
 
 ```text
 SECRET_KEY
@@ -431,11 +449,21 @@ EMAIL_HOST_PASSWORD
 DEFAULT_FROM_EMAIL
 ```
 
-Scheduled work: Render's free tier has no cron jobs, so the schedule lives in
-`.github/workflows/`. `keep-warm.yml` pings the health endpoints during Vietnam's
-active hours; `housekeeping.yml` runs nightly and POSTs to
+Required production origin values:
+
+```text
+FRONTEND_ORIGIN=https://www.agromind.farm
+CORS_ALLOWED_ORIGINS=https://agromind.farm,https://www.agromind.farm
+CSRF_TRUSTED_ORIGINS=https://api.agromind.farm,https://agromind.farm,https://www.agromind.farm
+```
+
+`ALLOWED_HOSTS` must include `api.agromind.farm`. These are VPS settings, not Render or Vercel settings. Vercel only needs the frontend's server-side/public backend URL variables pointed at `https://api.agromind.farm`.
+
+Scheduled work lives in `.github/workflows/`. `keep-warm.yml` checks the VPS,
+Supabase and Hugging Face health endpoints during Vietnam's active hours;
+`housekeeping.yml` runs nightly and POSTs to
 `/api/maintenance/housekeeping/` with the `X-Maintenance-Token` header, which must
-match the `MAINTENANCE_TOKEN` env var on Render and the repository secret of the
+match the `MAINTENANCE_TOKEN` env var on the VPS and the repository secret of the
 same name. Unset, that endpoint answers 503 and refuses everyone, so a missing
 secret fails closed. The same chores run by hand with
 `manage.py run_housekeeping`.
@@ -467,11 +495,11 @@ Application headers are configured in `next.config.js`:
 - Referrer-Policy.
 - Permissions-Policy.
 
-The CSP currently allows Google sign-in, Render/Vercel connections, OpenStreetMap tiles and SePay/VietQR images.
+The CSP currently allows Google sign-in, Agromind API/Vercel connections, OpenStreetMap tiles and SePay/VietQR images.
 
 `CLOUDFLARE_SECURITY.md` is a setup checklist, not proof that a custom Cloudflare domain and challenge page are active. Do not claim Cloudflare verification is deployed unless DNS/proxy/WAF are verified in the Cloudflare account.
 
-If the public domain changes, update Vercel and Render origins/CORS/CSRF settings together.
+If the public domain changes, update Vercel backend URL variables, VPS origins/CORS/CSRF settings and the SePay webhook URL together.
 
 ## 15. Local development
 
