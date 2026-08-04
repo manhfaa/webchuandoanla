@@ -1,6 +1,7 @@
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
 import { CapabilityStrip } from "@/components/home/capability-strip";
+import { DemoVideoSection } from "@/components/home/demo-video-section";
 import { FeaturesSection } from "@/components/home/features-section";
 import { FieldTrialSection } from "@/components/home/field-trial-section";
 import { HeroSection } from "@/components/home/hero-section";
@@ -37,6 +38,11 @@ export default async function HomePage() {
             markup is in the DOM before GSAP ever measures. */}
         {bandPlan ? <PromoBand plan={bandPlan} /> : null}
         <LeafDiagnosisStory />
+        {/* Straight after the written walkthrough, so the video shows the steps
+            that were just described rather than introducing them cold. Fourth
+            screen down — high enough that people actually reach it, unlike the
+            field-trial photos further below. */}
+        <DemoVideoSection />
         <FeaturesSection />
         <PlantsSection />
         <MissionSection />
