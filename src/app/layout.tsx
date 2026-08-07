@@ -90,6 +90,12 @@ export const metadata: Metadata = {
     icon: "/favicon.ico",
     apple: "/apple-icon.png",
   },
+  // Google Search Console ownership. Not a secret — it is published in the page
+  // by design, and it only proves control of this site. Google drops the
+  // property if the proof disappears, so this stays even after verification.
+  verification: {
+    google: "RlWU-FDHDMAIkz5YG_2rTuHV8YmD70uqx13vdyHSF-I",
+  },
 };
 
 export default function RootLayout({
