@@ -61,6 +61,62 @@ export function guidanceForDiseaseText(text: string): DiseaseGuidance {
     };
   }
 
+  // Virus goes first, immediately after healthy.
+  //
+  // It used to sit second-to-last, and "Virus đốm vàng" on hồ tiêu (Black
+  // Pepper___yellow mottle virus) was reaching the leaf-spot branch instead:
+  // the folded text contains "dom", and the spot branch ran earlier. A grower
+  // with a virus was told to prune the spotted leaves and watch — not to
+  // isolate the plant, look for the insects carrying it, or stop propagating
+  // from it. Checked against all 70 diseases: this reordering moves exactly
+  // that one, and nothing else changes branch.
+  if (text.includes("virus") || text.includes("curl") || text.includes("mosaic") || text.includes("yellow")) {
+    return {
+      risk: "high",
+      severity: "Nghi virus/xoăn vàng",
+      immediate: [
+        "Cách ly cây nghi nhiễm để hạn chế côn trùng truyền bệnh lan sang cây khác.",
+        "Kiểm tra rệp, bọ phấn, bọ trĩ ở mặt dưới lá và đọt non.",
+        "Không lấy giống, cành chiết hoặc hạt từ cây đang nghi nhiễm.",
+      ],
+      followUp: [
+        "Chụp ảnh toàn cây và đọt non sau 2 đến 3 ngày.",
+        "Nếu cây còi cọc, xoăn lá tăng nhanh, nên hỏi kỹ thuật viên trước khi giữ lại cây.",
+      ],
+      safety: ["Virus thường khó chữa bằng thuốc; tránh phun thuốc tràn lan gây tốn kém và tồn dư."],
+      recheckDays: 3,
+      expertRequired: true,
+    };
+  }
+
+  // Mites go before the symptom branches too, for the same reason.
+  //
+  // "Tomato___Two-spotted spider mites" folds to a string containing "spotted",
+  // so the leaf-spot branch was winning and the branch written for mites never
+  // ran. The two disagree outright: the spot branch says keep the leaves dry,
+  // this one says rinse them and avoid prolonged heat and dryness — and dry heat
+  // is what spider mites multiply in. The wrong one was the one being shown, on
+  // the live site, in the app as well as here. Checked against all 70 diseases:
+  // this moves that one entry and nothing else.
+  if (text.includes("mite") || text.includes("spider") || text.includes("nhen")) {
+    return {
+      risk: "medium",
+      severity: "Nghi nhện hại",
+      immediate: [
+        "Soi mặt dưới lá để tìm chấm nhỏ di chuyển hoặc tơ mịn.",
+        "Phun rửa nhẹ bằng nước sạch để giảm mật số ban đầu nếu cây chịu được.",
+        "Tách cây bị nặng và tránh để khô nóng kéo dài.",
+      ],
+      followUp: [
+        "Kiểm tra lại sau 2 ngày, nhất là mặt dưới lá non.",
+        "Nếu mật số tăng, dùng biện pháp sinh học hoặc thuốc theo khuyến cáo địa phương.",
+      ],
+      safety: ["Không lạm dụng thuốc trừ sâu phổ rộng vì có thể làm giảm thiên địch."],
+      recheckDays: 2,
+      expertRequired: false,
+    };
+  }
+
   if (text.includes("blight") || text.includes("chay") || text.includes("scorch")) {
     return {
       risk: "high",
@@ -153,44 +209,6 @@ export function guidanceForDiseaseText(text: string): DiseaseGuidance {
       safety: ["Không dùng lại đất/chậu bẩn cho cây khác nếu nghi có mầm bệnh."],
       recheckDays: 2,
       expertRequired: true,
-    };
-  }
-
-  if (text.includes("virus") || text.includes("curl") || text.includes("mosaic") || text.includes("yellow")) {
-    return {
-      risk: "high",
-      severity: "Nghi virus/xoăn vàng",
-      immediate: [
-        "Cách ly cây nghi nhiễm để hạn chế côn trùng truyền bệnh lan sang cây khác.",
-        "Kiểm tra rệp, bọ phấn, bọ trĩ ở mặt dưới lá và đọt non.",
-        "Không lấy giống, cành chiết hoặc hạt từ cây đang nghi nhiễm.",
-      ],
-      followUp: [
-        "Chụp ảnh toàn cây và đọt non sau 2 đến 3 ngày.",
-        "Nếu cây còi cọc, xoăn lá tăng nhanh, nên hỏi kỹ thuật viên trước khi giữ lại cây.",
-      ],
-      safety: ["Virus thường khó chữa bằng thuốc; tránh phun thuốc tràn lan gây tốn kém và tồn dư."],
-      recheckDays: 3,
-      expertRequired: true,
-    };
-  }
-
-  if (text.includes("mite") || text.includes("spider") || text.includes("nhen")) {
-    return {
-      risk: "medium",
-      severity: "Nghi nhện hại",
-      immediate: [
-        "Soi mặt dưới lá để tìm chấm nhỏ di chuyển hoặc tơ mịn.",
-        "Phun rửa nhẹ bằng nước sạch để giảm mật số ban đầu nếu cây chịu được.",
-        "Tách cây bị nặng và tránh để khô nóng kéo dài.",
-      ],
-      followUp: [
-        "Kiểm tra lại sau 2 ngày, nhất là mặt dưới lá non.",
-        "Nếu mật số tăng, dùng biện pháp sinh học hoặc thuốc theo khuyến cáo địa phương.",
-      ],
-      safety: ["Không lạm dụng thuốc trừ sâu phổ rộng vì có thể làm giảm thiên địch."],
-      recheckDays: 2,
-      expertRequired: false,
     };
   }
 
