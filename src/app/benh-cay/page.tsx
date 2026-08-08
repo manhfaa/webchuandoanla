@@ -14,11 +14,11 @@ const TOTAL_DISEASES = CROP_DISEASES.reduce((sum, crop) => sum + crop.diseases.l
 
 export const metadata: Metadata = {
   title: "Bệnh cây trồng nhận biết được từ ảnh lá | Agromind AI",
-  description: `Danh sách ${TOTAL_DISEASES} bệnh trên ${CROP_DISEASES.length} loại cây trồng mà Agromind AI nhận diện được từ ảnh lá, kèm việc nên làm khi phát hiện dấu hiệu.`,
+  description: `Danh sách ${TOTAL_DISEASES} dấu hiệu sâu bệnh trên ${CROP_DISEASES.length} loại cây trồng mà Agromind AI nhận diện được từ ảnh lá, kèm việc nên làm khi phát hiện dấu hiệu.`,
   alternates: { canonical: "/benh-cay" },
   openGraph: {
     title: "Bệnh cây trồng nhận biết được từ ảnh lá",
-    description: `${TOTAL_DISEASES} bệnh trên ${CROP_DISEASES.length} loại cây trồng.`,
+    description: `${TOTAL_DISEASES} dấu hiệu sâu bệnh trên ${CROP_DISEASES.length} loại cây trồng.`,
     url: "/benh-cay",
   },
 };
@@ -33,8 +33,9 @@ export default function DiseaseIndexPage() {
             Bệnh cây trồng nhận biết được từ ảnh lá
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-8 text-ink-soft">
-            Agromind AI hiện nhận diện {TOTAL_DISEASES} bệnh trên {CROP_DISEASES.length} loại cây
-            trồng. Chọn cây của bạn để xem từng bệnh và việc nên làm khi thấy dấu hiệu trên lá.
+            Agromind AI hiện nhận diện {TOTAL_DISEASES} dấu hiệu sâu bệnh trên{" "}
+            {CROP_DISEASES.length} loại cây trồng. Chọn cây của bạn để xem từng loại và việc nên làm
+            khi thấy dấu hiệu trên lá.
           </p>
 
           <div className="mt-6 flex items-start gap-3 rounded-[var(--r-md)] border border-[color-mix(in_srgb,var(--sun)_45%,transparent)] bg-sun-soft p-4">
@@ -60,7 +61,7 @@ export default function DiseaseIndexPage() {
                   <span className="min-w-0 flex-1">
                     <span className="block font-display text-lg font-bold text-ink">{crop.name}</span>
                     <span className="mt-0.5 block text-sm text-ink-soft">
-                      {crop.diseases.length} bệnh
+                      {crop.diseases.length} dấu hiệu sâu bệnh
                     </span>
                     <span className="mt-1 block truncate text-xs text-ink-muted">
                       {crop.diseases.map((d) => d.name).join(" · ")}

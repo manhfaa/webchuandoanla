@@ -24,11 +24,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const names = crop.diseases.map((d) => d.name.toLowerCase()).slice(0, 4).join(", ");
   return {
     title: `Bệnh thường gặp trên ${crop.name} và cách nhận biết | Agromind AI`,
-    description: `${crop.diseases.length} bệnh trên ${crop.name} mà Agromind AI nhận diện được từ ảnh lá: ${names}. Kèm việc nên làm ngay và khi nào cần hỏi chuyên gia.`,
+    // "sâu bệnh", not "bệnh": the list includes nhện, sâu đục lá, mọt and muỗi,
+    // which are pests rather than diseases. It is also the word a Vietnamese
+    // grower actually types.
+    description: `${crop.diseases.length} dấu hiệu sâu bệnh trên ${crop.name} mà Agromind AI nhận diện được từ ảnh lá: ${names}. Kèm việc nên làm ngay và khi nào cần hỏi chuyên gia.`,
     alternates: { canonical: `/benh-cay/${crop.slug}` },
     openGraph: {
       title: `Bệnh thường gặp trên ${crop.name}`,
-      description: `Nhận biết ${crop.diseases.length} bệnh trên ${crop.name} từ ảnh lá.`,
+      description: `Nhận biết ${crop.diseases.length} dấu hiệu sâu bệnh trên ${crop.name} từ ảnh lá.`,
       url: `/benh-cay/${crop.slug}`,
     },
   };
@@ -56,9 +59,20 @@ const RISK_FILL: Record<string, string> = {
 function headingFor(diseaseName: string, cropName: string): string {
   const fold = (v: string) =>
     v.toLowerCase().replace(/đ/g, "d").normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/[^a-z0-9]+/g, " ").trim();
-  return fold(diseaseName).includes(fold(cropName))
-    ? diseaseName
-    : `${diseaseName} trên ${cropName}`;
+
+  const folded = fold(diseaseName);
+  if (folded.includes(fold(cropName))) return diseaseName;
+
+  // A disease name says "ngô", never "Ngô (bắp)", so the parenthetical form
+  // never matches and "Virus sọc lá ngô" would pick up " trên Ngô (bắp)".
+  const bare = cropName.replace(/\s*\(.*?\)\s*/g, " ").trim();
+  if (bare && bare !== cropName && folded.includes(fold(bare))) return diseaseName;
+
+  // "Đốm đỏ trên lá" already carries a "trên" clause. Appending a second one
+  // gave "Đốm đỏ trên lá trên Chè"; the h1 above already names the crop.
+  if (folded.includes(" tren ")) return diseaseName;
+
+  return `${diseaseName} trên ${cropName}`;
 }
 
 export default async function CropDiseasePage({ params }: { params: Promise<{ slug: string }> }) {
@@ -87,8 +101,8 @@ export default async function CropDiseasePage({ params }: { params: Promise<{ sl
             Bệnh thường gặp trên {crop.name}
           </h1>
           <p className="mt-4 text-base leading-8 text-ink-soft">
-            Agromind AI nhận diện được {crop.diseases.length} bệnh trên {crop.name} từ ảnh lá.
-            {insight ? ` ${insight}` : ""}
+            Agromind AI nhận diện được {crop.diseases.length} dấu hiệu sâu bệnh trên {crop.name} từ
+            ảnh lá.{insight ? ` ${insight}` : ""}
           </p>
 
           {image ? (
