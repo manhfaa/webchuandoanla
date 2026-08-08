@@ -48,6 +48,19 @@ const RISK_FILL: Record<string, string> = {
   unknown: "var(--sun)",
 };
 
+/**
+ * Some disease names already carry the crop — "Thối đen trên nho", "Virus xoăn
+ * vàng lá cà chua". Appending " trên {crop}" to those produced "Thối đen trên
+ * nho trên Nho", which reads like something a machine wrote without looking.
+ */
+function headingFor(diseaseName: string, cropName: string): string {
+  const fold = (v: string) =>
+    v.toLowerCase().replace(/đ/g, "d").normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/[^a-z0-9]+/g, " ").trim();
+  return fold(diseaseName).includes(fold(cropName))
+    ? diseaseName
+    : `${diseaseName} trên ${cropName}`;
+}
+
 export default async function CropDiseasePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const crop = findCropDiseases(slug);
@@ -115,7 +128,7 @@ export default async function CropDiseasePage({ params }: { params: Promise<{ sl
                 <section key={disease.className} className="rounded-[var(--r-lg)] border border-line bg-surface-raised p-5 sm:p-6">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <h2 className="font-display text-xl font-bold tracking-[-0.02em] text-ink sm:text-2xl">
-                      {disease.name} trên {crop.name}
+                      {headingFor(disease.name, crop.name)}
                     </h2>
                     <span className="inline-flex items-center gap-2 rounded-full border border-line px-3 py-1 text-xs font-bold text-ink">
                       <span
