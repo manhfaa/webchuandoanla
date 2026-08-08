@@ -37,6 +37,12 @@ export function Footer() {
             <div className="mt-4 space-y-3">
               <Link href="/login" className="block text-sm font-medium text-on-forest-muted transition hover:text-on-forest">{tr("Đăng nhập", "Log in")}</Link>
               <Link href="/register" className="block text-sm font-medium text-on-forest-muted transition hover:text-on-forest">{tr("Tạo tài khoản", "Create account")}</Link>
+              {/* Google found the disease pages through the sitemap alone and
+                  reported "Trang giới thiệu: Không phát hiện được trang nào" —
+                  nothing on the site linked to them. A sitemap tells a crawler a
+                  URL exists; a link tells it the URL matters, and it is also how
+                  a visitor gets there. */}
+              <Link href="/benh-cay" className="block text-sm font-medium text-on-forest-muted transition hover:text-on-forest">{tr("Bệnh cây trồng", "Plant diseases")}</Link>
               <Link href="/login?next=/dashboard/diagnosis" className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-forest transition hover:text-mint">{tr("Kiểm tra ảnh lá", "Check a leaf")} <ArrowUpRight size={15} /></Link>
             </div>
           </div>
