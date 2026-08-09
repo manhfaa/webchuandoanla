@@ -3,9 +3,10 @@
 import Image from "next/image";
 import { Camera, CheckCircle2, ClipboardCheck, ScanSearch } from "lucide-react";
 import { motion, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from "framer-motion";
-import { useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useTr } from "@/lib/use-tr";
+import { cn } from "@/lib/utils";
 
 const stages = [
   {
@@ -124,9 +125,77 @@ function VeinDot({ index, progress, reduceMotion }: { index: number; progress: M
   );
 }
 
+/** story-grape-leaf.png là 1586x992. */
+const IMAGE_ASPECT = 1586 / 992;
+
+/**
+ * Vị trí dấu hiệu bệnh, tính theo phần trăm TOẠ ĐỘ ẢNH GỐC.
+ *
+ * Đo trực tiếp trên tệp ảnh, không ước lượng bằng mắt: đốm hoại tử tìm bằng
+ * cách dò vùng tối có viền xung quanh là lá xanh; lõi phấn trắng tìm bằng bản
+ * đồ mật độ độ bão hoà, vì phấn trắng làm giảm bão hoà xuống 0.34-0.41 trong
+ * khi lá sạch ở 0.48-0.50.
+ *
+ * Ba vòng cũ đặt ở 39%/31%, 55%/44% và 45%/37% đều rơi vào chỗ lá lành.
+ */
+const POWDER_CORE = { x: 56.9, y: 48.1 };
+const LESIONS = [
+  { x: 65.9, y: 66.8, size: "h-7 w-7", ring: 7 },
+  { x: 73.8, y: 50.0, size: "h-5 w-5", ring: 6 },
+  { x: 27.4, y: 65.7, size: "h-6 w-6", ring: 6 },
+];
+
+/**
+ * Chuyển toạ độ ảnh sang toạ độ khung.
+ *
+ * Không thể dùng phần trăm cố định: khung là aspect-16/10 ở khổ sm nhưng
+ * `lg:min-h-[500px]` kéo nó thành 646x500 (tỉ lệ 1.293) ở màn hình lớn, còn
+ * điện thoại là 360px cao. Mỗi tỉ lệ khiến `object-cover` cắt một lượng khác
+ * nhau — đo được ở lg chỉ còn thấy 80.9% chiều ngang ảnh. Vòng khoanh vì thế
+ * phải tính lại theo kích thước thật của khung.
+ */
+function useImagePointToBox(ref: React.RefObject<HTMLElement | null>) {
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+
+    // Đo ngay khi gắn, không chờ ResizeObserver gọi lần đầu: nếu chờ thì có một
+    // khung hình các vòng còn nằm ở toạ độ chưa bù. Việc lắng nghe resize của
+    // window là lớp dự phòng cho môi trường mà ResizeObserver bị chặn.
+    const measure = () => setBox({ w: node.clientWidth, h: node.clientHeight });
+    measure();
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [ref]);
+
+  return useCallback(
+    (x: number, y: number) => {
+      if (!box?.w || !box?.h) return { left: `${x}%`, top: `${y}%` };
+      const boxAspect = box.w / box.h;
+      if (boxAspect < IMAGE_ASPECT) {
+        const visible = boxAspect / IMAGE_ASPECT; // phần chiều ngang ảnh còn thấy
+        return { left: `${((x / 100 - (1 - visible) / 2) / visible) * 100}%`, top: `${y}%` };
+      }
+      const visible = IMAGE_ASPECT / boxAspect; // cắt trên dưới thay vì hai bên
+      return { left: `${x}%`, top: `${((y / 100 - (1 - visible) / 2) / visible) * 100}%` };
+    },
+    [box],
+  );
+}
+
 export function LeafDiagnosisStory() {
   const tr = useTr();
   const sectionRef = useRef<HTMLElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const pointToBox = useImagePointToBox(frameRef);
   const reduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -172,6 +241,7 @@ export function LeafDiagnosisStory() {
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1.12fr)_minmax(360px,0.88fr)] lg:items-center lg:gap-12">
             <div className="relative overflow-hidden rounded-[var(--r-xl)] border border-line-strong bg-forest shadow-lg">
               <motion.div
+                ref={frameRef}
                 className="relative h-[360px] w-full sm:h-auto sm:aspect-[16/10] lg:min-h-[500px]"
                 style={reduceMotion ? undefined : { scale: imageScale, y: imageY }}
               >
@@ -188,26 +258,41 @@ export function LeafDiagnosisStory() {
                   aria-hidden
                 />
 
+                {/* x/y = -50% nằm trong style của motion, không dùng lớp
+                    -translate-x-1/2: framer-motion ghi transform inline nên lớp
+                    Tailwind sẽ bị đè và vòng lệch đi nửa đường kính. */}
                 <motion.div
-                  className="absolute left-[39%] top-[31%] h-36 w-36 rounded-full border border-on-forest/75 shadow-[inset_0_0_0_9px_rgba(239,249,241,0.08)] sm:h-44 sm:w-44"
-                  style={reduceMotion ? { opacity: 1 } : { opacity: lensOpacity, scale: lensScale }}
+                  className="absolute h-36 w-36 rounded-full border border-[color-mix(in_srgb,var(--on-forest)_75%,transparent)] shadow-[inset_0_0_0_9px_rgba(239,249,241,0.08)] sm:h-44 sm:w-44"
+                  style={{
+                    ...pointToBox(POWDER_CORE.x, POWDER_CORE.y),
+                    x: "-50%",
+                    y: "-50%",
+                    ...(reduceMotion ? { opacity: 1 } : { opacity: lensOpacity, scale: lensScale }),
+                  }}
                   aria-hidden
                 >
-                  <span className="absolute inset-5 rounded-full border border-on-forest/35" />
-                  <span className="absolute left-1/2 top-3 h-[calc(100%-1.5rem)] w-px -translate-x-1/2 bg-on-forest/35" />
-                  <span className="absolute left-3 top-1/2 h-px w-[calc(100%-1.5rem)] -translate-y-1/2 bg-on-forest/35" />
+                  <span className="absolute inset-5 rounded-full border border-[color-mix(in_srgb,var(--on-forest)_35%,transparent)]" />
+                  <span className="absolute left-1/2 top-3 h-[calc(100%-1.5rem)] w-px -translate-x-1/2 bg-[color-mix(in_srgb,var(--on-forest)_35%,transparent)]" />
+                  <span className="absolute left-3 top-1/2 h-px w-[calc(100%-1.5rem)] -translate-y-1/2 bg-[color-mix(in_srgb,var(--on-forest)_35%,transparent)]" />
                 </motion.div>
 
-                <motion.div
-                  className="absolute left-[55%] top-[44%] h-7 w-7 rounded-full border-2 border-sun bg-sun/15 shadow-[0_0_0_7px_rgba(234,182,75,0.12)]"
-                  style={reduceMotion ? { opacity: 1 } : { opacity: lesionOpacity }}
-                  aria-hidden
-                />
-                <motion.div
-                  className="absolute left-[45%] top-[37%] h-5 w-5 rounded-full border-2 border-sun bg-sun/15 shadow-[0_0_0_6px_rgba(234,182,75,0.1)]"
-                  style={reduceMotion ? { opacity: 1 } : { opacity: lesionOpacity }}
-                  aria-hidden
-                />
+                {LESIONS.map((lesion) => (
+                  <motion.div
+                    key={`${lesion.x}-${lesion.y}`}
+                    className={cn(
+                      "absolute rounded-full border-2 border-sun bg-[color-mix(in_srgb,var(--sun)_15%,transparent)]",
+                      lesion.size,
+                    )}
+                    style={{
+                      ...pointToBox(lesion.x, lesion.y),
+                      x: "-50%",
+                      y: "-50%",
+                      boxShadow: `0 0 0 ${lesion.ring}px color-mix(in srgb, var(--sun) 12%, transparent)`,
+                      ...(reduceMotion ? { opacity: 1 } : { opacity: lesionOpacity }),
+                    }}
+                    aria-hidden
+                  />
+                ))}
 
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-forest via-forest/80 to-transparent px-5 pb-5 pt-16 text-on-forest sm:px-7 sm:pb-7">
                   <p className="max-w-lg text-sm font-semibold leading-6 text-on-forest-muted">
