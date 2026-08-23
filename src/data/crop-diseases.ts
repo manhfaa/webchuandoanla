@@ -455,6 +455,18 @@ export function findCropDiseases(slug: string): CropWithDiseases | null {
   return CROP_DISEASES.find((crop) => crop.slug === slug) ?? null;
 }
 
+/**
+ * Trang bệnh tương ứng với một cây trong danh mục trang chủ, nếu có.
+ *
+ * Trang chủ dùng hàm này để trỏ thẳng từ thẻ cây sang trang bệnh của nó.
+ * Trả null khi cây chưa đủ hai bệnh, vì khi đó trang không được sinh và
+ * liên kết sẽ dẫn tới 404.
+ */
+export function diseasePageForPlant(plantId: string): CropWithDiseases | null {
+  const crop = CROP_DISEASES.find((entry) => entry.plantId === plantId);
+  return crop && crop.diseases.length >= 2 ? crop : null;
+}
+
 export function plantImageFor(plantId: string): string | null {
   return supportedPlants.find((plant) => plant.id === plantId)?.image ?? null;
 }

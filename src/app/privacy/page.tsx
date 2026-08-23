@@ -9,6 +9,10 @@ import { privacyDoc } from "@/data/legal-content";
 export const metadata: Metadata = {
   title: "Chính sách quyền riêng tư | Agromind AI",
   description: "Chính sách quyền riêng tư và xử lý dữ liệu của Agromind AI.",
+  // Thiếu dòng này thì Next kế thừa `alternates: { canonical: "/" }` của
+  // layout, và trang tự khai mình là bản trùng lặp của trang chủ — trong khi
+  // nó vẫn nằm trong sitemap.
+  alternates: { canonical: "/privacy" },
 };
 
 export default function PrivacyPage() {

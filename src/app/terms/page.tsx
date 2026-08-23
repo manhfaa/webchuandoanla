@@ -9,6 +9,10 @@ import { termsDoc } from "@/data/legal-content";
 export const metadata: Metadata = {
   title: "Điều khoản sử dụng | Agromind AI",
   description: "Điều khoản sử dụng dịch vụ Agromind AI.",
+  // Thiếu dòng này thì Next kế thừa `alternates: { canonical: "/" }` của
+  // layout, và trang tự khai mình là bản trùng lặp của trang chủ — trong khi
+  // nó vẫn nằm trong sitemap.
+  alternates: { canonical: "/terms" },
 };
 
 export default function TermsPage() {

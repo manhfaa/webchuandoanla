@@ -9,7 +9,9 @@ import { Navbar } from "@/components/layout/navbar";
 import { AppShell } from "@/components/layout/layout-components";
 import { buttonVariants } from "@/components/ui/button";
 import { CROPS_WITH_PAGES, findCropDiseases, plantImageFor, plantInsightFor } from "@/data/crop-diseases";
+import { CropDiseaseSchema } from "@/components/system/page-schema";
 import { guidanceForDiseaseText, normalizeDiseaseText } from "@/lib/disease-guidance";
+import { diseaseAnchors } from "@/lib/disease-slug";
 import { cn } from "@/lib/utils";
 
 export function generateStaticParams() {
@@ -23,18 +25,55 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   const names = crop.diseases.map((d) => d.name.toLowerCase()).slice(0, 4).join(", ");
   return {
-    title: `Bệnh thường gặp trên ${crop.name} và cách nhận biết | Agromind AI`,
+    // Tiêu đề cũ — "Bệnh thường gặp trên X và cách nhận biết" — không chứa tên
+    // bệnh nào, trong khi tên bệnh mới là nhóm từ khoá một tên miền vài ngày
+    // tuổi có cơ hội thắng. "bệnh cà chua" thì không.
+    title: titleFor(crop),
     // "sâu bệnh", not "bệnh": the list includes nhện, sâu đục lá, mọt and muỗi,
     // which are pests rather than diseases. It is also the word a Vietnamese
     // grower actually types.
-    description: `${crop.diseases.length} dấu hiệu sâu bệnh trên ${crop.name} mà Agromind AI nhận diện được từ ảnh lá: ${names}. Kèm việc nên làm ngay và khi nào cần hỏi chuyên gia.`,
+    // Google cắt mô tả quanh 155 ký tự. Bản cũ dài 190-210 và luôn bị cắt đúng
+    // vào câu hứa hành động, nên phần người đọc thấy chỉ còn danh sách tên bệnh.
+    description: `${crop.diseases.length} dấu hiệu sâu bệnh trên ${crop.name}: ${names}. Cách nhận biết và việc nên làm ngay.`,
     alternates: { canonical: `/benh-cay/${crop.slug}` },
     openGraph: {
       title: `Bệnh thường gặp trên ${crop.name}`,
       description: `Nhận biết ${crop.diseases.length} dấu hiệu sâu bệnh trên ${crop.name} từ ảnh lá.`,
       url: `/benh-cay/${crop.slug}`,
+      // Khai openGraph ở trang con THAY THẾ toàn bộ openGraph của layout, kể cả
+      // images. Thiếu dòng này thì 15 trang /benh-cay chia sẻ lên Zalo hay
+      // Facebook đều hiện ra không có ảnh.
+    images: [
+      { url: "/og-image.jpg", width: 1200, height: 630, alt: "Agromind AI kiểm tra ảnh lá cây" },
+    ],
     },
   };
+}
+
+/**
+ * Tiêu đề nhồi được nhiều tên bệnh nhất trong giới hạn Google hiển thị.
+ *
+ * Google cắt tiêu đề quanh 60 ký tự. Hậu tố thương hiệu chiếm 14, nên phần còn
+ * lại được dùng để liệt kê tên bệnh — mỗi tên là một truy vấn riêng mà trang có
+ * thể xếp hạng, thay vì một câu chung chung không ai gõ.
+ */
+const TITLE_SUFFIX = " | Agromind AI";
+const TITLE_BUDGET = 60;
+
+function titleFor(crop: { name: string; diseases: { name: string }[] }): string {
+  const base = `Bệnh ${crop.name.toLowerCase()}`;
+  const picked: string[] = [];
+
+  for (const disease of crop.diseases) {
+    const name = disease.name.toLowerCase();
+    const next = `${base}: ${[...picked, name].join(", ")}${TITLE_SUFFIX}`;
+    if (next.length > TITLE_BUDGET) break;
+    picked.push(name);
+  }
+
+  // Cây có tên bệnh dài tới mức không nhét nổi cái nào thì quay về câu mô tả.
+  if (!picked.length) return `Bệnh thường gặp trên ${crop.name}${TITLE_SUFFIX}`;
+  return `${base}: ${picked.join(", ")}${TITLE_SUFFIX}`;
 }
 
 const RISK_LABEL: Record<string, string> = {
@@ -82,9 +121,14 @@ export default async function CropDiseasePage({ params }: { params: Promise<{ sl
 
   const image = plantImageFor(crop.plantId);
   const insight = plantInsightFor(crop.plantId);
+  // Cùng một hàm mà CropDiseaseSchema dùng, nên neo trong JSON-LD luôn khớp neo
+  // thật trên trang.
+  const anchors = diseaseAnchors(crop.diseases.map((disease) => disease.name));
+  const otherCrops = CROPS_WITH_PAGES.filter((entry) => entry.slug !== crop.slug);
 
   return (
     <AppShell>
+      <CropDiseaseSchema crop={crop} />
       <Navbar />
       <main id="main-content" className="px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
         <div className="mx-auto max-w-3xl">
@@ -130,7 +174,7 @@ export default async function CropDiseasePage({ params }: { params: Promise<{ sl
           </div>
 
           <div className="mt-10 space-y-8">
-            {crop.diseases.map((disease) => {
+            {crop.diseases.map((disease, index) => {
               // Same lookup the diagnosis screen uses, so this page cannot tell a
               // grower something different from what the app tells them.
               const guidance = guidanceForDiseaseText(
@@ -139,7 +183,13 @@ export default async function CropDiseasePage({ params }: { params: Promise<{ sl
               const risk = String(guidance.risk);
 
               return (
-                <section key={disease.className} className="rounded-[var(--r-lg)] border border-line bg-surface-raised p-5 sm:p-6">
+                // scroll-mt-28 vì Navbar là fixed: thiếu nó thì nhảy tới neo
+                // nào, tiêu đề mục đó cũng nằm khuất sau thanh điều hướng.
+                <section
+                  key={disease.className}
+                  id={anchors[index]}
+                  className="scroll-mt-28 rounded-[var(--r-lg)] border border-line bg-surface-raised p-5 sm:p-6"
+                >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <h2 className="font-display text-xl font-bold tracking-[-0.02em] text-ink sm:text-2xl">
                       {headingFor(disease.name, crop.name)}
@@ -194,7 +244,31 @@ export default async function CropDiseasePage({ params }: { params: Promise<{ sl
             })}
           </div>
 
-          <div className="mt-10 rounded-[var(--r-lg)] border border-line bg-surface-soft p-6 text-center">
+          {/* Trước đây mỗi trang cây là một ngõ cụt: chỉ có đường về /benh-cay
+              và /register. Bộ thu thập của Google đi vào một trang rồi phải quay
+              ra mới sang được cây khác, còn người đọc thì không thấy 13 trang
+              kia tồn tại. */}
+          <nav
+            aria-label="Bệnh trên cây trồng khác"
+            className="mt-10 rounded-[var(--r-lg)] border border-line bg-surface-soft p-6"
+          >
+            <h2 className="font-display text-lg font-bold text-ink">Bệnh trên cây trồng khác</h2>
+            <ul className="mt-4 flex flex-wrap gap-2">
+              {otherCrops.map((other) => (
+                <li key={other.slug}>
+                  <Link
+                    href={`/benh-cay/${other.slug}`}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-surface px-4 text-sm font-semibold text-ink transition hover:border-line-strong hover:text-leaf-strong"
+                  >
+                    {other.name}
+                    <span className="text-xs font-medium text-ink-muted">{other.diseases.length}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div className="mt-6 rounded-[var(--r-lg)] border border-line bg-surface-soft p-6 text-center">
             <h2 className="font-display text-xl font-bold text-ink">
               Không chắc lá {crop.name} nhà bạn đang bị gì?
             </h2>

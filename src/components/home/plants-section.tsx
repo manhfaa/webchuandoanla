@@ -2,12 +2,14 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { ArrowUpRight } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { useReducedMotion } from "framer-motion";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
 
 import { Reveal } from "@/components/ui/reveal";
+import { diseasePageForPlant } from "@/data/crop-diseases";
 import { supportedPlants } from "@/data/mock/plants";
 import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
@@ -135,6 +137,7 @@ export function PlantsSection() {
           >
             {visiblePlants.map((plant, index) => {
               const isWide = filter === "priority" && (index === 0 || index === visiblePlants.length - 1);
+              const diseasePage = diseasePageForPlant(plant.id);
 
               return (
                 <article
@@ -174,15 +177,35 @@ export function PlantsSection() {
                     <p className="text-xs font-semibold italic text-leaf-strong">{plant.latinLabel}</p>
                     <h3 className="mt-1 font-display text-2xl font-extrabold tracking-[-0.03em] text-ink">{tr(plant.name, plant.nameEn ?? plant.name)}</h3>
                     <p className="mt-3 text-sm leading-6 text-ink-soft">{tr(plant.insight, plant.insightEn ?? plant.insight)}</p>
-                    <a
-                      href={plant.imageSourceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-auto inline-flex min-h-11 items-center gap-2 self-start pt-3 text-xs font-semibold text-leaf-strong transition hover:text-ink"
-                    >
-                      {tr("Mở ảnh tham khảo", "Open reference image")}
-                      <ArrowUpRight size={14} aria-hidden />
-                    </a>
+                    {/* Trước đây thẻ cây chỉ có một liên kết, và nó trỏ RA NGOÀI
+                        tới nguồn ảnh. Trang chủ là trang có thẩm quyền cao nhất
+                        của site mà lại không dẫn vào trang bệnh nào — chúng chỉ
+                        được nhắc tới ở footer. Liên kết dưới đây đưa người đọc
+                        (và bộ thu thập của Google) thẳng tới đúng trang bệnh của
+                        cây đang xem, với chính tên cây làm chữ neo. */}
+                    <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-1 pt-3">
+                      {diseasePage ? (
+                        <Link
+                          href={`/benh-cay/${diseasePage.slug}`}
+                          className="inline-flex min-h-11 items-center gap-1.5 text-xs font-bold text-leaf-strong underline underline-offset-4 transition hover:text-ink"
+                        >
+                          {tr(
+                            `Xem ${diseasePage.diseases.length} dấu hiệu sâu bệnh trên ${plant.name}`,
+                            `See ${diseasePage.diseases.length} pest and disease signs on ${plant.nameEn ?? plant.name}`,
+                          )}
+                          <ArrowRight size={14} aria-hidden />
+                        </Link>
+                      ) : null}
+                      <a
+                        href={plant.imageSourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex min-h-11 items-center gap-2 text-xs font-semibold text-ink-muted transition hover:text-ink"
+                      >
+                        {tr("Mở ảnh tham khảo", "Open reference image")}
+                        <ArrowUpRight size={14} aria-hidden />
+                      </a>
+                    </div>
                   </div>
                 </article>
               );
