@@ -347,3 +347,137 @@ class CheckPaymentStatusView(APIView):
                 "order": PaymentOrderSerializer(order).data if order else None,
             }
         )
+
+
+# --------------------------------------------------------------- Google Play
+
+class GooglePlayProductsView(APIView):
+    """Which Play product sells which plan.
+
+    The app needs this to launch a billing flow at all, and it must come from the
+    server: the product ids are chosen in the Play Console, cannot be renamed
+    once published, and hard-coding them in the APK means a rename ships as an
+    app update instead of a config change.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        from . import google_play
+
+        if not google_play.is_configured():
+            return Response(
+                {"detail": "Thanh toán qua Google Play chưa được bật trên máy chủ."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        return Response(google_play.product_catalogue())
+
+
+class GooglePlayVerifyView(APIView):
+    """Turn a Play purchase token into an entitlement.
+
+    The client sends the token and the product id it launched the flow with;
+    everything that decides what the grower gets is read back from Google. The
+    plan is resolved from the product Google reports, not from anything the app
+    said, because a client that could name its own plan could name "elite".
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "payment_orders"
+
+    def post(self, request):
+        from . import google_play
+        from .play_service import PlayGrantError, verify_and_grant
+
+        purchase_token = str(request.data.get("purchase_token") or "").strip()
+        product_id = str(request.data.get("product_id") or "").strip()
+        package_name = str(request.data.get("package_name") or "").strip()
+        client_request_id = str(request.data.get("client_request_id") or "").strip()
+
+        if not purchase_token or not product_id:
+            return Response(
+                {"detail": "Thiếu purchase_token hoặc product_id."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        expected_package = getattr(settings, "GOOGLE_PLAY_PACKAGE_NAME", "").strip()
+        if package_name and expected_package and package_name != expected_package:
+            # A token minted for another app is not this app's to honour.
+            return Response(
+                {"detail": "Giao dịch không thuộc ứng dụng này."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            record = verify_and_grant(
+                user=request.user,
+                product_id=product_id,
+                purchase_token=purchase_token,
+                package_name=package_name or expected_package,
+                client_request_id=client_request_id,
+            )
+        except google_play.PlayNotConfigured as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except google_play.PlayVerificationFailed as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_402_PAYMENT_REQUIRED)
+        except PlayGrantError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_402_PAYMENT_REQUIRED)
+
+        request.user.refresh_from_db(fields=["current_plan", "plan_expires_at"])
+        return Response(
+            {
+                "status": record.state,
+                "plan": record.plan,
+                "plan_expires_at": request.user.plan_expires_at,
+                "acknowledged": record.acknowledged,
+            }
+        )
+
+
+class GooglePlayRtdnView(APIView):
+    """Pub/Sub push endpoint for Play's real-time developer notifications.
+
+    Authenticated by a shared token rather than left open: this endpoint changes
+    entitlements, and an unauthenticated one would let anyone expire a paying
+    grower's plan. Unset means it refuses everyone, so forgetting to configure it
+    fails closed.
+
+    The notification itself is treated as a hint, never as evidence: every
+    lifecycle change is re-checked against the Play Developer API before it
+    grants anything.
+    """
+
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        import base64
+
+        from .play_service import apply_rtdn
+
+        expected = (getattr(settings, "GOOGLE_PLAY_RTDN_TOKEN", "") or "").strip()
+        if not expected:
+            logger.warning("Play RTDN endpoint called but GOOGLE_PLAY_RTDN_TOKEN is not set.")
+            return Response(
+                {"detail": "Kênh thông báo Google Play chưa được cấu hình."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        received = (request.headers.get("X-Play-Rtdn-Token", "") or "").strip()
+        if not received or not hmac.compare_digest(received, expected):
+            return Response({"detail": "Yêu cầu chưa được xác thực."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        message = (request.data or {}).get("message") or {}
+        raw = message.get("data") or ""
+        try:
+            notification = json.loads(base64.b64decode(raw).decode("utf-8"))
+        except Exception:
+            # Acknowledged anyway: Pub/Sub retries a non-2xx forever, and a
+            # message we cannot parse will never parse.
+            logger.warning("Unreadable Play RTDN message %s", message.get("messageId"))
+            return Response({"result": "unreadable"})
+
+        result = apply_rtdn(notification)
+        logger.info("Play RTDN %s -> %s", message.get("messageId"), result)
+        return Response({"result": result})

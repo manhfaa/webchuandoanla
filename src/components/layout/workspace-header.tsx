@@ -68,11 +68,11 @@ export function WorkspaceHeader({ pageTitle, pageDescription, mobileNavOpen = fa
           <Link href="/dashboard/diagnosis" className={buttonVariants({ variant: "primary", size: "sm", className: "hidden md:inline-flex" })}>
             <ScanSearch size={16} aria-hidden /> {tr("Kiểm tra ảnh mới", "New leaf check")}
           </Link>
-          <Link href="/dashboard/profile" className="flex h-10 min-w-10 items-center gap-2 rounded-xl border border-line bg-surface px-1.5 pr-2.5 transition hover:bg-surface-soft" aria-label={tr("Mở hồ sơ người dùng", "Open profile")}>
+          <Link href="/dashboard/profile" className="flex h-11 min-w-11 items-center gap-2 rounded-xl border border-line bg-surface px-1.5 pr-2.5 transition hover:bg-surface-soft" aria-label={tr("Mở hồ sơ người dùng", "Open profile")}>
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-soft text-xs font-bold text-leaf-strong">{initials}</span>
             <span className="hidden max-w-[140px] truncate text-xs font-semibold text-ink xl:block">{displayName}</span>
           </Link>
-          <button type="button" onClick={() => { logout(); router.push("/login"); }} className="flex h-10 w-10 items-center justify-center rounded-xl text-ink-soft transition hover:bg-danger-soft hover:text-danger-ink" aria-label={tr("Đăng xuất", "Log out")}>
+          <button type="button" onClick={() => { logout(); router.push("/login"); }} className="flex h-11 w-11 items-center justify-center rounded-xl text-ink-soft transition hover:bg-danger-soft hover:text-danger-ink" aria-label={tr("Đăng xuất", "Log out")}>
             <LogOut size={17} aria-hidden />
           </button>
         </div>

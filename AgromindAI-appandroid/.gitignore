@@ -1,0 +1,13 @@
+*.iml
+.gradle/
+.idea/
+build/
+local.properties
+.cxx/
+.kotlin/
+
+# Never committed. CI signs from its own secret store.
+*.jks
+*.keystore
+google-services.json
+play-service-account*.json

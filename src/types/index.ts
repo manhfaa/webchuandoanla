@@ -193,6 +193,8 @@ export type ChatMode = "assistant" | "expert";
 export interface ChatApiRequest {
   query: string;
   mode: ChatMode;
+  /** Stable across a network retry so one question cannot consume quota twice. */
+  clientRequestId?: string;
   latestDiagnosis?: DiagnosisRecord | null;
   selectedDiagnosis?: DiagnosisRecord | null;
   /**

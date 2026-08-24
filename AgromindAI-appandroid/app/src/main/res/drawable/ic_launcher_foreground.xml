@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A leaf with a visible midrib, drawn as a vector rather than shipped as a PNG
+  set: it is one file instead of five densities, and it stays crisp on the
+  432dp adaptive canvas.
+
+  Kept inside the 66dp safe zone so the launcher's mask cannot clip the tip.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="#238554"
+        android:pathData="M74,30c2,18 -4,32 -16,40c-11,7 -24,7 -32,4c-2,-14 3,-27 13,-34c10,-7 23,-10 35,-10z" />
+
+    <path
+        android:strokeColor="#BFE8CD"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:pathData="M72,32L34,74" />
+
+    <path
+        android:strokeColor="#BFE8CD"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M62,42L52,40M56,48L46,46M50,54L40,52" />
+</vector>

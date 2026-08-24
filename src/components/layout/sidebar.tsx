@@ -71,7 +71,7 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
       >
         <div className="flex items-center justify-between gap-3 px-2">
           <Logo href="/dashboard" showTagline={false} />
-          <button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl text-ink-soft hover:bg-surface-soft hover:text-ink lg:hidden" aria-label={tr("Đóng menu", "Close menu")}>
+          <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-xl text-ink-soft hover:bg-surface-soft hover:text-ink lg:hidden" aria-label={tr("Đóng menu", "Close menu")}>
             <X size={19} aria-hidden />
           </button>
         </div>

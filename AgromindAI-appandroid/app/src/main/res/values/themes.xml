@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Only the window frame before Compose takes over. Every colour the grower
+      actually sees comes from AgromindTheme, so this stays deliberately thin:
+      two definitions of the palette would drift.
+
+      windowBackground is the light canvas token (#F7F5EE) so the first frame
+      does not flash white against the app's ivory background.
+    -->
+    <style name="Theme.Agromind" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#F7F5EE</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

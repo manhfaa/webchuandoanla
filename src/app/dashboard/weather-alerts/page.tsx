@@ -786,7 +786,7 @@ export default function WeatherAlertsPage() {
               <p className="text-body-sm text-danger-ink">{loginMessage}</p>
               <Link
                 href={loginUrl}
-                className="mt-3 inline-flex h-10 items-center justify-center rounded-md bg-leaf px-5 text-body font-medium text-on-leaf transition hover:bg-leaf-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/40"
+                className="mt-3 inline-flex h-11 items-center justify-center rounded-md bg-leaf px-5 text-body font-medium text-on-leaf transition hover:bg-leaf-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/40"
               >
                 {tr("Đăng nhập", "Sign in")}
               </Link>

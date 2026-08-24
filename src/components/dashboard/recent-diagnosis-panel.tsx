@@ -40,7 +40,7 @@ export function RecentDiagnosisPanel() {
         </div>
         <Link
           href="/dashboard/history"
-          className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-line bg-surface px-3 text-body-sm font-semibold text-ink transition hover:bg-surface-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/35"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-line bg-surface px-3 text-body-sm font-semibold text-ink transition hover:bg-surface-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf/35"
         >
           {tr("Xem tất cả lịch sử", "View all history")}
           <ArrowUpRight strokeWidth={1.75} className="h-4 w-4" aria-hidden />
@@ -53,7 +53,7 @@ export function RecentDiagnosisPanel() {
             <Leaf className="mx-auto h-7 w-7 text-leaf" aria-hidden />
             <p className="mt-3 text-sm font-semibold text-ink">{tr("Chưa có kết quả kiểm tra", "No check results yet")}</p>
             <p className="mt-1 text-body-sm text-ink-soft">{tr("Tải ảnh lá đầu tiên để bắt đầu theo dõi sức khỏe cây.", "Upload your first leaf image to start monitoring plant health.")}</p>
-            <Link href="/dashboard/diagnosis" className="mt-4 inline-flex min-h-10 items-center rounded-md bg-leaf px-4 text-sm font-semibold text-on-leaf transition hover:bg-leaf-strong">
+            <Link href="/dashboard/diagnosis" className="mt-4 inline-flex min-h-11 items-center rounded-md bg-leaf px-4 text-sm font-semibold text-on-leaf transition hover:bg-leaf-strong">
               {tr("Tải ảnh lá đầu tiên", "Upload your first leaf image")}
             </Link>
           </li>

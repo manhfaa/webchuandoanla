@@ -148,12 +148,11 @@ if EMAIL_USE_SSL and EMAIL_USE_TLS:
 # Without a timeout a stalled provider holds the request until the gunicorn
 # worker is killed, which on a single-worker free tier stalls the whole API.
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Agromind AI <no-reply@agromind.io.vn>")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Agromind AI <no-reply@agromind.farm>")
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
-# Render blocks outbound SMTP — a connection to smtp.gmail.com:587 from a
-# deployed service hangs until EMAIL_TIMEOUT every time — so the HTTPS provider
-# wins when both are configured.
+# Prefer the HTTPS mail provider when configured so delivery does not depend on
+# outbound SMTP availability in the production network.
 BREVO_API_KEY = os.getenv("BREVO_API_KEY", "").strip()
 
 if BREVO_API_KEY:
@@ -203,10 +202,17 @@ REST_FRAMEWORK = {
         "payment_orders": "30/hour",
         "payment_status": "120/minute",
         "login": "10/minute",
+        "google_login": "20/minute",
         "register": "5/hour",
         # Inference runs on a single free CPU Space; cap it so one account
         # cannot exhaust it for everyone else.
         "cnn_inference": "60/hour",
+        # One verification run is seven DeepSeek calls and two Tavily searches —
+        # by far the most expensive thing an account can trigger. The plan quota
+        # is the real limit; this only stops a loop from spending a month of
+        # provider credit in an afternoon.
+        "symptom_research": "20/hour",
+        "chat_respond": "60/hour",
     },
 }
 
@@ -220,12 +226,20 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
 }
 
-# Render/Proxy friendly defaults
+# Reverse-proxy friendly defaults
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 SECURE_SSL_REDIRECT = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = "Lax"
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
 SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000")) if not DEBUG else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
 SECURE_HSTS_PRELOAD = not DEBUG
@@ -234,6 +248,85 @@ CNN_MODEL_PATH = os.getenv("CNN_MODEL_PATH", "").strip()
 CNN_API_URL = os.getenv("CNN_API_URL", "").strip()
 CNN_API_TOKEN = os.getenv("CNN_API_TOKEN", "").strip()
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+
+# AI providers.
+#
+# These keys used to exist only as Vercel environment variables, read by
+# `src/app/api/chat/route.ts` and `src/app/api/research-symptoms/route.ts`. A
+# native Android client cannot hold them and must not treat the website as a
+# secret-holding backend, so the orchestration moved into `aiproviders/` and the
+# keys have to be set on the VPS. Unset means the corresponding endpoint answers
+# 503 and `/api/mobile/config/` reports the feature as off — never a canned
+# answer dressed up as a model answer.
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "").strip()
+DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash").strip()
+DEEPSEEK_API_URL = os.getenv("DEEPSEEK_API_URL", "https://api.deepseek.com/chat/completions").strip()
+DEEPSEEK_TIMEOUT_SECONDS = int(os.getenv("DEEPSEEK_TIMEOUT_SECONDS", "25"))
+
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "").strip()
+TAVILY_API_URL = os.getenv("TAVILY_API_URL", "https://api.tavily.com/search").strip()
+TAVILY_TIMEOUT_SECONDS = int(os.getenv("TAVILY_TIMEOUT_SECONDS", "25"))
+
+# How long a `client_request_id` keeps returning the answer it bought. Two days
+# covers a phone that was out of signal overnight; past that the grower has long
+# since retried by hand and a replay would be more confusing than a fresh run.
+CLIENT_REQUEST_TTL_HOURS = int(os.getenv("CLIENT_REQUEST_TTL_HOURS", "48"))
+
+# Ceiling for the multipart upload route. The app already downscales to a
+# ~1600-2048px long edge, so anything near this is either an unprocessed original
+# or not a photo at all.
+DIAGNOSIS_IMAGE_MAX_BYTES = int(os.getenv("DIAGNOSIS_IMAGE_MAX_BYTES", str(8 * 1024 * 1024)))
+DIAGNOSIS_IMAGE_MAX_PIXELS = int(os.getenv("DIAGNOSIS_IMAGE_MAX_PIXELS", "25000000"))
+MAX_SYMPTOM_CHARS = int(os.getenv("MAX_SYMPTOM_CHARS", "2000"))
+MAX_CHAT_QUERY_CHARS = int(os.getenv("MAX_CHAT_QUERY_CHARS", "4000"))
+# JSON uploads include base64 overhead. This is still bounded before Django or
+# the inference worker can hold an arbitrarily large request in memory.
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("DATA_UPLOAD_MAX_MEMORY_SIZE", str(12 * 1024 * 1024)))
+FILE_UPLOAD_MAX_MEMORY_SIZE = DIAGNOSIS_IMAGE_MAX_BYTES
+
+# Mobile app configuration served by /api/mobile/config/.
+MOBILE_MIN_SUPPORTED_VERSION = int(os.getenv("MOBILE_MIN_SUPPORTED_VERSION", "1"))
+MOBILE_LATEST_VERSION = int(os.getenv("MOBILE_LATEST_VERSION", "1"))
+MOBILE_MAINTENANCE = os.getenv("MOBILE_MAINTENANCE", "False").lower() == "true"
+MOBILE_MAINTENANCE_MESSAGE = os.getenv("MOBILE_MAINTENANCE_MESSAGE", "").strip()
+MOBILE_CONFIG_MAX_AGE = int(os.getenv("MOBILE_CONFIG_MAX_AGE", "300"))
+MOBILE_TERMS_URL = os.getenv("MOBILE_TERMS_URL", f"{FRONTEND_ORIGIN}/terms").strip()
+MOBILE_PRIVACY_URL = os.getenv("MOBILE_PRIVACY_URL", f"{FRONTEND_ORIGIN}/privacy").strip()
+MOBILE_SUPPORT_URL = os.getenv("MOBILE_SUPPORT_URL", "").strip()
+# Stays off until a Play service account is configured and
+# /api/payments/google-play/verify/ exists. While it is off the Play build hides
+# its purchase CTA rather than falling back to a bank transfer, which Play policy
+# does not permit.
+GOOGLE_PLAY_PACKAGE_NAME = os.getenv("GOOGLE_PLAY_PACKAGE_NAME", "vn.agromind.app").strip()
+# Path to the service-account JSON on the VPS, never inside the repository and
+# never inside the APK. Unset means Play verification answers 503 and the Play
+# build hides its purchase CTA.
+GOOGLE_PLAY_SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_PLAY_SERVICE_ACCOUNT_FILE", "").strip()
+# Shared secret for the Pub/Sub push endpoint. This endpoint changes
+# entitlements, so an unset value refuses everyone rather than accepting anyone.
+GOOGLE_PLAY_RTDN_TOKEN = os.getenv("GOOGLE_PLAY_RTDN_TOKEN", "").strip()
+# plan slug -> Play product. The ids are chosen in the Play Console and cannot be
+# renamed once published, so they are configuration, not something to derive.
+GOOGLE_PLAY_PRODUCTS = {
+    "grow": {
+        "product_id": os.getenv("GOOGLE_PLAY_PRODUCT_GROW", "").strip(),
+        "base_plan_id": os.getenv("GOOGLE_PLAY_BASE_PLAN_GROW", "").strip(),
+    },
+    "bloom": {
+        "product_id": os.getenv("GOOGLE_PLAY_PRODUCT_BLOOM", "").strip(),
+        "base_plan_id": os.getenv("GOOGLE_PLAY_BASE_PLAN_BLOOM", "").strip(),
+    },
+    "elite": {
+        "product_id": os.getenv("GOOGLE_PLAY_PRODUCT_ELITE", "").strip(),
+        "base_plan_id": os.getenv("GOOGLE_PLAY_BASE_PLAN_ELITE", "").strip(),
+    },
+}
+# Reported by /api/mobile/config/. True only when the server can actually verify
+# a purchase — otherwise the Play build would show a CTA that leads nowhere.
+GOOGLE_PLAY_BILLING_ENABLED = (
+    os.getenv("GOOGLE_PLAY_BILLING_ENABLED", "False").lower() == "true"
+    and bool(GOOGLE_PLAY_SERVICE_ACCOUNT_FILE)
+)
 
 # SePay payment gateway
 # Shared secret for the scheduled-chores endpoint. Unset means the endpoint

@@ -12,7 +12,7 @@ export function LanguageToggle({ className }: { className?: string }) {
       role="group"
       aria-label="Ngôn ngữ / Language"
       className={cn(
-        "relative inline-flex h-9 select-none items-center rounded-full border border-line bg-surface-soft p-0.5",
+        "relative inline-flex h-12 select-none items-center rounded-full border border-line bg-surface-soft p-0.5",
         className,
       )}
     >
@@ -28,7 +28,7 @@ export function LanguageToggle({ className }: { className?: string }) {
         onClick={() => setLanguage("vi")}
         aria-pressed={!isEn}
         className={cn(
-          "relative z-10 h-8 w-9 rounded-full text-[12px] font-bold transition-colors duration-180",
+          "relative z-10 h-11 w-11 rounded-full text-[12px] font-bold transition-colors duration-180",
           !isEn ? "text-on-leaf" : "text-ink-soft hover:text-ink",
         )}
       >
@@ -39,7 +39,7 @@ export function LanguageToggle({ className }: { className?: string }) {
         onClick={() => setLanguage("en")}
         aria-pressed={isEn}
         className={cn(
-          "relative z-10 h-8 w-9 rounded-full text-[12px] font-bold transition-colors duration-180",
+          "relative z-10 h-11 w-11 rounded-full text-[12px] font-bold transition-colors duration-180",
           isEn ? "text-on-leaf" : "text-ink-soft hover:text-ink",
         )}
       >

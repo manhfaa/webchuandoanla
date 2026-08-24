@@ -29,21 +29,24 @@ export function HeroSection({ campaign }: { campaign?: PricingPlan | null }) {
             <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-leaf/20 bg-surface-soft">
               <Leaf size={15} aria-hidden />
             </span>
-            {tr("Trợ lý sức khỏe cây trồng", "Plant health assistant")}
+            {tr("Cho vườn nhà và vườn nhỏ", "For home gardens and small plots")}
           </div>
 
           <h1
             className="fl-rise mt-6 max-w-[680px] font-display text-[42px] font-extrabold leading-[1.06] tracking-[-0.05em] text-ink sm:text-[50px] lg:text-[52px] xl:text-[56px]"
             style={{ "--fl-i": 1 } as CSSProperties}
           >
-            {tr("Nhìn dấu hiệu trên lá. Hành động trước khi bệnh lan rộng.", "Read the signs on the leaf. Act before disease spreads.")}
+            {tr("Thấy dấu hiệu trên lá. Biết bước tiếp theo.", "See a sign on the leaf. Know what to do next.")}
           </h1>
 
           <p
             className="fl-rise mt-6 max-w-[560px] text-base font-medium leading-7 text-ink-soft sm:text-lg sm:leading-8"
             style={{ "--fl-i": 1.5 } as CSSProperties}
           >
-            {tr("Tải ảnh lá để nhận gợi ý bệnh, đối chiếu triệu chứng và biết việc cần làm tiếp theo.", "Upload a leaf photo to get disease suggestions, cross-check symptoms and know what to do next.")}
+            {tr(
+              "Chụp lá để xem top 5 khả năng, đối chiếu triệu chứng và chọn bước xử lý phù hợp.",
+              "Photograph a leaf, review the top five possibilities, compare symptoms and choose the right next step.",
+            )}
           </p>
 
           <div className="fl-rise mt-8 flex flex-col gap-3 sm:flex-row sm:items-center" style={{ "--fl-i": 1.5 } as CSSProperties}>

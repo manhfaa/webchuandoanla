@@ -211,6 +211,9 @@ class RegistrationConsentTests(APITestCase):
 class GoogleConsentTests(APITestCase):
     """The Google button used to skip the consent checkbox entirely."""
 
+    def setUp(self):
+        cache.clear()
+
     @override_settings(GOOGLE_CLIENT_ID="test-client-id")
     @patch("users.serializers.id_token.verify_oauth2_token")
     def test_first_google_sign_in_requires_and_records_consent(self, verify):
@@ -257,6 +260,25 @@ class GoogleConsentTests(APITestCase):
 
         response = self.client.post(reverse("google-login"), {"credential": "x"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    @override_settings(GOOGLE_CLIENT_ID="test-client-id")
+    @patch("users.serializers.id_token.verify_oauth2_token")
+    def test_google_token_verification_is_rate_limited(self, verify):
+        verify.return_value = {
+            "email": "rate-google@example.com",
+            "email_verified": True,
+            "name": "Google User",
+        }
+        payload = {"credential": "x", "accepted_terms": True}
+
+        for _ in range(20):
+            self.assertEqual(
+                self.client.post(reverse("google-login"), payload, format="json").status_code,
+                status.HTTP_200_OK,
+            )
+
+        blocked = self.client.post(reverse("google-login"), payload, format="json")
+        self.assertEqual(blocked.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
 
 
 class LogoutTests(APITestCase):

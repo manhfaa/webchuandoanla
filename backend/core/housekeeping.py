@@ -27,6 +27,7 @@ def run_housekeeping(*, stdout=None) -> dict[str, int]:
     without pulling app models in at settings-load time.
     """
     from django.contrib.auth import get_user_model
+    from diagnoses import idempotency
     from engagement.models import UserSubscription
     from payments.models import PaymentOrder
     from payments.services import OPEN_ORDER_STATUSES
@@ -75,6 +76,12 @@ def run_housekeeping(*, stdout=None) -> dict[str, int]:
 
     call_command("clearsessions", verbosity=0)
     report["sessions_cleared"] = 1
+
+    # 5. Replay records for the mobile POSTs that cost money. One row per leaf
+    #    check, verification run and chat question, so this is the fastest-growing
+    #    table of the lot; past its TTL the client has stopped retrying and the
+    #    row protects nothing.
+    report["client_requests_pruned"] = idempotency.prune(now)
 
     if stdout is not None:
         for key, value in report.items():

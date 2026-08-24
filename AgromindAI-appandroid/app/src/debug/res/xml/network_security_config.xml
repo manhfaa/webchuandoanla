@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug only. Overrides the release file for the debug build type so a Django dev
+  server on the developer's machine is reachable from the emulator.
+
+  Scoped to the two loopback hosts and nothing else: a blanket
+  cleartextTrafficPermitted="true" here would be one careless merge away from
+  shipping. `user` trust anchors are enabled so a debugging proxy works without
+  anyone having to edit this file — and they exist in no other build type.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </domain-config>
+</network-security-config>

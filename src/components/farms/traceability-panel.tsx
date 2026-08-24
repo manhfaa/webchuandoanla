@@ -228,7 +228,7 @@ export function TraceabilityPanel({
                           href={record.public_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex h-9 items-center gap-2 rounded-md border border-line bg-surface px-3 text-body-sm font-medium text-ink transition hover:bg-surface-soft"
+                          className="inline-flex h-11 items-center gap-2 rounded-md border border-line bg-surface px-3 text-body-sm font-medium text-ink transition hover:bg-surface-soft"
                         >
                           <ExternalLink strokeWidth={1.75} className="h-4 w-4" aria-hidden />
                           {tr("Mở trang công khai", "Open public page")}
@@ -237,7 +237,7 @@ export function TraceabilityPanel({
                       <button
                         type="button"
                         onClick={() => startEdit(record)}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-md border border-line bg-surface px-3 text-caption font-semibold text-ink transition hover:bg-surface-soft"
+                        className="inline-flex h-11 items-center gap-1.5 rounded-md border border-line bg-surface px-3 text-caption font-semibold text-ink transition hover:bg-surface-soft"
                       >
                         <Pencil strokeWidth={1.75} className="h-3.5 w-3.5" aria-hidden />
                         {tr("Sửa mã này", "Edit this code")}
@@ -246,7 +246,7 @@ export function TraceabilityPanel({
                         type="button"
                         onClick={() => onTogglePublic(record)}
                         disabled={busyRecordId === record.id}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-md border border-line bg-surface px-3 text-caption font-semibold text-ink transition hover:bg-surface-soft disabled:opacity-60"
+                        className="inline-flex h-11 items-center gap-1.5 rounded-md border border-line bg-surface px-3 text-caption font-semibold text-ink transition hover:bg-surface-soft disabled:opacity-60"
                       >
                         {record.is_public ? (
                           <EyeOff strokeWidth={1.75} className="h-3.5 w-3.5" aria-hidden />
@@ -259,7 +259,7 @@ export function TraceabilityPanel({
                         type="button"
                         onClick={() => onDelete(record)}
                         disabled={busyRecordId === record.id}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-md border border-danger/30 px-3 text-caption font-semibold text-danger-ink transition hover:bg-danger-soft disabled:opacity-60"
+                        className="inline-flex h-11 items-center gap-1.5 rounded-md border border-danger/30 px-3 text-caption font-semibold text-danger-ink transition hover:bg-danger-soft disabled:opacity-60"
                       >
                         <Trash2 strokeWidth={1.75} className="h-3.5 w-3.5" aria-hidden />
                         {tr("Xóa mã", "Delete code")}

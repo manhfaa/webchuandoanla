@@ -16,6 +16,7 @@ export default defineConfig([
     "out/**",
     "build/**",
     "hf_space/**",
+    "Living Leaf Intelligence redesign/**",
     "next-env.d.ts",
   ]),
 ]);

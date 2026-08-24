@@ -20,7 +20,12 @@ from .serializers import (
     UserSettingSerializer,
     build_tokens_for_user,
 )
-from .throttling import LoginEmailRateThrottle, LoginIPRateThrottle, PasswordResetRateThrottle
+from .throttling import (
+    GoogleLoginRateThrottle,
+    LoginEmailRateThrottle,
+    LoginIPRateThrottle,
+    PasswordResetRateThrottle,
+)
 
 # Deliberately identical whether or not the address is registered, so the
 # endpoint cannot be used to enumerate accounts.
@@ -74,6 +79,11 @@ class LoginAPIView(TokenObtainPairView):
 
 class GoogleLoginAPIView(APIView):
     permission_classes = [permissions.AllowAny]
+
+    def get_throttles(self):
+        # The public readiness probe is cacheable and cheap. Only POST verifies
+        # a third-party credential and can create a local account.
+        return [GoogleLoginRateThrottle()] if self.request.method == "POST" else []
 
     def get(self, request):
         """Readiness probe. The browser can have a Google client id while the

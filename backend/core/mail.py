@@ -1,12 +1,7 @@
 """Send mail over HTTPS instead of SMTP.
 
-Render's instances cannot open outbound SMTP connections: every attempt to reach
-smtp.gmail.com:587 from a deployed service hangs until EMAIL_TIMEOUT expires,
-while the same host answers in under a second from a laptop. That rules out
-every SMTP provider, not just Gmail.
-
-Brevo also exposes a plain HTTPS endpoint, which reaches the same place the app
-already reaches for weather and inference. Implementing it as a Django email
+Some production networks restrict outbound SMTP. Brevo exposes a plain HTTPS
+endpoint, which avoids that dependency. Implementing it as a Django email
 backend keeps settings.EMAIL_BACKEND the single authority, so users/emails.py
 carries on calling EmailMessage.send() and never learns which transport ran.
 """

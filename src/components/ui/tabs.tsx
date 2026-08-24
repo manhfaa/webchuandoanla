@@ -33,7 +33,7 @@ export function Tabs({
             type="button"
             onClick={() => onChange(tab.value)}
             className={cn(
-              "rounded-full px-4 py-2 text-sm font-medium transition",
+              "min-h-11 rounded-full px-4 py-2 text-sm font-medium transition",
               active
                 ? "bg-surface text-ink shadow-sm"
                 : "text-ink-soft hover:text-ink",

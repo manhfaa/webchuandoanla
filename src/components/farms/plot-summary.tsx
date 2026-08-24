@@ -75,7 +75,7 @@ export function PlotSummary({
         <button
           type="button"
           onClick={onEdit}
-          className="inline-flex h-9 items-center gap-1.5 rounded-md border border-line px-3 text-caption font-semibold text-ink transition hover:bg-surface-soft"
+          className="inline-flex h-11 items-center gap-1.5 rounded-md border border-line px-3 text-caption font-semibold text-ink transition hover:bg-surface-soft"
         >
           <Pencil strokeWidth={1.75} className="h-3.5 w-3.5" aria-hidden />
           {tr("Sửa", "Edit")}
@@ -83,7 +83,7 @@ export function PlotSummary({
         <button
           type="button"
           onClick={onDelete}
-          className="inline-flex h-9 items-center gap-1.5 rounded-md border border-danger/30 px-3 text-caption font-semibold text-danger-ink transition hover:bg-danger-soft"
+          className="inline-flex h-11 items-center gap-1.5 rounded-md border border-danger/30 px-3 text-caption font-semibold text-danger-ink transition hover:bg-danger-soft"
         >
           <Trash2 strokeWidth={1.75} className="h-3.5 w-3.5" aria-hidden />
           {tr("Xóa lô này", "Delete this plot")}

@@ -63,7 +63,7 @@ export function ReminderCenter({
     } finally {
       setLoading(false);
     }
-  }, [accessToken, filter, page, planId]);
+  }, [accessToken, filter, page, planId, tr]);
 
   useEffect(() => {
     void load();
@@ -111,7 +111,7 @@ export function ReminderCenter({
               setPage(1);
             }}
             className={cn(
-              "rounded-full px-4 py-2 text-xs font-semibold transition duration-180",
+              "min-h-11 rounded-full px-4 py-2 text-xs font-semibold transition duration-180",
               filter === item.key
                 ? "bg-leaf text-on-leaf"
                 : "bg-surface-soft text-ink-soft ring-1 ring-line hover:text-ink",
@@ -125,7 +125,7 @@ export function ReminderCenter({
       {error ? (
         <div className="mt-4 rounded-lg border border-danger/30 bg-danger-soft px-4 py-3 text-sm leading-6 text-danger-ink">
           {error}{" "}
-          <button type="button" className="font-semibold underline" onClick={() => void load()}>
+          <button type="button" className="inline-flex min-h-11 items-center font-semibold underline" onClick={() => void load()}>
             {tr("Thử lại", "Try again")}
           </button>
         </div>

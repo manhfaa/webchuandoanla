@@ -55,7 +55,7 @@ export function AuthShell({ eyebrow, title, description, asideTitle, asideDescri
             <div className="lg:hidden">
               <Logo showTagline={false} />
             </div>
-            <Link href="/" className="hidden min-h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold text-ink-soft transition hover:bg-surface-soft hover:text-ink sm:inline-flex">
+            <Link href="/" className="hidden min-h-11 items-center gap-2 rounded-md px-3 text-sm font-semibold text-ink-soft transition hover:bg-surface-soft hover:text-ink sm:inline-flex">
               <ArrowLeft size={16} aria-hidden /> {tr("Quay lại trang chủ", "Back to home")}
             </Link>
             <ThemeToggle className="border border-line bg-surface" />

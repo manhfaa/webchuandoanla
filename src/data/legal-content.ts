@@ -141,8 +141,8 @@ export const termsDoc: LegalDoc = {
     {
       heading: { vi: "10. Dịch vụ bên thứ ba", en: "10. Third-party services" },
       body: {
-        vi: "Dịch vụ tích hợp một số nền tảng bên thứ ba, ví dụ: DeepSeek và Tavily (xử lý và tìm nguồn cho phần đối chiếu triệu chứng), Hugging Face (chạy mô hình nhận diện ảnh), Google (đăng nhập), Microsoft Clarity (phân tích trải nghiệm), SePay (thanh toán), Supabase, Vercel và Render (hạ tầng). Việc sử dụng các dịch vụ này có thể chịu điều khoản riêng của bên thứ ba. Chúng tôi không chịu trách nhiệm cho hoạt động của các bên thứ ba nằm ngoài kiểm soát của mình.",
-        en: "The Service integrates several third-party platforms, e.g. DeepSeek and Tavily (processing and sourcing for symptom cross-checking), Hugging Face (running the image recognition model), Google (sign-in), Microsoft Clarity (experience analytics), SePay (payments), Supabase, Vercel and Render (infrastructure). Use of these may be subject to the third parties' own terms. We are not responsible for the actions of third parties beyond our control.",
+        vi: "Dịch vụ tích hợp một số nền tảng bên thứ ba, ví dụ: DeepSeek và Tavily (xử lý và tìm nguồn cho phần đối chiếu triệu chứng), Hugging Face (chạy mô hình nhận diện ảnh), Google (đăng nhập), Microsoft Clarity (phân tích trải nghiệm), SePay (thanh toán), Supabase, Vercel và hạ tầng VPS Nhân Hòa. Việc sử dụng các dịch vụ này có thể chịu điều khoản riêng của bên thứ ba. Chúng tôi không chịu trách nhiệm cho hoạt động của các bên thứ ba nằm ngoài kiểm soát của mình.",
+        en: "The Service integrates several third-party platforms, e.g. DeepSeek and Tavily (processing and sourcing for symptom cross-checking), Hugging Face (running the image recognition model), Google (sign-in), Microsoft Clarity (experience analytics), SePay (payments), Supabase, Vercel and Nhân Hòa VPS infrastructure. Use of these may be subject to the third parties' own terms. We are not responsible for the actions of third parties beyond our control.",
       },
     },
     {
@@ -270,8 +270,8 @@ export const privacyDoc: LegalDoc = {
     {
       heading: { vi: "5. Chia sẻ với bên thứ ba", en: "5. Sharing with third parties" },
       body: {
-        vi: "Chúng tôi không bán dữ liệu cá nhân của bạn. Chúng tôi chỉ chia sẻ dữ liệu cần thiết với các nhà cung cấp giúp vận hành Dịch vụ: Hugging Face (chạy mô hình nhận diện ảnh), DeepSeek và Tavily (xử lý và tìm nguồn cho phần đối chiếu triệu chứng), Google (đăng nhập), SePay (thanh toán), Microsoft Clarity (phân tích trải nghiệm), Supabase (cơ sở dữ liệu), Vercel và Render (hạ tầng máy chủ). Một số nhà cung cấp có thể đặt máy chủ ngoài Việt Nam.",
-        en: "We do not sell your personal data. We share only the data necessary with providers that help operate the Service: Hugging Face (running the image recognition model), DeepSeek and Tavily (processing and sourcing for symptom cross-checking), Google (sign-in), SePay (payments), Microsoft Clarity (experience analytics), Supabase (database), Vercel and Render (server infrastructure). Some providers may host servers outside Vietnam.",
+        vi: "Chúng tôi không bán dữ liệu cá nhân của bạn. Chúng tôi chỉ chia sẻ dữ liệu cần thiết với các nhà cung cấp giúp vận hành Dịch vụ: Hugging Face (chạy mô hình nhận diện ảnh), DeepSeek và Tavily (xử lý và tìm nguồn cho phần đối chiếu triệu chứng), Google (đăng nhập), SePay (thanh toán), Microsoft Clarity (phân tích trải nghiệm), Supabase (cơ sở dữ liệu), Vercel và hạ tầng VPS Nhân Hòa. Một số nhà cung cấp có thể đặt máy chủ ngoài Việt Nam.",
+        en: "We do not sell your personal data. We share only the data necessary with providers that help operate the Service: Hugging Face (running the image recognition model), DeepSeek and Tavily (processing and sourcing for symptom cross-checking), Google (sign-in), SePay (payments), Microsoft Clarity (experience analytics), Supabase (database), Vercel and Nhân Hòa VPS infrastructure. Some providers may host servers outside Vietnam.",
       },
     },
     {

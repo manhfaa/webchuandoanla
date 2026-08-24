@@ -1,5 +1,7 @@
 "use client";
 
+import { useCallback } from "react";
+
 import { useLanguageStore } from "@/store/language-store";
 
 /**
@@ -10,5 +12,5 @@ import { useLanguageStore } from "@/store/language-store";
  */
 export function useTr() {
   const language = useLanguageStore((state) => state.language);
-  return (vi: string, en: string) => (language === "en" ? en : vi);
+  return useCallback((vi: string, en: string) => (language === "en" ? en : vi), [language]);
 }

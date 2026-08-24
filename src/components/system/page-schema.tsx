@@ -1,5 +1,6 @@
 import { CROPS_WITH_PAGES, type CropWithDiseases } from "@/data/crop-diseases";
 import { diseaseAnchors } from "@/lib/disease-slug";
+import { serializeJsonLd } from "@/lib/json-ld";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.agromind.farm";
 
@@ -23,7 +24,7 @@ function jsonLd(data: unknown) {
       type="application/ld+json"
       // Dữ liệu, không phải markup, và mọi giá trị đều sinh từ dữ liệu trong
       // repo này chứ không phải từ đầu vào người dùng.
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(data) }}
     />
   );
 }

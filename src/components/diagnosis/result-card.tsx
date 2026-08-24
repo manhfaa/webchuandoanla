@@ -13,6 +13,7 @@ import { SourceList } from "@/components/ui/source-list";
 import { EmptyState } from "@/components/ui/states";
 import { toUserFacingText } from "@/lib/user-facing-copy";
 import { withViFallback } from "@/lib/crop-plan-labels";
+import { safeExternalUrl } from "@/lib/safe-external-url";
 import { useTr } from "@/lib/use-tr";
 import type { DiagnosisRecord } from "@/types";
 
@@ -135,7 +136,8 @@ function getResearchSources(record: DiagnosisRecord) {
   const payload = record.cnnPayload?.tavily_research as ResearchPayload | null | undefined;
   const sourceMap = new Map<string, ResearchSource>();
   for (const source of [...(payload?.compatibilitySources ?? []), ...(payload?.treatmentSources ?? [])]) {
-    if (source.url && !sourceMap.has(source.url)) sourceMap.set(source.url, source);
+    const url = safeExternalUrl(source.url);
+    if (url && !sourceMap.has(url)) sourceMap.set(url, { ...source, url });
   }
   return Array.from(sourceMap.values()).slice(0, 6);
 }

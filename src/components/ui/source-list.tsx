@@ -1,5 +1,7 @@
 import { ExternalLink, Globe2 } from "lucide-react";
 
+import { safeExternalUrl } from "@/lib/safe-external-url";
+
 export interface SourceItem {
   title: string;
   url: string;
@@ -7,11 +9,15 @@ export interface SourceItem {
 }
 
 export function SourceList({ sources }: { sources: SourceItem[] }) {
-  if (!sources?.length) return null;
+  const safeSources = (sources ?? []).flatMap((source) => {
+    const url = safeExternalUrl(source.url);
+    return url ? [{ ...source, url }] : [];
+  });
+  if (!safeSources.length) return null;
 
   return (
     <ul className="flex flex-col gap-2">
-      {sources.map((source, index) => (
+      {safeSources.map((source, index) => (
         <li key={index}>
           <a
             href={source.url}

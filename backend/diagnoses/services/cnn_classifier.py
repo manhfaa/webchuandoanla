@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import base64
-import binascii
 from functools import lru_cache
 from io import BytesIO
 from pathlib import Path
@@ -10,6 +8,7 @@ from typing import Any
 from django.conf import settings
 
 from .cnn_labels import split_class_name, translate_result
+from .image_intake import decode_data_url
 
 
 class CnnModelUnavailable(RuntimeError):
@@ -123,12 +122,7 @@ def _load_bundle() -> dict[str, Any]:
 
 
 def _decode_data_url(data_url: str) -> bytes:
-    if "," in data_url and data_url.split(",", 1)[0].lower().startswith("data:"):
-        data_url = data_url.split(",", 1)[1]
-    try:
-        return base64.b64decode(data_url, validate=True)
-    except (binascii.Error, ValueError) as exc:
-        raise ValueError("Invalid base64 image data.") from exc
+    return decode_data_url(data_url)
 
 
 def image_from_payload(*, image_data_url: str | None = None, image_file=None) -> Image.Image:

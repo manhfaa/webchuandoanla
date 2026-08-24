@@ -1,5 +1,32 @@
 const path = require("path");
 
+const isDevelopment = process.env.NODE_ENV !== "production";
+
+const scriptSources = [
+  "'self'",
+  "'unsafe-inline'",
+  ...(isDevelopment ? ["'unsafe-eval'"] : []),
+  "https://accounts.google.com",
+  "https://*.clarity.ms",
+  "https://c.bing.com",
+  "https://www.googletagmanager.com",
+];
+
+const connectSources = [
+  "'self'",
+  "https://agromind.farm",
+  "https://*.agromind.farm",
+  "https://accounts.google.com",
+  "https://oauth2.googleapis.com",
+  "https://*.clarity.ms",
+  "https://c.bing.com",
+  "https://www.google-analytics.com",
+  "https://*.google-analytics.com",
+  "https://*.analytics.google.com",
+  "https://www.googletagmanager.com",
+  ...(isDevelopment ? ["https://*.sslip.io", "http://127.0.0.1:*", "http://localhost:*"] : []),
+];
+
 const cspDirectives = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -10,18 +37,18 @@ const cspDirectives = [
   // hits. GA needs all three directives — script to load, img for the legacy
   // collect pixel, connect for the modern fetch/beacon transport. Miss one and
   // GA fails silently: the tag loads but reports nothing.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.clarity.ms https://c.bing.com https://www.googletagmanager.com",
+  `script-src ${scriptSources.join(" ")}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://upload.wikimedia.org https://lh3.googleusercontent.com https://*.tile.openstreetmap.org https://api.qrserver.com https://qr.sepay.vn https://vietqr.app https://*.clarity.ms https://c.bing.com https://www.google-analytics.com",
   "font-src 'self' data:",
   // Wildcards do not match apex domains, so list both canonical hosts explicitly.
   // CSP wildcard covers subdomains only — so the apex is listed separately.
-  "connect-src 'self' https://agromind.farm https://*.agromind.farm https://*.sslip.io https://*.vercel.app https://accounts.google.com https://oauth2.googleapis.com https://*.clarity.ms https://c.bing.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com http://127.0.0.1:* http://localhost:*",
+  `connect-src ${connectSources.join(" ")}`,
   "frame-src 'self' https://accounts.google.com",
   "media-src 'self' data: blob:",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
-  "upgrade-insecure-requests",
+  ...(isDevelopment ? [] : ["upgrade-insecure-requests"]),
 ];
 
 const securityHeaders = [

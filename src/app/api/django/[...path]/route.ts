@@ -5,6 +5,8 @@ import { resolveDjangoBaseUrl } from "@/lib/backend-url";
 const DJANGO_BASE_URL = resolveDjangoBaseUrl(process.env.DJANGO_BASE_URL);
 const BASE = DJANGO_BASE_URL.endsWith("/") ? DJANGO_BASE_URL : `${DJANGO_BASE_URL}/`;
 const ALLOWED_ORIGIN = new URL(BASE).origin;
+const MAX_PROXY_BODY_BYTES = 12 * 1024 * 1024;
+const UPSTREAM_TIMEOUT_MS = 45_000;
 
 function buildTargetUrl(req: Request, pathSegments: string[]) {
   const incoming = new URL(req.url);
@@ -29,7 +31,7 @@ const TIMEOUT_CODES = new Set([
 function isTimeoutError(error: unknown): boolean {
   if (typeof error !== "object" || error === null) return false;
   const candidate = error as { name?: unknown; code?: unknown; cause?: unknown };
-  if (candidate.name === "TimeoutError" || candidate.name === "HeadersTimeoutError") return true;
+  if (["AbortError", "TimeoutError", "HeadersTimeoutError"].includes(String(candidate.name))) return true;
   if (typeof candidate.code === "string" && TIMEOUT_CODES.has(candidate.code)) return true;
   const cause = candidate.cause as { name?: unknown; code?: unknown } | undefined;
   if (cause && typeof cause === "object") {
@@ -56,19 +58,32 @@ async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> })
 
   const method = req.method.toUpperCase();
   const hasBody = !["GET", "HEAD"].includes(method);
+  const declaredLength = Number(incomingHeaders.get("content-length") || 0);
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_PROXY_BODY_BYTES) {
+    return NextResponse.json({ error: "Dữ liệu gửi lên quá lớn." }, { status: 413 });
+  }
+
+  let body: ArrayBuffer | undefined;
+  if (hasBody) {
+    body = await req.arrayBuffer();
+    if (body.byteLength > MAX_PROXY_BODY_BYTES) {
+      return NextResponse.json({ error: "Dữ liệu gửi lên quá lớn." }, { status: 413 });
+    }
+  }
 
   let res: Response;
   try {
     res = await fetch(targetUrl, {
       method,
       headers,
-      body: hasBody ? await req.arrayBuffer() : undefined,
+      body,
       redirect: "manual",
       cache: "no-store",
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
   } catch (error) {
-    // The upstream Django service can be asleep (Render free tier) or simply
-    // unreachable. Answer with a clear message instead of an opaque 500.
+    // The upstream Django service can be unavailable during a VPS restart or
+    // network incident. Answer with a clear message instead of an opaque 500.
     const timedOut = isTimeoutError(error);
     return NextResponse.json(
       {

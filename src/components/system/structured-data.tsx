@@ -1,4 +1,5 @@
 import { brand } from "@/constants/brand";
+import { serializeJsonLd } from "@/lib/json-ld";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.agromind.farm";
 
@@ -65,7 +66,7 @@ export function StructuredData() {
       type="application/ld+json"
       // JSON.stringify output is data, not markup, and the values above are all
       // literals from this codebase rather than anything a user supplied.
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(data) }}
     />
   );
 }

@@ -4,6 +4,7 @@ from django.apps import apps as global_apps
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
+from diagnoses.models import Diagnosis
 from payments.entitlements import limit_for
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
@@ -36,6 +37,7 @@ class ChatOwnershipTests(APITestCase):
     def setUp(self):
         self.victim = User.objects.create_user(username="victim", email="victim@example.com", password="VictimPass#2026")
         self.attacker = User.objects.create_user(username="attacker", email="attacker@example.com", password="AttackPass#2026")
+        self.victim_diagnosis = Diagnosis.objects.create(user=self.victim, title="Không được liên kết")
         self.victim_conversation = ChatConversation.objects.create(user=self.victim, mode="assistant", title="Riêng tư")
 
     def authenticate(self, user):
@@ -86,6 +88,62 @@ class ChatOwnershipTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 0)
+
+    def test_cannot_patch_own_conversation_to_another_users_diagnosis(self):
+        self.authenticate(self.attacker)
+        own_conversation = ChatConversation.objects.create(user=self.attacker, mode="rag", title="Của tôi")
+
+        response = self.client.patch(
+            reverse("conversation-detail", kwargs={"pk": own_conversation.pk}),
+            {"diagnosis": self.victim_diagnosis.pk},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        own_conversation.refresh_from_db()
+        self.assertIsNone(own_conversation.diagnosis_id)
+
+    def test_cannot_patch_consultation_to_another_users_records(self):
+        self.authenticate(self.attacker)
+        consultation = ExpertConsultation.objects.create(
+            user=self.attacker,
+            topic="Theo dõi",
+            question="Cần làm gì?",
+        )
+
+        response = self.client.patch(
+            reverse("expert-consultation-detail", kwargs={"pk": consultation.pk}),
+            {
+                "diagnosis": self.victim_diagnosis.pk,
+                "conversation": self.victim_conversation.pk,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        consultation.refresh_from_db()
+        self.assertIsNone(consultation.diagnosis_id)
+        self.assertIsNone(consultation.conversation_id)
+
+    def test_client_cannot_write_expert_identity_or_reply(self):
+        self.authenticate(self.attacker)
+        consultation = ExpertConsultation.objects.create(
+            user=self.attacker,
+            topic="Theo dõi",
+            question="Cần làm gì?",
+        )
+
+        response = self.client.patch(
+            reverse("expert-consultation-detail", kwargs={"pk": consultation.pk}),
+            {"status": "answered", "expert_name": "Giả mạo", "expert_reply": "Tin giả"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        consultation.refresh_from_db()
+        self.assertEqual(consultation.status, "open")
+        self.assertEqual(consultation.expert_name, "")
+        self.assertEqual(consultation.expert_reply, "")
 
 
 class CnnEndpointAuthTests(APITestCase):
@@ -208,11 +266,35 @@ class ChatQuotaTests(APITestCase):
         # Refusing the new question must not touch what the user already sent.
         self.assertEqual(ChatMessage.objects.filter(conversation=self.conversation).count(), self.cap)
 
-    def test_assistant_replies_never_consume_the_quota(self):
-        for _ in range(self.cap + 2):
-            self.assertEqual(self.ask(role="assistant", content="Trả lời").status_code, status.HTTP_201_CREATED)
-
+    def test_client_cannot_forge_assistant_replies(self):
+        forged = self.ask(role="assistant", content="Trả lời giả mạo")
+        self.assertEqual(forged.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(ChatMessage.objects.filter(role="assistant").exists())
         self.assertEqual(self.ask().status_code, status.HTTP_201_CREATED)
+
+    def test_client_cannot_forge_sources_or_provider_metadata(self):
+        response = self.client.post(
+            reverse("message-list-create"),
+            {
+                "conversation": self.conversation.id,
+                "role": "user",
+                "content": "Câu hỏi hợp lệ",
+                "citations": [{"url": "https://attacker.invalid"}],
+                "meta": {"provider": "forged"},
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        message = ChatMessage.objects.get(pk=response.data["id"])
+        self.assertEqual(message.citations, [])
+        self.assertEqual(message.meta, {})
+
+    def test_message_size_is_bounded(self):
+        response = self.ask(content="x" * 4001)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(ChatMessage.objects.filter(conversation=self.conversation).exists())
 
     def test_the_cap_follows_the_user_not_one_conversation(self):
         another = ChatConversation.objects.create(user=self.user, mode="rag", title="Cuộc khác")

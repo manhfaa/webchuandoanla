@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Release/staging posture.
+
+  cleartext is off everywhere and only system CAs are trusted. There is
+  deliberately no <pin-set>: pinning Cloudflare's certificate without a rehearsed
+  backup pin and rotation procedure means every installed copy of the app loses
+  its connection the day the certificate changes, and the fix requires a store
+  update. That is a worse failure than the attack pinning would prevent, for an
+  API that is already behind TLS, JWT and server-side authorisation.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

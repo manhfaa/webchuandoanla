@@ -102,3 +102,50 @@ class Payment(models.Model):
     def __str__(self):
         owner = self.user.email if self.user else "unmatched"
         return f"#{self.id} {owner} -> {self.plan_requested or '-'} ({self.status})"
+
+
+class PlayPurchase(models.Model):
+    """One Google Play purchase, keyed by the token Google issued for it.
+
+    `purchase_token` is unique, and that uniqueness *is* the idempotency: Play
+    redelivers a purchase to the app on every launch until it is consumed or
+    acknowledged, and the RTDN topic redelivers on its own schedule. Both paths
+    land here, and both find the row that already exists rather than granting a
+    second month.
+
+    Nothing about the entitlement comes from the client. `plan` is resolved from
+    the product id Google returned, and `raw_state` keeps Google's own answer so
+    a disputed grant can be reconstructed without calling them again.
+    """
+
+    class State(models.TextChoices):
+        PENDING = "pending", "Cho Google xac nhan"
+        GRANTED = "granted", "Da cap quyen"
+        CANCELLED = "cancelled", "Da huy"
+        EXPIRED = "expired", "Het han"
+        REFUNDED = "refunded", "Da hoan tien"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="play_purchases",
+    )
+    purchase_token = models.CharField(max_length=512, unique=True, db_index=True)
+    product_id = models.CharField(max_length=120)
+    package_name = models.CharField(max_length=180, blank=True, default="")
+    plan = models.CharField(max_length=30, blank=True, default="")
+    state = models.CharField(max_length=20, choices=State.choices, default=State.PENDING)
+    acknowledged = models.BooleanField(default=False)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    client_request_id = models.CharField(max_length=64, blank=True, default="")
+    raw_state = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.product_id}::{self.state}"

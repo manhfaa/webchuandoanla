@@ -6,26 +6,27 @@ type DjangoDiagnosis = {
   title: string;
   image_url: string;
   image_data_url?: string;
+  thumbnail_url?: string;
   image_path: string;
   original_file_name: string;
   input_method: DiagnosisInputMethod;
   status: "pending" | "validated" | "completed" | "rejected" | string;
   is_leaf: boolean;
   yolo_confidence: number;
-  yolo_payload: Record<string, unknown>;
+  yolo_payload?: Record<string, unknown>;
   cnn_confidence: number;
-  cnn_payload: Record<string, unknown>;
+  cnn_payload?: Record<string, unknown>;
   plant_name: string;
   disease_name: string;
   severity: string;
-  symptom_input: string;
-  user_question: string;
+  symptom_input?: string;
+  user_question?: string;
   field_location: string;
   note: string;
-  recommendations: unknown;
-  action_plan: ActionPlan | Record<string, unknown>;
-  rag_summary: string;
-  rag_payload: Record<string, unknown>;
+  recommendations?: unknown;
+  action_plan?: ActionPlan | Record<string, unknown>;
+  rag_summary?: string;
+  rag_payload?: Record<string, unknown>;
   saved_by_user: boolean;
   model_version: string;
   /** True when the record sits outside the plan's history window (still stored). */
@@ -140,7 +141,7 @@ function normalizeRecommendations(value: unknown): RecommendationBlock[] {
 }
 
 function imageFromDiagnosis(item: DjangoDiagnosis) {
-  return item.image_data_url || item.image_url || item.image_path || "/illustrations/non-leaf-sample.svg";
+  return item.thumbnail_url || item.image_data_url || item.image_url || item.image_path || "/illustrations/non-leaf-sample.svg";
 }
 
 export function mapDiagnosisToRecord(item: DjangoDiagnosis): DiagnosisRecord {
@@ -239,10 +240,50 @@ export async function fetchDiagnosisUsage(accessToken: string | null | undefined
   return diagnosesFetch<DiagnosisUsage>("/api/diagnoses/usage", accessToken);
 }
 
-export async function fetchDiagnosisRecords(accessToken: string | null | undefined) {
+export async function fetchDiagnosisRecords(
+  accessToken: string | null | undefined,
+  options: { limit?: number; offset?: number } = {},
+) {
   if (!accessToken) return [];
-  const items = await diagnosesFetch<DjangoDiagnosis[]>("/api/diagnoses", accessToken);
-  return items.map(mapDiagnosisToRecord);
+  const page = await fetchDiagnosisPage(accessToken, options);
+  return page.records;
+}
+
+type DiagnosisListResponse = {
+  count: number;
+  limit: number;
+  offset: number;
+  next_offset: number | null;
+  results: DjangoDiagnosis[];
+};
+
+export type DiagnosisPage = {
+  records: DiagnosisRecord[];
+  count: number;
+  nextOffset: number | null;
+};
+
+export async function fetchDiagnosisPage(
+  accessToken: string | null | undefined,
+  options: { limit?: number; offset?: number } = {},
+): Promise<DiagnosisPage> {
+  if (!accessToken) return { records: [], count: 0, nextOffset: null };
+  const limit = Math.min(Math.max(options.limit ?? 20, 1), 50);
+  const offset = Math.max(options.offset ?? 0, 0);
+  const response = await diagnosesFetch<DiagnosisListResponse | DjangoDiagnosis[]>(
+    `/api/diagnoses?limit=${limit}&offset=${offset}`,
+    accessToken,
+  );
+
+  // Accept the old array response during a rolling frontend/backend deploy.
+  if (Array.isArray(response)) {
+    return { records: response.map(mapDiagnosisToRecord), count: response.length, nextOffset: null };
+  }
+  return {
+    records: response.results.map(mapDiagnosisToRecord),
+    count: response.count,
+    nextOffset: response.next_offset,
+  };
 }
 
 export async function fetchDiagnosisRecord(accessToken: string | null | undefined, id: string) {

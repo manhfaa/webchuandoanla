@@ -20,7 +20,7 @@ export default function DashboardOverviewPage() {
   useEffect(() => {
     if (!accessToken) return;
     let cancelled = false;
-    void fetchDiagnosisRecords(accessToken)
+    void fetchDiagnosisRecords(accessToken, { limit: 6 })
       .then((items) => {
         if (!cancelled) setRecords(items);
       })

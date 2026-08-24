@@ -45,3 +45,17 @@ class PasswordResetRateThrottle(SimpleRateThrottle):
 
     def get_cache_key(self, request, view):
         return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}
+
+
+class GoogleLoginRateThrottle(SimpleRateThrottle):
+    """Cap token-verification calls per client address.
+
+    Verifying an ID token makes an outbound request and can create an account,
+    so leaving this route outside the login throttles lets one caller consume
+    workers and provider bandwidth without ever guessing a password.
+    """
+
+    scope = "google_login"
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}

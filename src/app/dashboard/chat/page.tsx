@@ -99,7 +99,14 @@ export default function DashboardChatPage() {
           "Content-Type": "application/json",
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
-        body: JSON.stringify({ query: content, mode, latestDiagnosis: diagnosisForRequest, selectedDiagnosis: diagnosisForRequest, conversationId: conversationByMode[mode] }),
+        body: JSON.stringify({
+          query: content,
+          mode,
+          clientRequestId: crypto.randomUUID(),
+          latestDiagnosis: diagnosisForRequest,
+          selectedDiagnosis: diagnosisForRequest,
+          conversationId: conversationByMode[mode],
+        }),
       });
       if (!response.ok) {
         const failure = (await response.json().catch(() => null)) as (ChatApiResponse & Record<string, unknown>) | null;
@@ -172,7 +179,7 @@ export default function DashboardChatPage() {
                   {selectedDiagnosis ? (
                     <div className="mt-3 flex items-start justify-between gap-3 rounded-lg border border-leaf/20 bg-surface p-3">
                       <div className="min-w-0"><StatusBadge status={(selectedDiagnosis.cnnConfidence ?? selectedDiagnosis.confidence) >= 0.7 ? "healthy" : "watch"} label={selectedDiagnosis.plant} /><p className="mt-2 truncate text-sm font-bold text-ink">{selectedDiagnosis.disease}</p></div>
-                      <button type="button" onClick={() => setSelectedDiagnosisId("none")} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-ink-soft hover:bg-surface-soft hover:text-ink" aria-label={tr("Bỏ kết quả đang chọn", "Clear the selected result")}><X size={16} aria-hidden /></button>
+                      <button type="button" onClick={() => setSelectedDiagnosisId("none")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-ink-soft hover:bg-surface-soft hover:text-ink" aria-label={tr("Bỏ kết quả đang chọn", "Clear the selected result")}><X size={16} aria-hidden /></button>
                     </div>
                   ) : null}
                 </>

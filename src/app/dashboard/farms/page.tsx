@@ -187,7 +187,7 @@ export default function FarmsPage() {
       return;
     }
     let cancelled = false;
-    fetchDiagnosisRecords(accessToken)
+    fetchDiagnosisRecords(accessToken, { limit: 50 })
       .then((items) => {
         if (cancelled) return;
         setDiagnoses(

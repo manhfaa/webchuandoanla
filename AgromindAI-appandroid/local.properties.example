@@ -1,0 +1,30 @@
+# Copy to `local.properties` and fill in. `local.properties` is git-ignored and
+# must never be committed.
+#
+# Nothing secret belongs in this file either: every value here is compiled into
+# BuildConfig and therefore into the APK, where anyone can read it. Django
+# secrets, the Supabase URL, the Hugging Face token, the DeepSeek and Tavily
+# keys, the SePay webhook secret and the Play service account all live on the
+# server and only on the server.
+
+sdk.dir=
+
+# Base URL for the staging deployment. Left empty, the staging build type falls
+# back to production, which is safe but not useful.
+AGROMIND_STAGING_BASE_URL=
+
+# Emulator loopback for a Django dev server on the host machine. Only the debug
+# build type is allowed to talk cleartext to it.
+AGROMIND_DEBUG_BASE_URL=http://10.0.2.2:8000/
+
+# Google OAuth *Web* client id — the audience Django validates the ID token
+# against. Public by design: it identifies the backend, it does not authenticate
+# anyone. The Android client id and the client secret do not belong here.
+AGROMIND_GOOGLE_WEB_CLIENT_ID=
+
+# Release signing. Point at a keystore that lives outside the repository; CI
+# supplies these from its own secret store.
+AGROMIND_KEYSTORE_FILE=
+AGROMIND_KEYSTORE_PASSWORD=
+AGROMIND_KEY_ALIAS=
+AGROMIND_KEY_PASSWORD=

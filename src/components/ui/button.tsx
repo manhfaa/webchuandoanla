@@ -29,11 +29,11 @@ const buttonVariants = cva(
         danger: "bg-danger text-on-danger shadow-sm hover:brightness-110",
       },
       size: {
-        sm: "h-9 rounded-md px-4 text-body-sm",
+        sm: "h-11 rounded-md px-4 text-body-sm",
         md: "h-11 rounded-md px-5 text-body",
         lg: "h-12 rounded-lg px-6 text-body-lg",
         icon: "h-11 w-11 shrink-0 rounded-md p-0",
-        iconSm: "h-9 w-9 shrink-0 rounded-md p-0",
+        iconSm: "h-11 w-11 shrink-0 rounded-md p-0",
       },
     },
     defaultVariants: {

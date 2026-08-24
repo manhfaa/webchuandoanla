@@ -17,6 +17,11 @@ from .services.cnn_labels import clean_model_label, translate_prediction
 
 User = get_user_model()
 
+VALID_PNG_DATA_URL = (
+    "data:image/png;base64,"
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+)
+
 
 CURRENT_MODEL_PLANTS = {
     "Apple": "Táo",
@@ -173,7 +178,7 @@ class DiagnosisQuotaTests(DiagnosisPlanTestCase):
             with patch("diagnoses.views.classify_remote") as classify:
                 response = self.client.post(
                     "/api/diagnoses/cnn/",
-                    {"image_data_url": "data:image/png;base64,x"},
+                    {"image_data_url": VALID_PNG_DATA_URL},
                     format="json",
                 )
 
@@ -198,7 +203,7 @@ class DiagnosisQuotaTests(DiagnosisPlanTestCase):
             with patch("diagnoses.views.classify_remote", return_value=dict(FAKE_CNN_RESULT)):
                 inference = self.client.post(
                     "/api/diagnoses/cnn/",
-                    {"image_data_url": "data:image/png;base64,x"},
+                    {"image_data_url": VALID_PNG_DATA_URL},
                     format="json",
                 )
                 self.assertEqual(inference.status_code, status.HTTP_200_OK)
@@ -212,7 +217,7 @@ class DiagnosisQuotaTests(DiagnosisPlanTestCase):
                 # cap lands exactly here, not one check earlier.
                 blocked = self.client.post(
                     "/api/diagnoses/cnn/",
-                    {"image_data_url": "data:image/png;base64,x"},
+                    {"image_data_url": VALID_PNG_DATA_URL},
                     format="json",
                 )
 
@@ -332,7 +337,7 @@ class DiagnosisQuotaConcurrencyTests(DiagnosisPlanTestCase):
                 ):
                     response = self.client.post(
                         "/api/diagnoses/cnn/",
-                        {"image_data_url": "data:image/png;base64,x"},
+                        {"image_data_url": VALID_PNG_DATA_URL},
                         format="json",
                     )
 
@@ -387,7 +392,8 @@ class DiagnosisHistoryRetentionTests(DiagnosisPlanTestCase):
         response = self.client.get("/api/diagnoses/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual([item["id"] for item in response.data], [self.recent.pk])
+        self.assertEqual([item["id"] for item in response.data["results"]], [self.recent.pk])
+        self.assertEqual(response.data["count"], 1)
         # The row is kept out of the list, never removed from the database.
         self.assertTrue(Diagnosis.objects.filter(pk=self.old.pk).exists())
 
@@ -431,7 +437,8 @@ class DiagnosisHistoryRetentionTests(DiagnosisPlanTestCase):
         usage = self.client.get("/api/diagnoses/usage/")
 
         self.assertEqual(
-            sorted(item["id"] for item in listed.data), sorted([self.recent.pk, self.old.pk])
+            sorted(item["id"] for item in listed.data["results"]),
+            sorted([self.recent.pk, self.old.pk]),
         )
         self.assertIsNone(usage.data["history"]["retention_days"])
         self.assertEqual(usage.data["history"]["hidden"], 0)
@@ -446,3 +453,37 @@ class DiagnosisHistoryRetentionTests(DiagnosisPlanTestCase):
             self.client.get(f"/api/diagnoses/{theirs.pk}/").status_code,
             status.HTTP_404_NOT_FOUND,
         )
+
+    def test_history_list_excludes_original_base64_and_returns_thumbnail(self):
+        image_data_url = (
+            "data:image/png;base64,"
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        )
+        row = self.make_diagnosis(image_data_url=image_data_url)
+
+        response = self.client.get("/api/diagnoses/?limit=20")
+        item = next(item for item in response.data["results"] if item["id"] == row.pk)
+
+        self.assertNotIn("image_data_url", item)
+        self.assertTrue(item["thumbnail_url"].startswith("data:image/jpeg;base64,"))
+        self.assertLess(len(item["thumbnail_url"]), len(image_data_url) * 10)
+
+        detail = self.client.get(f"/api/diagnoses/{row.pk}/")
+        self.assertEqual(detail.data["image_data_url"], image_data_url)
+
+    def test_history_list_honours_bounded_limit_and_offset(self):
+        second = self.make_diagnosis(title="Second")
+        third = self.make_diagnosis(title="Third")
+
+        first_page = self.client.get("/api/diagnoses/?limit=1&offset=0")
+        second_page = self.client.get("/api/diagnoses/?limit=1&offset=1")
+
+        self.assertEqual(first_page.data["limit"], 1)
+        self.assertEqual(first_page.data["count"], 3)
+        self.assertEqual(first_page.data["next_offset"], 1)
+        self.assertEqual(first_page.data["results"][0]["id"], third.pk)
+        self.assertEqual(second_page.data["results"][0]["id"], second.pk)
+
+    def test_history_limit_cannot_exceed_fifty(self):
+        response = self.client.get("/api/diagnoses/?limit=500")
+        self.assertEqual(response.data["limit"], 50)

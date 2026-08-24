@@ -4,6 +4,7 @@ from .views import (
     ChatConversationDetailAPIView,
     ChatConversationListCreateAPIView,
     ChatMessageListCreateAPIView,
+    ChatRespondAPIView,
     ExpertConsultationDetailAPIView,
     ExpertConsultationListCreateAPIView,
     ServicePlanListAPIView,
@@ -12,6 +13,9 @@ from .views import (
 
 urlpatterns = [
     path("plans/", ServicePlanListAPIView.as_view(), name="plan-list"),
+    # Ask and answer in one call. `messages/` still exists for reading history
+    # and for the website's older write path.
+    path("chat/respond/", ChatRespondAPIView.as_view(), name="chat-respond"),
     path("subscriptions/", UserSubscriptionListCreateAPIView.as_view(), name="subscription-list-create"),
     path("conversations/", ChatConversationListCreateAPIView.as_view(), name="conversation-list-create"),
     path("conversations/<int:pk>/", ChatConversationDetailAPIView.as_view(), name="conversation-detail"),

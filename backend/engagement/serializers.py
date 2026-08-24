@@ -58,7 +58,17 @@ class ChatMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatMessage
         fields = ("id", "conversation", "role", "content", "citations", "meta", "created_at")
-        read_only_fields = ("id", "created_at")
+        # Sources and provider metadata are evidence produced by the backend.
+        # Accepting them from a browser would let a user forge AI provenance.
+        read_only_fields = ("id", "citations", "meta", "created_at")
+
+    def validate_content(self, value):
+        maximum = int(getattr(settings, "MAX_CHAT_QUERY_CHARS", 4000))
+        if len(value.strip()) == 0:
+            raise serializers.ValidationError("Tin nhắn không được để trống.")
+        if len(value) > maximum:
+            raise serializers.ValidationError(f"Tin nhắn không được vượt quá {maximum} ký tự.")
+        return value
 
 
 class ChatConversationSerializer(serializers.ModelSerializer):
@@ -96,4 +106,11 @@ class ExpertConsultationSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "created_at", "updated_at")
+        read_only_fields = (
+            "id",
+            "status",
+            "expert_name",
+            "expert_reply",
+            "created_at",
+            "updated_at",
+        )

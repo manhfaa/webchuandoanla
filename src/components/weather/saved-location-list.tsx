@@ -204,7 +204,7 @@ export function SavedLocationList({
               </div>
             ) : (
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <button type="button" onClick={() => onSelect(location)} className="min-w-0 flex-1 text-left" aria-pressed={isSelected}>
+                <button type="button" onClick={() => onSelect(location)} className="min-h-11 min-w-0 flex-1 text-left" aria-pressed={isSelected}>
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="font-bold text-ink">{location.name}</span>
                     {location.crop_type ? <span className="text-body-sm text-ink-soft">· {location.crop_type}</span> : null}

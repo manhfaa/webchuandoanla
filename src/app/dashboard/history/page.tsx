@@ -8,11 +8,11 @@ import { ArrowRight, CalendarRange, Filter, History, Leaf, SearchX } from "lucid
 import { displayDiseaseName, displayPlantName, englishPlantName } from "@/components/diagnosis/result-card";
 import { RetentionNotice } from "@/components/plan/quota-hint";
 import { Badge, StatusBadge, type StatusBadgeState } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ListSkeleton } from "@/components/ui/skeleton";
 import { EmptyState, ErrorState } from "@/components/ui/states";
-import { fetchDiagnosisRecords, fetchDiagnosisUsage, type HistoryWindow } from "@/lib/diagnoses-client";
+import { fetchDiagnosisPage, fetchDiagnosisUsage, type HistoryWindow } from "@/lib/diagnoses-client";
 import { useTr } from "@/lib/use-tr";
 import { toUserFacingText } from "@/lib/user-facing-copy";
 import { formatConfidence, formatDate } from "@/lib/utils";
@@ -39,6 +39,8 @@ export default function DashboardHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retention, setRetention] = useState<HistoryWindow | null>(null);
+  const [nextOffset, setNextOffset] = useState<number | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     if (!accessToken) {
@@ -56,10 +58,11 @@ export default function DashboardHistoryPage() {
       .catch(() => {
         // The notice falls back to describing the window from the plan's caps.
       });
-    void fetchDiagnosisRecords(accessToken)
-      .then((items) => {
+    void fetchDiagnosisPage(accessToken)
+      .then((page) => {
         if (cancelled) return;
-        setRecords(items);
+        setRecords(page.records);
+        setNextOffset(page.nextOffset);
         setError(null);
       })
       .catch((requestError) => {
@@ -72,7 +75,21 @@ export default function DashboardHistoryPage() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, setRecords]);
+  }, [accessToken, setRecords, tr]);
+
+  const loadMore = async () => {
+    if (!accessToken || nextOffset === null || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const page = await fetchDiagnosisPage(accessToken, { offset: nextOffset });
+      setRecords([...records, ...page.records]);
+      setNextOffset(page.nextOffset);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : tr("Không tải thêm được lịch sử kiểm tra.", "Could not load more history."));
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const plantOptions = useMemo(() => ["all", ...new Set(records.map((item) => item.plant).filter(Boolean))], [records]);
   /** Filter values stay the Vietnamese plant names; only the visible option label is translated. */
@@ -94,7 +111,7 @@ export default function DashboardHistoryPage() {
         const dateMatches = !dateFilter || item.createdAt.slice(0, 10) === dateFilter;
         return plantMatches && statusMatches && dateMatches;
       }),
-    [dateFilter, plantFilter, records, statusFilter],
+    [dateFilter, plantFilter, records, statusFilter, tr],
   );
 
   const resetFilters = () => {
@@ -177,6 +194,11 @@ export default function DashboardHistoryPage() {
               </Link>
             );
           })}
+          {nextOffset !== null ? (
+            <Button type="button" variant="secondary" className="mx-auto mt-3" loading={loadingMore} onClick={() => void loadMore()}>
+              {tr("Tải thêm kết quả", "Load more results")}
+            </Button>
+          ) : null}
         </div>
       ) : null}
 
