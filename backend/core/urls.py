@@ -1,10 +1,11 @@
+from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 
 from .views import health_check, mobile_config, run_housekeeping_view
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path(settings.DJANGO_ADMIN_PATH, admin.site.urls),
     path("api/health/", health_check, name="health-check"),
     # Read by the Android app before the first screen, so it stays public and
     # returns nothing an anonymous caller should not see.

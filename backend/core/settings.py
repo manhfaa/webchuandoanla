@@ -49,9 +49,19 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # Đặt sau AuthenticationMiddleware để request đã có user, và trước
+    # MessageMiddleware để lượt bị chặn không sinh session thừa.
+    "core.admin_guard.AdminLoginRateLimitMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+# Đường dẫn trang quản trị. Để mặc định là "admin/" cho khớp thói quen, nhưng
+# đổi được bằng biến môi trường: một đường dẫn không đoán được sẽ loại phần lớn
+# máy quét tự động vốn chỉ thử đúng /admin/. Đây là biện pháp phụ — hàng rào
+# thật là giới hạn tần suất ở core.admin_guard và việc chặn truy cập thẳng vào
+# IP máy chủ.
+DJANGO_ADMIN_PATH = os.getenv("DJANGO_ADMIN_PATH", "admin/").strip("/") + "/"
 
 ROOT_URLCONF = "core.urls"
 
