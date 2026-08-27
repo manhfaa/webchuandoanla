@@ -97,6 +97,16 @@ PINNED_SLUGS = {
 }
 
 
+def title_en(value: str) -> str:
+    """Hoa đầu từ cho nhãn tiếng Anh của model.
+
+    Tên lớp viết hoa không nhất quán: "Late blight", "green mite", "Pokkah Boeng".
+    Chỉ hoa những từ đang viết thường hoàn toàn, để không phá các từ vốn đã có
+    dạng riêng như "Esca (Black Measles)" hay "Cedar-Apple Rust".
+    """
+    return " ".join(w[:1].upper() + w[1:] if w.islower() else w for w in value.split(" "))
+
+
 def slugify(value: str) -> str:
     text = value.lower().replace("đ", "d")
     text = unicodedata.normalize("NFD", text)
@@ -156,6 +166,7 @@ def main() -> int:
             {
                 "slug": PINNED_SLUGS.get(plant_vi) or slugify(plant_vi),
                 "name": plant_vi,
+                "nameEn": title_en(plant_en),
                 "plantId": plant_id,
                 "diseases": [],
             },
@@ -164,7 +175,9 @@ def main() -> int:
         # lẫn Huanglongbing). Hiện hai lần thì trông như lỗi chính tả.
         if any(d["name"] == disease_vi for d in crop["diseases"]):
             continue
-        crop["diseases"].append({"name": disease_vi, "className": class_name})
+        crop["diseases"].append(
+            {"name": disease_vi, "nameEn": title_en(translated["disease_name_en"]), "className": class_name}
+        )
 
     for crop in crops.values():
         crop["diseases"].sort(key=lambda d: d["name"].lower())
@@ -205,6 +218,8 @@ def main() -> int:
     add("")
     add("export type CropDisease = {")
     add("  name: string;")
+    add("  /** Nhãn tiếng Anh của chính model, dùng khi người dùng bật English. */")
+    add("  nameEn: string;")
     add("  /** Tên lớp của model, giữ lại để tra guidance khớp với ứng dụng. */")
     add("  className: string;")
     add("};")
@@ -212,6 +227,7 @@ def main() -> int:
     add("export type CropWithDiseases = {")
     add("  slug: string;")
     add("  name: string;")
+    add("  nameEn: string;")
     add("  plantId: string;")
     add("  diseases: CropDisease[];")
     add("};")
@@ -221,11 +237,13 @@ def main() -> int:
         add("  {")
         add(f'    slug: {ts_string(crop["slug"])},')
         add(f'    name: {ts_string(crop["name"])},')
+        add(f'    nameEn: {ts_string(crop["nameEn"])},')
         add(f'    plantId: {ts_string(crop["plantId"])},')
         add("    diseases: [")
         for disease in crop["diseases"]:
             add("      {")
             add(f'        name: {ts_string(disease["name"])},')
+            add(f'        nameEn: {ts_string(disease["nameEn"])},')
             add(f'        className: {ts_string(disease["className"])},')
             add("      },")
         add("    ],")
@@ -257,6 +275,12 @@ def main() -> int:
     add("")
     add("export function plantImageFor(plantId: string): string | null {")
     add('  return supportedPlants.find((plant) => plant.id === plantId)?.image ?? null;')
+    add("}")
+    add("")
+    add("/** Bản tiếng Anh của mô tả cây, dùng khi người dùng bật English. */")
+    add("export function plantInsightEnFor(plantId: string): string | null {")
+    add("  const plant = supportedPlants.find((entry) => entry.id === plantId);")
+    add("  return plant?.insightEn ?? plant?.insight ?? null;")
     add("}")
     add("")
     add("export function plantInsightFor(plantId: string): string | null {")

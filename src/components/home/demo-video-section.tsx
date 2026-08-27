@@ -16,6 +16,8 @@ const SRC_720 = "/demo/agromind-demo-720.mp4";
 
 /** Size and length are stated up front rather than discovered after the tap. */
 const WEIGHT_MB = "13,7 MB";
+// Same number, English decimal point — a comma reads as a thousands separator.
+const WEIGHT_MB_EN = "13.7 MB";
 const LENGTH = "1 phút 10 giây";
 const LENGTH_EN = "1 min 10 sec";
 
@@ -132,7 +134,7 @@ export function DemoVideoSection() {
                 className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[color-mix(in_srgb,var(--forest)_38%,transparent)] transition hover:bg-[color-mix(in_srgb,var(--forest)_24%,transparent)] motion-reduce:transition-none"
                 aria-label={tr(
                   `Phát video demo, ${LENGTH}, ${WEIGHT_MB}`,
-                  `Play the demo video, ${LENGTH_EN}, ${WEIGHT_MB}`,
+                  `Play the demo video, ${LENGTH_EN}, ${WEIGHT_MB_EN}`,
                 )}
               >
                 <span className="flex h-16 w-16 items-center justify-center rounded-full bg-surface text-leaf-strong shadow-lg sm:h-20 sm:w-20">
@@ -140,7 +142,7 @@ export function DemoVideoSection() {
                 </span>
                 {/* The cost is on the button itself, not buried in a caption. */}
                 <span className="rounded-full border border-[color-mix(in_srgb,var(--on-forest)_24%,transparent)] bg-[color-mix(in_srgb,var(--forest)_72%,transparent)] px-3 py-1 font-display text-xs font-bold tracking-[0.06em] text-on-forest">
-                  {tr(`${LENGTH} · ${WEIGHT_MB}`, `${LENGTH_EN} · ${WEIGHT_MB}`)}
+                  {tr(`${LENGTH} · ${WEIGHT_MB}`, `${LENGTH_EN} · ${WEIGHT_MB_EN}`)}
                 </span>
               </button>
             ) : null}
@@ -208,7 +210,7 @@ export function DemoVideoSection() {
 
           <figcaption className="flex flex-col gap-1 border-t border-line-strong bg-surface-raised px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <span className="text-sm font-semibold text-ink">
-              {tr("Quay tại vườn, có phụ đề sẵn trên hình", "Filmed on site, subtitles burned in")}
+              {tr("Quay tại vườn, có phụ đề sẵn trên hình", "Filmed in the field, subtitles on screen")}
             </span>
             <span className="text-xs text-ink-muted">
               {tr(

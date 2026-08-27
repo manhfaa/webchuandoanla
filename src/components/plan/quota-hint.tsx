@@ -77,7 +77,7 @@ const PHRASES: Record<LimitKey, Phrases> = {
     capOnly: (plan, cap, capEn) => ({ vi: `Gói ${plan}: ${cap}`, en: `${plan} plan: ${capEn}` }),
     empty: (limit) => ({
       vi: limit === 0 ? "Gói hiện tại chưa có kế hoạch trồng cây" : `Đã dùng hết ${limit} kế hoạch của gói`,
-      en: limit === 0 ? "Your current plan does not include crop plans" : `All ${limit} plans in your plan are in use`,
+      en: limit === 0 ? "Your current plan does not include crop plans" : `You have used all ${limit} crop plans this plan allows`,
     }),
   },
 };
@@ -187,7 +187,7 @@ export function RetentionNotice({
   const hidden = retention?.hidden ?? 0;
 
   const english = hidden
-    ? `The ${planName} plan shows the last ${days} days. ${hidden} older ${hidden === 1 ? "result is" : "results are"} still stored in full and reappear when you upgrade.`
+    ? `The ${planName} plan shows the last ${days} days. ${hidden} older ${hidden === 1 ? "result is" : "results are"} still stored in full and will come back when you upgrade.`
     : `The ${planName} plan shows the last ${days} days. Older results are still kept in your account.`;
 
   return (

@@ -19,7 +19,17 @@ import {
 } from "@/lib/django-client";
 import { normalizePlan } from "@/lib/plans";
 import { normalizeUserDisplayName } from "@/lib/user-profile";
+import { useLanguageStore } from "@/store/language-store";
 import type { PlanTier, UserProfile } from "@/types";
+
+/**
+ * Same bilingual resolution as `useTr`, but readable outside of render. The
+ * store writes `error` once, at the moment the request fails, so the message
+ * lands in whichever language the reader had chosen.
+ */
+function trOffRender(vi: string, en: string) {
+  return useLanguageStore.getState().language === "en" ? en : vi;
+}
 
 type AuthStatus = "idle" | "loading" | "authenticated" | "error";
 
@@ -112,7 +122,10 @@ export const useSessionStore = create<SessionState>()(
             isAuthenticated: false,
             initialized: true,
             status: "error",
-            error: err instanceof Error ? err.message : "Không thể xác thực phiên đăng nhập.",
+            error:
+              err instanceof Error
+                ? err.message
+                : trOffRender("Không thể xác thực phiên đăng nhập.", "We couldn't verify your sign-in session."),
           });
         }
       },
@@ -137,7 +150,7 @@ export const useSessionStore = create<SessionState>()(
             accessToken: null,
             refreshToken: null,
             status: "error",
-            error: err instanceof Error ? err.message : "Đăng nhập thất bại.",
+            error: err instanceof Error ? err.message : trOffRender("Đăng nhập thất bại.", "Sign-in failed."),
             isAuthenticated: false,
           });
           throw err;
@@ -164,7 +177,8 @@ export const useSessionStore = create<SessionState>()(
             accessToken: null,
             refreshToken: null,
             status: "error",
-            error: err instanceof Error ? err.message : "Đăng nhập Google thất bại.",
+            error:
+              err instanceof Error ? err.message : trOffRender("Đăng nhập Google thất bại.", "Google sign-in failed."),
             isAuthenticated: false,
           });
           throw err;
@@ -193,7 +207,7 @@ export const useSessionStore = create<SessionState>()(
             accessToken: null,
             refreshToken: null,
             status: "error",
-            error: err instanceof Error ? err.message : "Đăng ký thất bại.",
+            error: err instanceof Error ? err.message : trOffRender("Đăng ký thất bại.", "Sign-up failed."),
             isAuthenticated: false,
           });
           throw err;
@@ -303,7 +317,8 @@ export const useSessionStore = create<SessionState>()(
         } catch (err) {
           set({
             status: "error",
-            error: err instanceof Error ? err.message : "Không thể cập nhật hồ sơ.",
+            error:
+              err instanceof Error ? err.message : trOffRender("Không thể cập nhật hồ sơ.", "We couldn't update your profile."),
           });
           throw err;
         }

@@ -10,6 +10,16 @@ import {
   type SubscriptionSummary,
 } from "@/lib/payments-client";
 import { onPlanLimit, type LimitKey } from "@/lib/plan-limit";
+import { useLanguageStore } from "@/store/language-store";
+
+/**
+ * Same bilingual resolution as `useTr`, but readable outside of render. The
+ * store writes `error` once, at the moment the read fails, so the message lands
+ * in whichever language the reader had chosen.
+ */
+function trOffRender(vi: string, en: string) {
+  return useLanguageStore.getState().language === "en" ? en : vi;
+}
 
 /**
  * What the account is entitled to, and how much of it is already spent.
@@ -70,7 +80,10 @@ export const useEntitlementsStore = create<EntitlementsState>()((set, get) => ({
     if (summaryResult.status === "rejected") {
       set({
         status: "error",
-        error: "Chưa đọc được hạn mức của gói hiện tại.",
+        error: trOffRender(
+          "Chưa đọc được hạn mức của gói hiện tại.",
+          "We couldn't read the limits on your current plan.",
+        ),
         // Keep whatever was already loaded: a failed refresh must not blank out
         // a quota the user can still see.
         catalogue: catalogueResult.status === "fulfilled" ? catalogueResult.value : get().catalogue,

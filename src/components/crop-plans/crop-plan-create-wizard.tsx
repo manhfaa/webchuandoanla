@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -30,7 +30,7 @@ import {
   updateCropLocation,
   type ClimateConfidence,
 } from "@/lib/crop-plans-client";
-import { getSuitabilityLabel, withViFallback } from "@/lib/crop-plan-labels";
+import { getSuitabilityLabelPair, withViFallback } from "@/lib/crop-plan-labels";
 import { useEntitlements } from "@/lib/use-entitlements";
 import { useTr } from "@/lib/use-tr";
 import { useSessionStore } from "@/store/session-store";
@@ -66,6 +66,14 @@ const loadingStagesEn = [
 export function CropPlanCreateWizard() {
   const router = useRouter();
   const tr = useTr();
+  // Effect ben duoi khong duoc chay lai khi doi ngon ngu, neu khong no se
+  // TAI LAI du lieu chi vi doi nhan chu. Ref cho phep no doc ban dich hien
+  // tai ma khong can nam trong deps. Cap nhat sau moi lan render, khong phai
+  // trong luc render.
+  const trRef = useRef(tr);
+  useEffect(() => {
+    trRef.current = tr;
+  });
   const { accessToken } = useSessionStore();
   const [screen, setScreen] = useState<WizardScreen>("crop");
   const [crops, setCrops] = useState<CropCatalogItem[]>([]);
@@ -83,7 +91,9 @@ export function CropPlanCreateWizard() {
 
   const [selectedCrop, setSelectedCrop] = useState<string>("");
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
-  const [locationName, setLocationName] = useState("Vườn nhà");
+  // Prefilled name for a brand-new growing area, so an English session never
+  // starts with Vietnamese text sitting in the field.
+  const [locationName, setLocationName] = useState(() => tr("Vườn nhà", "Home garden"));
   const [locationAddress, setLocationAddress] = useState("Thủ Đức, TP.HCM");
   const [lat, setLat] = useState(10.8421);
   const [lon, setLon] = useState(106.8286);
@@ -119,7 +129,7 @@ export function CropPlanCreateWizard() {
           setLon(locationData[0].lon);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : tr("Không tải được dữ liệu ban đầu.", "Could not load initial data."));
+        setError(err instanceof Error ? err.message : trRef.current("Không tải được dữ liệu ban đầu.", "Could not load initial data."));
       } finally {
         setLoading(false);
       }
@@ -648,7 +658,9 @@ export function CropPlanCreateWizard() {
               <div>
                 <p className="text-overline text-on-forest-muted">{tr("Tóm tắt đầu vào", "Input summary")}</p>
                 <h3 className="mt-3 font-display text-2xl font-bold text-on-forest">
-                  {activeCrop?.name ?? tr("Chưa chọn cây", "No crop selected")}
+                  {activeCrop
+                    ? tr(activeCrop.name, withViFallback(activeCrop.name, activeCrop.name_en))
+                    : tr("Chưa chọn cây", "No crop selected")}
                 </h3>
               </div>
             </div>
@@ -726,7 +738,7 @@ export function CropPlanCreateWizard() {
               </div>
               <div className="mt-5 space-y-3 text-sm leading-7 text-ink-soft">
                 <p>{tr("- Bắt đầu đề xuất: ", "- Recommended start: ")}{preview.summary.recommended_start_date}</p>
-                <p>{tr("- Mức phù hợp: ", "- Suitability: ")}{getSuitabilityLabel(preview.summary.suitability_level)}</p>
+                <p>{tr("- Mức phù hợp: ", "- Suitability: ")}{tr(...getSuitabilityLabelPair(preview.summary.suitability_level))}</p>
                 <p>
                   {tr("- Phân tích: ", "- Analysis: ")}
                   {tr(
@@ -766,7 +778,7 @@ export function CropPlanCreateWizard() {
                       <div className="mt-2 h-full min-h-[56px] w-[2px] rounded-full bg-line" />
                     </div>
                     <div className="rounded-lg border border-line bg-surface-soft px-4 py-3">
-                      <p className="font-medium text-ink">{step.title}</p>
+                      <p className="font-medium text-ink">{tr(step.title, withViFallback(step.title, step.title_en))}</p>
                       <p className="mt-1 text-sm leading-6 text-ink-soft">
                         {new Date(step.suggested_start_time).toLocaleString("vi-VN")}
                       </p>

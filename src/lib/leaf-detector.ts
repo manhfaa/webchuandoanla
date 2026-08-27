@@ -7,6 +7,12 @@ export interface LeafDetectionResult {
   plantLikeRatio: number;
   averageSaturation: number;
   reason: string;
+  /**
+   * English twin of `reason`. Optional because a screen may build a result by
+   * hand from an answer that has no English sentence; every result this module
+   * returns sets it.
+   */
+  reasonEn?: string;
 }
 
 function clamp(value: number, min = 0, max = 1) {
@@ -95,6 +101,7 @@ export async function detectLeafInImage(src: string): Promise<LeafDetectionResul
       plantLikeRatio: 0,
       averageSaturation: 0,
       reason: "Thiết bị hiện tại chưa hỗ trợ kiểm tra ảnh cục bộ.",
+      reasonEn: "This device cannot run the on-device photo check.",
     };
   }
 
@@ -137,6 +144,7 @@ export async function detectLeafInImage(src: string): Promise<LeafDetectionResul
       plantLikeRatio: 0,
       averageSaturation: 0,
       reason: "Ảnh quá nhỏ hoặc chưa đủ rõ để kiểm tra.",
+      reasonEn: "The photo is too small or not clear enough to check.",
     };
   }
 
@@ -158,15 +166,20 @@ export async function detectLeafInImage(src: string): Promise<LeafDetectionResul
       exgRatio >= 0.24);
 
   let reason = "Ảnh có màu sắc và hình dạng khá giống lá cây, đủ điều kiện để tiếp tục.";
+  let reasonEn = "The colour and shape look close enough to a leaf to carry on.";
 
   if (!isLeaf && plantLikeRatio < 0.12) {
     reason = "Ảnh chưa có đủ phần lá cây để hệ thống xác nhận.";
+    reasonEn = "There is not enough leaf in this photo to confirm it.";
   } else if (!isLeaf && greenRatio < 0.08) {
     reason = "Vùng màu xanh còn quá ít, bạn nên chụp gần hơn vào chiếc lá.";
+    reasonEn = "There is too little green here. Move in closer to the leaf.";
   } else if (!isLeaf) {
     reason = "Ảnh còn thiếu rõ nét hoặc góc chụp chưa tập trung vào lá.";
+    reasonEn = "The photo is a little soft, or the angle is not on the leaf.";
   } else if (confidence >= 0.74) {
     reason = "Ảnh khá rõ và phù hợp để lưu lại cho các bước tiếp theo.";
+    reasonEn = "The photo is clear and worth keeping for the next steps.";
   }
 
   return {
@@ -176,5 +189,6 @@ export async function detectLeafInImage(src: string): Promise<LeafDetectionResul
     plantLikeRatio,
     averageSaturation,
     reason,
+    reasonEn,
   };
 }

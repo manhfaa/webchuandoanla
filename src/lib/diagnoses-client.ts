@@ -1,4 +1,4 @@
-import { raiseIfPlanLimited, type LimitKey } from "@/lib/plan-limit";
+import { bilingualError, raiseIfPlanLimited, type BilingualText, type LimitKey } from "@/lib/plan-limit";
 import type { ActionPlan, DiagnosisInputMethod, DiagnosisRecord, RecommendationBlock } from "@/types";
 
 type DjangoDiagnosis = {
@@ -144,6 +144,34 @@ function imageFromDiagnosis(item: DjangoDiagnosis) {
   return item.thumbnail_url || item.image_data_url || item.image_url || item.image_path || "/illustrations/non-leaf-sample.svg";
 }
 
+/**
+ * The only Vietnamese sentences this mapper invents: the stand-ins used when a
+ * record carries no plant, disease, severity or note of its own. Everything
+ * else on a record was written by the grower, the backend or the model.
+ *
+ * `DiagnosisRecord` has no `plantEn`/`diseaseEn`/`noteEn` twin fields, so the
+ * pairing happens where the value is shown, via `translateGeneratedLabel`.
+ */
+const GENERATED_LABELS: BilingualText[] = [
+  { vi: "Chưa xác định", en: "Not identified" },
+  { vi: "Đã phân loại", en: "Classified" },
+  { vi: "Ảnh lá đã xác thực", en: "Leaf image verified" },
+  { vi: "Đã kiểm tra", en: "Checked" },
+  {
+    vi: "Bản ghi chẩn đoán đã được lưu trên hệ thống.",
+    en: "This diagnosis record has been saved to your account.",
+  },
+];
+
+/**
+ * Swaps one of the stand-ins above for its English twin when English is on.
+ * Anything else - a plant name, a note the grower typed - comes back untouched.
+ */
+export function translateGeneratedLabel(value: string, tr: (vi: string, en: string) => string): string {
+  const label = GENERATED_LABELS.find((entry) => entry.vi === value);
+  return label ? tr(label.vi, label.en) : value;
+}
+
 export function mapDiagnosisToRecord(item: DjangoDiagnosis): DiagnosisRecord {
   const recommendations = normalizeRecommendations(item.recommendations);
   const actionPlan = item.action_plan && Object.keys(item.action_plan).length ? (item.action_plan as ActionPlan) : undefined;
@@ -287,7 +315,12 @@ export async function fetchDiagnosisPage(
 }
 
 export async function fetchDiagnosisRecord(accessToken: string | null | undefined, id: string) {
-  if (!accessToken) throw new Error("Bạn cần đăng nhập để xem bản ghi chẩn đoán.");
+  if (!accessToken) {
+    throw bilingualError({
+      vi: "Bạn cần đăng nhập để xem bản ghi chẩn đoán.",
+      en: "Sign in to view this diagnosis record.",
+    });
+  }
   const item = await diagnosesFetch<DjangoDiagnosis>(`/api/diagnoses/${id}`, accessToken);
   return mapDiagnosisToRecord(item);
 }
@@ -308,7 +341,12 @@ export async function updateDiagnosisRecord(
   id: string,
   payload: Partial<ReturnType<typeof diagnosisPayloadFromRecord>>,
 ) {
-  if (!accessToken) throw new Error("Bạn cần đăng nhập để cập nhật bản ghi chẩn đoán.");
+  if (!accessToken) {
+    throw bilingualError({
+      vi: "Bạn cần đăng nhập để cập nhật bản ghi chẩn đoán.",
+      en: "Sign in to update this diagnosis record.",
+    });
+  }
   const item = await diagnosesFetch<DjangoDiagnosis>(`/api/diagnoses/${id}`, accessToken, {
     method: "PATCH",
     body: JSON.stringify(payload),

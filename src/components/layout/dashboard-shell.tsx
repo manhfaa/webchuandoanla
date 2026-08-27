@@ -31,12 +31,12 @@ const PAGE_TITLES_VI: Record<string, string> = {
 
 const PAGE_TITLES_EN: Record<string, string> = {
   "/dashboard":                "Dashboard",
-  "/dashboard/diagnosis":      "Leaf image check",
+  "/dashboard/diagnosis":      "Check a leaf",
   "/dashboard/weather-alerts": "Weather & pest alerts",
   "/dashboard/farms":          "Farms & QR traceability",
   "/dashboard/input-library":  "Input library",
   "/dashboard/chat":           "Advisory chat",
-  "/dashboard/history":        "Image check history",
+  "/dashboard/history":        "Check history",
   "/dashboard/pricing":        "Plans",
   "/dashboard/profile":        "User profile",
   "/dashboard/crop-plans":     "Crop plans",
@@ -78,7 +78,7 @@ function getPageTitle(pathname: string, lang: "vi" | "en"): string {
     return lang === "en" ? "Plan upgrade checkout" : "Thanh toán nâng cấp gói";
   }
   if (pathname.startsWith("/dashboard/results")) {
-    return lang === "en" ? "Image check result" : "Kết quả kiểm tra ảnh";
+    return lang === "en" ? "Check result" : "Kết quả kiểm tra ảnh";
   }
   if (pathname.startsWith("/dashboard/crop-plans/")) {
     return lang === "en" ? "Crop plan details" : "Chi tiết kế hoạch trồng cây";
@@ -100,7 +100,7 @@ function getPageDescription(pathname: string, lang: "vi" | "en"): string {
   if (pathname.startsWith("/dashboard/crop-plans/")) {
     return lang === "en" ? "Follow the plan and update completed care tasks." : "Theo dõi kế hoạch và cập nhật các việc chăm sóc đã hoàn thành.";
   }
-  return lang === "en" ? "Your Agromind AI workspace." : "Không gian theo dõi sức khỏe cây trồng của bạn.";
+  return lang === "en" ? "Your space for keeping an eye on crop health." : "Không gian theo dõi sức khỏe cây trồng của bạn.";
 }
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {

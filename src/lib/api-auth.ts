@@ -34,11 +34,19 @@ export type FeatureGateResult =
 export async function requirePlanFeature(
   request: Request,
   feature: keyof PlanFeatures,
-  message: { vi: string; upgradeTo: string },
+  /** `en` is optional so a route that has not been given one still compiles. */
+  message: { vi: string; en?: string; upgradeTo: string },
 ): Promise<FeatureGateResult> {
   const authorization = request.headers.get("authorization");
   if (!authorization || !authorization.startsWith("Bearer ")) {
-    return { allowed: false, status: 401, body: { error: "Bạn cần đăng nhập để dùng tính năng này." } };
+    return {
+      allowed: false,
+      status: 401,
+      body: {
+        error: "Bạn cần đăng nhập để dùng tính năng này.",
+        error_en: "Sign in to use this feature.",
+      },
+    };
   }
 
   let payload: { entitlements?: { plan?: string; features?: PlanFeatures } } | null = null;
@@ -49,7 +57,14 @@ export async function requirePlanFeature(
       cache: "no-store",
     });
     if (res.status === 401) {
-      return { allowed: false, status: 401, body: { error: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại." } };
+      return {
+        allowed: false,
+        status: 401,
+        body: {
+          error: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+          error_en: "Your session has expired. Please sign in again.",
+        },
+      };
     }
     if (res.ok) payload = await res.json();
   } catch {
@@ -60,7 +75,10 @@ export async function requirePlanFeature(
     return {
       allowed: false,
       status: 503,
-      body: { error: "Chưa kiểm tra được quyền sử dụng của gói dịch vụ. Vui lòng thử lại sau." },
+      body: {
+        error: "Chưa kiểm tra được quyền sử dụng của gói dịch vụ. Vui lòng thử lại sau.",
+        error_en: "We could not check what your plan includes. Please try again shortly.",
+      },
     };
   }
 
@@ -72,6 +90,11 @@ export async function requirePlanFeature(
     body: {
       detail: message.vi,
       error: message.vi,
+      // The same keys src/lib/plan-limit.ts reads for the English twin, so the
+      // upgrade dialog follows the language switch instead of staying in
+      // Vietnamese. Empty when the calling route has not supplied one.
+      detail_en: message.en ?? "",
+      error_en: message.en ?? "",
       code: "plan_limit_exceeded",
       plan: payload.entitlements.plan ?? "seed",
       upgrade_to: message.upgradeTo,

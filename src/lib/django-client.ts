@@ -1,5 +1,5 @@
 import type { ActionPlan, PlanTier, UserProfile } from "@/types";
-import { raiseIfPlanLimited, type LimitKey } from "@/lib/plan-limit";
+import { bilingualError, raiseIfPlanLimited, type BilingualText, type LimitKey } from "@/lib/plan-limit";
 import { normalizePlan } from "@/lib/plans";
 import { normalizeUserDisplayName } from "@/lib/user-profile";
 
@@ -114,12 +114,23 @@ export function mapAccountToUserProfile(account: DjangoAccount): UserProfile {
 export class DjangoApiError extends Error {
   readonly status: number;
   readonly fieldErrors: Record<string, string>;
+  /**
+   * English twin of `message`. Empty when the sentence came from the backend,
+   * which answers in Vietnamese only, so the screen shows `message` unchanged.
+   */
+  readonly messageEn: string;
 
-  constructor(message: string, status: number, fieldErrors: Record<string, string> = {}) {
+  constructor(
+    message: string,
+    status: number,
+    fieldErrors: Record<string, string> = {},
+    messageEn = "",
+  ) {
     super(message);
     this.name = "DjangoApiError";
     this.status = status;
     this.fieldErrors = fieldErrors;
+    this.messageEn = messageEn;
   }
 }
 
@@ -178,9 +189,15 @@ async function djangoFetch<T>(path: string, init?: DjangoFetchInit): Promise<T> 
     });
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
-      throw new Error("Kết nối máy chủ quá lâu. Vui lòng thử lại sau ít phút.");
+      throw bilingualError({
+        vi: "Kết nối máy chủ quá lâu. Vui lòng thử lại sau ít phút.",
+        en: "The server is taking too long to answer. Please try again in a few minutes.",
+      });
     }
-    throw new Error("Không thể kết nối máy chủ. Vui lòng thử lại sau ít phút.");
+    throw bilingualError({
+      vi: "Không thể kết nối máy chủ. Vui lòng thử lại sau ít phút.",
+      en: "Could not reach the server. Please try again in a few minutes.",
+    });
   } finally {
     clearTimeout(timeout);
   }
@@ -196,10 +213,14 @@ async function djangoFetch<T>(path: string, init?: DjangoFetchInit): Promise<T> 
     // here would throw away everything the upgrade prompt needs to be useful.
     raiseIfPlanLimited(res.status, data, limitKey);
     const { message, fieldErrors } = readErrorBody(data, res.status);
+    // 429 is the one status whose sentence we write ourselves, so it is also
+    // the only one here that can carry an English twin.
+    const throttled = res.status === 429 ? describeThrottle(message) : null;
     throw new DjangoApiError(
-      res.status === 429 ? describeThrottle(message) : message,
+      throttled ? throttled.vi : message,
       res.status,
       fieldErrors,
+      throttled ? throttled.en : "",
     );
   }
 
@@ -209,12 +230,24 @@ async function djangoFetch<T>(path: string, init?: DjangoFetchInit): Promise<T> 
 }
 
 /** DRF's throttle message is raw English with a second count; make it human. */
-function describeThrottle(message: string): string {
+function describeThrottle(message: string): BilingualText {
   const seconds = Number(/(\d+)\s*second/.exec(message)?.[1] ?? 0);
-  if (!seconds) return "Bạn đã thử quá nhiều lần. Vui lòng chờ một lát rồi thử lại.";
+  if (!seconds) {
+    return {
+      vi: "Bạn đã thử quá nhiều lần. Vui lòng chờ một lát rồi thử lại.",
+      en: "Too many attempts. Please wait a moment and try again.",
+    };
+  }
   const minutes = Math.ceil(seconds / 60);
   const wait = seconds < 60 ? `${seconds} giây` : `${minutes} phút`;
-  return `Bạn đã thử quá nhiều lần. Vui lòng thử lại sau khoảng ${wait}.`;
+  const waitEn =
+    seconds < 60
+      ? `${seconds} second${seconds === 1 ? "" : "s"}`
+      : `${minutes} minute${minutes === 1 ? "" : "s"}`;
+  return {
+    vi: `Bạn đã thử quá nhiều lần. Vui lòng thử lại sau khoảng ${wait}.`,
+    en: `Too many attempts. Please try again in about ${waitEn}.`,
+  };
 }
 
 /**
@@ -240,7 +273,12 @@ export function registerAuthTokenBridge(bridge: AuthTokenBridge) {
 async function djangoAuthedFetch<T>(path: string, init?: DjangoFetchInit): Promise<T> {
   const accessToken = authTokenBridge?.getAccessToken() ?? null;
   if (!accessToken) {
-    throw new DjangoApiError("Bạn cần đăng nhập lại để tiếp tục.", 401);
+    throw new DjangoApiError(
+      "Bạn cần đăng nhập lại để tiếp tục.",
+      401,
+      {},
+      "Please sign in again to continue.",
+    );
   }
 
   const withToken = (token: string): DjangoFetchInit => ({
@@ -255,7 +293,12 @@ async function djangoAuthedFetch<T>(path: string, init?: DjangoFetchInit): Promi
 
     const refreshed = await authTokenBridge.refreshAccessToken();
     if (!refreshed) {
-      throw new DjangoApiError("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.", 401);
+      throw new DjangoApiError(
+        "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.",
+        401,
+        {},
+        "Your session has expired. Please sign in again.",
+      );
     }
     return djangoFetch<T>(path, withToken(refreshed));
   }

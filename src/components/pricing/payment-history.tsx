@@ -18,15 +18,28 @@ import {
   type SubscriptionSummary,
 } from "@/lib/payments-client";
 import { useTr } from "@/lib/use-tr";
+import { useLanguageStore } from "@/store/language-store";
 import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/store/session-store";
 
 type Tr = (vi: string, en: string) => string;
 
-function formatDateTime(value: string) {
+/**
+ * Ngày tháng phải đổi theo ngôn ngữ, không chỉ phần chữ.
+ *
+ * Hai hàm này trước đây chốt cứng "vi-VN", nên người dùng bật English vẫn thấy
+ * ngày định dạng kiểu Việt Nam. Dùng en-GB chứ không phải en-US: en-GB cho ra
+ * ngày/tháng/năm, cùng thứ tự với bản tiếng Việt, nên cùng một ngày không bị
+ * đọc thành hai ngày khác nhau khi người dùng chuyển qua lại.
+ */
+function localeFor(language: "vi" | "en"): string {
+  return language === "en" ? "en-GB" : "vi-VN";
+}
+
+function formatDateTime(value: string, language: "vi" | "en") {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("vi-VN", {
+  return new Intl.DateTimeFormat(localeFor(language), {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -35,10 +48,14 @@ function formatDateTime(value: string) {
   }).format(date);
 }
 
-function formatDate(value: string) {
+function formatDate(value: string, language: "vi" | "en") {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
+  return new Intl.DateTimeFormat(localeFor(language), {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
 }
 
 function statusMeta(order: PaymentOrderRecord, tr: Tr): { label: string; state: StatusBadgeState } {
@@ -52,6 +69,7 @@ function statusMeta(order: PaymentOrderRecord, tr: Tr): { label: string; state: 
 
 function PlanSummaryCard({ summary }: { summary: SubscriptionSummary | null }) {
   const tr = useTr();
+  const language = useLanguageStore((state) => state.language);
   if (!summary) return null;
 
   const limits = summary.entitlements.limits;
@@ -80,16 +98,16 @@ function PlanSummaryCard({ summary }: { summary: SubscriptionSummary | null }) {
             <CalendarClock size={15} className="shrink-0 text-leaf-strong" aria-hidden />
             {summary.plan_expires_at
               ? tr(
-                  `Hiệu lực đến ${formatDate(summary.plan_expires_at)}${summary.days_remaining !== null ? ` · còn ${summary.days_remaining} ngày` : ""}`,
-                  `Valid until ${formatDate(summary.plan_expires_at)}${summary.days_remaining !== null ? ` · ${summary.days_remaining} days left` : ""}`,
+                  `Hiệu lực đến ${formatDate(summary.plan_expires_at, "vi")}${summary.days_remaining !== null ? ` · còn ${summary.days_remaining} ngày` : ""}`,
+                  `Valid until ${formatDate(summary.plan_expires_at, "en")}${summary.days_remaining !== null ? ` · ${summary.days_remaining} days left` : ""}`,
                 )
               : tr("Gói miễn phí, không có ngày hết hạn.", "Free plan, no expiry date.")}
           </p>
           {summary.subscription ? (
             <p className="mt-1 text-xs text-ink-soft">
               {tr(
-                `Bắt đầu ${formatDate(summary.subscription.starts_at)} · thanh toán một lần, không tự động gia hạn.`,
-                `Started ${formatDate(summary.subscription.starts_at)} · one-time payment, no auto-renewal.`,
+                `Bắt đầu ${formatDate(summary.subscription.starts_at, "vi")} · thanh toán một lần, không tự động gia hạn.`,
+                `Started ${formatDate(summary.subscription.starts_at, "en")} · one-time payment, no auto-renewal.`,
               )}
             </p>
           ) : null}
@@ -123,6 +141,7 @@ export function PaymentHistory({
   onOrderUpdated: (order: PaymentOrderRecord) => void;
 }) {
   const tr = useTr();
+  const language = useLanguageStore((state) => state.language);
   const { accessToken } = useSessionStore();
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -187,14 +206,14 @@ export function PaymentHistory({
                       <StatusBadge status={meta.state} label={meta.label} />
                     </div>
                     <p className="mt-1 text-sm text-ink-soft">
-                      {formatVnd(order.amount_expected)}
+                      {formatVnd(order.amount_expected, language)}
                       {order.amount_received > 0 && order.amount_received !== order.amount_expected
-                        ? tr(` · đã nhận ${formatVnd(order.amount_received)}`, ` · received ${formatVnd(order.amount_received)}`)
+                        ? tr(` · đã nhận ${formatVnd(order.amount_received, "vi")}`, ` · received ${formatVnd(order.amount_received, "en")}`)
                         : ""}
                       {" · "}
                       {order.paid_at
-                        ? tr(`Thanh toán ${formatDateTime(order.paid_at)}`, `Paid ${formatDateTime(order.paid_at)}`)
-                        : tr(`Tạo ${formatDateTime(order.created_at)}`, `Created ${formatDateTime(order.created_at)}`)}
+                        ? tr(`Thanh toán ${formatDateTime(order.paid_at, "vi")}`, `Paid ${formatDateTime(order.paid_at, "en")}`)
+                        : tr(`Tạo ${formatDateTime(order.created_at, "vi")}`, `Created ${formatDateTime(order.created_at, "en")}`)}
                     </p>
                     <p className="mt-1 font-mono text-xs text-ink-soft">{order.payment_code}</p>
                     {order.needs_reconciliation ? (

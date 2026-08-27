@@ -29,6 +29,12 @@ export type PlanLimitInfo = {
   /** Backend Vietnamese sentence; already names the cap and the next plan. */
   message: string;
   /**
+   * English twin of `message`. Empty when the body carried a Vietnamese
+   * sentence and no English one, so the screen keeps `message` rather than
+   * showing a translation the backend never sent.
+   */
+  messageEn: string;
+  /**
    * `plan_limit_exceeded` (hết hạn mức) or `plan_feature_locked` (gói chưa có
    * tính năng). Both answer 402 and both need the upgrade path, but only the
    * first one has a counter to show.
@@ -58,6 +64,26 @@ export function isPlanLimitError(error: unknown): error is PlanLimitError {
   return error instanceof PlanLimitError;
 }
 
+/** One user-facing sentence in both languages. */
+export type BilingualText = { vi: string; en: string };
+
+/**
+ * An `Error` whose message also carries its English twin.
+ *
+ * `message` stays the Vietnamese sentence, so every existing `error.message`
+ * reader keeps working unchanged. A screen that has `tr` pairs the two:
+ * `tr(error.message, errorMessageEn(error) || error.message)`.
+ */
+export function bilingualError(text: BilingualText): Error {
+  return Object.assign(new Error(text.vi), { messageEn: text.en });
+}
+
+/** English twin of an error's message, or `""` when it does not have one. */
+export function errorMessageEn(error: unknown): string {
+  const twin = (error as { messageEn?: unknown } | null | undefined)?.messageEn;
+  return typeof twin === "string" ? twin.trim() : "";
+}
+
 function readNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   // DRF stringifies nested values in some renderers; a numeric string is still
@@ -80,6 +106,9 @@ function readText(value: unknown): string {
 const FALLBACK_MESSAGE =
   "Bạn đã dùng hết hạn mức của gói hiện tại. Vui lòng nâng cấp để tiếp tục.";
 
+const FALLBACK_MESSAGE_EN =
+  "You have used up your current plan's allowance. Upgrade to keep going.";
+
 /**
  * Reads the 402 body. Only the status decides that this is a plan limit — a
  * proxy or gateway can answer 402 with something that is not the DRF shape, and
@@ -87,8 +116,13 @@ const FALLBACK_MESSAGE =
  */
 export function readPlanLimit(body: unknown, limitKey: LimitKey | null = null): PlanLimitInfo {
   const record = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+  const message = readText(record.detail) || readText(record.error) || readText(record.message);
+  const messageEn = readText(record.detail_en) || readText(record.error_en) || readText(record.message_en);
   return {
-    message: readText(record.detail) || readText(record.error) || readText(record.message) || FALLBACK_MESSAGE,
+    message: message || FALLBACK_MESSAGE,
+    // Only the sentence we write ourselves is guaranteed an English twin; a
+    // Vietnamese sentence the backend wrote is left for the screen to show.
+    messageEn: messageEn || (message ? "" : FALLBACK_MESSAGE_EN),
     code: readText(record.code),
     plan: readText(record.plan),
     limit: readNumber(record.limit),

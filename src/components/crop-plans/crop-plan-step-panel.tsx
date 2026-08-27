@@ -11,6 +11,7 @@ import { useTr } from "@/lib/use-tr";
 import { cropPlanStepStatusLabel } from "./crop-plan-status";
 
 const DEFAULT_DELAY_REASON = "Dời 1 ngày để canh thời tiết tốt hơn";
+const DEFAULT_DELAY_REASON_EN = "Postponing one day to wait for better weather";
 
 type PendingAction = "note" | "delay" | "complete" | "reopen" | null;
 
@@ -231,7 +232,7 @@ export function CropPlanStepPanel({
                   value={delayReason}
                   onChange={(event) => setDelayReason(event.target.value)}
                   maxLength={255}
-                  placeholder={tr(DEFAULT_DELAY_REASON, "Postponing to wait for better weather")}
+                  placeholder={tr(DEFAULT_DELAY_REASON, DEFAULT_DELAY_REASON_EN)}
                   className="w-full rounded-md border border-line bg-surface-soft px-4 py-3 text-sm text-ink outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20"
                 />
               </label>
@@ -241,7 +242,11 @@ export function CropPlanStepPanel({
                 variant="secondary"
                 onClick={() =>
                   void run("delay", () =>
-                    onDelay(step.id, delayDays, delayReason.trim() || DEFAULT_DELAY_REASON),
+                    onDelay(
+                      step.id,
+                      delayDays,
+                      delayReason.trim() || tr(DEFAULT_DELAY_REASON, DEFAULT_DELAY_REASON_EN),
+                    ),
                   )
                 }
                 loading={pending === "delay"}

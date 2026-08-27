@@ -222,7 +222,11 @@ const VI_NUMBER = new Intl.NumberFormat("vi-VN");
 const EN_NUMBER = new Intl.NumberFormat("en-US");
 
 export function formatVnd(amount: number, language: "vi" | "en" = "vi") {
-  return `${(language === "en" ? EN_NUMBER : VI_NUMBER).format(Math.round(amount))}đ`;
+  // "đ" là ký hiệu tiền của người Việt; người đọc tiếng Anh không nhận ra nó là
+  // đơn vị tiền tệ, nên bản tiếng Anh dùng mã ISO. Số tiền vẫn là VND ở cả hai
+  // bản — chỉ cách viết đổi.
+  if (language === "en") return `${EN_NUMBER.format(Math.round(amount))} VND`;
+  return `${VI_NUMBER.format(Math.round(amount))}đ`;
 }
 
 export function planAmount(catalogue: ServicePlanDto[] | null, slug: string): number | null {

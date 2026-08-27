@@ -55,9 +55,20 @@ function writeOfflineQueue(items: OfflineDiagnosisItem[]) {
   }
 }
 
+/**
+ * Default note written on a queued photo, in both languages. The queue lives in
+ * this device's storage and is replayed later, so the stored note stays
+ * Vietnamese exactly as before and the English twin sits beside it for whatever
+ * screen shows the queue.
+ */
+export const OFFLINE_QUEUE_NOTE = {
+  vi: "Chờ gửi lại khi có mạng",
+  en: "Waiting to resend once you are back online",
+};
+
 export function addOfflineDiagnosis(
   imageDataUrl: string,
-  note = "Chờ gửi lại khi có mạng",
+  note = OFFLINE_QUEUE_NOTE.vi,
   cropId: string | null = null,
 ) {
   if (typeof window === "undefined") return;

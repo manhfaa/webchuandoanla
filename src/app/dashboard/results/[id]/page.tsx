@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { Archive, Bookmark, Leaf, RefreshCcw, Volume2 } from "lucide-react";
 
@@ -40,7 +40,14 @@ function applyClassificationResult(record: DiagnosisRecord, result: DjangoCnnRes
     symptomSummary: healthy
       ? "Ảnh lá hiện tại được xếp vào nhóm khỏe mạnh. Bạn vẫn nên tiếp tục theo dõi nếu cây có dấu hiệu bất thường ngoài thực địa."
       : `Ảnh có khả năng thuộc nhóm ${result.disease_name || result.class_name}. Đây là gợi ý hỗ trợ, không thay thế đánh giá trực tiếp tại vườn.`,
+    // Parallel English twin, same meaning, so the reader in English mode never
+    // meets the Vietnamese fallback text.
+    symptomSummaryEn: healthy
+      ? "This leaf photo falls into the healthy group. Keep watching the plant if you notice anything unusual out in the field."
+      : `The photo most likely falls into the ${result.disease_name_en || result.disease_name || result.class_name} group. This is a supporting suggestion, not a substitute for looking at the plant yourself.`,
     causes: [`Khả năng được chọn: ${result.class_name}.`, `Độ tin cậy: ${formatConfidence(result.confidence)}.`],
+    // Same order and length as `causes` so the UI can pair them by index.
+    causesEn: [`Selected possibility: ${result.class_name}.`, `Confidence: ${formatConfidence(result.confidence)}.`],
     recommendations: [{ title: "Các khả năng khác từ ảnh", items: topItems.length ? topItems : ["Hệ thống đã trả về một khả năng chính cho ảnh này."] }, ...record.recommendations],
     cnnConfidence: result.confidence,
     cnnPayload: result as unknown as Record<string, unknown>,
@@ -58,6 +65,14 @@ function inputCategoryLabel(category: string, tr: (vi: string, en: string) => st
 
 export default function ResultDetailPage() {
   const tr = useTr();
+  // Effect ben duoi khong duoc chay lai khi doi ngon ngu, neu khong no se
+  // TAI LAI du lieu chi vi doi nhan chu. Ref cho phep no doc ban dich hien
+  // tai ma khong can nam trong deps. Cap nhat sau moi lan render, khong phai
+  // trong luc render.
+  const trRef = useRef(tr);
+  useEffect(() => {
+    trRef.current = tr;
+  });
   const params = useParams<{ id: string }>();
   const { records, saveRecord, savedRecordIds, addGeneratedRecord } = useDiagnosisStore();
   const { accessToken } = useSessionStore();
@@ -80,7 +95,7 @@ export default function ResultDetailPage() {
         setLoadError(null);
       })
       .catch((requestError) => {
-        if (!cancelled) setLoadError(requestError instanceof Error ? requestError.message : tr("Không tải được kết quả kiểm tra.", "Could not load the check result."));
+        if (!cancelled) setLoadError(requestError instanceof Error ? requestError.message : trRef.current("Không tải được kết quả kiểm tra.", "Could not load the check result."));
       });
     return () => {
       cancelled = true;

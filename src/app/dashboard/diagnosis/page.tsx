@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { djangoClassifyLeafImage, type DjangoCnnPrediction, type DjangoCnnResponse } from "@/lib/django-client";
 import { findCrop, scopePredictionsToCrop } from "@/lib/crop-filter";
-import { guidanceForDiseaseText, type DiseaseGuidance } from "@/lib/disease-guidance";
+import { guidanceForDiseaseText, type DiseaseGuidance, type GuidanceLanguage } from "@/lib/disease-guidance";
 import { createDiagnosisRecord, fetchDiagnosisUsage } from "@/lib/diagnoses-client";
 import { compressImage } from "@/lib/image-compression";
 import { createPreviewDataUrl, detectLeafInImage, type LeafDetectionResult } from "@/lib/leaf-detector";
@@ -44,6 +44,13 @@ const inputMethodLabelMap: Record<DiagnosisInputMethod, string> = {
   upload: "ảnh tải lên",
   capture: "ảnh chụp",
   sample: "ảnh mẫu",
+};
+
+/** Same wording in English, for the parallel English text on a saved record. */
+const inputMethodLabelMapEn: Record<DiagnosisInputMethod, string> = {
+  upload: "uploaded photo",
+  capture: "captured photo",
+  sample: "sample photo",
 };
 
 function delay(ms: number) {
@@ -176,14 +183,17 @@ function selectCnnResult(cnn: DjangoCnnResponse, symptoms: string, cropId?: stri
   };
 }
 
-function getDiseaseGuidance(cnn: DjangoCnnResponse): DiseaseGuidance {
+function getDiseaseGuidance(cnn: DjangoCnnResponse, language: GuidanceLanguage = "vi"): DiseaseGuidance {
   // The table itself lives in src/lib/disease-guidance.ts so the public
-  // /benh-cay pages give the same advice this screen does.
-  return guidanceForDiseaseText(getPredictionText(cnn));
+  // /benh-cay pages give the same advice this screen does. It carries both
+  // languages, so the English reader gets the advice itself translated rather
+  // than only the headings around it.
+  return guidanceForDiseaseText(getPredictionText(cnn), language);
 }
 
 function buildDiseaseActionPlan(cnn: DjangoCnnResponse): ActionPlan {
   const guidance = getDiseaseGuidance(cnn);
+  const guidanceEn = getDiseaseGuidance(cnn, "en");
 
   return {
     risk_level: guidance.risk,
@@ -196,6 +206,14 @@ function buildDiseaseActionPlan(cnn: DjangoCnnResponse): ActionPlan {
     disclaimer:
       "Khuyến nghị dựa trên ảnh và mô tả triệu chứng nếu có; hãy đối chiếu thực địa trước khi xử lý.",
     severity: guidance.severity,
+    // Same lists in English, paired by index, so the result screen can swap
+    // language without dropping or reordering a single step.
+    immediate_actions_en: guidanceEn.immediate,
+    follow_up_actions_en: guidanceEn.followUp,
+    safety_notes_en: guidanceEn.safety,
+    disclaimer_en:
+      "This advice comes from the photo and any symptoms you described; check the plants in the field before you treat them.",
+    severity_en: guidanceEn.severity,
   };
 }
 
@@ -275,10 +293,18 @@ function buildGeneratedRecord({
     origin: "user",
     symptomSummary:
       "Ảnh này đã qua bước kiểm tra đầu vào và có thể lưu lại để dùng cho các bước tiếp theo.",
+    symptomSummaryEn:
+      "This photo passed the input check and can be saved for the next steps.",
     causes: [
       `Mức nhận biết phần lá đạt ${formatConfidence(detection.plantLikeRatio)}.`,
       `Mức nhận biết vùng màu xanh đạt ${formatConfidence(detection.greenRatio)}.`,
       `${inputMethodLabelMap[inputMethod]} đã được đọc ổn định trên trình duyệt.`,
+    ],
+    // Same order and length as `causes`, so the UI pairs them by index.
+    causesEn: [
+      `Leaf area recognised at ${formatConfidence(detection.plantLikeRatio)}.`,
+      `Green area recognised at ${formatConfidence(detection.greenRatio)}.`,
+      `The ${inputMethodLabelMapEn[inputMethod]} was read reliably in your browser.`,
     ],
     recommendations: [
       {
@@ -306,11 +332,14 @@ async function researchSymptomsWithSources({
   cnn,
   accessToken,
   cropId,
+  tr,
 }: {
   symptoms: string;
   cnn: DjangoCnnResponse;
   accessToken: string | null;
   cropId?: string | null;
+  /** Passed in rather than read here: `useTr` only works inside a component. */
+  tr: (vi: string, en: string) => string;
 }) {
   if (!symptoms.trim()) return null;
 
@@ -332,7 +361,12 @@ async function researchSymptomsWithSources({
   });
 
   if (!response.ok) {
-    throw new Error("Chưa thể đối chiếu triệu chứng với nguồn tham khảo. Vui lòng thử lại sau ít phút.");
+    throw new Error(
+      tr(
+        "Chưa thể đối chiếu triệu chứng với nguồn tham khảo. Vui lòng thử lại sau ít phút.",
+        "Could not cross-check your symptoms against reference sources. Please try again in a few minutes.",
+      ),
+    );
   }
   return (await response.json()) as SymptomResearchResult;
 }
@@ -372,6 +406,14 @@ function applyCnnResult(
         : symptoms.trim()
           ? `Kết quả nghiêng về ${finalCnn.disease_name || finalCnn.class_name} sau khi đối chiếu ảnh với triệu chứng đã mô tả: ${symptoms.trim()}.`
           : `Ảnh có khả năng thuộc nhóm ${finalCnn.disease_name || finalCnn.class_name}. Đây là gợi ý hỗ trợ và không thay thế đánh giá thực địa.`,
+    // The symptom text stays exactly as the grower typed it; only the sentence
+    // around it is written a second time in English.
+    symptomSummaryEn:
+      isHealthy
+        ? "This leaf photo shows mostly healthy signs. Keep watching the plant if anything unusual turns up out in the field."
+        : symptoms.trim()
+          ? `The result leans towards ${finalCnn.disease_name_en || finalCnn.disease_name || finalCnn.class_name} after matching the photo against the symptoms you described: ${symptoms.trim()}.`
+          : `The photo most likely falls into the ${finalCnn.disease_name_en || finalCnn.disease_name || finalCnn.class_name} group. This is a supporting suggestion, not a substitute for looking at the plants yourself.`,
     causes: [
       `Khả năng được chọn: ${finalCnn.class_name}.`,
       `Độ tin cậy: ${formatConfidence(finalCnn.confidence)}.`,
@@ -387,6 +429,25 @@ function applyCnnResult(
         ? research.isSymptomConsistent
           ? "Triệu chứng phù hợp với thông tin trong các nguồn tham khảo đã tìm được."
           : "Nguồn tham khảo chưa cho thấy triệu chứng phù hợp rõ ràng; cần kiểm tra thực địa kỹ hơn."
+        : "",
+    ].filter(Boolean),
+    // Every branch above repeated in the same order, so the two lists stay the
+    // same length after `filter(Boolean)` and the UI can pair them by index.
+    causesEn: [
+      `Selected possibility: ${finalCnn.class_name}.`,
+      `Confidence: ${formatConfidence(finalCnn.confidence)}.`,
+      crop
+        ? finalCnn.cropFilter.matched
+          ? `Narrowed to the crop you chose: ${crop.nameEn}.`
+          : `You chose ${crop.nameEn}, but none of the five results belong to that plant.`
+        : "",
+      symptoms.trim()
+        ? "The symptoms you described were matched against the five possibilities from the photo."
+        : "No symptom description was used; the highest-confidence possibility was kept.",
+      symptoms.trim() && research
+        ? research.isSymptomConsistent
+          ? "The symptoms line up with what the reference sources describe."
+          : "The reference sources did not clearly confirm these symptoms; look more closely at the plants in the field."
         : "",
     ].filter(Boolean),
     recommendations: [
@@ -596,7 +657,12 @@ export default function DashboardDiagnosisPage() {
       typeof navigator.mediaDevices.getUserMedia !== "function"
     ) {
       setCameraState("unsupported");
-      setCameraError("Trình duyệt hiện tại chưa hỗ trợ camera trực tiếp. Bạn có thể tải ảnh từ thiết bị.");
+      setCameraError(
+        tr(
+          "Trình duyệt hiện tại chưa hỗ trợ camera trực tiếp. Bạn có thể tải ảnh từ thiết bị.",
+          "This browser does not support the live camera. You can upload a photo from your device instead.",
+        ),
+      );
       return;
     }
 
@@ -624,7 +690,12 @@ export default function DashboardDiagnosisPage() {
       setCameraState("live");
     } catch {
       stopCameraStream("error");
-      setCameraError("Không thể mở camera. Hãy cho phép truy cập camera hoặc chuyển sang tải ảnh.");
+      setCameraError(
+        tr(
+          "Không thể mở camera. Hãy cho phép truy cập camera hoặc chuyển sang tải ảnh.",
+          "Could not open the camera. Allow camera access, or switch to uploading a photo.",
+        ),
+      );
     }
   }
 
@@ -633,7 +704,9 @@ export default function DashboardDiagnosisPage() {
 
     if (!video || !video.videoWidth || !video.videoHeight) {
       setCameraState("error");
-      setCameraError("Camera chưa sẵn sàng để chụp. Hãy thử mở lại camera.");
+      setCameraError(
+        tr("Camera chưa sẵn sàng để chụp. Hãy thử mở lại camera.", "The camera is not ready yet. Try opening it again."),
+      );
       return;
     }
 
@@ -667,7 +740,9 @@ export default function DashboardDiagnosisPage() {
     const context = canvas.getContext("2d");
     if (!context) {
       setCameraState("error");
-      setCameraError("Thiết bị hiện tại không hỗ trợ chụp ảnh từ camera.");
+      setCameraError(
+        tr("Thiết bị hiện tại không hỗ trợ chụp ảnh từ camera.", "This device cannot take a photo with the camera."),
+      );
       return;
     }
 
@@ -689,7 +764,7 @@ export default function DashboardDiagnosisPage() {
 
     if (!blob) {
       setCameraState("error");
-      setCameraError("Không thể lấy ảnh từ camera. Hãy thử lại.");
+      setCameraError(tr("Không thể lấy ảnh từ camera. Hãy thử lại.", "Could not capture the photo. Please try again."));
       return;
     }
 
@@ -814,7 +889,10 @@ export default function DashboardDiagnosisPage() {
         greenRatio: 0,
         plantLikeRatio: 0,
         averageSaturation: 0,
-        reason: "Bạn cần tải ảnh hoặc chụp ảnh lá thật trước khi bắt đầu kiểm tra.",
+        reason: tr(
+          "Bạn cần tải ảnh hoặc chụp ảnh lá thật trước khi bắt đầu kiểm tra.",
+          "Upload or take a real leaf photo before starting the check.",
+        ),
       });
       setStatus("invalid-image");
       return;
@@ -880,7 +958,10 @@ export default function DashboardDiagnosisPage() {
               reason:
                 error instanceof Error
                   ? error.message
-                  : "Chưa nhận thấy vùng lá đủ rõ. Hãy chụp lại gần hơn, đủ sáng và tránh vật che khuất.",
+                  : tr(
+                      "Chưa nhận thấy vùng lá đủ rõ. Hãy chụp lại gần hơn, đủ sáng và tránh vật che khuất.",
+                      "No clear leaf area was found. Shoot closer, add light, and keep anything else out of the frame.",
+                    ),
             });
             setStatus("invalid-image");
             return;
@@ -919,7 +1000,10 @@ export default function DashboardDiagnosisPage() {
         greenRatio: 0,
         plantLikeRatio: 0,
         averageSaturation: 0,
-        reason: "Không thể đọc ảnh này để kiểm tra. Hãy thử ảnh khác rõ hơn.",
+        reason: tr(
+          "Không thể đọc ảnh này để kiểm tra. Hãy thử ảnh khác rõ hơn.",
+          "This image could not be read for the check. Try a clearer photo.",
+        ),
       });
       setStatus("invalid-image");
     }
@@ -939,9 +1023,15 @@ export default function DashboardDiagnosisPage() {
           cnn: pendingCnnReview.cnn,
           accessToken,
           cropId,
+          tr,
         });
         if (!research || research.skipped) {
-          throw new Error("Chưa thể hoàn tất bước đối chiếu nguồn. Vui lòng thử lại sau ít phút.");
+          throw new Error(
+            tr(
+              "Chưa thể hoàn tất bước đối chiếu nguồn. Vui lòng thử lại sau ít phút.",
+              "The reference cross-check could not be completed. Please try again in a few minutes.",
+            ),
+          );
         }
       }
 
@@ -958,7 +1048,10 @@ export default function DashboardDiagnosisPage() {
         setResearchError(
           error instanceof Error
             ? error.message
-            : "Chưa thể đối chiếu triệu chứng với nguồn tham khảo. Vui lòng thử lại.",
+            : tr(
+                "Chưa thể đối chiếu triệu chứng với nguồn tham khảo. Vui lòng thử lại.",
+                "Could not cross-check your symptoms against reference sources. Please try again.",
+              ),
         );
         setStatus("symptom-review");
         return;
@@ -970,7 +1063,10 @@ export default function DashboardDiagnosisPage() {
         greenRatio: leafAnalysis?.greenRatio ?? 0,
         plantLikeRatio: leafAnalysis?.plantLikeRatio ?? 0,
         averageSaturation: leafAnalysis?.averageSaturation ?? 0,
-        reason: "Chưa thể lưu kết quả. Hãy kiểm tra kết nối mạng, đăng nhập lại nếu cần rồi thử lại.",
+        reason: tr(
+          "Chưa thể lưu kết quả. Hãy kiểm tra kết nối mạng, đăng nhập lại nếu cần rồi thử lại.",
+          "The result could not be saved. Check your connection, sign in again if needed, then try once more.",
+        ),
       });
       setStatus("invalid-image");
     }

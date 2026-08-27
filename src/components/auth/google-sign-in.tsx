@@ -72,7 +72,11 @@ interface GoogleSignInButtonProps {
 }
 
 export function GoogleSignInButton({ clientId, onCredential, onError, text = "continue_with" }: GoogleSignInButtonProps) {
+  const tr = useTr();
   const buttonRef = useRef<HTMLDivElement | null>(null);
+  // Google draws the button's own label, so the locale has to follow the
+  // language switch; otherwise the sign-in row stays Vietnamese in English mode.
+  const locale = tr("vi", "en");
   // Kept in a ref so re-renders caused by the parent's state do not tear down
   // and re-mount Google's iframe mid-flow.
   const handlersRef = useRef({ onCredential, onError });
@@ -95,7 +99,12 @@ export function GoogleSignInButton({ clientId, onCredential, onError, text = "co
         use_fedcm_for_prompt: true,
         callback: (response) => {
           if (!response.credential) {
-            handlersRef.current.onError("Google chưa xác nhận được tài khoản. Vui lòng thử lại.");
+            handlersRef.current.onError(
+              tr(
+                "Google chưa xác nhận được tài khoản. Vui lòng thử lại.",
+                "Google could not confirm your account. Please try again.",
+              ),
+            );
             return;
           }
           handlersRef.current.onCredential(response.credential);
@@ -107,7 +116,7 @@ export function GoogleSignInButton({ clientId, onCredential, onError, text = "co
         shape: "rectangular",
         text,
         width: Math.min(420, buttonElement.clientWidth || 420),
-        locale: "vi",
+        locale,
       });
     };
 
@@ -124,11 +133,16 @@ export function GoogleSignInButton({ clientId, onCredential, onError, text = "co
     script.dataset.googleIdentity = "true";
     script.onload = initializeGoogle;
     script.onerror = () =>
-      handlersRef.current.onError("Chưa thể mở đăng nhập Google. Vui lòng dùng email hoặc thử lại sau.");
+      handlersRef.current.onError(
+        tr(
+          "Chưa thể mở đăng nhập Google. Vui lòng dùng email hoặc thử lại sau.",
+          "Google sign-in could not be opened. Please use email or try again later.",
+        ),
+      );
     document.head.appendChild(script);
 
     return () => window.google?.accounts.id.cancel();
-  }, [clientId, text]);
+  }, [clientId, locale, text, tr]);
 
   return <div ref={buttonRef} className="mt-3 min-h-11 w-full overflow-hidden rounded-md" />;
 }

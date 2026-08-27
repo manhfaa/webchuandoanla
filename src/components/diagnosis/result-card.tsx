@@ -142,20 +142,21 @@ function getResearchSources(record: DiagnosisRecord) {
   return Array.from(sourceMap.values()).slice(0, 6);
 }
 
-function sourceDomain(url?: string) {
-  if (!url) return "Nguồn tham khảo";
+function sourceDomain(url: string | undefined, tr: Tr) {
+  const unnamed = tr("Nguồn tham khảo", "Reference source");
+  if (!url) return unnamed;
   try {
     return new URL(url).hostname.replace(/^www\./, "");
   } catch {
-    return "Nguồn tham khảo";
+    return unnamed;
   }
 }
 
-function customerTitle(title: string) {
+function customerTitle(title: string, tr: Tr) {
   return toUserFacingText(title
-    .replace(/Top 5 CNN[^:]*/gi, "Các khả năng khác từ ảnh")
-    .replace(/Kết luận cuối cùng từ DeepSeek/gi, "Kết luận sau khi đối chiếu")
-    .replace(/Kiểm chứng triệu chứng bằng Tavily/gi, "Đối chiếu triệu chứng với nguồn tham khảo"));
+    .replace(/Top 5 CNN[^:]*/gi, tr("Các khả năng khác từ ảnh", "Other possibilities from the photo"))
+    .replace(/Kết luận cuối cùng từ DeepSeek/gi, tr("Kết luận sau khi đối chiếu", "Conclusion after cross-checking"))
+    .replace(/Kiểm chứng triệu chứng bằng Tavily/gi, tr("Đối chiếu triệu chứng với nguồn tham khảo", "Symptoms cross-checked against reference sources")));
 }
 
 function customerText(text: string) {
@@ -202,14 +203,14 @@ export function DiagnosisResultCard({
   const sourceItems = sources
     .filter((source): source is ResearchSource & { url: string } => Boolean(source.url))
     .map((source, index) => ({
-      title: `[${source.id ?? index + 1}] ${source.title || sourceDomain(source.url)}`,
+      title: `[${source.id ?? index + 1}] ${source.title || sourceDomain(source.url, tr)}`,
       url: source.url,
-      domain: sourceDomain(source.url),
+      domain: sourceDomain(source.url, tr),
     }));
   const recommendationSections = detailsOnly
     ? record.recommendations.filter((section) => !/khuyến nghị hành động|bạn có thể làm tiếp|để ảnh rõ hơn/i.test(section.title))
     : record.recommendations;
-  const status = confidence >= 0.7 ? { state: "healthy" as const, label: "Tin cậy cao" } : { state: "watch" as const, label: "Cần theo dõi" };
+  const status = confidence >= 0.7 ? { state: "healthy" as const, label: tr("Tin cậy cao", "High confidence") } : { state: "watch" as const, label: tr("Cần theo dõi", "Worth watching") };
 
   return (
     <Card variant="raised" padding="lg" className="overflow-hidden rounded-xl">
@@ -267,7 +268,7 @@ export function DiagnosisResultCard({
 
                 return (
                   <section key={section.title} className="fl-rise" style={{ "--fl-i": sectionIndex + 1 } as CSSProperties}>
-                    <h4 className="text-sm font-bold text-ink">{customerTitle(section.title)}</h4>
+                    <h4 className="text-sm font-bold text-ink">{customerTitle(section.title, tr)}</h4>
                     {proseItems.length ? (
                       <ul className="mt-2 space-y-2">
                         {proseItems.slice(0, locked ? 1 : proseItems.length).map((item) => (
@@ -284,7 +285,7 @@ export function DiagnosisResultCard({
                         <p className="mt-2 text-xs leading-6 text-ink-muted">
                           {tr(
                             "Màu cho biết mức độ nặng của bệnh, độ dài cho biết ảnh khớp đến đâu.",
-                            "Colour shows how serious the disease is; length shows how well the photo matches.",
+                            "Color shows how serious the disease is; length shows how well the photo matches.",
                           )}
                         </p>
                       </div>
