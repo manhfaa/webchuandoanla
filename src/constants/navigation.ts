@@ -2,7 +2,6 @@ export const landingNavItems = [
   { label: "Quy trình", labelEn: "Process", href: "#quy-trinh" },
   { label: "Tính năng", labelEn: "Features", href: "#tinh-nang" },
   { label: "Cây trồng", labelEn: "Crops", href: "#cay-trong" },
-  { label: "Đội ngũ dự án", labelEn: "Team", href: "#thanh-vien" },
   { label: "Bảng giá", labelEn: "Pricing", href: "#goi-dich-vu" },
 ];
 

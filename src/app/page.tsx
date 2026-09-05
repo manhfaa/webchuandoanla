@@ -10,7 +10,6 @@ import { MissionSection } from "@/components/home/mission-section";
 import { PlantsSection } from "@/components/home/plants-section";
 import { PricingPreviewSection } from "@/components/home/pricing-preview-section";
 import { PromoBand } from "@/components/home/promo-band";
-import { TeamSection } from "@/components/home/team-section";
 import { AppShell } from "@/components/layout/layout-components";
 import { resolveCampaign } from "@/lib/campaign";
 
@@ -31,7 +30,7 @@ export default async function HomePage() {
         <HeroSection campaign={heroPlan} />
         <CapabilityStrip />
         {/* Screen two, right after the capability claims. Previously this sat
-            after TeamSection, roughly ten screens down on a phone. The comment
+            after the team section, roughly ten screens down on a phone. The comment
             there claimed PlantsSection's GSAP pin forbade anything above it —
             that was over-cautious: the trigger is built in useLayoutEffect with
             invalidateOnRefresh and refreshed in a mount rAF, so server-rendered
@@ -49,10 +48,8 @@ export default async function HomePage() {
         {/* Placed here on purpose: MissionSection closes by admitting the AI is
             advisory and a local expert may be needed, which is honest but leaves
             the reader wondering whether the thing works at all. Field photos
-            answer that with evidence rather than another promise, and TeamSection
-            then introduces the people behind it. */}
+            answer that with evidence rather than another promise. */}
         <FieldTrialSection />
-        <TeamSection />
         <PricingPreviewSection />
       </main>
       <Footer />

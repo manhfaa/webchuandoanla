@@ -34,18 +34,6 @@ export interface FeatureItem {
   eyebrow: string;
 }
 
-export interface TeamMember {
-  id: string;
-  name: string;
-  role: string;
-  roleEn?: string;
-  description: string;
-  descriptionEn?: string;
-  responsibilities: string[];
-  responsibilitiesEn?: string[];
-  presentationFocus: string[];
-  avatar: string;
-}
 
 export interface SupportedPlant {
   id: string;

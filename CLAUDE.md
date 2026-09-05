@@ -217,7 +217,6 @@ Design principles:
 - Mobile width around 390px is a first-class target.
 - Do not expose words such as backend, API or pipeline in user-facing UI.
 - Do not change routes, form field names, SEO structure or API contracts without an explicit requirement.
-- Keep all five development-team members and their real photos.
 
 Important product naming:
 
@@ -230,7 +229,6 @@ Landing navigation currently includes:
 - Quy trình
 - Tính năng
 - Cây trồng
-- Đội ngũ dự án
 - Bảng giá
 
 Dashboard navigation groups:
@@ -240,25 +238,18 @@ Dashboard navigation groups:
 - Hỗ trợ: Chat tư vấn, Thư viện vật tư.
 - Tài khoản: Gói dịch vụ, Hồ sơ.
 
-## 7. Team content that must remain
+## 7. Team section (removed)
 
-1. Phạm Tuấn Minh
-   - Role: Media & giám sát triển khai.
-   - Responsibilities: media, fact checking, post-deployment monitoring.
-2. Phạm Đức Mạnh
-   - Role: AI nhận diện bệnh lá.
-   - Responsibilities: CNN/AI, digital transformation, technology value.
-3. Lê Hoàng Sơn
-   - Role: Website full-stack.
-   - Responsibilities: website, backend, frontend.
-4. Nguyễn Thị Thu Trang
-   - Role: Khảo sát nhu cầu thực tế.
-   - Responsibilities: user research and target users.
-5. Đinh Mỹ Uyên
-   - Role: Tester.
-   - Responsibilities: testing, usability and user experience.
+The landing page used to carry a scroll-driven spotlight introducing the five
+development-team members, and this section used to require keeping it. The owner
+asked for it to go on 2026-09-05, so it was removed in full: the section
+component, `src/data/mock/team.ts`, the `TeamMember` type, the `Đội ngũ dự án`
+nav entry pointing at `#thanh-vien`, and the five real photos under
+`public/avatars/` — those were still being served publicly even though nothing
+linked to them.
 
-Team content is in `src/data/mock/team.ts`; presentation is in `src/components/home/team-section.tsx`. Desktop uses a slow scroll-driven member spotlight. Mobile uses a non-pinned fallback. Preserve accessibility and reduced-motion behavior.
+Everything is recoverable from git history if the section is ever wanted back.
+Do not re-add the photos without asking: they are pictures of real people.
 
 ## 8. Authentication and user data
 
