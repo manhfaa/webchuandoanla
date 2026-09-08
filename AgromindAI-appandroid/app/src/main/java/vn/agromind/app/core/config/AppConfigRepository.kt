@@ -43,7 +43,6 @@ class AppConfigRepository @Inject constructor(
 }
 
 data class AppConfig(
-    val googleSignIn: Boolean,
     val symptomResearch: Boolean,
     val expertChat: Boolean,
     val directPayment: Boolean,
@@ -62,7 +61,6 @@ data class AppConfig(
 
     companion object {
         fun conservative() = AppConfig(
-            googleSignIn = false,
             symptomResearch = false,
             expertChat = false,
             directPayment = false,
@@ -77,7 +75,6 @@ data class AppConfig(
         )
 
         fun from(dto: MobileConfigDto) = AppConfig(
-            googleSignIn = dto.features.googleSignIn && BuildConfig.GOOGLE_WEB_CLIENT_ID.isNotBlank(),
             symptomResearch = dto.features.symptomResearch,
             expertChat = dto.features.expertChat,
             directPayment = dto.features.directPayment,

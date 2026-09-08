@@ -42,8 +42,7 @@ android {
 
         // Only public values reach BuildConfig, because everything here ships
         // inside the APK. See local.properties.example.
-        buildConfigField("String", "WEBSITE_URL", "\"https://agromind.io.vn\"")
-        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${config("AGROMIND_GOOGLE_WEB_CLIENT_ID")}\"")
+        buildConfigField("String", "WEBSITE_URL", "\"https://www.agromind.farm\"")
     }
 
     signingConfigs {
@@ -83,7 +82,7 @@ android {
             buildConfigField(
                 "String",
                 "BASE_URL",
-                "\"${config("AGROMIND_STAGING_BASE_URL", "https://api.agromind.io.vn/")}\"",
+                "\"${config("AGROMIND_STAGING_BASE_URL", "https://api.agromind.farm/")}\"",
             )
             buildConfigField("boolean", "VERBOSE_NETWORK_LOG", "false")
         }
@@ -92,7 +91,7 @@ android {
             isShrinkResources = true
             isDebuggable = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            buildConfigField("String", "BASE_URL", "\"https://api.agromind.io.vn/\"")
+            buildConfigField("String", "BASE_URL", "\"https://api.agromind.farm/\"")
             buildConfigField("boolean", "VERBOSE_NETWORK_LOG", "false")
             if (keystoreFile.isNotEmpty()) {
                 signingConfig = signingConfigs.getByName("release")
@@ -214,9 +213,6 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.androidx.exifinterface)
 
-    implementation(libs.androidx.credentials)
-    implementation(libs.androidx.credentials.play.services)
-    implementation(libs.googleid)
     implementation(libs.androidx.profileinstaller)
 
     // Play Billing is linked into the Play artifact only. The direct APK has no

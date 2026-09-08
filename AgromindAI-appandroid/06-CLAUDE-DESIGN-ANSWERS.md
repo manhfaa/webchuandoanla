@@ -13,8 +13,8 @@ Use these sources:
 - Android target directory: `C:\Users\Admin\Downloads\AGomindAI-main\AGomindAI-main\AgromindAI-appandroid`
 - GitHub: `https://github.com/manhfaa/webchuandoanla`
 - Read first: root `CLAUDE.md`, then every Markdown file in `AgromindAI-appandroid/`.
-- Existing website: `https://agromind.io.vn`
-- Backend base URL: `https://api.agromind.io.vn`
+- Existing website: `https://www.agromind.farm`
+- Backend base URL: `https://api.agromind.farm`
 
 Do not design from screenshots alone. Inspect the real web routes, current components, API clients, types, existing images and design tokens. Preserve the actual business rules, but redesign the interaction for native Android rather than copying desktop cards onto a phone.
 
@@ -66,13 +66,12 @@ However, first inspect and reuse the real leaf/plant assets already available un
 
 ## API contract answer
 
-The Android app calls Django directly at `https://api.agromind.io.vn`; it does not call the Vercel `/api/django` proxy and never calls Supabase, Hugging Face, DeepSeek, Tavily or SePay webhook directly.
+The Android app calls Django directly at `https://api.agromind.farm`; it does not call the Vercel `/api/django` proxy and never calls Supabase, Hugging Face, DeepSeek, Tavily or SePay webhook directly.
 
 Authentication is JWT:
 
 - `POST /api/auth/register/`
 - `POST /api/auth/login/`
-- `POST /api/auth/google/`
 - `POST /api/auth/refresh/`
 - `POST /api/auth/logout/`
 - `POST /api/auth/password-reset/`

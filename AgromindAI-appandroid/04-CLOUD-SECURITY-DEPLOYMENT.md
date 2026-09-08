@@ -35,13 +35,12 @@ Biến server cần được quản lý bằng systemd `EnvironmentFile` có per
 - `DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL`
 - `TAVILY_API_KEY`
 - `SEPAY_WEBHOOK_SECRET` và cấu hình ngân hàng/merchant cần thiết
-- Google OAuth server client IDs
 - Email provider credentials
 - Google Play service account path/credential server-side nếu triển khai billing Play
-- `ALLOWED_HOSTS=api.agromind.io.vn`
-- `CORS_ALLOWED_ORIGINS=https://agromind.io.vn,https://agromindai.vercel.app`
-- `CSRF_TRUSTED_ORIGINS=https://api.agromind.io.vn,https://agromind.io.vn`
-- `FRONTEND_ORIGIN=https://agromind.io.vn`
+- `ALLOWED_HOSTS=api.agromind.farm`
+- `CORS_ALLOWED_ORIGINS=https://www.agromind.farm,https://agromindai.vercel.app`
+- `CSRF_TRUSTED_ORIGINS=https://api.agromind.farm,https://www.agromind.farm`
+- `FRONTEND_ORIGIN=https://www.agromind.farm`
 
 Native Android dùng Bearer JWT nên CORS không phải cơ chế bảo vệ app. Không thêm wildcard CORS chỉ để sửa Android; Android native không chịu chính sách CORS của browser.
 
@@ -55,7 +54,7 @@ Sau khi đổi env:
 
 ## 3. Cloudflare
 
-- DNS `api.agromind.io.vn` trỏ đúng VPS và proxy orange-cloud nếu TLS/WAF đã cấu hình.
+- DNS `api.agromind.farm` trỏ đúng VPS và proxy orange-cloud nếu TLS/WAF đã cấu hình.
 - SSL mode `Full (strict)`; origin certificate/Let's Encrypt hợp lệ.
 - WAF/rate limit theo route:
   - auth register/login/reset: giới hạn chặt, có thể Turnstile.
@@ -66,17 +65,7 @@ Sau khi đổi env:
 - Nếu dùng Turnstile native, dùng WebView challenge page theo Cloudflare, token one-time gửi Django Siteverify; secret chỉ server.
 - Bot protection không thay thế auth, quota, idempotency, webhook signature hoặc payment verification.
 
-## 4. Google OAuth
-
-Trong Google Cloud:
-
-1. Giữ Web OAuth client ID mà Django xác minh audience.
-2. Tạo Android OAuth client cho `vn.agromind.app` với SHA-1/SHA-256 của debug, staging và Play App Signing.
-3. Credential Manager lấy ID token có server client ID.
-4. Django validate issuer, audience, expiration, email verification và consent/terms.
-5. Không tải client secret vào app; Android client ID không phải secret.
-
-## 5. Payment distribution decision
+## 4. Payment distribution decision
 
 ### Google Play
 
@@ -86,7 +75,7 @@ Gói Grow/Bloom/Elite là tính năng số. Nếu app phát hành trên Google P
 
 Flavor direct có thể dùng order/QR SePay hiện tại. Ký APK bằng key riêng, publish checksum và update channel an toàn. Không dùng cùng một artifact nhị phân cho hai policy khác nhau.
 
-## 6. CI secrets
+## 5. CI secrets
 
 GitHub/CI environment:
 

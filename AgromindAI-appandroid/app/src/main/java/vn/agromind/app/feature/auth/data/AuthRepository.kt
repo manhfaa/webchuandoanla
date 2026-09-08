@@ -11,7 +11,6 @@ import vn.agromind.app.core.network.dto.AccountDto
 import vn.agromind.app.core.network.dto.ChangePasswordRequest
 import vn.agromind.app.core.network.dto.DeleteAccountRequest
 import vn.agromind.app.core.network.dto.DeletionPreviewDto
-import vn.agromind.app.core.network.dto.GoogleLoginRequest
 import vn.agromind.app.core.network.dto.LoginRequest
 import vn.agromind.app.core.network.dto.LogoutRequest
 import vn.agromind.app.core.network.dto.PasswordResetConfirmRequest
@@ -65,24 +64,6 @@ class AuthRepository @Inject constructor(
                 ),
             )
         }
-            .also { it.valueOrNull?.let { pair -> establish(pair) } }
-            .let { result ->
-                when (result) {
-                    is AgroResult.Ok -> AgroResult.Ok(result.value.user)
-                    is AgroResult.Err -> AgroResult.Err(result.error)
-                }
-            }
-
-    /**
-     * Hands the Google ID token to Django and lets it decide who this is.
-     *
-     * The app deliberately does not read the token, and does not send the email
-     * or the display name alongside it. Both are inside the signed JWT, and
-     * anything the client asserted separately would be unverifiable — so
-     * accepting it would mean trusting the client about who is signing in.
-     */
-    suspend fun signInWithGoogle(idToken: String, acceptedTerms: Boolean): AgroResult<AccountDto?> =
-        ErrorMapper.guard { authApi.google(GoogleLoginRequest(idToken, acceptedTerms)) }
             .also { it.valueOrNull?.let { pair -> establish(pair) } }
             .let { result ->
                 when (result) {

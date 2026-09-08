@@ -124,7 +124,6 @@ fun AgromindNavHost(
                 onSignedIn = { /* the session flow above moves the graph */ },
                 onRegister = { navController.navigate(Route.Register) },
                 onForgotPassword = { navController.navigate(Route.ForgotPassword) },
-                googleSignInAvailable = config.googleSignIn && vn.agromind.app.BuildConfig.GOOGLE_WEB_CLIENT_ID.isNotBlank(),
             )
         }
 

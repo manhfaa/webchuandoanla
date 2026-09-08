@@ -64,17 +64,17 @@ Tạo build types `debug`, `staging`, `release` và product flavors theo dimensi
 
 Base URL:
 
-- Production: `https://api.agromind.io.vn/`
+- Production: `https://api.agromind.farm/`
 - Staging: lấy từ `local.properties` hoặc CI secret, không commit URL nội bộ nếu nhạy cảm.
 - Debug emulator: cấu hình riêng; nếu dùng `10.0.2.2`, chỉ debug Network Security Config được phép HTTP. Release luôn cấm cleartext.
 
-Chỉ các giá trị public được phép vào `BuildConfig`: base URL, website URL, Google Web client ID công khai, build/version metadata. Không bao giờ đưa Django secret, Supabase URL, HF token, DeepSeek/Tavily key, SePay webhook secret, Google service-account JSON hoặc signing password vào APK.
+Chỉ các giá trị public được phép vào `BuildConfig`: base URL, website URL, build/version metadata. Không bao giờ đưa Django secret, Supabase URL, HF token, DeepSeek/Tavily key, SePay webhook secret, Google service-account JSON hoặc signing password vào APK.
 
 Tạo `local.properties.example` chỉ chứa tên biến trống. CI lấy secret từ GitHub Actions/Play Console environment. Keystore nằm ngoài repo; ký release từ CI secret file/base64 và password secret.
 
 ## 4. Network và session
 
-Android gọi trực tiếp `https://api.agromind.io.vn`, không gọi `/api/django` của Vercel.
+Android gọi trực tiếp `https://api.agromind.farm`, không gọi `/api/django` của Vercel.
 
 OkHttp:
 
@@ -97,14 +97,7 @@ Network Security Config release:
 
 ## 5. Auth
 
-Triển khai email/password, register, logout, refresh, Google, quên/đặt lại/đổi mật khẩu, profile và xóa tài khoản theo `03-API-CONTRACT.md`.
-
-Google:
-
-- Dùng Credential Manager + Sign in with Google.
-- Lấy Google ID token rồi gửi vào Django `/api/auth/google/`; backend xác thực token. Không tin email/profile chỉ do client gửi.
-- Dùng Web client ID đúng audience backend; Android OAuth client phải khai báo package + SHA-1/SHA-256 debug/release trong Google Cloud.
-- Logout phải gọi Django blacklist refresh token và clear local credential/session.
+Triển khai email/password, register, logout, refresh, quên/đặt lại/đổi mật khẩu, profile và xóa tài khoản theo `03-API-CONTRACT.md`. Không có Google Sign-In trong app.
 
 Password reset:
 
@@ -321,4 +314,4 @@ Mỗi milestone phải có demo path thật và tests; không chờ đến cuố
 - `play` không chứa SePay purchase flow; `direct` không giả Play Billing.
 - Backend tests và Android tests xanh.
 - Cập nhật README cách cấu hình local/staging/release mà không ghi secret.
-- Xuất báo cáo cuối: file thay đổi, endpoint thêm, migration, test output, rủi ro còn lại, bước cấu hình thủ công ở Google Cloud/Play/Cloudflare/CI.
+- Xuất báo cáo cuối: file thay đổi, endpoint thêm, migration, test output, rủi ro còn lại, bước cấu hình thủ công ở Play/Cloudflare/CI.

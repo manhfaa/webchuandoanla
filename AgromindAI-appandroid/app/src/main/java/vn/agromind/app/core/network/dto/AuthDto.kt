@@ -25,19 +25,6 @@ data class RegisterRequest(
     @SerialName("accepted_terms") val acceptedTerms: Boolean,
 )
 
-/**
- * The Google ID token, forwarded untouched.
- *
- * The app never decodes it and never sends the email or the profile alongside
- * it. Django verifies the signature, the issuer, the audience and the expiry
- * itself — anything the client claimed about the user would be unverifiable.
- */
-@Serializable
-data class GoogleLoginRequest(
-    val credential: String,
-    @SerialName("accepted_terms") val acceptedTerms: Boolean,
-)
-
 @Serializable
 data class RefreshRequest(val refresh: String)
 

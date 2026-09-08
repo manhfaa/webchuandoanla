@@ -58,7 +58,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
-                    android:host="agromind.io.vn"
+                    android:host="www.agromind.farm"
                     android:pathPrefix="/reset-password" />
             </intent-filter>
         </activity>

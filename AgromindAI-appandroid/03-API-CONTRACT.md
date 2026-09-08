@@ -1,6 +1,6 @@
 # Agromind AI Android API contract
 
-Base production: `https://api.agromind.io.vn/`
+Base production: `https://api.agromind.farm/`
 
 Mọi endpoint private dùng `Authorization: Bearer <access_token>`. JSON dùng snake_case đúng Django. Android không đi qua proxy `/api/django` của Next.js.
 
@@ -10,7 +10,6 @@ Mọi endpoint private dùng `Authorization: Bearer <access_token>`. JSON dùng 
 |---|---|---|
 | POST | `/api/auth/register/` | `{email,password,accepted_terms}` -> user + access/refresh |
 | POST | `/api/auth/login/` | `{email,password}` -> access/refresh |
-| POST | `/api/auth/google/` | `{credential,accepted_terms}` -> access/refresh |
 | POST | `/api/auth/refresh/` | `{refresh}` -> access và có thể refresh mới |
 | POST | `/api/auth/logout/` | `{refresh}` -> blacklist refresh |
 | POST | `/api/auth/password-reset/` | `{email}` -> detail, `delivery_enabled` |
@@ -27,6 +26,8 @@ Account fields chính: `id, username, email, full_name, phone, avatar_url, compa
 | Method | Path | Mục đích |
 |---|---|---|
 | POST | `/api/diagnoses/cnn/` | JSON `image_data_url`; YOLO rồi CNN |
+| POST | `/api/diagnoses/cnn-multipart/` | Multipart `image`, `input_method`, `client_request_id`; dành cho native Android |
+| POST | `/api/diagnoses/research-symptoms/` | Đối chiếu triệu chứng khi feature flag cho phép |
 | GET | `/api/diagnoses/usage/` | quota ngày/tháng và cửa sổ lịch sử |
 | GET | `/api/diagnoses/?limit=20&offset=0` | paging history |
 | POST | `/api/diagnoses/` | lưu diagnosis |
@@ -73,14 +74,14 @@ Danh sách dùng `thumbnail_url`, không tải `image_data_url` lớn. Detail c�
 
 Diagnosis record fields: `id,title,image_url,image_data_url,thumbnail_url,image_path,original_file_name,input_method,status,is_leaf,yolo_confidence,yolo_payload,cnn_confidence,cnn_payload,plant_name,disease_name,severity,symptom_input,user_question,field_location,note,recommendations,action_plan,rag_summary,rag_payload,saved_by_user,model_version,beyond_retention,created_at,updated_at`.
 
-### Endpoint cần bổ sung cho mobile
+### Endpoint mobile đã có
 
 1. `POST /api/diagnoses/cnn-multipart/`
    - Multipart: `image`, `input_method`, `client_request_id`.
    - Cùng response với `/cnn/`.
    - Idempotent theo `(user, client_request_id)`.
 2. `POST /api/diagnoses/research-symptoms/`
-   - Request ưu tiên: `{diagnosis_id,symptoms,client_request_id}`.
+   - Request: `{symptoms,client_request_id}` cùng một trong hai liên kết server-side: `{diagnosis_id}` hoặc `{cnn_request_id}`.
    - Response:
 
 ```json
@@ -116,8 +117,9 @@ Không trả `raw_content` đầy đủ cho Android. Backend sanitize URL, giớ
 | GET/POST | `/api/engagement/messages/` | message + quota |
 | GET/POST | `/api/engagement/expert-consultations/` | request tư vấn |
 | GET/PATCH | `/api/engagement/expert-consultations/{id}/` | detail |
+| POST | `/api/engagement/chat/respond/` | một lượt hỏi/đáp với trợ lý |
 
-Endpoint cần bổ sung:
+Endpoint mobile đã có:
 
 `POST /api/engagement/chat/respond/`
 
@@ -205,9 +207,7 @@ Order status: `pending, underpaid, paid, overpaid, expired, cancelled, review`.
 
 Created order gồm `order`, `bank`, `qr_url`; chỉ backend xác nhận paid và kích hoạt plan.
 
-## 7. Payment cần bổ sung - Play distribution
-
-Đề xuất:
+## 7. Payment hiện có - Play distribution
 
 - `POST /api/payments/google-play/verify/`: purchase token, product ID, package name, client request ID.
 - `POST /api/payments/google-play/rtdn/`: Pub/Sub push có xác thực, không public tùy tiện.
@@ -231,7 +231,7 @@ Backend xác thực purchase bằng Google Play Developer API, idempotent theo t
 
 Mọi endpoint POST tốn quota hoặc tiền cần hỗ trợ `Idempotency-Key` header hoặc `client_request_id` body. Response nên echo `request_id` để support/debug mà không log dữ liệu nhạy cảm.
 
-## 9. Endpoint mobile config đề xuất
+## 9. Endpoint mobile config hiện có
 
 `GET /api/mobile/config/` public, cache ngắn:
 
@@ -246,11 +246,13 @@ Mọi endpoint POST tốn quota hoặc tiền cần hỗ trợ `Idempotency-Key`
     "symptom_research": true,
     "expert_chat": true,
     "direct_payment": true,
-    "play_billing": false
+    "play_billing": false,
+    "password_reset_email": false
   },
   "legal": {
-    "terms_url": "https://agromind.io.vn/terms",
-    "privacy_url": "https://agromind.io.vn/privacy"
+    "terms_url": "https://www.agromind.farm/terms",
+    "privacy_url": "https://www.agromind.farm/privacy",
+    "support_url": ""
   }
 }
 ```

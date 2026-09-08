@@ -10,7 +10,7 @@
 
 ## Auth và security
 
-- [ ] Register/login/Google/refresh/logout hoạt động với Django.
+- [ ] Register/login/refresh/logout hoạt động với Django; không có Google Sign-In trong APK.
 - [ ] Concurrent 401 chỉ refresh một lần.
 - [ ] Token được mã hóa bằng khóa Android Keystore.
 - [ ] Logout/xóa account xóa token, Room/cache và WorkManager jobs.

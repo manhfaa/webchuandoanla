@@ -157,7 +157,6 @@ Không tạo hai mục trùng nghĩa như Kết quả và Lịch sử.
 ### B. Login/register
 
 - Email + password, hiện/ẩn mật khẩu, lỗi ngay dưới trường, trạng thái loading khóa double submit.
-- Nút đăng nhập Google dùng chuẩn thương hiệu Google, không tự vẽ logo.
 - Đăng ký có checkbox điều khoản và liên kết thật.
 - Quên mật khẩu phải phản ánh `delivery_enabled`; nếu email chưa cấu hình, không nói dối rằng thư đã gửi.
 - Sau 401 refresh thất bại, chuyển về login và giữ deep link để quay lại sau đăng nhập.

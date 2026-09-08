@@ -19,8 +19,8 @@ Thư mục này là đặc tả nguồn để Claude Design và Claude Code chuy
 
 ## Môi trường chính
 
-- Website: `https://agromind.io.vn`
-- Backend Android phải gọi: `https://api.agromind.io.vn`
+- Website: `https://www.agromind.farm`
+- Backend Android phải gọi: `https://api.agromind.farm`
 - Android không được gọi trực tiếp Supabase, Hugging Face, DeepSeek, Tavily hoặc webhook SePay.
 - Package đề xuất: `vn.agromind.app`
 - Ngôn ngữ mặc định: tiếng Việt; tiếng Anh là tùy chọn.
@@ -39,7 +39,7 @@ Mã nguồn nằm tại `app/`. Kết quả audit trước khi code: [AUDIT.md](
 
 ## Cấu hình lần đầu
 
-1. `cp local.properties.example local.properties`, điền `sdk.dir` và `AGROMIND_GOOGLE_WEB_CLIENT_ID`.
+1. `cp local.properties.example local.properties`, điền `sdk.dir`.
 2. Repo không commit `gradle-wrapper.jar`. Sinh wrapper một lần:
 
 ```bash
@@ -61,11 +61,11 @@ Hoặc mở thư mục này bằng Android Studio stable — Studio tự sinh wr
 | `directDebug` · `directStaging` · `directRelease` | APK phát hành ngoài Play | SePay (`SEPAY_ENABLED=true`) |
 | `playDebug` · `playStaging` · `playRelease` | Google Play | Play Billing; không render bất kỳ entry point SePay nào |
 
-Base URL theo build type: `debug` → `AGROMIND_DEBUG_BASE_URL` (mặc định `http://10.0.2.2:8000/`, chỉ debug được phép cleartext), `staging` → `AGROMIND_STAGING_BASE_URL`, `release` → `https://api.agromind.io.vn/`.
+Base URL theo build type: `debug` → `AGROMIND_DEBUG_BASE_URL` (mặc định `http://10.0.2.2:8000/`, chỉ debug được phép cleartext), `staging` → `AGROMIND_STAGING_BASE_URL`, `release` → `https://api.agromind.farm/`.
 
 ## Không có secret nào trong app
 
-`BuildConfig` chỉ chứa base URL, website URL, Google **Web** client ID (public), version metadata và hai cờ flavor. Token phiên được mã hoá AES-256/GCM bằng khoá sinh trong Android Keystore (không export được) rồi mới ghi vào DataStore — không có JWT plain text trên máy.
+`BuildConfig` chỉ chứa base URL, website URL, version metadata và hai cờ flavor. Token phiên được mã hoá AES-256/GCM bằng khoá sinh trong Android Keystore (không export được) rồi mới ghi vào DataStore — không có JWT plain text trên máy.
 
 ## Endpoint backend mà app cần
 
@@ -103,7 +103,7 @@ feature/more      menu điều hướng
 | Milestone | Trạng thái |
 |---|---|
 | 1 Nền tảng: Gradle, theme, network, phiên bảo mật | xong |
-| 2 Auth + hồ sơ | xong (thiếu Google Credential Manager, đổi mật khẩu, xoá tài khoản) |
+| 2 Auth + hồ sơ | xong (email/password, đổi mật khẩu, xoá tài khoản; không dùng Google Sign-In) |
 | 3 Chẩn đoán end-to-end | xong |
 | 4 Endpoint research/chat trên Django + màn triệu chứng/kết quả/chat | xong |
 | 5 Lịch sử paging | xong (chưa có cache offline Room, chưa có bộ lọc) |
