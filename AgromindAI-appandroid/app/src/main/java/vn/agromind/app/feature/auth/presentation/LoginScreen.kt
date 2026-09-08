@@ -20,14 +20,17 @@ import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -38,6 +41,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import vn.agromind.app.core.designsystem.AgroSpacing
 import vn.agromind.app.core.designsystem.AgroTheme
 import vn.agromind.app.core.designsystem.components.PrimaryButton
+import vn.agromind.app.core.designsystem.components.SecondaryButton
+import vn.agromind.app.BuildConfig
+import vn.agromind.app.feature.auth.data.GoogleCredentialClient
+import kotlinx.coroutines.launch
 
 /**
  * Đăng nhập.
@@ -56,9 +63,12 @@ fun LoginScreen(
     onSignedIn: () -> Unit,
     onRegister: () -> Unit,
     onForgotPassword: () -> Unit,
+    googleSignInAvailable: Boolean,
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(state.signedIn) {
         if (state.signedIn) onSignedIn()
@@ -161,6 +171,37 @@ fun LoginScreen(
                 onClick = viewModel::submit,
             )
 
+            // Rendered only when the server says Google sign-in is configured.
+            // A button that always fails is worse than no button.
+            if (googleSignInAvailable) {
+                Text(
+                    "hoặc",
+                    style = AgroTheme.typography.label,
+                    color = AgroTheme.colors.inkSecondary,
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                )
+                SecondaryButton(
+                    label = if (state.googleSubmitting) "Đang mở Google…" else "Tiếp tục với Google",
+                    enabled = !state.googleSubmitting,
+                    onClick = {
+                        scope.launch {
+                            runCatching {
+                                GoogleCredentialClient(context).idToken(BuildConfig.GOOGLE_WEB_CLIENT_ID)
+                            }.onSuccess(viewModel::signInWithGoogle)
+                                .onFailure {
+                                    viewModel.googleFailure(
+                                        if (it is androidx.credentials.exceptions.GetCredentialCancellationException) {
+                                            "Bạn đã đóng cửa sổ đăng nhập Google."
+                                        } else {
+                                            "Chưa đăng nhập được bằng Google. Bạn thử lại giúp mình nhé."
+                                        },
+                                    )
+                                }
+                        }
+                    },
+                )
+            }
+
             Spacer(Modifier.height(AgroSpacing.xs))
 
             TextButton(
@@ -172,4 +213,21 @@ fun LoginScreen(
         }
     }
 
+    if (state.googleNeedsConsent) {
+        AlertDialog(
+            onDismissRequest = viewModel::dismissGoogleConsent,
+            title = { Text("Tạo tài khoản bằng Google?") },
+            text = {
+                Text(
+                    "Đây là lần đầu email Google này dùng Agromind AI. Khi tiếp tục, bạn đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư.",
+                )
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::dismissGoogleConsent) { Text("Để sau") }
+            },
+            confirmButton = {
+                TextButton(onClick = viewModel::acceptGoogleTerms) { Text("Đồng ý và tiếp tục") }
+            },
+        )
+    }
 }

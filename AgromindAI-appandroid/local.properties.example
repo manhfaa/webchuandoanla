@@ -17,6 +17,11 @@ AGROMIND_STAGING_BASE_URL=
 # build type is allowed to talk cleartext to it.
 AGROMIND_DEBUG_BASE_URL=http://10.0.2.2:8000/
 
+# Google OAuth *Web* client id — the audience Django validates the ID token
+# against. Public by design: it identifies the backend, it does not authenticate
+# anyone. The Android client id and the client secret do not belong here.
+AGROMIND_GOOGLE_WEB_CLIENT_ID=
+
 # Release signing. Point at a keystore that lives outside the repository; CI
 # supplies these from its own secret store.
 AGROMIND_KEYSTORE_FILE=

@@ -24,6 +24,7 @@ import vn.agromind.app.core.network.dto.DeletionPreviewDto
 import vn.agromind.app.core.network.dto.DeleteAccountRequest
 import vn.agromind.app.core.network.dto.DiagnosisDto
 import vn.agromind.app.core.network.dto.DiagnosisPageDto
+import vn.agromind.app.core.network.dto.GoogleLoginRequest
 import vn.agromind.app.core.network.dto.LoginRequest
 import vn.agromind.app.core.network.dto.LogoutRequest
 import vn.agromind.app.core.network.dto.MobileConfigDto
@@ -58,6 +59,10 @@ interface AuthApi {
     @Headers(NO_AUTH)
     @POST("api/auth/register/")
     suspend fun register(@Body body: RegisterRequest): TokenPairDto
+
+    @Headers(NO_AUTH)
+    @POST("api/auth/google/")
+    suspend fun google(@Body body: GoogleLoginRequest): TokenPairDto
 
     @Headers(NO_AUTH)
     @POST("api/auth/refresh/")

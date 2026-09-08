@@ -8,25 +8,5 @@
         "D6:7E:41:B3:00:F1:55:F7:65:AE:9C:67:87:FA:DE:90:50:0C:4D:35:5D:A7:18:CE:D0:44:D3:97:3C:D0:48:52"
       ]
     }
-  },
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "vn.agromind.app",
-      "sha256_cert_fingerprints": [
-        "D6:7E:41:B3:00:F1:55:F7:65:AE:9C:67:87:FA:DE:90:50:0C:4D:35:5D:A7:18:CE:D0:44:D3:97:3C:D0:48:52"
-      ]
-    }
-  },
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "vn.agromind.app.debug",
-      "sha256_cert_fingerprints": [
-        "D6:7E:41:B3:00:F1:55:F7:65:AE:9C:67:87:FA:DE:90:50:0C:4D:35:5D:A7:18:CE:D0:44:D3:97:3C:D0:48:52"
-      ]
-    }
   }
 ]

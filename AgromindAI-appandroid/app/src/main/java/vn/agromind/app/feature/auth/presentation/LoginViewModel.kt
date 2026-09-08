@@ -21,6 +21,9 @@ data class LoginUiState(
     val passwordError: String? = null,
     val formError: String? = null,
     val submitting: Boolean = false,
+    val googleSubmitting: Boolean = false,
+    val googleNeedsConsent: Boolean = false,
+    val pendingGoogleToken: String? = null,
     val signedIn: Boolean = false,
 ) {
     val canSubmit: Boolean get() = email.isNotBlank() && password.isNotBlank() && !submitting
@@ -65,6 +68,48 @@ class LoginViewModel @Inject constructor(
                 is AgroResult.Err -> _state.update { it.applyError(result.error) }
             }
         }
+    }
+
+    fun signInWithGoogle(idToken: String, acceptedTerms: Boolean = false) {
+        _state.update {
+            it.copy(googleSubmitting = true, googleNeedsConsent = false, formError = null)
+        }
+        viewModelScope.launch {
+            when (val result = auth.signInWithGoogle(idToken, acceptedTerms)) {
+                is AgroResult.Ok -> _state.update {
+                    it.copy(googleSubmitting = false, pendingGoogleToken = null, signedIn = true)
+                }
+                is AgroResult.Err -> {
+                    val fields = (result.error as? AgroError.Validation)?.fields.orEmpty()
+                    if (fields.containsKey("accepted_terms") && !acceptedTerms) {
+                        _state.update {
+                            it.copy(
+                                googleSubmitting = false,
+                                googleNeedsConsent = true,
+                                pendingGoogleToken = idToken,
+                            )
+                        }
+                    } else {
+                        _state.update {
+                            it.copy(googleSubmitting = false, formError = result.error.message)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fun acceptGoogleTerms() {
+        val token = _state.value.pendingGoogleToken ?: return
+        signInWithGoogle(token, acceptedTerms = true)
+    }
+
+    fun dismissGoogleConsent() = _state.update {
+        it.copy(googleNeedsConsent = false, pendingGoogleToken = null)
+    }
+
+    fun googleFailure(message: String) = _state.update {
+        it.copy(googleSubmitting = false, formError = message)
     }
 
     private fun LoginUiState.applyError(error: AgroError): LoginUiState {

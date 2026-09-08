@@ -49,6 +49,7 @@
 | Be Vietnam Pro | 400 / 500 / 600 / 700 / 800, TTF variable nếu có | đóng gói trong app, không tải runtime |
 | Material Symbols Rounded | variable font, weight 400, FILL 0 và FILL 1 | **một họ icon duy nhất**; không trộn Phosphor hay bộ khác |
 | App icon | adaptive icon: foreground `eco` mark + background `forest`, 108dp safe zone | + monochrome layer cho themed icon |
+| Google Sign-In | asset chính thức từ Google branding guidelines | **không tự vẽ logo G** |
 | Ảnh onboarding ×3 | WebP, 1600x1200, ≤180KB mỗi ảnh | ảnh lá cận cảnh / màn kết quả / vườn nhìn xa |
 | Ảnh ví dụ "Ảnh đạt chuẩn" | WebP 1200x900 | dùng ở bước 1 |
 | Minh hoạ empty Leaf Lens | vẽ bằng shape + icon trong Compose, không phải bitmap | 150dp |

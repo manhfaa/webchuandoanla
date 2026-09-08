@@ -20,7 +20,7 @@ Không xin quyền nào ở đây.
 
 ## Login
 
-Logo 56dp, title "Chào bạn quay lại", body "Đăng nhập để xem lại vườn và các lần kiểm tra lá." Email → Mật khẩu (có nút hiện/ẩn 48dp) → "Quên mật khẩu?" → nút "Đăng nhập" 54dp → "Chưa có tài khoản? Đăng ký". App không có Google Sign-In.
+Logo 56dp, title "Chào bạn quay lại", body "Đăng nhập để xem lại vườn và các lần kiểm tra lá." Email → Mật khẩu (có nút hiện/ẩn 48dp) → "Quên mật khẩu?" → nút "Đăng nhập" 54dp → divider "hoặc" → nút Google (asset Google Sign-In chính thức) → "Chưa có tài khoản? Đăng ký".
 
 Lỗi email: "Email chưa đúng định dạng. Bạn kiểm tra lại giúp mình nhé." Đang gửi: nút đổi thành "Đang đăng nhập…" + spinner, disable để chặn double submit.
 

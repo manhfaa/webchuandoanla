@@ -72,6 +72,7 @@ data class MobileConfigDto(
 
 @Serializable
 data class FeatureFlagsDto(
+    @SerialName("google_sign_in") val googleSignIn: Boolean = false,
     @SerialName("symptom_research") val symptomResearch: Boolean = false,
     @SerialName("expert_chat") val expertChat: Boolean = false,
     @SerialName("direct_payment") val directPayment: Boolean = false,
