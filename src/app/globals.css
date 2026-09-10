@@ -492,6 +492,56 @@ body {
     opacity: 1;
   }
 
+  /* ── Technical-manual chrome (landing) ── */
+  .kicker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--leaf-strong);
+  }
+
+  .kicker::before {
+    content: "";
+    width: 18px;
+    height: 1px;
+    flex: none;
+    background: currentColor;
+  }
+
+  /* Corner ticks like a drawing frame: two L-shapes, no extra markup. */
+  .corner-marks {
+    position: relative;
+  }
+
+  .corner-marks::before,
+  .corner-marks::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 0 solid var(--leaf);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .corner-marks::before {
+    top: -1px;
+    left: -1px;
+    border-top-width: 2px;
+    border-left-width: 2px;
+  }
+
+  .corner-marks::after {
+    right: -1px;
+    bottom: -1px;
+    border-right-width: 2px;
+    border-bottom-width: 2px;
+  }
+
   .paper-grain {
     position: relative;
   }

@@ -5,22 +5,9 @@ import { MapPin } from "lucide-react";
 
 import { SectionShell } from "@/components/layout/section-shell";
 import { Reveal } from "@/components/ui/reveal";
+import { TEAM_NAME, TRIAL_DATE, TRIAL_HOST, TRIAL_PROVINCE } from "@/constants/field-trial";
 import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
-
-// The host is named at the project owner's instruction. Everything user-facing
-// says "thực nghiệm tại" — where the trial took place — and never "đối tác",
-// "hợp tác cùng" or "được tin dùng bởi": hosting a visit is not an endorsement
-// and the copy must not imply one. Kept in constants so the name can be pulled
-// in a single edit if that permission is ever withdrawn.
-const TRIAL_HOST = "Công ty TNHH Nông nghiệp Công nghệ cao Dabaco";
-const TRIAL_PROVINCE = { vi: "Bắc Ninh", en: "Bac Ninh" };
-const TEAM_NAME = "Green Green";
-
-// Every photo from this trip lost its EXIF passing through a messaging app, so
-// there is no verified capture date. Rather than invent one, the caption strip
-// renders a date only once someone fills this in with a real one.
-const TRIAL_DATE: { vi: string; en: string } | null = null;
 
 type Shot = {
   src: string;
@@ -32,7 +19,6 @@ type Shot = {
   span: string;
   height: string;
   sizes: string;
-  priority?: boolean;
 };
 
 const shots: Shot[] = [
@@ -43,16 +29,13 @@ const shots: Shot[] = [
       "A hand holding a phone showing the Agromind AI screen with five disease possibilities and their confidence, tomato seedling trays behind",
     caption: "Năm khả năng kèm mức tin cậy, hiện thẳng trên điện thoại.",
     captionEn: "Five possibilities with confidence, shown right on the phone.",
-    // Full width from tablet up. Sharing the row with the portrait leaf left the
-    // evidence shot at 347px while the leaf beside it stood 440px tall, so the
-    // decorative photo out-shouted the one carrying the argument.
+    // Full width from tablet up: this is the shot carrying the argument, so it
+    // must not share a row with the decorative leaf and come out smaller.
     span: "sm:col-span-2 lg:col-span-8",
-    // Taller than its natural ratio on phones on purpose. This is a wide frame
-    // with the handset in the middle, so a short box scales the whole photo down
-    // until the five-result list is 142px across and unreadable — losing the one
-    // thing the photo is here to show. A 420px box makes object-cover crop the
-    // margins instead and renders the phone at ~224px.
-    height: "h-[420px] sm:h-[500px] lg:h-[560px]",
+    // Taller than natural on phones on purpose: a short box scales the handset
+    // down until the five-result list is unreadable. object-cover crops the
+    // margins instead.
+    height: "h-[400px] sm:h-[460px] lg:h-[520px]",
     sizes: "(min-width: 1280px) 780px, (min-width: 1024px) 62vw, (min-width: 640px) 92vw, 100vw",
   },
   {
@@ -62,7 +45,7 @@ const shots: Shot[] = [
     caption: "Lá mướp bị sâu ăn — đúng thứ người trồng cần biết tên.",
     captionEn: "A pest-eaten luffa leaf — exactly what a grower needs named.",
     span: "lg:col-span-4",
-    height: "h-[380px] sm:h-[440px] lg:h-[560px]",
+    height: "h-[360px] sm:h-[420px] lg:h-[520px]",
     sizes: "(min-width: 1280px) 390px, (min-width: 1024px) 31vw, (min-width: 640px) 45vw, 100vw",
   },
   {
@@ -72,7 +55,7 @@ const shots: Shot[] = [
     caption: "Dưới giàn mướp, chụp tại chỗ.",
     captionEn: "Under the luffa trellis, photographed on the spot.",
     span: "lg:col-span-4",
-    height: "h-[200px] sm:h-[230px] lg:h-[280px]",
+    height: "h-[200px] sm:h-[220px] lg:h-[250px]",
     sizes: "(min-width: 1280px) 390px, (min-width: 1024px) 31vw, (min-width: 640px) 45vw, 100vw",
   },
   {
@@ -82,7 +65,7 @@ const shots: Shot[] = [
     caption: "Đưa máy cho chủ vườn tự xem kết quả.",
     captionEn: "Handing the phone over so the grower reads it themselves.",
     span: "lg:col-span-4",
-    height: "h-[200px] sm:h-[230px] lg:h-[280px]",
+    height: "h-[200px] sm:h-[220px] lg:h-[250px]",
     sizes: "(min-width: 1280px) 390px, (min-width: 1024px) 31vw, (min-width: 640px) 45vw, 100vw",
   },
   {
@@ -92,72 +75,52 @@ const shots: Shot[] = [
     caption: "Soi từng khay cây giống trong nhà lưới.",
     captionEn: "Inspecting the seedling trays tray by tray.",
     span: "lg:col-span-4",
-    height: "h-[200px] sm:h-[230px] lg:h-[280px]",
+    height: "h-[200px] sm:h-[220px] lg:h-[250px]",
     sizes: "(min-width: 1280px) 390px, (min-width: 1024px) 31vw, (min-width: 640px) 45vw, 100vw",
   },
 ];
 
-// Every colour token in tailwind.config.ts is a bare `var(--token)` with no
-// <alpha-value>, so `from-forest/80` compiles to invalid CSS and is dropped
-// entirely — the overlay would silently disappear and the caption would sit on
-// bare photo. color-mix() is the working form. It goes in `style` rather than an
-// arbitrary Tailwind class because a multi-stop gradient of color-mix() values is
-// past the point where the arbitrary-value escaping stays readable.
-const captionScrim =
-  "linear-gradient(to top," +
-  " color-mix(in srgb, var(--forest) 92%, transparent) 0%," +
-  " color-mix(in srgb, var(--forest) 62%, transparent) 42%," +
-  " transparent 78%)";
-
+/**
+ * Photographs framed like a report: numbered plate, image, caption printed
+ * below on its own strip rather than burned over the picture. A caption over a
+ * dark scrim is a magazine move; a caption under a hairline is a document.
+ */
 export function FieldTrialSection() {
   const tr = useTr();
 
   return (
     <SectionShell
       id="thuc-nghiem"
+      number="06"
       eyebrow={tr("Thực nghiệm ngoài đồng", "Field trial")}
       title={tr(
         "Đã mang ra vườn thật, không chỉ chạy trong phòng máy",
         "Taken to a real garden, not just run in a lab",
       )}
-      // The host is named once, down in the location strip. Repeating a name this
-      // long here as well would put the same clause twice on one screen.
       description={tr(
         `Đội ${TEAM_NAME} mang Agromind AI ra vườn thật, chụp lá ngay tại luống và đưa máy cho người trồng tự xem kết quả.`,
         `The ${TEAM_NAME} team took Agromind AI out to a real garden, photographed leaves right at the bed and handed the phone to the grower.`,
       )}
-      className="bg-canvas"
+      className="bg-surface"
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-12">
         {shots.map((shot, index) => (
-          <Reveal
-            key={shot.src}
-            delay={index * 0.06}
-            // With the evidence shot spanning both tablet columns, the remaining
-            // four pair off cleanly — leaf/trellis, then advice/wide — so nothing
-            // needs a span override and no card is left orphaned.
-            className={shot.span}
-          >
-            <figure
-              className={cn(
-                "group relative overflow-hidden rounded-[var(--r-lg)] border border-line-strong shadow-md",
-                shot.height,
-              )}
-            >
-              <Image
-                src={shot.src}
-                alt={tr(shot.alt, shot.altEn)}
-                fill
-                sizes={shot.sizes}
-                // Only the first two are plausibly above the fold on a phone;
-                // the context row can wait for the viewport to reach it.
-                loading={index < 2 ? "eager" : "lazy"}
-                className="object-cover transition duration-700 group-hover:scale-[1.03] motion-reduce:transition-none"
-              />
-              <figcaption
-                className="absolute inset-x-0 bottom-0 px-4 pb-3 pt-10 text-sm font-medium leading-6 text-on-forest"
-                style={{ backgroundImage: captionScrim }}
-              >
+          <Reveal key={shot.src} delay={index * 0.06} className={shot.span}>
+            <figure className="group flex h-full flex-col border border-line bg-surface-raised">
+              <div className={cn("relative overflow-hidden", shot.height)}>
+                <Image
+                  src={shot.src}
+                  alt={tr(shot.alt, shot.altEn)}
+                  fill
+                  sizes={shot.sizes}
+                  loading={index < 2 ? "eager" : "lazy"}
+                  className="object-cover transition duration-700 group-hover:scale-[1.03] motion-reduce:transition-none"
+                />
+                <span className="absolute left-3 top-3 border border-line bg-surface px-2 py-1 font-display text-[11px] font-bold tabular-nums tracking-[0.12em] text-ink">
+                  {tr("Ảnh", "Plate")} {String(index + 1).padStart(2, "0")}
+                </span>
+              </div>
+              <figcaption className="border-t border-line px-4 py-3 text-sm font-medium leading-6 text-ink">
                 {tr(shot.caption, shot.captionEn)}
               </figcaption>
             </figure>
@@ -165,13 +128,7 @@ export function FieldTrialSection() {
         ))}
       </div>
 
-      <Reveal
-        delay={0.2}
-        className="mt-5 flex flex-col gap-3 rounded-[var(--r-lg)] border border-line bg-surface-soft px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
-      >
-        {/* items-start, not items-center: the host's full legal name wraps to two
-            lines on a phone, and centring would float the pin against the middle
-            of the wrapped block instead of the first line. */}
+      <Reveal delay={0.2} className="mt-8 flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
         <p className="flex items-start gap-2 text-sm font-semibold text-ink">
           <MapPin size={16} className="mt-1 shrink-0 text-leaf-strong" aria-hidden />
           <span>
@@ -184,7 +141,7 @@ export function FieldTrialSection() {
             ) : null}
           </span>
         </p>
-        <p className="text-sm leading-6 text-ink-soft">
+        <p className="max-w-md text-sm leading-6 text-ink-soft">
           {tr(
             "Kết quả hiện đủ năm khả năng kèm phần trăm, không rút gọn thành một đáp án chắc chắn.",
             "Results show all five possibilities with their confidence, never reduced to one certain answer.",

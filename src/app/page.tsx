@@ -24,7 +24,7 @@ export default async function HomePage() {
   const bandPlan = campaign?.surfaces.has("band") ? campaign.plan : null;
 
   return (
-    <AppShell>
+    <AppShell plain>
       <Navbar />
       <main id="main-content">
         <HeroSection campaign={heroPlan} />

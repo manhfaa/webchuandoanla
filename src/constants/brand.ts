@@ -22,3 +22,7 @@ export const brand = {
   missionEn:
     "Agromind AI helps growers watch leaf health systematically, understand what to do next and keep a record of how their garden has been cared for.",
 };
+
+/** The company behind the product. Named on the landing page and in the footer;
+ *  no address or registration number is shown because none has been supplied. */
+export const DEVELOPER = "DIEPTEK";

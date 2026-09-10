@@ -1,9 +1,18 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-export function AppShell({ children, className }: { children: React.ReactNode; className?: string }) {
+export function AppShell({
+  children,
+  className,
+  plain = false,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  /** Flat canvas, no radial mesh — the landing page draws its own backgrounds. */
+  plain?: boolean;
+}) {
   return (
-    <div className={cn("min-h-[100dvh] bg-canvas bg-dashboard-mesh text-ink", className)}>
+    <div className={cn("min-h-[100dvh] bg-canvas text-ink", !plain && "bg-dashboard-mesh", className)}>
       {children}
     </div>
   );

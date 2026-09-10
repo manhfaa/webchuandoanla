@@ -227,6 +227,10 @@ export function LeafDiagnosisStory() {
       <div className="lg:sticky lg:top-0 lg:flex lg:min-h-[100dvh] lg:items-center lg:overflow-hidden lg:pb-10 lg:pt-24">
         <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-0">
           <div className="mb-9 max-w-3xl lg:mb-8">
+            <p className="kicker mb-5">
+              <span className="tabular-nums">01</span>
+              {tr("Quy trình", "Process")}
+            </p>
             <h2 className="font-display text-3xl font-extrabold leading-[1.12] tracking-[-0.04em] text-ink sm:text-4xl lg:text-[44px]">
               {tr("Một đường sinh mạch từ ảnh lá đến hành động.", "A vein of life from leaf photo to action.")}
             </h2>

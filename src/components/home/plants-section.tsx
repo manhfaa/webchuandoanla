@@ -80,6 +80,10 @@ export function PlantsSection() {
       <div className="flex min-h-[100dvh] flex-col justify-center py-20 sm:py-24 lg:py-20">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           <Reveal>
+            <p className="kicker mb-5">
+              <span className="tabular-nums">04</span>
+              {tr("Cây trồng", "Crops")}
+            </p>
             <h2 className="max-w-3xl font-display text-3xl font-bold tracking-[-0.035em] text-ink sm:text-4xl lg:text-[40px] lg:leading-[1.15]">
               {tr("Nhận biết dấu hiệu trên những cây quen thuộc", "Spot the signs on familiar crops")}
             </h2>

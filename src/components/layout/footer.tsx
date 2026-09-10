@@ -1,68 +1,83 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, ShieldCheck } from "lucide-react";
+import type { ReactNode } from "react";
 
-import { brand } from "@/constants/brand";
+import { brand, DEVELOPER } from "@/constants/brand";
 import { landingNavItems } from "@/constants/navigation";
 import { useTr } from "@/lib/use-tr";
 
 import { Logo } from "./logo";
 
+function Column({ heading, children }: { heading: string; children: ReactNode }) {
+  return (
+    <div>
+      <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-muted">{heading}</h3>
+      <div className="mt-4 flex flex-col">{children}</div>
+    </div>
+  );
+}
+
+const linkClass = "inline-flex min-h-9 items-center text-sm text-ink-soft transition hover:text-ink";
+
+/**
+ * A corporate footer on the page's own canvas, closed by a hairline and one
+ * line of imprint. The company is named as the developer and nothing else is
+ * shown — no address, phone or registration number has been supplied, and a
+ * footer that invents them is worse than one that stays quiet.
+ */
 export function Footer() {
   const tr = useTr();
 
   return (
-    <footer className="bg-canvas px-4 pb-6 pt-10 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl overflow-hidden rounded-3xl bg-forest px-6 py-8 text-on-forest shadow-lg sm:px-8 lg:px-10 lg:py-10">
-        <div className="grid gap-10 lg:grid-cols-[1.35fr_0.75fr_0.75fr_1fr]">
+    <footer className="border-t border-line bg-surface px-4 pb-8 pt-14 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid gap-10 lg:grid-cols-[1.5fr_repeat(3,minmax(0,0.6fr))] lg:gap-8">
           <div>
-            <Logo dark />
-            <p className="mt-4 max-w-md text-sm leading-7 text-on-forest-muted">
-              {tr(brand.description, "Plant health assistant that reads leaf photos and guides Vietnamese growers on what to do next.")}
+            <Logo />
+            <p className="mt-5 max-w-sm text-sm leading-7 text-ink-soft">
+              {tr(brand.description, brand.descriptionEn)}
+            </p>
+            <p className="mt-6 flex items-center gap-3 text-sm font-semibold text-ink">
+              <span className="h-2 w-2 bg-leaf" aria-hidden />
+              {tr(`Phát triển bởi ${DEVELOPER}`, `Developed by ${DEVELOPER}`)}
             </p>
           </div>
 
-          <div>
-            <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-on-forest-muted">{tr("Khám phá", "Explore")}</h3>
-            <div className="mt-4 space-y-3">
-              {landingNavItems.map((item) => (
-                <a key={item.href} href={item.href} className="block text-sm font-medium text-on-forest-muted transition hover:text-on-forest">{tr(item.label, item.labelEn)}</a>
-              ))}
-            </div>
-          </div>
+          <Column heading={tr("Sản phẩm", "Product")}>
+            {landingNavItems.map((item) => (
+              <a key={item.href} href={item.href} className={linkClass}>
+                {tr(item.label, item.labelEn)}
+              </a>
+            ))}
+            <Link href="/login?next=/dashboard/diagnosis" className={linkClass}>
+              {tr("Kiểm tra ảnh lá", "Check a leaf")}
+            </Link>
+          </Column>
 
-          <div>
-            <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-on-forest-muted">{tr("Tài khoản", "Account")}</h3>
-            <div className="mt-4 space-y-3">
-              <Link href="/login" className="block text-sm font-medium text-on-forest-muted transition hover:text-on-forest">{tr("Đăng nhập", "Log in")}</Link>
-              <Link href="/register" className="block text-sm font-medium text-on-forest-muted transition hover:text-on-forest">{tr("Tạo tài khoản", "Create account")}</Link>
-              {/* Google found the disease pages through the sitemap alone and
-                  reported "Trang giới thiệu: Không phát hiện được trang nào" —
-                  nothing on the site linked to them. A sitemap tells a crawler a
-                  URL exists; a link tells it the URL matters, and it is also how
-                  a visitor gets there. */}
-              <Link href="/benh-cay" className="block text-sm font-medium text-on-forest-muted transition hover:text-on-forest">{tr("Bệnh cây trồng", "Plant diseases")}</Link>
-              <Link href="/login?next=/dashboard/diagnosis" className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-forest transition hover:text-mint">{tr("Kiểm tra ảnh lá", "Check a leaf")} <ArrowUpRight size={15} /></Link>
-            </div>
-          </div>
+          <Column heading={tr("Tài khoản", "Account")}>
+            <Link href="/login" className={linkClass}>{tr("Đăng nhập", "Log in")}</Link>
+            <Link href="/register" className={linkClass}>{tr("Tạo tài khoản", "Create account")}</Link>
+          </Column>
 
-          <div className="rounded-2xl border border-on-forest/10 bg-on-forest/5 p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold text-on-forest">
-              <ShieldCheck size={17} aria-hidden />
-              {tr("Sử dụng kết quả an toàn", "Use results safely")}
-            </div>
-            <p className="mt-3 text-xs leading-6 text-on-forest-muted">{tr("Agromind hỗ trợ quan sát và theo dõi. Khi cây bệnh lan nhanh hoặc cần dùng thuốc, hãy hỏi thêm chuyên gia nông nghiệp địa phương.", "Agromind supports observation and tracking. When a disease spreads fast or pesticides are involved, consult a local agriculture expert.")}</p>
-          </div>
+          <Column heading={tr("Tài liệu", "Resources")}>
+            {/* Google found the disease pages through the sitemap alone and
+                reported no referring page — a link here is how both a crawler
+                and a visitor learn the pages matter. */}
+            <Link href="/benh-cay" className={linkClass}>{tr("Bệnh cây trồng", "Plant diseases")}</Link>
+            <Link href="/terms" className={linkClass}>{tr("Điều khoản sử dụng", "Terms of Service")}</Link>
+            <Link href="/privacy" className={linkClass}>{tr("Chính sách quyền riêng tư", "Privacy Policy")}</Link>
+          </Column>
         </div>
 
-        <div className="mt-10 flex flex-col gap-3 border-t border-on-forest/10 pt-5 text-xs text-on-forest-muted sm:flex-row sm:items-center sm:justify-between">
-          <span>© 2026 Agromind AI.</span>
-          <div className="flex flex-wrap items-center gap-4">
-            <Link href="/terms" className="transition hover:text-on-forest">{tr("Điều khoản sử dụng", "Terms of Service")}</Link>
-            <Link href="/privacy" className="transition hover:text-on-forest">{tr("Chính sách quyền riêng tư", "Privacy Policy")}</Link>
-            <span>{tr("Trợ lý sức khỏe cây trồng dành cho người Việt.", "Plant health assistant for Vietnamese growers.")}</span>
-          </div>
+        <div className="mt-12 grid gap-4 border-t border-line pt-6 text-xs leading-6 text-ink-soft sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-8">
+          <p className="max-w-2xl">
+            {tr(
+              "Agromind hỗ trợ quan sát và theo dõi. Khi cây bệnh lan nhanh hoặc cần dùng thuốc, hãy hỏi thêm chuyên gia nông nghiệp địa phương.",
+              "Agromind supports observation and tracking. When a disease spreads fast or pesticides are involved, consult a local agriculture expert.",
+            )}
+          </p>
+          <p className="tabular-nums text-ink">© 2026 {DEVELOPER} · Agromind AI</p>
         </div>
       </div>
     </footer>

@@ -100,6 +100,7 @@ export function DemoVideoSection() {
   return (
     <SectionShell
       id="video-demo"
+      number="02"
       eyebrow={tr("Xem thử", "See it work")}
       title={tr("Một lần kiểm tra lá, quay ngoài vườn", "One leaf check, filmed in the garden")}
       description={tr(

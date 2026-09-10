@@ -24,7 +24,7 @@ export function Logo({
   return (
     <Link
       href={href}
-      className={cn("inline-flex min-w-0 items-center gap-3", compact && "lg:gap-2", className)}
+      className={cn("inline-flex min-w-0 items-center gap-2 sm:gap-3", compact && "lg:gap-2", className)}
     >
       <Image
         src="/logos/agromind_app_icon_animated_128.gif"
@@ -37,7 +37,7 @@ export function Logo({
       <span className={cn("flex min-w-0 flex-col", compact && "lg:sr-only")}>
         <span
           className={cn(
-            "font-display text-xl font-bold tracking-tight",
+            "whitespace-nowrap font-display text-lg font-bold tracking-tight sm:text-xl",
             dark ? "text-on-forest" : "text-ink",
           )}
         >
