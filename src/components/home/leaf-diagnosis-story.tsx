@@ -1,5 +1,6 @@
 "use client";
 
+import { landingPhotos } from "@/constants/landing-photos";
 import Image from "next/image";
 import { Camera, CheckCircle2, ClipboardCheck, ScanSearch } from "lucide-react";
 import { motion, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from "framer-motion";
@@ -125,24 +126,19 @@ function VeinDot({ index, progress, reduceMotion }: { index: number; progress: M
   );
 }
 
-/** story-grape-leaf.png là 1586x992. */
-const IMAGE_ASPECT = 1586 / 992;
+const IMAGE_ASPECT = landingPhotos.storyGrape.width / landingPhotos.storyGrape.height;
 
 /**
- * Vị trí dấu hiệu bệnh, tính theo phần trăm TOẠ ĐỘ ẢNH GỐC.
- *
- * Đo trực tiếp trên tệp ảnh, không ước lượng bằng mắt: đốm hoại tử tìm bằng
- * cách dò vùng tối có viền xung quanh là lá xanh; lõi phấn trắng tìm bằng bản
- * đồ mật độ độ bão hoà, vì phấn trắng làm giảm bão hoà xuống 0.34-0.41 trong
- * khi lá sạch ở 0.48-0.50.
- *
- * Ba vòng cũ đặt ở 39%/31%, 55%/44% và 45%/37% đều rơi vào chỗ lá lành.
+ * Image-space percentages, measured by eye on the Commons photo (a grape leaf
+ * with pale mildew patches, kvins.com, CC BY 2.0). POWDER_CORE is the large
+ * bleached patch left of the midrib where the lens settles; the three LESIONS
+ * are the next patches out — left lobe, right lobe, upper-left lobe.
  */
-const POWDER_CORE = { x: 56.9, y: 48.1 };
+const POWDER_CORE = { x: 47, y: 52 };
 const LESIONS = [
-  { x: 65.9, y: 66.8, size: "h-7 w-7", ring: 7 },
-  { x: 73.8, y: 50.0, size: "h-5 w-5", ring: 6 },
-  { x: 27.4, y: 65.7, size: "h-6 w-6", ring: 6 },
+  { x: 25.5, y: 62, size: "h-7 w-7", ring: 7 },
+  { x: 69.5, y: 61, size: "h-6 w-6", ring: 6 },
+  { x: 42, y: 27, size: "h-5 w-5", ring: 6 },
 ];
 
 /**
@@ -250,8 +246,8 @@ export function LeafDiagnosisStory() {
                 style={reduceMotion ? undefined : { scale: imageScale, y: imageY }}
               >
                 <Image
-                  src="/plant-leaves/story-grape-leaf.png"
-                  alt={tr("Lá nho có phấn trắng và đốm nâu đang được kiểm tra", "Grape leaf with white powder and brown spots being examined")}
+                  src={landingPhotos.storyGrape.src}
+                  alt={tr(landingPhotos.storyGrape.alt, landingPhotos.storyGrape.altEn)}
                   fill
                   sizes="(min-width: 1024px) 58vw, 100vw"
                   className="object-cover object-center"
@@ -305,6 +301,9 @@ export function LeafDiagnosisStory() {
                       "Upload a leaf photo to get disease suggestions, cross-check symptoms, and know what to do next.",
                     )}
                   </p>
+                  <a href={landingPhotos.storyGrape.sourceUrl} target="_blank" rel="noreferrer" className="mt-2 block text-[10px] leading-4 text-on-forest-muted underline-offset-2 hover:underline">
+                    {tr("Ảnh", "Photo")}: {landingPhotos.storyGrape.credit}
+                  </a>
                 </div>
               </motion.div>
             </div>

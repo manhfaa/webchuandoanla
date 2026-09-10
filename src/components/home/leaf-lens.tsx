@@ -1,5 +1,6 @@
 "use client";
 
+import { landingPhotos } from "@/constants/landing-photos";
 import Image from "next/image";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
@@ -16,8 +17,11 @@ type AnnotationId = "lesion" | "compare";
 
 const hotspot = {
   id: "lesion",
-  x: 64,
-  y: 56,
+  // Measured on the Commons photo: the septoria cluster on the leaflet just
+  // right of the stem, near the horizontal centre so object-cover crops at
+  // 4:3 and 16:11 both keep it in frame.
+  x: 56,
+  y: 60,
   radius: 9.5,
   title: "Vùng cần chú ý",
   titleEn: "Area to watch",
@@ -419,8 +423,8 @@ export function LeafLens() {
         <div ref={mediaRef} data-leaf-media className="relative bg-forest">
           <div className="relative aspect-[4/3] overflow-hidden sm:aspect-[16/11]">
             <Image
-              src="/plant-leaves/agromind-hero-tomato.png"
-              alt={tr("Lá cà chua có các đốm nâu đang được hệ thống đánh dấu để kiểm tra.", "Tomato leaf with brown spots being marked by the system for inspection.")}
+              src={landingPhotos.heroTomato.src}
+              alt={tr(landingPhotos.heroTomato.alt, landingPhotos.heroTomato.altEn)}
               fill
               priority
               loading="eager"
@@ -442,7 +446,7 @@ export function LeafLens() {
               aria-hidden
             >
               <Image
-                src="/plant-leaves/agromind-hero-tomato.png"
+                src={landingPhotos.heroTomato.src}
                 alt=""
                 fill
                 loading="eager"
@@ -550,6 +554,9 @@ export function LeafLens() {
               <div className="max-w-[240px] rounded-[var(--r-md)] bg-forest/76 px-3 py-2.5 backdrop-blur-sm">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-on-forest-muted">{tr("Ảnh lá thực tế", "Real leaf photo")}</p>
                 <p className="mt-1 text-xs font-semibold leading-5 sm:text-sm">{tr("AI đang quan sát dấu hiệu trên bề mặt lá.", "AI is observing signs on the leaf surface.")}</p>
+                <a href={landingPhotos.heroTomato.sourceUrl} target="_blank" rel="noreferrer" className="mt-1 block text-[10px] leading-4 text-on-forest-muted underline-offset-2 hover:underline">
+                  {tr("Ảnh", "Photo")}: {landingPhotos.heroTomato.credit}
+                </a>
               </div>
               <span
                 data-leaf-scan-icon

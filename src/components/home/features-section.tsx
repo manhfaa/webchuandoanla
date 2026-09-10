@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
 import { SectionShell } from "@/components/layout/section-shell";
+import { landingPhotos } from "@/constants/landing-photos";
 import { Reveal } from "@/components/ui/reveal";
 import { useTr } from "@/lib/use-tr";
 
@@ -77,8 +78,8 @@ export function FeaturesSection() {
           <Link href={primary.href} className="group flex h-full flex-col overflow-hidden rounded-[var(--r-xl)] bg-surface shadow-md transition duration-260 hover:-translate-y-1 hover:shadow-lg motion-reduce:transition-none">
             <span className="relative block aspect-[4/3] overflow-hidden sm:aspect-[16/9] lg:aspect-[4/3] lg:flex-1">
               <Image
-                src="/plant-leaves/feature-pepper-leaf.png"
-                alt={tr("Lá ớt chuông có vùng vàng và đốm nâu trong nhà kính", "Bell pepper leaf with yellow patches and brown spots in a greenhouse")}
+                src={landingPhotos.featurePepper.src}
+                alt={tr(landingPhotos.featurePepper.alt, landingPhotos.featurePepper.altEn)}
                 fill
                 sizes="(min-width: 1024px) 42vw, 100vw"
                 className="object-cover object-center transition duration-700 group-hover:scale-[1.02] motion-reduce:transition-none"
@@ -93,6 +94,8 @@ export function FeaturesSection() {
                 <ArrowUpRight size={20} className="mt-1 shrink-0 text-ink-muted transition duration-180 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-leaf-strong" aria-hidden />
               </span>
               <span className="mt-2 block text-sm leading-6 text-ink-soft">{tr(primary.description, primary.descriptionEn)}</span>
+              {/* Plain text, not a link: the whole card is already an anchor. */}
+              <span className="mt-3 block text-[11px] leading-4 text-ink-muted">{tr("Ảnh", "Photo")}: {landingPhotos.featurePepper.credit}</span>
             </span>
           </Link>
         </Reveal>

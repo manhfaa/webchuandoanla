@@ -23,7 +23,9 @@ export function AuthShell({ eyebrow, title, description, asideTitle, asideDescri
       <div className="mx-auto flex min-h-[calc(100dvh-2rem)] max-w-6xl flex-col overflow-hidden rounded-[var(--r-xl)] border border-line bg-surface shadow-lg sm:min-h-[calc(100dvh-3rem)] lg:grid lg:grid-cols-[0.9fr_1.1fr]">
         <aside className="relative hidden overflow-hidden bg-forest p-9 text-on-forest lg:flex lg:flex-col lg:justify-between xl:p-12">
           <Image
-            src="/plant-leaves/agromind-auth-leaf.png"
+            // The team under the luffa trellis on the Dabaco trial: our own photo, so no
+            // licence to carry, and a real place instead of a rendered leaf.
+            src="/field-trial/trellis-check.webp"
             alt=""
             fill
             priority
@@ -32,7 +34,16 @@ export function AuthShell({ eyebrow, title, description, asideTitle, asideDescri
             className="object-cover"
             aria-hidden
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-forest/68 via-forest/58 to-forest/88" aria-hidden />
+          {/* `from-forest/68` compiles to nothing (no <alpha-value> on the colour
+              tokens), so this scrim never existed — unnoticed while the picture
+              behind it was a dark render. On a sunlit photo it is the only thing
+              keeping the white copy legible. Values are the brand sheet's
+              mobile-hero scrim, ink-based. */}
+          <div
+            className="absolute inset-0"
+            style={{ backgroundImage: "linear-gradient(180deg, rgba(20,41,26,0.62) 0%, rgba(20,41,26,0.74) 55%, rgba(20,41,26,0.86) 100%)" }}
+            aria-hidden
+          />
           <div className="relative"><Logo dark showTagline={false} /></div>
 
           <div className="relative max-w-md">
