@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { LanguageToggle } from "@/components/layout/language-toggle";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { normalizePlan, PLANS } from "@/lib/plans";
@@ -64,7 +63,6 @@ export function WorkspaceHeader({ pageTitle, pageDescription, mobileNavOpen = fa
             <Crown size={13} aria-hidden /> {planInfo.name}
           </Badge>
           <LanguageToggle />
-          <ThemeToggle className="border border-line bg-surface" />
           <Link href="/dashboard/diagnosis" className={buttonVariants({ variant: "primary", size: "sm", className: "hidden md:inline-flex" })}>
             <ScanSearch size={16} aria-hidden /> {tr("Kiểm tra ảnh mới", "New leaf check")}
           </Link>

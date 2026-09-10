@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useTheme } from "next-themes";
 import { KeyRound, ShieldAlert, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -75,7 +74,6 @@ function toForm(account: DjangoAccount): ProfileForm {
 export default function DashboardProfilePage() {
   const tr = useTr();
   const router = useRouter();
-  const { setTheme } = useTheme();
   const setLanguage = useLanguageStore((state) => state.setLanguage);
   const { user, status, updateProfile, applyAccount, adoptSession, logout } = useSessionStore();
 
@@ -194,7 +192,6 @@ export default function DashboardProfilePage() {
     try {
       const saved = await djangoUpdateUserSettings(patch);
       setSettings(saved);
-      if (patch.theme) setTheme(patch.theme === "dark" ? "dark" : "light");
       if (patch.language) setLanguage(patch.language === "en" ? "en" : "vi");
     } catch (err) {
       setSettings(previous);

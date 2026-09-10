@@ -19,7 +19,7 @@ function Price({ value, featured = false }: { value: string; featured?: boolean 
     <p className={cn("font-display font-extrabold tabular-nums tracking-[-0.045em]", featured ? "text-on-forest" : "text-ink")}>
       <span className={featured ? "text-4xl sm:text-[40px]" : "text-3xl"}>{amount}</span>
       {cadence ? (
-        <span className={cn("ml-1 text-sm font-semibold tracking-[-0.01em]", featured ? "text-on-forest-muted" : "text-ink-soft")}>
+        <span className={cn("ml-1 text-sm font-semibold tracking-[-0.01em]", featured ? "text-[rgba(255,255,255,0.9)]" : "text-ink-soft")}>
           /{cadence}
         </span>
       ) : null}
@@ -65,7 +65,7 @@ export function PricingPreviewSection() {
       className="bg-canvas"
     >
       <Reveal>
-        <div className="grid border border-line bg-surface-raised md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid overflow-hidden rounded-[var(--r-xl)] border border-line bg-surface shadow-md md:grid-cols-2 lg:grid-cols-4">
           {plans.map((plan, index) => {
             const featured = Boolean(plan.highlight);
             const rule = featured ? "border-[color-mix(in_srgb,var(--on-forest)_18%,transparent)]" : "border-line";
@@ -83,17 +83,17 @@ export function PricingPreviewSection() {
                   index % 2 === 1 && "md:border-l",
                   index >= 2 && "md:border-t lg:border-t-0",
                   index > 0 && "lg:border-l",
-                  featured && "bg-forest text-on-forest dark:bg-[color-mix(in_srgb,var(--leaf)_14%,var(--surface-raised))]",
+                  featured && "bg-leaf-strong text-on-forest",
                 )}
               >
                 <header className="flex items-start justify-between gap-3">
                   <h3 className="font-display text-2xl font-extrabold tracking-[-0.03em]">{plan.name}</h3>
                   {featured ? (
-                    <span className="border border-[color-mix(in_srgb,var(--on-forest)_30%,transparent)] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-on-forest">
+                    <span className="rounded-full bg-accent px-2.5 py-1 text-[11px] font-bold text-on-accent">
                       {tr("Chọn nhiều", "Popular")}
                     </span>
                   ) : plan.badge ? (
-                    <span className="border border-line px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-ink-soft">
+                    <span className="rounded-full bg-surface-soft px-2.5 py-1 text-[11px] font-bold text-leaf-strong">
                       {tr(plan.badge, plan.badgeEn ?? plan.badge)}
                     </span>
                   ) : null}
@@ -105,7 +105,7 @@ export function PricingPreviewSection() {
                       moves the term into `promo`, so `Price` alone would render a bare
                       amount with no period at all — a 9.000đ that looks permanent. */}
                   {plan.promo ? (
-                    <p className={cn("mt-2 text-xs leading-5", featured ? "text-on-forest-muted" : "text-ink-soft")}>
+                    <p className={cn("mt-2 text-xs leading-5", featured ? "text-[rgba(255,255,255,0.9)]" : "text-ink-soft")}>
                       {tr("giá thường", "standard rate")}{" "}
                       <span className="line-through">{tr(plan.promo.strikePrice, plan.promo.strikePriceEn)}</span>
                       {" · "}
@@ -114,7 +114,7 @@ export function PricingPreviewSection() {
                       </span>
                     </p>
                   ) : null}
-                  <p className={cn("mt-3 text-sm leading-6", featured ? "text-on-forest-muted" : "text-ink-soft")}>
+                  <p className={cn("mt-3 text-sm leading-6", featured ? "text-[rgba(255,255,255,0.9)]" : "text-ink-soft")}>
                     {tr(plan.description, plan.descriptionEn ?? plan.description)}
                   </p>
                 </div>
@@ -122,7 +122,7 @@ export function PricingPreviewSection() {
                 <ul className="mt-6 space-y-2.5 text-sm font-medium leading-6">
                   {plan.features.slice(0, 5).map((feature, i) => (
                     <li key={feature} className="flex items-start gap-3">
-                      <span className={cn("mt-[9px] h-1.5 w-1.5 shrink-0", featured ? "bg-leaf" : "bg-leaf-strong")} aria-hidden />
+                      <span className={cn("mt-[9px] h-1.5 w-1.5 shrink-0", featured ? "bg-accent" : "bg-leaf")} aria-hidden />
                       {tr(feature, plan.featuresEn?.[i] ?? feature)}
                     </li>
                   ))}
@@ -131,7 +131,7 @@ export function PricingPreviewSection() {
                 <div className="mt-auto pt-8">
                   <Link
                     href="/login?next=/dashboard/pricing"
-                    className={cn(buttonVariants({ variant: featured ? "primary" : "secondary" }), "w-full")}
+                    className={cn(buttonVariants({ variant: featured ? "accent" : "secondary" }), "w-full")}
                   >
                     {tr(plan.cta, plan.ctaEn ?? plan.cta)}
                     <ArrowRight size={16} aria-hidden />

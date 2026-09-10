@@ -122,7 +122,7 @@ Frontend:
 - TypeScript.
 - Tailwind CSS 3.
 - Zustand persisted session and domain stores.
-- `next-themes` for light/dark mode.
+- `next-themes` kept only to force the light theme (`forcedTheme="light"`). Dark mode and the theme toggle were removed on 2026-09-10.
 - Framer Motion and GSAP for purposeful motion.
 - Lucide icons, which are already established in this repository.
 - Sonner for toasts.
@@ -205,14 +205,16 @@ The interface should feel like a modern field-observation notebook and crop-heal
 Design principles:
 
 - Vietnamese-first copy for real growers.
-- Deep forest, leaf green, mint, warm light canvas and restrained sunlight yellow.
+- Palette is the DIEPTEK brand sheet (2026-09-10): ink #14291A, dark green #1B5E20, primary #2F7D32, lime accent #6DBE45 (spice only — never text on white, never white text on it), tint #E8F3E4, page #F7F9F4, white cards, footer text #B9C7BC; cyan #22D3EE only for live dots and progress tails. `--sun` stays for the dashboard's "needs follow-up" state, which the sheet does not cover.
 - Use semantic tokens from `src/styles/tokens.css`; do not scatter raw Tailwind slate/emerald colors.
-- Keep light and dark modes visually consistent and readable.
+- Light theme only. Do not add a dark token set or a theme toggle without an explicit request.
 - Normal text contrast must meet WCAG AA.
 - Green means primary action or healthy state.
 - Yellow means follow-up is needed.
 - Red-orange means urgent action or error.
 - Cards use the existing radius/elevation system. Do not make every element a floating glass card.
+- Radii: 8px buttons and inputs (`--r-sm`/`--r-md`), 12px notices (`--r-lg`), 16px cards (`--r-xl`/`--r-2xl`), pill for chips and toggles. Shadows derive from the ink, never from black.
+- Type: Be Vietnam Pro for display and body. Bricolage Grotesque was dropped on 2026-09-10.
 - Motion must communicate hierarchy, progress or state change. Respect `prefers-reduced-motion`.
 - Mobile width around 390px is a first-class target.
 - Do not expose words such as backend, API or pipeline in user-facing UI.
@@ -223,6 +225,7 @@ Important product naming:
 - Brand: `Agromind AI`.
 - Do not show `Leafiq` in the user interface.
 - The persisted Zustand storage key is still `leafiq-session` for backward compatibility. Do not rename it without a storage migration.
+- Credit line: "Agromind AI được phát triển bởi team DIEPTEK" (`DEVELOPER` in `src/constants/brand.ts`). DIEPTEK marks: `public/logos/dieptek-mark.png` (navy, for light grounds) and `dieptek-mark-lime.png` (for the ink footer). Never put the navy mark on #2F7D32 or #1B5E20, and never recolour it green.
 
 Landing navigation currently includes:
 

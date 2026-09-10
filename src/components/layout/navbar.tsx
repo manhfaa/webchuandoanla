@@ -9,7 +9,6 @@ import { landingNavItems } from "@/constants/navigation";
 import { cn } from "@/lib/utils";
 import { useTr } from "@/lib/use-tr";
 import { LanguageToggle } from "@/components/layout/language-toggle";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 import { Logo } from "./logo";
 
@@ -44,7 +43,7 @@ export function Navbar() {
             <a
               key={item.href}
               href={item.href}
-              className="relative py-1 text-sm font-medium text-ink-soft transition hover:text-ink after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:scale-x-0 after:bg-leaf after:transition-transform after:duration-180 hover:after:scale-x-100"
+              className="relative py-1 text-sm font-medium text-ink-soft transition hover:text-ink after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:scale-x-0 after:bg-accent after:transition-transform after:duration-180 hover:after:scale-x-100"
             >
               {tr(item.label, item.labelEn)}
             </a>
@@ -53,7 +52,6 @@ export function Navbar() {
 
         <div className="hidden items-center gap-3 lg:flex">
           <LanguageToggle />
-          <ThemeToggle />
           <span className="mx-1 h-6 w-px bg-line" aria-hidden />
           <Link href="/login" className="text-sm font-semibold text-ink transition hover:text-leaf-strong">
             {tr("Đăng nhập", "Log in")}
@@ -65,7 +63,6 @@ export function Navbar() {
 
         <div className="flex items-center gap-1.5 lg:hidden">
           <LanguageToggle />
-          <ThemeToggle />
           <Button
             variant="ghost"
             size="iconSm"

@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowDownRight, ArrowRight } from "lucide-react";
 
@@ -41,7 +42,10 @@ export function HeroSection({ campaign }: { campaign?: PricingPlan | null }) {
           <p className="fl-rise kicker flex-wrap">
             <span>{tr("Trợ lý sức khỏe cây trồng", "Plant health assistant")}</span>
             <span className="hidden h-1 w-1 bg-current opacity-50 sm:block" aria-hidden />
-            <span>{tr(`Phát triển bởi ${DEVELOPER}`, `Developed by ${DEVELOPER}`)}</span>
+            <span className="inline-flex items-center gap-1.5">
+              <Image src="/logos/dieptek-mark.png" alt="" width={18} height={18} className="h-[18px] w-[18px]" />
+              {tr(`Phát triển bởi team ${DEVELOPER}`, `Developed by the ${DEVELOPER} team`)}
+            </span>
           </p>
 
           <h1
@@ -87,7 +91,7 @@ export function HeroSection({ campaign }: { campaign?: PricingPlan | null }) {
             {facts.map((fact, index) => (
               <div key={fact.label} className={cn("flex flex-col-reverse pt-4", index > 0 ? "border-l border-line pl-4" : "pr-4")}>
                 <dt className="mt-1 text-[11px] font-medium leading-4 text-ink-soft sm:text-xs sm:leading-5">{fact.label}</dt>
-                <dd className="font-display text-2xl font-extrabold tabular-nums tracking-[-0.03em] text-ink sm:text-3xl">{fact.value}</dd>
+                <dd className="font-display text-2xl font-extrabold tabular-nums tracking-[-0.03em] text-leaf-strong sm:text-3xl">{fact.value}</dd>
               </div>
             ))}
           </dl>

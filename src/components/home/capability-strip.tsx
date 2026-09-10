@@ -74,7 +74,7 @@ export function CapabilityStrip() {
                 index === rows.length - 1 && "lg:pr-0",
               )}
             >
-              <p className="font-display text-4xl font-extrabold tabular-nums tracking-[-0.04em] text-ink sm:text-[44px] sm:leading-none">
+              <p className="font-display text-4xl font-extrabold tabular-nums tracking-[-0.04em] text-leaf-strong sm:text-[44px] sm:leading-none">
                 {row.value}
               </p>
               <p className="mt-3 text-sm font-semibold text-ink">{row.label}</p>

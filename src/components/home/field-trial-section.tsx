@@ -106,7 +106,7 @@ export function FieldTrialSection() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-12">
         {shots.map((shot, index) => (
           <Reveal key={shot.src} delay={index * 0.06} className={shot.span}>
-            <figure className="group flex h-full flex-col border border-line bg-surface-raised">
+            <figure className="group flex h-full flex-col overflow-hidden rounded-[var(--r-xl)] bg-surface shadow-md">
               <div className={cn("relative overflow-hidden", shot.height)}>
                 <Image
                   src={shot.src}
@@ -116,7 +116,7 @@ export function FieldTrialSection() {
                   loading={index < 2 ? "eager" : "lazy"}
                   className="object-cover transition duration-700 group-hover:scale-[1.03] motion-reduce:transition-none"
                 />
-                <span className="absolute left-3 top-3 border border-line bg-surface px-2 py-1 font-display text-[11px] font-bold tabular-nums tracking-[0.12em] text-ink">
+                <span className="absolute left-3 top-3 rounded-full bg-surface-soft px-2.5 py-1 text-[11px] font-bold tabular-nums text-leaf-strong">
                   {tr("Ảnh", "Plate")} {String(index + 1).padStart(2, "0")}
                 </span>
               </div>

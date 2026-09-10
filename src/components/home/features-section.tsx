@@ -74,7 +74,7 @@ export function FeaturesSection() {
     >
       <div className="grid gap-10 lg:grid-cols-12 lg:gap-8">
         <Reveal className="lg:col-span-5">
-          <Link href={primary.href} className="group corner-marks flex h-full flex-col border border-line bg-surface-raised">
+          <Link href={primary.href} className="group flex h-full flex-col overflow-hidden rounded-[var(--r-xl)] bg-surface shadow-md transition duration-260 hover:-translate-y-1 hover:shadow-lg motion-reduce:transition-none">
             <span className="relative block aspect-[4/3] overflow-hidden sm:aspect-[16/9] lg:aspect-[4/3] lg:flex-1">
               <Image
                 src="/plant-leaves/feature-pepper-leaf.png"
@@ -83,7 +83,7 @@ export function FeaturesSection() {
                 sizes="(min-width: 1024px) 42vw, 100vw"
                 className="object-cover object-center transition duration-700 group-hover:scale-[1.02] motion-reduce:transition-none"
               />
-              <span className="absolute left-3 top-3 border border-line bg-surface px-2 py-1 font-display text-[11px] font-bold tabular-nums tracking-[0.12em] text-ink">
+              <span className="absolute left-3 top-3 rounded-full bg-surface-soft px-2.5 py-1 text-[12px] font-bold tabular-nums text-leaf-strong">
                 01
               </span>
             </span>

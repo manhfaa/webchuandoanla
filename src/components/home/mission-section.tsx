@@ -60,21 +60,21 @@ export function MissionSection() {
       </div>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-12 lg:items-stretch">
-        <Reveal className="paper-grain corner-marks relative flex flex-col justify-between border border-forest bg-forest p-7 text-on-forest dark:border-line dark:bg-[color-mix(in_srgb,var(--leaf)_10%,var(--surface-raised))] sm:p-9 lg:col-span-7">
-          <p className="kicker relative text-on-forest-muted">{tr("Nguyên tắc", "Principle")}</p>
-          <div className="relative mt-14">
+        <Reveal className="relative flex flex-col justify-between overflow-hidden rounded-[var(--r-xl)] bg-[linear-gradient(135deg,var(--leaf-strong)_0%,var(--leaf)_100%)] p-7 text-on-forest sm:p-9 lg:col-span-7">
+          <p className="kicker text-on-forest">{tr("Nguyên tắc", "Principle")}</p>
+          <div className="mt-14">
             <h3 className="max-w-xl font-display text-3xl font-extrabold leading-[1.12] tracking-[-0.04em] sm:text-[34px] text-balance">
               {tr("Hiểu vì sao hệ thống đưa ra gợi ý.", "Understand why the system makes a suggestion.")}
             </h3>
-            <p className="mt-4 max-w-lg text-sm leading-7 text-on-forest-muted sm:text-base">
+            <p className="mt-4 max-w-lg text-sm leading-7 text-[rgba(255,255,255,0.9)] sm:text-base">
               {tr("Một kết quả rõ ràng giúp bạn quan sát cây kỹ hơn trước khi quyết định cách xử lý.", "A clear result helps you observe the plant more closely before deciding how to treat it.")}
             </p>
           </div>
         </Reveal>
 
-        <Reveal delay={0.1} className="flex flex-col justify-center border-l-2 border-sun bg-sun-soft px-6 py-7 lg:col-span-5">
+        <Reveal delay={0.1} className="flex flex-col justify-center rounded-[var(--r-lg)] border-l-[3px] border-accent bg-surface-soft px-6 py-7 lg:col-span-5">
           <p className="flex items-center gap-2 font-semibold text-ink">
-            <TriangleAlert size={18} className="shrink-0 text-warning-ink" aria-hidden />
+            <TriangleAlert size={18} className="shrink-0 text-leaf" aria-hidden />
             {tr("Lưu ý khi sử dụng kết quả", "Note on using the results")}
           </p>
           <p className="mt-2 text-sm leading-6 text-ink-soft">

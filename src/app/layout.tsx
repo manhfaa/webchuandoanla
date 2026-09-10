@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Be_Vietnam_Pro, Bricolage_Grotesque } from "next/font/google";
+import { Be_Vietnam_Pro } from "next/font/google";
 
 import { BackendWakeup } from "@/components/system/backend-wakeup";
 import { ClarityAnalytics } from "@/components/system/clarity-analytics";
@@ -16,13 +16,6 @@ const beVietnamPro = Be_Vietnam_Pro({
   subsets: ["latin", "vietnamese"],
   weight: ["400", "500", "600", "700", "800"],
   variable: "--font-be-vietnam",
-  display: "swap",
-});
-
-const bricolage = Bricolage_Grotesque({
-  subsets: ["latin", "vietnamese"],
-  weight: ["600", "700", "800"],
-  variable: "--font-bricolage",
   display: "swap",
 });
 
@@ -120,14 +113,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" suppressHydrationWarning data-scroll-behavior="smooth">
-      <body className={`${beVietnamPro.variable} ${bricolage.variable} font-sans antialiased`}>
-        <ThemeProvider
-          attribute="data-theme"
-          defaultTheme="system"
-          enableSystem
-          enableColorScheme
-          disableTransitionOnChange
-        >
+      <body className={`${beVietnamPro.variable} font-sans antialiased`}>
+        {/* Light only since 2026-09-10: the DIEPTEK sheet has no dark set and the
+            toggle is gone. next-themes stays solely to pin the attribute, so a
+            visitor whose browser still remembers "dark" is not surprised. */}
+        <ThemeProvider attribute="data-theme" forcedTheme="light" enableSystem={false} enableColorScheme disableTransitionOnChange>
           <StructuredData />
           <HtmlLangSync />
           <SkipLink />

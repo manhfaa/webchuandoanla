@@ -14,9 +14,12 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-leaf text-on-leaf shadow-sm hover:bg-leaf-strong hover:shadow-md",
+          "bg-leaf font-semibold text-on-leaf shadow-sm hover:-translate-y-0.5 hover:bg-leaf-strong hover:shadow-button",
+        // Lime, for a dark or green ground where the primary would sink in.
+        accent:
+          "bg-accent font-semibold text-on-accent hover:-translate-y-0.5 hover:bg-accent-hover hover:shadow-button",
         secondary:
-          "border border-line bg-surface text-ink shadow-sm hover:bg-surface-soft",
+          "border-[1.5px] border-line-strong bg-surface text-ink hover:border-leaf hover:text-leaf",
         secondaryOnLight:
           "border border-line bg-surface-soft text-ink shadow-sm hover:bg-surface",
         tertiary:
@@ -31,7 +34,7 @@ const buttonVariants = cva(
       size: {
         sm: "h-11 rounded-md px-4 text-body-sm",
         md: "h-11 rounded-md px-5 text-body",
-        lg: "h-12 rounded-lg px-6 text-body-lg",
+        lg: "h-12 rounded-md px-6 text-body-lg",
         icon: "h-11 w-11 shrink-0 rounded-md p-0",
         iconSm: "h-11 w-11 shrink-0 rounded-md p-0",
       },

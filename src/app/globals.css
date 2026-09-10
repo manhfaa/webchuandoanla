@@ -95,7 +95,7 @@ body {
 }
 
 ::selection {
-  background: rgba(47, 166, 100, 0.22);
+  background: rgba(47, 125, 50, 0.22);
 }
 
 ::-webkit-scrollbar {
@@ -167,47 +167,11 @@ body {
   color: transparent;
 }
 
-[data-theme="dark"] .text-gradient {
-  background: linear-gradient(120deg, var(--ink) 0%, var(--leaf-strong) 54%, var(--leaf) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
 .leaflet-container {
   height: 100%;
   width: 100%;
   border-radius: var(--r-lg);
   z-index: 0;
-}
-
-[data-theme="dark"] .leaflet-container {
-  background: var(--surface-soft);
-}
-
-[data-theme="dark"] .leaflet-popup-content-wrapper,
-[data-theme="dark"] .leaflet-popup-tip,
-[data-theme="dark"] .leaflet-bar a,
-[data-theme="dark"] .leaflet-control-layers {
-  border-color: var(--line);
-  background: var(--surface-raised);
-  color: var(--ink);
-}
-
-[data-theme="dark"] .leaflet-bar a:hover,
-[data-theme="dark"] .leaflet-bar a:focus {
-  background: var(--surface-overlay);
-  color: var(--ink-strong);
-}
-
-[data-theme="dark"] .leaflet-control-attribution {
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  color: var(--ink-soft);
-}
-
-[data-theme="dark"] .leaflet-control-attribution a,
-[data-theme="dark"] .leaflet-popup-content a {
-  color: var(--leaf-strong);
 }
 
 /* ── Motion system: Field Lens ── */
@@ -492,54 +456,24 @@ body {
     opacity: 1;
   }
 
-  /* ── Technical-manual chrome (landing) ── */
+  /* ── Eyebrow per the DIEPTEK sheet: 12.5px caps, .12em, lime dash 24x2 ── */
   .kicker {
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 11px;
+    font-size: 12.5px;
     font-weight: 700;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--leaf-strong);
+    color: var(--leaf);
   }
 
   .kicker::before {
     content: "";
-    width: 18px;
-    height: 1px;
+    width: 24px;
+    height: 2px;
     flex: none;
-    background: currentColor;
-  }
-
-  /* Corner ticks like a drawing frame: two L-shapes, no extra markup. */
-  .corner-marks {
-    position: relative;
-  }
-
-  .corner-marks::before,
-  .corner-marks::after {
-    content: "";
-    position: absolute;
-    width: 14px;
-    height: 14px;
-    border: 0 solid var(--leaf);
-    pointer-events: none;
-    z-index: 2;
-  }
-
-  .corner-marks::before {
-    top: -1px;
-    left: -1px;
-    border-top-width: 2px;
-    border-left-width: 2px;
-  }
-
-  .corner-marks::after {
-    right: -1px;
-    bottom: -1px;
-    border-right-width: 2px;
-    border-bottom-width: 2px;
+    background: var(--accent);
   }
 
   .paper-grain {

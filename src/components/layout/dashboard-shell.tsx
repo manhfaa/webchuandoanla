@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
 import { LoaderCircle, Sprout } from "lucide-react";
 import { Toaster } from "sonner";
 
@@ -107,7 +106,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { initialized, hydrate, isAuthenticated } = useSessionStore();
   const { language } = useLanguageStore();
   const tr = useTr();
-  const { resolvedTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -149,7 +147,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-[100dvh] bg-canvas text-ink">
-      <Toaster richColors position="top-center" theme={resolvedTheme === "dark" ? "dark" : "light"} closeButton />
+      <Toaster richColors position="top-center" theme="light" closeButton />
       <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       <div className="flex min-h-[100dvh] flex-col lg:pl-[252px]">
         <WorkspaceHeader
