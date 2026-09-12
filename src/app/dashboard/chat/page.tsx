@@ -17,7 +17,7 @@ import { ErrorState, LoadingState } from "@/components/ui/states";
 import { Tabs } from "@/components/ui/tabs";
 import { assistantQuickPrompts, expertQuickPrompts } from "@/data/mock/chat";
 import { useVoiceInput } from "@/hooks/use-voice-input";
-import { isPlanLimitError, raiseIfPlanLimited } from "@/lib/plan-limit";
+import { bilingualError, errorMessageEn, isPlanLimitError, raiseIfPlanLimited } from "@/lib/plan-limit";
 import { useEntitlements } from "@/lib/use-entitlements";
 import { useTr } from "@/lib/use-tr";
 import { useDiagnosisStore } from "@/store/diagnosis-store";
@@ -117,6 +117,17 @@ export default function DashboardChatPage() {
         // lifts it; that opens the shared upgrade dialog instead of collapsing
         // into "chưa gửi được câu hỏi".
         raiseIfPlanLimited(response.status, failure, "daily_chat_messages");
+        // 502 and 503 carry the server's own sentence: the model provider is
+        // down, or not configured on this deployment at all. "Check your
+        // connection" would send the grower chasing their own network for a
+        // fault that is ours, and hid a missing key on production for days.
+        const detail = typeof failure?.detail === "string" ? failure.detail.trim() : "";
+        if ((response.status === 502 || response.status === 503) && detail) {
+          throw bilingualError({
+            vi: detail,
+            en: "The AI advisor is not available on the server right now. Please try again later.",
+          });
+        }
         throw new Error("Chat request failed");
       }
       const data = (await response.json()) as ChatApiResponse;
@@ -127,7 +138,9 @@ export default function DashboardChatPage() {
       // so show it rather than the generic connection copy.
       const message = isPlanLimitError(err)
         ? err.info.message
-        : tr("Hiện chưa gửi được câu hỏi. Hãy kiểm tra kết nối và thử lại sau ít phút.", "Could not send your question right now. Please check your connection and try again in a few minutes.");
+        : errorMessageEn(err)
+          ? tr((err as Error).message, errorMessageEn(err))
+          : tr("Hiện chưa gửi được câu hỏi. Hãy kiểm tra kết nối và thử lại sau ít phút.", "Could not send your question right now. Please check your connection and try again in a few minutes.");
       setMessagesByMode((current) => ({
         ...current,
         [mode]: [...current[mode], { id: `${mode}-${Date.now()}-error`, role: "assistant", content: message, createdAt: new Date().toISOString() }],

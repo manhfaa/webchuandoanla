@@ -19,6 +19,7 @@ from payments.entitlements import (
 )
 
 from .models import ChatConversation, ChatMessage, ExpertConsultation, ServicePlan, UserSubscription
+from aiproviders import deepseek
 from .services import chat as chat_service
 from .serializers import (
     ChatConversationSerializer,
@@ -203,6 +204,11 @@ class ChatMessageListCreateAPIView(generics.ListCreateAPIView):
         serializer.save()
 
 
+CHAT_NOT_CONFIGURED = (
+    "Tính năng tư vấn AI chưa được bật trên máy chủ này. Vui lòng thử lại sau."
+)
+
+
 class ChatRespondAPIView(APIView):
     """Ask a question and get the answer, in one request.
 
@@ -278,6 +284,17 @@ class ChatRespondAPIView(APIView):
                 remembered = {}
 
         if remembered.get("status") != "charged":
+            # A deployment with no provider key cannot answer anyone. Refuse
+            # before charging: otherwise every attempt burns one of a Seed
+            # account's daily questions for an answer that will never come, and
+            # the site keeps blaming the grower's connection. The
+            # ProviderNotConfigured branch below still covers a key that goes
+            # missing between the charge and the call.
+            if not deepseek.is_configured():
+                return Response(
+                    {"detail": CHAT_NOT_CONFIGURED},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                )
             # A 402 from here propagates untouched: the refusal, its Vietnamese
             # wording and the plan it points at are the catalogue's, and nothing
             # has been charged yet when it is raised.

@@ -383,6 +383,12 @@ class ChatRespondTests(MobileApiTestCase):
     def setUp(self):
         super().setUp()
         self.set_caps(chat_daily=3)
+        # The view now refuses before charging when no key is configured, and
+        # the test settings carry none; these tests are about everything after
+        # that gate, so give them a key. The provider itself stays mocked.
+        configured = self.settings(DEEPSEEK_API_KEY="sk-test")
+        configured.enable()
+        self.addCleanup(configured.disable)
         self.answers = []
         patcher = patch(
             "engagement.services.chat.deepseek.complete",
@@ -418,6 +424,18 @@ class ChatRespondTests(MobileApiTestCase):
         sent = str(self.answers[-1])
         self.assertNotIn("Mốc sương", sent)
         self.assertIn("không dùng dữ liệu CNN/YOLO", sent)
+
+    def test_a_missing_key_answers_503_without_charging(self):
+        # The production VPS ran for days with no DEEPSEEK_API_KEY: every
+        # question was charged, then failed. Refusing up front keeps the quota.
+        with self.settings(DEEPSEEK_API_KEY=""):
+            response = self.post(client_request_id="chat-nokey")
+
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertIn("chưa được bật", response.data["detail"])
+        self.assertFalse(ChatConversation.objects.exists())
+        self.assertFalse(ChatMessage.objects.exists())
+        self.assertEqual(self.answers, [])
 
     def test_assistant_mode_receives_the_chosen_check(self):
         diagnosis = self.make_diagnosis()
