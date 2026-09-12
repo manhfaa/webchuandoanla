@@ -11,7 +11,11 @@
 export const TRIAL_HOST = "Công ty TNHH Nông nghiệp Công nghệ cao Dabaco";
 export const TRIAL_HOST_SHORT = "Dabaco";
 export const TRIAL_PROVINCE = { vi: "Bắc Ninh", en: "Bac Ninh" };
-export const TEAM_NAME = "Green Green";
+// The team competed as "Green Green" and renamed itself DIEPTEK; the owner asked
+// for the new name on 2026-09-12. Kept as its own constant rather than reusing
+// DEVELOPER so the trial copy can still name the people, not the company, if
+// those ever diverge again.
+export const TEAM_NAME = "DIEPTEK";
 
 // Every photo from this trip lost its EXIF passing through a messaging app, so
 // there is no verified capture date. Rather than invent one, the caption strip
