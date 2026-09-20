@@ -1,3 +1,5 @@
+import { AsyncLocalStorage } from "node:async_hooks";
+
 import { NextResponse } from "next/server";
 
 import { requirePlanFeature } from "@/lib/api-auth";
@@ -49,6 +51,84 @@ const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL ?? "deepseek-v4-flash";
 const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
 const TAVILY_API_URL = "https://api.tavily.com/search";
+
+// One run is five model calls and two web searches, back to back. Without this
+// the function inherits the platform default, which on some Vercel plans is 10
+// seconds: the run was killed mid-way and the browser got an HTML 504 it could
+// not read. 60 is the ceiling every plan accepts.
+export const maxDuration = 60;
+
+/**
+ * The whole run must answer before the platform kills the function, so that a
+ * slow run ends in a JSON error the page can show instead of a gateway page.
+ * Each provider call reads what is left of this budget for its own timeout.
+ * AsyncLocalStorage rather than a module variable: one warm function instance
+ * can serve two growers at once.
+ */
+const RUN_BUDGET_MS = 55_000;
+const CALL_TIMEOUT_MS = 20_000;
+const runDeadline = new AsyncLocalStorage<number>();
+
+type ResearchFailure =
+  | "provider_auth" // key rejected, or the provider account is out of credit
+  | "provider_busy" // rate limit or provider-side 5xx
+  | "provider_timeout"
+  | "no_sources"
+  | "provider_failed";
+
+/** A failure the page can explain. `message` stays technical, for the log. */
+class ResearchError extends Error {
+  constructor(
+    readonly code: ResearchFailure,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ResearchError";
+  }
+}
+
+/** What the grower reads. No provider names: the fault is ours, not theirs. */
+const FAILURE_COPY: Record<ResearchFailure, { vi: string; en: string }> = {
+  provider_auth: {
+    vi: "Dịch vụ đối chiếu nguồn tham khảo đang tạm ngưng. Bạn vẫn có thể tiếp tục không cần triệu chứng; kết quả nhận diện ảnh được giữ nguyên.",
+    en: "The reference cross-check is temporarily switched off. You can continue without symptoms; your photo result is kept.",
+  },
+  provider_busy: {
+    vi: "Dịch vụ đối chiếu đang quá tải. Vui lòng thử lại sau ít phút, hoặc tiếp tục không cần triệu chứng.",
+    en: "The cross-check service is overloaded. Try again in a few minutes, or continue without symptoms.",
+  },
+  provider_timeout: {
+    vi: "Việc đối chiếu mất nhiều thời gian hơn dự kiến nên đã dừng lại. Bạn thử lại với mô tả ngắn gọn hơn, hoặc tiếp tục không cần triệu chứng.",
+    en: "The cross-check took longer than expected and was stopped. Try again with a shorter description, or continue without symptoms.",
+  },
+  no_sources: {
+    vi: "Chưa tìm được nguồn tham khảo phù hợp với mô tả này. Bạn thử mô tả rõ hơn màu sắc, vị trí và mức độ lan của vết bệnh.",
+    en: "No suitable reference sources were found for this description. Try describing the colour, position and spread of the marks more clearly.",
+  },
+  provider_failed: {
+    vi: "Chưa hoàn tất được bước đối chiếu với nguồn tham khảo. Vui lòng thử lại sau ít phút.",
+    en: "The reference cross-check could not be completed. Please try again in a few minutes.",
+  },
+};
+
+function failureForStatus(status: number): ResearchFailure {
+  if (status === 401 || status === 402 || status === 403) return "provider_auth";
+  if (status === 429 || status >= 500) return "provider_busy";
+  return "provider_failed";
+}
+
+/** Timeout for the next provider call, or a thrown timeout when none is left. */
+function nextCallTimeout(): number {
+  const deadline = runDeadline.getStore();
+  if (deadline === undefined) return CALL_TIMEOUT_MS;
+  const remaining = deadline - Date.now();
+  if (remaining < 2_000) throw new ResearchError("provider_timeout", "Hết ngân sách thời gian của lượt đối chiếu.");
+  return Math.min(CALL_TIMEOUT_MS, remaining - 500);
+}
+
+function isAbort(error: unknown) {
+  return error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
+}
 
 function cleanText(value: unknown) {
   return String(value ?? "").trim();
@@ -252,7 +332,7 @@ async function callDeepSeekText(prompt: string, maxOutputTokens = 700, jsonMode 
   if (!DEEPSEEK_API_KEY) return null;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20000);
+  const timeout = setTimeout(() => controller.abort(), nextCallTimeout());
 
   try {
     const response = await fetch(DEEPSEEK_API_URL, {
@@ -282,7 +362,7 @@ async function callDeepSeekText(prompt: string, maxOutputTokens = 700, jsonMode 
       } catch {
         // Keep the HTTP status when DeepSeek does not return a JSON error body.
       }
-      throw new Error(message);
+      throw new ResearchError(failureForStatus(response.status), message);
     }
     const data = (await response.json()) as {
       choices?: Array<{ finish_reason?: string; message?: { content?: unknown; reasoning_content?: unknown } }>;
@@ -295,6 +375,7 @@ async function callDeepSeekText(prompt: string, maxOutputTokens = 700, jsonMode 
     }
     return content || null;
   } catch (error) {
+    if (isAbort(error)) throw new ResearchError("provider_timeout", "DeepSeek không trả lời kịp trong thời gian cho phép.");
     if (error instanceof Error) throw error;
     return null;
   } finally {
@@ -339,7 +420,7 @@ async function callTavily(query: string) {
   if (!TAVILY_API_KEY) return null;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20000);
+  const timeout = setTimeout(() => controller.abort(), nextCallTimeout());
 
   try {
     const response = await fetch(TAVILY_API_URL, {
@@ -358,9 +439,14 @@ async function callTavily(query: string) {
       signal: controller.signal,
     });
 
-    if (!response.ok) return null;
+    // A rejected key and an exhausted search plan used to come back as `null`,
+    // and the grower was told "no sources found" for a description that was
+    // never searched at all.
+    if (!response.ok) throw new ResearchError(failureForStatus(response.status), `Tavily API lỗi ${response.status}`);
     return (await response.json()) as TavilySearchResponse;
-  } catch {
+  } catch (error) {
+    if (error instanceof ResearchError) throw error;
+    if (isAbort(error)) throw new ResearchError("provider_timeout", "Tavily không trả lời kịp trong thời gian cho phép.");
     return null;
   } finally {
     clearTimeout(timeout);
@@ -370,7 +456,7 @@ async function callTavily(query: string) {
 async function requireTavilySearch(query: string, step: string) {
   const search = await callTavily(query);
   if (!search?.results?.length) {
-    throw new Error(`Tavily không trả về nguồn cho bước: ${step}.`);
+    throw new ResearchError("no_sources", `Tavily không trả về nguồn cho bước: ${step}.`);
   }
   return search;
 }
@@ -603,6 +689,9 @@ export async function POST(request: Request) {
     vi:
       "Đối chiếu triệu chứng với nguồn tham khảo chỉ có từ gói Grow trở lên. " +
       "Bạn vẫn xem được kết quả nhận diện ảnh lá và các việc nên làm.",
+    en:
+      "Cross-checking symptoms against reference sources starts with the Grow plan. " +
+      "You still get the leaf photo result and what to do next.",
     upgradeTo: "grow",
   });
   if (!gate.allowed) {
@@ -622,16 +711,23 @@ export async function POST(request: Request) {
   }
 
   if (!DEEPSEEK_API_KEY) {
-    return NextResponse.json({ error: "Dịch vụ AI kiểm chứng triệu chứng chưa sẵn sàng. Vui lòng thử lại sau." }, { status: 503 });
+    return NextResponse.json(
+      { error: FAILURE_COPY.provider_auth.vi, error_en: FAILURE_COPY.provider_auth.en, code: "not_configured", stage: "reasoning" },
+      { status: 503 },
+    );
   }
 
   if (!TAVILY_API_KEY) {
-    return NextResponse.json({ error: "Dịch vụ tìm nguồn tham khảo chưa sẵn sàng. Vui lòng thử lại sau." }, { status: 503 });
+    return NextResponse.json(
+      { error: FAILURE_COPY.provider_auth.vi, error_en: FAILURE_COPY.provider_auth.en, code: "not_configured", stage: "sources" },
+      { status: 503 },
+    );
   }
 
   const selectedPrediction = body.selectedPrediction ?? body.topPredictions?.[0] ?? null;
   const topPredictions = (body.topPredictions ?? []).slice(0, 5);
 
+  return runDeadline.run(Date.now() + RUN_BUDGET_MS, async () => {
   try {
     const compatibilitySearchPrompt = await buildCompatibilitySearch(symptoms, topPredictions, selectedPrediction);
     const compatibilitySearch = await requireTavilySearch(compatibilitySearchPrompt.tavilyQuery, "kiểm chứng triệu chứng với kết quả CNN");
@@ -689,11 +785,34 @@ export async function POST(request: Request) {
       generatedAt: new Date().toISOString(),
     });
   } catch (error) {
+    // `stage` keeps the technical sentence for whoever opens the network tab;
+    // `error` is what the page prints, and it never names a provider.
+    const code: ResearchFailure = error instanceof ResearchError ? error.code : "provider_failed";
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Không hoàn tất được bước kiểm chứng triệu chứng bằng nguồn tham khảo.",
+        error: FAILURE_COPY[code].vi,
+        error_en: FAILURE_COPY[code].en,
+        code,
+        stage: error instanceof Error ? error.message : "unknown",
       },
-      { status: 502 },
+      { status: code === "provider_timeout" ? 504 : 502 },
     );
   }
+  });
+}
+
+/**
+ * Whether this deployment can run a cross-check at all: three booleans, nothing
+ * else. The keys for this route live on Vercel, separately from the backend's,
+ * and the backend already publishes the same kind of flag at
+ * /api/mobile/config/. Without it the only way to learn a key was missing was
+ * for a paying grower to hit the 503.
+ */
+export async function GET() {
+  const reasoning = Boolean(DEEPSEEK_API_KEY?.trim());
+  const sources = Boolean(TAVILY_API_KEY?.trim());
+  return NextResponse.json(
+    { symptom_research: reasoning && sources, reasoning, sources },
+    { headers: { "cache-control": "no-store" } },
+  );
 }

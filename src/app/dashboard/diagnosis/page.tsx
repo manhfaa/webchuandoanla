@@ -36,6 +36,7 @@ import {
   DiagnosisStepState,
 } from "@/types";
 import { useDiagnosisStore } from "@/store/diagnosis-store";
+import { isPlanLimitError, raiseIfPlanLimited } from "@/lib/plan-limit";
 import { useSessionStore } from "@/store/session-store";
 
 const CROP_STORAGE_KEY = "agromind-diagnosis-crop";
@@ -347,25 +348,49 @@ async function researchSymptomsWithSources({
   // the user is actually being shown rather than on a candidate the crop filter
   // already ruled out.
   const selectedPrediction = selectCnnResult(cnn, symptoms, cropId);
-  const response = await fetch("/api/research-symptoms", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    },
-    body: JSON.stringify({
-      symptoms,
-      selectedPrediction,
-      topPredictions: selectedPrediction.top_predictions.slice(0, 5),
-    }),
-  });
+  const send = (token: string | null) =>
+    fetch("/api/research-symptoms", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        symptoms,
+        selectedPrediction,
+        topPredictions: selectedPrediction.top_predictions.slice(0, 5),
+      }),
+    });
+
+  // This route is not called through django-client, so nothing renews the
+  // access token for it. A grower who spends a few minutes describing the leaf
+  // arrives here with an expired token, and the run was refused with a 401 that
+  // the page then reported as a failed cross-check.
+  let response = await send(accessToken);
+  if (response.status === 401) {
+    const renewed = await useSessionStore.getState().refreshAccessToken();
+    if (renewed) response = await send(renewed);
+  }
 
   if (!response.ok) {
+    // A gateway timeout answers with an HTML page, hence the tolerant parse.
+    const failure = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+    // 402: the plan does not include the cross-check. Opens the shared upgrade
+    // dialog and carries the sentence that names the plan which does.
+    raiseIfPlanLimited(response.status, failure);
+
+    // Every other refusal used to collapse into one sentence, so an expired
+    // session, a switched-off service and a slow run all looked the same. The
+    // route now sends a sentence per cause; show it.
+    const vi = typeof failure?.error === "string" ? failure.error.trim() : "";
+    const en = typeof failure?.error_en === "string" ? failure.error_en.trim() : "";
     throw new Error(
-      tr(
-        "Chưa thể đối chiếu triệu chứng với nguồn tham khảo. Vui lòng thử lại sau ít phút.",
-        "Could not cross-check your symptoms against reference sources. Please try again in a few minutes.",
-      ),
+      vi
+        ? tr(vi, en || vi)
+        : tr(
+            "Chưa thể đối chiếu triệu chứng với nguồn tham khảo. Vui lòng thử lại sau ít phút.",
+            "Could not cross-check your symptoms against reference sources. Please try again in a few minutes.",
+          ),
     );
   }
   return (await response.json()) as SymptomResearchResult;
@@ -1046,7 +1071,9 @@ export default function DashboardDiagnosisPage() {
     } catch (error) {
       if (symptoms.trim()) {
         setResearchError(
-          error instanceof Error
+          isPlanLimitError(error)
+            ? tr(error.info.message, error.info.messageEn || error.info.message)
+            : error instanceof Error
             ? error.message
             : tr(
                 "Chưa thể đối chiếu triệu chứng với nguồn tham khảo. Vui lòng thử lại.",
