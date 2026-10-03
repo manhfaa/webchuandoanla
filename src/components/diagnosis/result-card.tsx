@@ -15,6 +15,7 @@ import { toUserFacingText } from "@/lib/user-facing-copy";
 import { withViFallback } from "@/lib/crop-plan-labels";
 import { safeExternalUrl } from "@/lib/safe-external-url";
 import { useTr } from "@/lib/use-tr";
+import { formatConfidence } from "@/lib/utils";
 import type { DiagnosisRecord } from "@/types";
 
 type Tr = (vi: string, en: string) => string;
@@ -222,6 +223,24 @@ export function DiagnosisResultCard({
         </div>
         {!detailsOnly ? <StatusBadge status={status.state} label={status.label} /> : null}
       </div>
+
+      {detailsOnly ? (
+        <div className="mt-5 grid gap-4 rounded-xl border border-leaf/20 bg-surface-soft p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+          <div>
+            <p className="text-overline text-leaf-strong">{tr("Kết luận chính", "Main conclusion")}</p>
+            <p className="mt-2 font-display text-2xl font-bold leading-tight tracking-[-0.03em] text-ink">
+              {displayDiseaseName(record, tr) || tr("Chưa có gợi ý bệnh", "No disease suggestion yet")}
+            </p>
+            <p className="mt-2 text-sm text-ink-soft">
+              {tr("Cây được nhận diện:", "Recognized plant:")} {displayPlantName(record, tr) || tr("Chưa xác định", "Not identified")}
+            </p>
+          </div>
+          <div className="flex items-center gap-3 sm:flex-col sm:items-end">
+            <StatusBadge status={status.state} label={status.label} />
+            <span className="text-sm font-bold text-ink">{formatConfidence(confidence)}</span>
+          </div>
+        </div>
+      ) : null}
 
       <div className="mt-6 grid gap-5 xl:grid-cols-[0.86fr_1.14fr]">
         <div className="space-y-4">

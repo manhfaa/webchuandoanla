@@ -42,7 +42,7 @@ function getWorkspaceSubtitle(workspace: ChatWorkspace, tr: (vi: string, en: str
 
 export default function DashboardChatPage() {
   const tr = useTr();
-  const { accessToken } = useSessionStore();
+  const { accessToken, refreshAccessToken } = useSessionStore();
   const { records, latestRecordId } = useDiagnosisStore();
   const [workspace, setWorkspace] = useState<ChatWorkspace>("assistant");
   const [selectedDiagnosisId, setSelectedDiagnosisId] = useState("");
@@ -93,21 +93,32 @@ export default function DashboardChatPage() {
 
     try {
       const diagnosisForRequest = mode === "assistant" ? selectedDiagnosis : null;
-      const response = await fetch("/api/chat", {
+      // Chat goes through a dedicated Next.js proxy rather than django-client,
+      // so it must refresh the short-lived access token itself. Reuse the same
+      // idempotency key on retry: a recovered 401 must not charge the question
+      // twice or create a duplicate conversation.
+      const clientRequestId = crypto.randomUUID();
+      const requestChat = (token: string | null) => fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           query: content,
           mode,
-          clientRequestId: crypto.randomUUID(),
+          clientRequestId,
           latestDiagnosis: diagnosisForRequest,
           selectedDiagnosis: diagnosisForRequest,
           conversationId: conversationByMode[mode],
         }),
       });
+
+      let response = await requestChat(accessToken);
+      if (response.status === 401) {
+        const refreshedToken = await refreshAccessToken();
+        if (refreshedToken) response = await requestChat(refreshedToken);
+      }
       if (!response.ok) {
         const failure = (await response.json().catch(() => null)) as (ChatApiResponse & Record<string, unknown>) | null;
         // Keep the conversation the server opened, so a refused question does
@@ -117,15 +128,20 @@ export default function DashboardChatPage() {
         // lifts it; that opens the shared upgrade dialog instead of collapsing
         // into "chưa gửi được câu hỏi".
         raiseIfPlanLimited(response.status, failure, "daily_chat_messages");
-        // 502 and 503 carry the server's own sentence: the model provider is
-        // down, or not configured on this deployment at all. "Check your
-        // connection" would send the grower chasing their own network for a
-        // fault that is ours, and hid a missing key on production for days.
-        const detail = typeof failure?.detail === "string" ? failure.detail.trim() : "";
-        if ((response.status === 502 || response.status === 503) && detail) {
+        // The Next.js proxy uses `error` for rejected requests while Django
+        // uses `detail`. Keep either server's actionable explanation instead
+        // of incorrectly telling the grower their connection is at fault.
+        const detail = [failure?.detail, failure?.error, failure?.message]
+          .find((value): value is string => typeof value === "string" && value.trim().length > 0)
+          ?.trim();
+        if (detail) {
           throw bilingualError({
-            vi: detail,
-            en: "The AI advisor is not available on the server right now. Please try again later.",
+            vi: response.status === 401
+              ? "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại rồi thử lại."
+              : detail,
+            en: response.status === 401
+              ? "Your sign-in session has expired. Please sign in again and retry."
+              : "The AI advisor could not complete this request right now. Please try again later.",
           });
         }
         throw new Error("Chat request failed");
