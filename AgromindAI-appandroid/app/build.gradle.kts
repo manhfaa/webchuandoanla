@@ -42,7 +42,7 @@ android {
 
         // Only public values reach BuildConfig, because everything here ships
         // inside the APK. See local.properties.example.
-        buildConfigField("String", "WEBSITE_URL", "\"https://agromind.io.vn\"")
+        buildConfigField("String", "WEBSITE_URL", "\"https://www.agromind.farm\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${config("AGROMIND_GOOGLE_WEB_CLIENT_ID")}\"")
     }
 

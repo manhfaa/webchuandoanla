@@ -135,8 +135,8 @@ export function GoogleSignInButton({ clientId, onCredential, onError, text = "co
     script.onerror = () =>
       handlersRef.current.onError(
         tr(
-          "Chưa thể mở đăng nhập Google. Vui lòng dùng email hoặc thử lại sau.",
-          "Google sign-in could not be opened. Please use email or try again later.",
+          "Chưa thể mở đăng nhập Google. Vui lòng thử lại sau.",
+          "Google sign-in could not be opened. Please try again later.",
         ),
       );
     document.head.appendChild(script);

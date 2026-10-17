@@ -12,12 +12,10 @@ export type DjangoRegisterRequest = {
   email: string;
   password: string;
   accepted_terms: boolean;
+  turnstile_token: string;
 };
 
-export type DjangoRegisterResponse = DjangoLoginResponse & {
-  id: number;
-  email: string;
-};
+export type DjangoRegisterResponse = { detail: string };
 
 export type DjangoCnnPrediction = {
   class_name: string;
@@ -311,12 +309,13 @@ export async function djangoLogin(payload: { email: string; password: string }) 
   });
 }
 
-export async function djangoGoogleLogin(payload: { credential: string; acceptedTerms?: boolean }) {
+export async function djangoGoogleLogin(payload: { credential: string; acceptedTerms?: boolean; turnstileToken?: string }) {
   return djangoFetch<DjangoLoginResponse>("/api/auth/google/", {
     method: "POST",
     body: JSON.stringify({
       credential: payload.credential,
       accepted_terms: Boolean(payload.acceptedTerms),
+      turnstile_token: payload.turnstileToken ?? "",
     }),
   });
 }
@@ -357,12 +356,24 @@ export async function djangoRefreshToken(refreshToken: string) {
   });
 }
 
-/** Registration now returns the JWT pair, so the account and the session are
- * created in one round-trip instead of create-then-login. */
 export async function djangoRegister(payload: DjangoRegisterRequest) {
   return djangoFetch<DjangoRegisterResponse>("/api/auth/register/", {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+export async function djangoVerifyEmail(token: string) {
+  return djangoFetch<{ detail: string }>("/api/auth/verify-email/", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+}
+
+export async function djangoResendVerification(email: string, turnstileToken: string) {
+  return djangoFetch<{ detail: string }>("/api/auth/verify-email/resend/", {
+    method: "POST",
+    body: JSON.stringify({ email, turnstile_token: turnstileToken }),
   });
 }
 

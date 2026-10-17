@@ -7,6 +7,7 @@ from django.core.mail import EmailMessage
 logger = logging.getLogger(__name__)
 
 RESET_SUBJECT = "Đặt lại mật khẩu Agromind AI"
+VERIFY_SUBJECT = "Xác minh email Agromind AI"
 
 
 CONSOLE_BACKEND = "django.core.mail.backends.console.EmailBackend"
@@ -27,6 +28,29 @@ def delivery_is_configured() -> bool:
 def build_password_reset_url(raw_token: str) -> str:
     base = (getattr(settings, "FRONTEND_ORIGIN", "") or "").rstrip("/")
     return f"{base}/reset-password?token={quote(raw_token, safe='')}"
+
+
+def send_verification_email(user, raw_token: str) -> bool:
+    base = (getattr(settings, "FRONTEND_ORIGIN", "") or "").rstrip("/")
+    url = f"{base}/verify-email?token={quote(raw_token, safe='')}"
+    body = (
+        f"Xin chào {user.full_name or user.username},\n\n"
+        "Vui lòng xác minh email để kích hoạt tài khoản Agromind AI. "
+        "Liên kết có hiệu lực trong 24 giờ:\n\n"
+        f"{url}\n\n"
+        "Nếu bạn không đăng ký, hãy bỏ qua email này.\n\nAgromind AI\n"
+    )
+    try:
+        EmailMessage(
+            subject=VERIFY_SUBJECT,
+            body=body,
+            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+            to=[user.email],
+        ).send(fail_silently=False)
+        return True
+    except Exception:
+        logger.exception("Không gửi được email xác minh cho user_id=%s", user.pk)
+        return False
 
 
 def send_password_reset_email(user, raw_token: str) -> bool:

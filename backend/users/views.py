@@ -1,14 +1,24 @@
 from django.conf import settings as django_settings
-from rest_framework import generics, permissions, status
+from django.contrib.auth import get_user_model
+from django.db import transaction
+from django.utils import timezone
+from rest_framework import generics, permissions, serializers, status
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenRefreshView
 
-from .emails import delivery_is_configured, send_password_reset_email
-from .models import PasswordResetToken, UserSetting
+from .emails import delivery_is_configured, send_password_reset_email, send_verification_email
+from .models import EmailVerificationToken, PasswordResetToken, UserSetting
+from .registration_security import (
+    RegistrationUnavailable,
+    finish_registration,
+    reserve_registration,
+    verify_turnstile,
+)
 from .serializers import (
     AccountDeleteSerializer,
+    ActiveUserRefreshSerializer,
     EmailTokenSerializer,
     GoogleLoginSerializer,
     LogoutSerializer,
@@ -26,6 +36,8 @@ from .throttling import (
     LoginIPRateThrottle,
     PasswordResetRateThrottle,
 )
+
+User = get_user_model()
 
 # Deliberately identical whether or not the address is registered, so the
 # endpoint cannot be used to enumerate accounts.
@@ -52,29 +64,109 @@ def _client_ip(request):
 class RegisterAPIView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
-    throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "register"
+    throttle_classes = []
 
     def create(self, request, *args, **kwargs):
-        """Return the JWT pair with the new account.
-
-        Registration used to be create-then-login from the browser: when the
-        second call failed the account existed but the UI reported failure and
-        the user had no idea they already had one.
-        """
+        if not django_settings.PASSWORD_REGISTRATION_ENABLED:
+            return Response(
+                {"detail": "Đăng ký bằng email hiện không hỗ trợ. Vui lòng tiếp tục bằng Google."},
+                status=status.HTTP_410_GONE,
+            )
+        if not delivery_is_configured():
+            raise RegistrationUnavailable()
+        email = str(request.data.get("email", ""))[:254].strip().lower()
+        attempt = reserve_registration(request, email)
+        try:
+            verify_turnstile(request.data.get("turnstile_token", ""))
+        except Exception:
+            finish_registration(attempt, "challenge_failed")
+            raise
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
+        if not serializer.is_valid():
+            finish_registration(attempt, "invalid_form")
+            raise serializers.ValidationError(serializer.errors)
+        email = serializer.validated_data["email"]
+        try:
+            with transaction.atomic():
+                user = serializer.save()
+                raw_token = EmailVerificationToken.issue(user)
+                if not send_verification_email(user, raw_token):
+                    raise RegistrationUnavailable()
+        except Exception:
+            finish_registration(attempt, "delivery_failed")
+            raise
+        finish_registration(attempt, "pending")
         return Response(
-            {"id": user.id, "email": user.email, **build_tokens_for_user(user)},
+            {"detail": "Đã gửi liên kết xác minh. Vui lòng kiểm tra email để kích hoạt tài khoản."},
             status=status.HTTP_201_CREATED,
         )
+
+
+class EmailVerificationAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [PasswordResetRateThrottle]
+
+    def post(self, request):
+        raw = request.data.get("token", "")
+        with transaction.atomic():
+            token = EmailVerificationToken.from_raw(raw)
+            if token is None:
+                return Response({"detail": "Liên kết không hợp lệ hoặc đã hết hạn."}, status=400)
+            token = EmailVerificationToken.objects.select_for_update().select_related("user").get(pk=token.pk)
+            if not token.is_usable or token.user.email_verified_at is not None:
+                return Response({"detail": "Liên kết không hợp lệ hoặc đã hết hạn."}, status=400)
+            user = token.user
+            user.email_verified_at = timezone.now()
+            user.is_active = True
+            user.save(update_fields=["email_verified_at", "is_active", "updated_at"])
+            token.used_at = timezone.now()
+            token.save(update_fields=["used_at"])
+        return Response({"detail": "Email đã được xác minh. Bạn có thể đăng nhập."})
+
+
+class EmailVerificationResendAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [PasswordResetRateThrottle]
+
+    def post(self, request):
+        if not django_settings.PASSWORD_REGISTRATION_ENABLED:
+            return Response(
+                {"detail": "Đăng ký bằng email hiện không hỗ trợ. Vui lòng tiếp tục bằng Google."},
+                status=status.HTTP_410_GONE,
+            )
+        if not delivery_is_configured():
+            raise RegistrationUnavailable()
+        email = str(request.data.get("email", "")).strip().lower()
+        if not email or len(email) > 254:
+            raise serializers.ValidationError({"email": "Email không hợp lệ."})
+        attempt = reserve_registration(request, email)
+        try:
+            verify_turnstile(request.data.get("turnstile_token", ""))
+        except Exception:
+            finish_registration(attempt, "challenge_failed")
+            raise
+        try:
+            user = User.objects.filter(email__iexact=email, is_active=False, email_verified_at__isnull=True).first()
+            if user:
+                with transaction.atomic():
+                    raw_token = EmailVerificationToken.issue(user)
+                    if not send_verification_email(user, raw_token):
+                        raise RegistrationUnavailable()
+        except Exception:
+            finish_registration(attempt, "delivery_failed")
+            raise
+        finish_registration(attempt, "resend" if user else "ignored")
+        return Response({"detail": "Nếu tài khoản đang chờ xác minh, chúng tôi đã gửi liên kết mới."})
 
 
 class LoginAPIView(TokenObtainPairView):
     serializer_class = EmailTokenSerializer
     permission_classes = [permissions.AllowAny]
     throttle_classes = [LoginEmailRateThrottle, LoginIPRateThrottle]
+
+
+class ActiveUserTokenRefreshAPIView(TokenRefreshView):
+    serializer_class = ActiveUserRefreshSerializer
 
 
 class GoogleLoginAPIView(APIView):
@@ -92,7 +184,7 @@ class GoogleLoginAPIView(APIView):
         return Response({"configured": bool(getattr(django_settings, "GOOGLE_CLIENT_ID", "").strip())})
 
     def post(self, request):
-        serializer = GoogleLoginSerializer(data=request.data)
+        serializer = GoogleLoginSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data)
 

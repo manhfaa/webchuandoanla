@@ -2,16 +2,21 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password as run_password_validators
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils import timezone
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.settings import api_settings as jwt_settings
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from payments.services import expire_user_plan
 
 from .models import PasswordResetToken, UserSetting
+from .registration_security import finish_registration, reserve_registration, verify_turnstile
 
 User = get_user_model()
 
@@ -36,6 +41,8 @@ def revoke_all_refresh_tokens(user):
 
 
 def build_tokens_for_user(user):
+    if not user.is_active:
+        raise serializers.ValidationError("Tài khoản cần xác minh email trước khi sử dụng.")
     expire_user_plan(user)
     refresh = RefreshToken.for_user(user)
     refresh["username"] = user.username
@@ -46,6 +53,15 @@ def build_tokens_for_user(user):
         "refresh": str(refresh),
         "access": str(refresh.access_token),
     }
+
+
+class ActiveUserRefreshSerializer(TokenRefreshSerializer):
+    def validate(self, attrs):
+        refresh = self.token_class(attrs["refresh"])
+        user_id = refresh.get(jwt_settings.USER_ID_CLAIM)
+        if not User.objects.filter(**{jwt_settings.USER_ID_FIELD: user_id}, is_active=True).exists():
+            raise AuthenticationFailed("Tài khoản chưa được kích hoạt hoặc đã bị vô hiệu hóa.")
+        return super().validate(attrs)
 
 
 def build_unique_username(email: str) -> str:
@@ -104,6 +120,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
         user.set_password(password)
         user.record_terms_consent()
+        user.is_active = False
         user.save()
         UserSetting.objects.get_or_create(user=user)
         return user
@@ -155,6 +172,8 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "Email không được để trống, vì đây là thông tin dùng để đăng nhập."
             )
+        if self.instance is not None and normalized_email != self.instance.email.lower():
+            raise serializers.ValidationError("Không thể đổi email đã xác minh trong trang hồ sơ.")
         taken = User.objects.filter(email__iexact=normalized_email)
         if self.instance is not None:
             taken = taken.exclude(pk=self.instance.pk)
@@ -201,6 +220,8 @@ class EmailTokenSerializer(serializers.Serializer):
         # password directly, so it has to enforce the same rule or a disabled
         # account could still mint a valid JWT pair.
         if not user.is_active:
+            if user.email_verified_at is None:
+                raise serializers.ValidationError("Vui lòng xác minh email trước khi đăng nhập.")
             raise serializers.ValidationError("Tài khoản này đã bị vô hiệu hóa.")
 
         return build_tokens_for_user(user)
@@ -211,6 +232,7 @@ class GoogleLoginSerializer(serializers.Serializer):
     # Only consulted when the Google identity has no account yet: that request
     # is a registration, and registrations need recorded consent.
     accepted_terms = serializers.BooleanField(required=False, default=False)
+    turnstile_token = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     def validate(self, attrs):
         client_id = getattr(settings, "GOOGLE_CLIENT_ID", "").strip()
@@ -253,16 +275,29 @@ class GoogleLoginSerializer(serializers.Serializer):
                         )
                     }
                 )
+            request = self.context.get("request")
+            attempt = reserve_registration(request, email)
+            try:
+                verify_turnstile(attrs.get("turnstile_token", ""))
+            except Exception:
+                finish_registration(attempt, "challenge_failed")
+                raise
             user = User(
                 username=build_unique_username(email),
                 email=email,
                 full_name=full_name,
                 avatar_url=avatar_url,
+                email_verified_at=timezone.now(),
             )
             user.set_unusable_password()
             user.record_terms_consent()
-            user.save()
-            UserSetting.objects.get_or_create(user=user)
+            try:
+                user.save()
+                UserSetting.objects.get_or_create(user=user)
+            except Exception:
+                finish_registration(attempt, "invalid_form")
+                raise
+            finish_registration(attempt, "google")
         else:
             update_fields = []
             if full_name and (not user.full_name or user.full_name in {"Người dùng Leafiq", "Người dùng AgromindAI"}):

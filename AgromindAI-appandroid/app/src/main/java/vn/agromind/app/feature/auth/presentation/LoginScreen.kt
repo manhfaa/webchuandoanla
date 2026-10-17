@@ -216,17 +216,20 @@ fun LoginScreen(
     if (state.googleNeedsConsent) {
         AlertDialog(
             onDismissRequest = viewModel::dismissGoogleConsent,
-            title = { Text("Tạo tài khoản bằng Google?") },
+            title = { Text("Tạo tài khoản mới") },
             text = {
                 Text(
-                    "Đây là lần đầu email Google này dùng Agromind AI. Khi tiếp tục, bạn đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư.",
+                    "Đây là lần đầu tài khoản Google này dùng Agromind AI. Vui lòng đăng ký trên website để hoàn tất xác minh an toàn, sau đó quay lại ứng dụng để đăng nhập.",
                 )
             },
             dismissButton = {
                 TextButton(onClick = viewModel::dismissGoogleConsent) { Text("Để sau") }
             },
             confirmButton = {
-                TextButton(onClick = viewModel::acceptGoogleTerms) { Text("Đồng ý và tiếp tục") }
+                TextButton(onClick = {
+                    viewModel.dismissGoogleConsent()
+                    onRegister()
+                }) { Text("Đến trang đăng ký") }
             },
         )
     }

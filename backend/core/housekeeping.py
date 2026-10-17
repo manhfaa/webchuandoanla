@@ -17,6 +17,8 @@ a scheduled run leaves evidence rather than silence.
 """
 
 from django.core.management import call_command
+from datetime import timedelta
+
 from django.utils import timezone
 
 
@@ -31,7 +33,7 @@ def run_housekeeping(*, stdout=None) -> dict[str, int]:
     from engagement.models import UserSubscription
     from payments.models import PaymentOrder
     from payments.services import OPEN_ORDER_STATUSES
-    from users.models import PasswordResetToken
+    from users.models import EmailVerificationToken, PasswordResetToken, RegistrationAttempt
 
     now = timezone.now()
     User = get_user_model()
@@ -63,6 +65,12 @@ def run_housekeeping(*, stdout=None) -> dict[str, int]:
     #    dead row is still a row, and the table only grows.
     report["reset_tokens_pruned"] = PasswordResetToken.objects.filter(
         expires_at__lte=now
+    ).delete()[0]
+    report["verification_tokens_pruned"] = EmailVerificationToken.objects.filter(
+        expires_at__lte=now
+    ).delete()[0]
+    report["registration_attempts_pruned"] = RegistrationAttempt.objects.filter(
+        created_at__lt=now - timedelta(days=30)
     ).delete()[0]
 
     # 4. Rotation blacklists every refresh token it replaces, so this table grows

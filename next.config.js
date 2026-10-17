@@ -7,6 +7,7 @@ const scriptSources = [
   "'unsafe-inline'",
   ...(isDevelopment ? ["'unsafe-eval'"] : []),
   "https://accounts.google.com",
+  "https://challenges.cloudflare.com",
   "https://*.clarity.ms",
   "https://c.bing.com",
   "https://www.googletagmanager.com",
@@ -18,6 +19,7 @@ const connectSources = [
   "https://*.agromind.farm",
   "https://accounts.google.com",
   "https://oauth2.googleapis.com",
+  "https://challenges.cloudflare.com",
   "https://*.clarity.ms",
   "https://c.bing.com",
   "https://www.google-analytics.com",
@@ -44,7 +46,7 @@ const cspDirectives = [
   // Wildcards do not match apex domains, so list both canonical hosts explicitly.
   // CSP wildcard covers subdomains only — so the apex is listed separately.
   `connect-src ${connectSources.join(" ")}`,
-  "frame-src 'self' https://accounts.google.com",
+  "frame-src 'self' https://accounts.google.com https://challenges.cloudflare.com",
   "media-src 'self' data: blob:",
   "worker-src 'self' blob:",
   "manifest-src 'self'",

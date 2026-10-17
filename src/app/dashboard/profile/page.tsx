@@ -307,7 +307,7 @@ export default function DashboardProfilePage() {
           <p className="text-overline text-leaf-strong">{tr("Thông tin cá nhân", "Personal details")}</p>
           <div className="mt-5 grid gap-5 md:grid-cols-2">
             <Input tone="light" label={tr("Tên người dùng", "Display name")} value={form.full_name} onChange={(event) => updateField("full_name", event.target.value)} />
-            <Input tone="light" label="Email" type="email" value={form.email} onChange={(event) => updateField("email", event.target.value)} />
+            <Input tone="light" label="Email" type="email" value={form.email} readOnly hint={tr("Email đã xác minh không thể đổi trong hồ sơ.", "Verified email cannot be changed in your profile.")} />
             <Input
               tone="light"
               label={tr("Số điện thoại", "Phone number")}

@@ -1,6 +1,9 @@
 import os
+import hashlib
+import hmac
 from datetime import timedelta
 from io import StringIO
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.conf import settings as django_settings
@@ -17,10 +20,22 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import TERMS_VERSION, PasswordResetToken
+from .models import TERMS_VERSION, EmailVerificationToken, PasswordResetToken, RegistrationAttempt
+from .registration_security import _client_ip
 
 PASSWORD = "StrongPass#2026"
 NEW_PASSWORD = "AnotherPass#2026"
+
+
+class RegistrationIpTrustTests(TestCase):
+    @override_settings(REGISTRATION_PROXY_SECRET="shared-test-secret")
+    def test_only_signed_proxy_ip_is_trusted(self):
+        request = SimpleNamespace(META={"REMOTE_ADDR": "198.51.100.2", "HTTP_X_AGROMIND_CLIENT_IP": "203.0.113.5"})
+        self.assertEqual(_client_ip(request), "198.51.100.2")
+        request.META["HTTP_X_AGROMIND_IP_SIGNATURE"] = hmac.new(
+            b"shared-test-secret", b"203.0.113.5", hashlib.sha256
+        ).hexdigest()
+        self.assertEqual(_client_ip(request), "203.0.113.5")
 
 
 class ProvisionAdminCommandTests(TestCase):
@@ -96,12 +111,20 @@ class LoginSecurityTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertNotIn("access", response.data)
 
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        TURNSTILE_SECRET_KEY="test",
+        FRONTEND_ORIGIN="https://agromind.farm",
+        PASSWORD_REGISTRATION_ENABLED=True,
+    )
     def test_weak_password_is_rejected_on_register(self):
-        response = self.client.post(
-            reverse("register"),
-            {"email": "weak@example.com", "password": "12345678", "accepted_terms": True},
-            format="json",
-        )
+        with patch("users.registration_security.requests.post") as verify:
+            verify.return_value.json.return_value = {"success": True, "action": "register", "hostname": "agromind.farm"}
+            response = self.client.post(
+                reverse("register"),
+                {"email": "weak@example.com", "password": "12345678", "accepted_terms": True, "turnstile_token": "test-token"},
+                format="json",
+            )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(get_user_model().objects.filter(email="weak@example.com").exists())
 
@@ -170,13 +193,32 @@ class EmailUniquenessTests(TestCase):
         self.assertEqual(get_user_model().objects.filter(email="").count(), 2)
 
 
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    TURNSTILE_SECRET_KEY="unit-test-secret",
+    FRONTEND_ORIGIN="https://agromind.farm",
+    PASSWORD_REGISTRATION_ENABLED=True,
+)
 class RegistrationConsentTests(APITestCase):
     """Consent used to be a browser-only checkbox with no server-side record."""
+
+    def setUp(self):
+        verifier_patcher = patch("users.registration_security.requests.post")
+        self.mock_verify = verifier_patcher.start()
+        self.addCleanup(verifier_patcher.stop)
+        self.mock_verify.return_value.json.return_value = {
+            "success": True,
+            "action": "register",
+            "hostname": "agromind.farm",
+        }
+
+    def payload(self, email="consented@example.com"):
+        return {"email": email, "password": PASSWORD, "accepted_terms": True, "turnstile_token": "test-token"}
 
     def test_registration_requires_and_records_consent(self):
         response = self.client.post(
             reverse("register"),
-            {"email": "consented@example.com", "password": PASSWORD, "accepted_terms": True},
+            self.payload(),
             format="json",
         )
 
@@ -184,11 +226,16 @@ class RegistrationConsentTests(APITestCase):
         user = get_user_model().objects.get(email="consented@example.com")
         self.assertIsNotNone(user.terms_accepted_at)
         self.assertEqual(user.terms_version, TERMS_VERSION)
+        self.assertFalse(user.is_active)
+        self.assertIsNone(user.email_verified_at)
+        self.assertNotIn("access", response.data)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("/verify-email?token=", mail.outbox[0].body)
 
     def test_registration_without_consent_is_rejected(self):
         for payload in (
-            {"email": "nope@example.com", "password": PASSWORD, "accepted_terms": False},
-            {"email": "nope@example.com", "password": PASSWORD},
+            {"email": "nope@example.com", "password": PASSWORD, "accepted_terms": False, "turnstile_token": "test-token"},
+            {"email": "nope@example.com", "password": PASSWORD, "turnstile_token": "test-token"},
         ):
             response = self.client.post(reverse("register"), payload, format="json")
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -196,23 +243,129 @@ class RegistrationConsentTests(APITestCase):
 
         self.assertFalse(get_user_model().objects.filter(email="nope@example.com").exists())
 
-    def test_registration_returns_tokens_so_sign_in_is_not_a_second_call(self):
+    def test_registration_requires_email_verification_before_login_and_quota(self):
         response = self.client.post(
             reverse("register"),
-            {"email": "atomic@example.com", "password": PASSWORD, "accepted_terms": True},
+            self.payload("atomic@example.com"),
             format="json",
         )
-
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertIn("access", response.data)
-        self.assertIn("refresh", response.data)
+        login = self.client.post(reverse("login"), {"email": "atomic@example.com", "password": PASSWORD}, format="json")
+        self.assertEqual(login.status_code, 400)
+        self.assertIn("xác minh", str(login.data))
+        token = EmailVerificationToken.objects.get(user__email="atomic@example.com")
+        raw = mail.outbox[0].body.split("token=", 1)[1].split()[0]
+        self.assertNotEqual(raw, token.token_hash)
+        confirmed = self.client.post(reverse("verify-email"), {"token": raw}, format="json")
+        self.assertEqual(confirmed.status_code, 200)
+        self.assertEqual(self.client.post(reverse("verify-email"), {"token": raw}, format="json").status_code, 400)
+        self.assertTrue(get_user_model().objects.get(email="atomic@example.com").is_active)
+        self.assertEqual(self.client.post(reverse("login"), {"email": "atomic@example.com", "password": PASSWORD}, format="json").status_code, 200)
+
+    def test_missing_or_invalid_turnstile_never_creates_user(self):
+        for token in ("", "invalid"):
+            if token:
+                self.mock_verify.return_value.json.return_value = {"success": False, "error-codes": ["invalid-input-response"]}
+            response = self.client.post(reverse("register"), {**self.payload("blocked@example.com"), "turnstile_token": token}, format="json")
+            self.assertEqual(response.status_code, 400)
+        self.assertFalse(get_user_model().objects.filter(email="blocked@example.com").exists())
+
+    def test_turnstile_hostname_and_action_must_match(self):
+        for invalid in (
+            {"success": True, "action": "login", "hostname": "agromind.farm"},
+            {"success": True, "action": "register", "hostname": "other.example"},
+        ):
+            self.mock_verify.return_value.json.return_value = invalid
+            response = self.client.post(reverse("register"), self.payload(), format="json")
+            self.assertEqual(response.status_code, 400)
+        self.assertFalse(get_user_model().objects.filter(email="consented@example.com").exists())
+
+    def test_email_send_failure_rolls_back_pending_account(self):
+        with patch("users.views.send_verification_email", return_value=False):
+            response = self.client.post(reverse("register"), self.payload(), format="json")
+        self.assertEqual(response.status_code, 503)
+        self.assertFalse(get_user_model().objects.filter(email="consented@example.com").exists())
+        self.assertEqual(EmailVerificationToken.objects.count(), 0)
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.console.EmailBackend")
+    def test_registration_without_real_email_delivery_fails_closed(self):
+        response = self.client.post(reverse("register"), self.payload(), format="json")
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(get_user_model().objects.count(), 0)
+
+    def test_pending_user_cannot_use_a_manually_minted_jwt(self):
+        self.client.post(reverse("register"), self.payload(), format="json")
+        user = get_user_model().objects.get(email="consented@example.com")
+        refresh = RefreshToken.for_user(user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        self.assertEqual(self.client.get(reverse("me")).status_code, 401)
+        self.client.credentials()
+        self.assertEqual(self.client.post(reverse("token-refresh"), {"refresh": str(refresh)}, format="json").status_code, 401)
+
+    def test_unconfigured_turnstile_fails_closed(self):
+        with override_settings(TURNSTILE_SECRET_KEY=""):
+            response = self.client.post(reverse("register"), self.payload(), format="json")
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(get_user_model().objects.count(), 0)
+
+    def test_repeated_email_pattern_is_blocked_and_logged(self):
+        for index in range(5):
+            response = self.client.post(reverse("register"), self.payload(f"bot_{index}@example.com"), format="json")
+            self.assertEqual(response.status_code, 201)
+        response = self.client.post(reverse("register"), self.payload("bot_999@example.com"), format="json")
+        self.assertEqual(response.status_code, 429)
+        self.assertEqual(RegistrationAttempt.objects.filter(outcome="blocked").count(), 1)
+        self.assertFalse(get_user_model().objects.filter(email="bot_999@example.com").exists())
+
+    @override_settings(REGISTRATION_IP_HOURLY_LIMIT=0)
+    def test_ip_limit_can_be_delegated_to_cloudflare(self):
+        response = self.client.post(reverse("register"), self.payload("edge-user@example.com"), format="json")
+        self.assertEqual(response.status_code, 201)
+        self.assertFalse(RegistrationAttempt.objects.filter(outcome="blocked").exists())
+
+    @override_settings(REGISTRATION_ALERT_EMAIL="security@example.com")
+    def test_abuse_threshold_sends_one_alert(self):
+        for index in range(5):
+            self.client.post(reverse("register"), self.payload(f"robot_{index}@example.com"), format="json")
+        self.assertEqual(self.client.post(reverse("register"), self.payload("robot_9@example.com"), format="json").status_code, 429)
+        self.assertEqual(self.client.post(reverse("register"), self.payload("robot_10@example.com"), format="json").status_code, 429)
+        alerts = [message for message in mail.outbox if message.to == ["security@example.com"]]
+        self.assertEqual(len(alerts), 1)
+        self.assertNotIn("robot_", alerts[0].body)
+
+    def test_expired_token_can_be_resent_after_new_challenge(self):
+        self.client.post(reverse("register"), self.payload(), format="json")
+        old = EmailVerificationToken.objects.get(user__email="consented@example.com")
+        old.expires_at = timezone.now() - timedelta(seconds=1)
+        old.save(update_fields=["expires_at"])
+        old_raw = mail.outbox[0].body.split("token=", 1)[1].split()[0]
+        self.assertEqual(self.client.post(reverse("verify-email"), {"token": old_raw}, format="json").status_code, 400)
+        resent = self.client.post(reverse("verify-email-resend"), {"email": "consented@example.com", "turnstile_token": "fresh"}, format="json")
+        self.assertEqual(resent.status_code, 200)
+        self.assertEqual(len(mail.outbox), 2)
 
 
+class PasswordRegistrationDisabledTests(APITestCase):
+    def test_new_password_accounts_are_not_created(self):
+        response = self.client.post(reverse("register"), {"email": "new@example.com"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_410_GONE)
+        self.assertFalse(get_user_model().objects.filter(email="new@example.com").exists())
+
+    def test_resend_is_not_offered_without_password_registration(self):
+        response = self.client.post(reverse("verify-email-resend"), {"email": "new@example.com"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_410_GONE)
+
+
+@override_settings(TURNSTILE_SECRET_KEY="unit-test-secret", FRONTEND_ORIGIN="https://agromind.farm")
 class GoogleConsentTests(APITestCase):
     """The Google button used to skip the consent checkbox entirely."""
 
     def setUp(self):
         cache.clear()
+        verifier_patcher = patch("users.registration_security.requests.post")
+        verifier = verifier_patcher.start()
+        self.addCleanup(verifier_patcher.stop)
+        verifier.return_value.json.return_value = {"success": True, "action": "register", "hostname": "agromind.farm"}
 
     @override_settings(GOOGLE_CLIENT_ID="test-client-id")
     @patch("users.serializers.id_token.verify_oauth2_token")
@@ -229,7 +382,7 @@ class GoogleConsentTests(APITestCase):
         self.assertFalse(get_user_model().objects.filter(email="google-new@example.com").exists())
 
         accepted = self.client.post(
-            reverse("google-login"), {"credential": "x", "accepted_terms": True}, format="json"
+            reverse("google-login"), {"credential": "x", "accepted_terms": True, "turnstile_token": "test-token"}, format="json"
         )
         self.assertEqual(accepted.status_code, status.HTTP_200_OK)
         user = get_user_model().objects.get(email="google-new@example.com")
@@ -269,7 +422,7 @@ class GoogleConsentTests(APITestCase):
             "email_verified": True,
             "name": "Google User",
         }
-        payload = {"credential": "x", "accepted_terms": True}
+        payload = {"credential": "x", "accepted_terms": True, "turnstile_token": "test-token"}
 
         for _ in range(20):
             self.assertEqual(

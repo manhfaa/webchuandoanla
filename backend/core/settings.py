@@ -130,6 +130,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://127.0.0.1:3000")
 frontend_origin = FRONTEND_ORIGIN
+PASSWORD_REGISTRATION_ENABLED = os.getenv("PASSWORD_REGISTRATION_ENABLED", "false").lower() == "true"
+TURNSTILE_SECRET_KEY = os.getenv("TURNSTILE_SECRET_KEY", "").strip()
+REGISTRATION_PROXY_SECRET = os.getenv("REGISTRATION_PROXY_SECRET", "").strip()
+REGISTRATION_ALERT_EMAIL = os.getenv("REGISTRATION_ALERT_EMAIL", "").strip()
+REGISTRATION_IP_HOURLY_LIMIT = max(0, int(os.getenv("REGISTRATION_IP_HOURLY_LIMIT", "20")))
 
 # --- Outgoing mail (password reset) ---------------------------------------
 # Django's default EMAIL_HOST is "localhost", where nothing is listening, so an
@@ -213,7 +218,8 @@ REST_FRAMEWORK = {
         "payment_status": "120/minute",
         "login": "10/minute",
         "google_login": "20/minute",
-        "register": "5/hour",
+        # Registration uses the database-backed fingerprint guard instead of
+        # ScopedRateThrottle's per-process cache (unsafe behind proxy/workers).
         # Inference runs on a single free CPU Space; cap it so one account
         # cannot exhaust it for everyone else.
         "cnn_inference": "60/hour",

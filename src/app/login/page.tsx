@@ -7,6 +7,7 @@ import { ArrowRight, LockKeyhole } from "lucide-react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { AuthDivider, GoogleSignInButton, useGoogleSignInAvailability } from "@/components/auth/google-sign-in";
 import { TermsConsentCheckbox } from "@/components/auth/terms-consent";
+import { Turnstile } from "@/components/auth/turnstile";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -26,6 +27,8 @@ export default function LoginPage() {
   const [pendingGoogleCredential, setPendingGoogleCredential] = useState<string | null>(null);
   const [googleConsent, setGoogleConsent] = useState(false);
   const [googleConsentNotice, setGoogleConsentNotice] = useState<string | null>(null);
+  const [googleTurnstileToken, setGoogleTurnstileToken] = useState("");
+  const [googleTurnstileResetKey, setGoogleTurnstileResetKey] = useState(0);
   const { clientId: googleClientId, available: googleAvailable } = useGoogleSignInAvailability();
 
   useEffect(() => {
@@ -41,7 +44,7 @@ export default function LoginPage() {
     try {
       clearError();
       setGoogleError(null);
-      await loginWithGoogle({ credential, acceptedTerms });
+      await loginWithGoogle({ credential, acceptedTerms, turnstileToken: googleTurnstileToken });
       window.location.assign(nextPath);
     } catch (err) {
       const consentMessage = err instanceof DjangoApiError ? err.fieldErrors.accepted_terms : undefined;
@@ -54,6 +57,8 @@ export default function LoginPage() {
         return;
       }
       // The session store provides a user-facing message below.
+      setGoogleTurnstileToken("");
+      setGoogleTurnstileResetKey((value) => value + 1);
     }
   }
 
@@ -83,11 +88,12 @@ export default function LoginPage() {
               <div className="mt-3 space-y-3">
                 <p className="text-xs leading-6 text-ink-soft">{googleConsentNotice}</p>
                 <TermsConsentCheckbox checked={googleConsent} onChange={setGoogleConsent} required={false} />
+                <Turnstile onToken={setGoogleTurnstileToken} resetKey={googleTurnstileResetKey} />
                 <Button
                   type="button"
                   variant="secondary"
                   size="sm"
-                  disabled={!googleConsent}
+                  disabled={!googleConsent || !googleTurnstileToken}
                   loading={status === "loading"}
                   onClick={() => void signInWithGoogle(pendingGoogleCredential, true)}
                 >

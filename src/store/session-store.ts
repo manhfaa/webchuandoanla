@@ -44,8 +44,8 @@ interface SessionState {
 
   hydrate: () => Promise<void>;
   login: (payload: { email: string; password: string }) => Promise<void>;
-  loginWithGoogle: (payload: { credential: string; acceptedTerms?: boolean }) => Promise<void>;
-  register: (payload: { email: string; password: string; acceptedTerms: boolean }) => Promise<void>;
+  loginWithGoogle: (payload: { credential: string; acceptedTerms?: boolean; turnstileToken?: string }) => Promise<void>;
+  register: (payload: { email: string; password: string; acceptedTerms: boolean; turnstileToken: string }) => Promise<void>;
   logout: () => void;
   clearError: () => void;
   refreshAccessToken: () => Promise<string | null>;
@@ -157,10 +157,10 @@ export const useSessionStore = create<SessionState>()(
         }
       },
 
-      loginWithGoogle: async ({ credential, acceptedTerms }) => {
+      loginWithGoogle: async ({ credential, acceptedTerms, turnstileToken }) => {
         try {
           set({ status: "loading", error: null });
-          const tokens = await djangoGoogleLogin({ credential, acceptedTerms });
+          const tokens = await djangoGoogleLogin({ credential, acceptedTerms, turnstileToken });
           const user = await djangoMe(tokens.access);
           set({
             accessToken: tokens.access,
@@ -185,22 +185,11 @@ export const useSessionStore = create<SessionState>()(
         }
       },
 
-      register: async ({ email, password, acceptedTerms }) => {
+      register: async ({ email, password, acceptedTerms, turnstileToken }) => {
         try {
           set({ status: "loading", error: null });
-          // The register endpoint returns the token pair itself, so the account
-          // can no longer be created while the UI reports a failed sign-in.
-          const tokens = await djangoRegister({ email, password, accepted_terms: acceptedTerms });
-          const user = await djangoMe(tokens.access);
-          set({
-            accessToken: tokens.access,
-            refreshToken: tokens.refresh,
-            user,
-            isAuthenticated: true,
-            initialized: true,
-            status: "authenticated",
-            error: null,
-          });
+          await djangoRegister({ email, password, accepted_terms: acceptedTerms, turnstile_token: turnstileToken });
+          set({ status: "idle", error: null });
         } catch (err) {
           set({
             user: null,

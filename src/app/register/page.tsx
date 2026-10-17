@@ -2,159 +2,107 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, UserRoundPlus } from "lucide-react";
+import { UserRoundPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { AuthShell } from "@/components/auth/auth-shell";
-import { AuthDivider, GoogleSignInButton, useGoogleSignInAvailability } from "@/components/auth/google-sign-in";
+import { GoogleSignInButton, useGoogleSignInAvailability } from "@/components/auth/google-sign-in";
 import { TermsConsentCheckbox } from "@/components/auth/terms-consent";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
+import { Turnstile } from "@/components/auth/turnstile";
+import { buttonVariants } from "@/components/ui/button";
 import { useSessionStore } from "@/store/session-store";
 import { useTr } from "@/lib/use-tr";
 
 export default function RegisterPage() {
   const tr = useTr();
   const router = useRouter();
-  const { register, loginWithGoogle, isAuthenticated, status, error, clearError } = useSessionStore();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const { loginWithGoogle, isAuthenticated, error, clearError } = useSessionStore();
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
   const [googleError, setGoogleError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const { clientId: googleClientId, available: googleAvailable } = useGoogleSignInAvailability();
 
   useEffect(() => {
     if (isAuthenticated) router.replace("/dashboard");
   }, [isAuthenticated, router]);
 
-  async function handleRegister(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLocalError(null);
-    if (!email.trim()) return setLocalError(tr("Vui lòng nhập email.", "Please enter your email."));
-    if (password.length < 8) return setLocalError(tr("Mật khẩu phải có ít nhất 8 ký tự.", "Password must be at least 8 characters."));
-    if (password !== confirmPassword) return setLocalError(tr("Xác nhận mật khẩu chưa khớp.", "Password confirmation does not match."));
-    if (!acceptedTerms) {
-      return setLocalError(
-        tr(
-          "Bạn cần đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư để tạo tài khoản.",
-          "You must agree to the Terms of Service and Privacy Policy to create an account.",
-        ),
-      );
-    }
-
-    try {
-      await register({ email, password, acceptedTerms });
-      router.push("/dashboard");
-    } catch {
-      // The session store provides a user-facing message below.
-    }
-  }
-
   async function handleGoogleCredential(credential: string) {
+    if (!acceptedTerms || !turnstileToken) {
+      setGoogleError(tr("Hãy đồng ý điều khoản và hoàn tất xác minh an toàn.", "Accept the terms and complete the security check."));
+      return;
+    }
     try {
-      clearMessages();
+      clearError();
       setGoogleError(null);
-      await loginWithGoogle({ credential, acceptedTerms });
+      await loginWithGoogle({ credential, acceptedTerms, turnstileToken });
       router.push("/dashboard");
     } catch {
-      // The session store provides a user-facing message below.
+      setTurnstileToken("");
+      setTurnstileResetKey((value) => value + 1);
     }
-  }
-
-  function clearMessages() {
-    clearError();
-    setLocalError(null);
   }
 
   return (
     <AuthShell
       eyebrow={tr("Tạo tài khoản", "Create account")}
       title={tr("Bắt đầu theo dõi sức khỏe cây trồng", "Start tracking your plants' health")}
-      description={tr("Chỉ cần email và mật khẩu để lưu kết quả kiểm tra, vị trí vườn và kế hoạch chăm sóc của bạn.", "Just an email and password to save your check results, garden location and care plans.")}
+      description={tr(
+        "Tiếp tục bằng Google để tạo tài khoản an toàn, lưu kết quả kiểm tra và kế hoạch chăm sóc của bạn.",
+        "Continue with Google to create a secure account and save your check results and care plans.",
+      )}
       asideTitle={tr("Mỗi lần kiểm tra trở thành một dấu mốc của khu vườn.", "Every check becomes a milestone for your garden.")}
-      asideDescription={tr("Lưu ảnh và kết quả theo thời gian giúp bạn nhận ra thay đổi sớm hơn, thay vì chỉ xem một lần rồi quên.", "Saving photos and results over time helps you spot changes earlier, instead of checking once and forgetting.")}
+      asideDescription={tr(
+        "Lưu ảnh và kết quả theo thời gian giúp bạn nhận ra thay đổi sớm hơn, thay vì chỉ xem một lần rồi quên.",
+        "Saving photos and results over time helps you spot changes earlier, instead of checking once and forgetting.",
+      )}
     >
-      <form onSubmit={handleRegister} className="space-y-5">
-        {googleAvailable && googleClientId ? (
-          <div className="rounded-lg border border-line bg-surface-soft p-4">
-            <p className="text-sm font-semibold text-ink">{tr("Tạo tài khoản nhanh bằng Google", "Create an account quickly with Google")}</p>
-            {acceptedTerms ? (
-              <GoogleSignInButton
-                clientId={googleClientId}
-                text="signup_with"
-                onCredential={(credential) => void handleGoogleCredential(credential)}
-                onError={setGoogleError}
-              />
-            ) : (
-              // Google sign-in used to bypass the consent checkbox entirely.
-              <p className="mt-3 text-xs leading-6 text-ink-soft">
-                {tr(
-                  "Hãy tích vào ô đồng ý điều khoản bên dưới để dùng Google.",
-                  "Tick the terms agreement below to continue with Google.",
-                )}
+      <div className="space-y-5">
+        <div className="rounded-lg border border-line bg-surface-soft p-5">
+          <div className="flex items-start gap-3">
+            <UserRoundPlus className="mt-0.5 shrink-0 text-leaf-strong" size={22} aria-hidden />
+            <div>
+              <h2 className="font-semibold text-ink">{tr("Tạo tài khoản bằng Google", "Create your account with Google")}</h2>
+              <p className="mt-1 text-sm leading-6 text-ink-soft">
+                {tr("Agromind AI chỉ dùng Google để xác nhận tài khoản; kết quả kiểm tra vẫn được lưu riêng trong Agromind AI.",
+                  "Google confirms your identity; your check results remain in Agromind AI.")}
               </p>
-            )}
-            {googleError ? <p role="alert" className="mt-3 text-xs leading-6 text-danger-ink">{googleError}</p> : null}
-            <AuthDivider />
+            </div>
           </div>
-        ) : null}
 
-        <Input
-          label="Email"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(event) => {
-            clearMessages();
-            setEmail(event.target.value);
-          }}
-          placeholder="tenban@example.com"
-          required
-        />
-        <PasswordInput
-          label={tr("Mật khẩu", "Password")}
-          autoComplete="new-password"
-          value={password}
-          onChange={(event) => {
-            clearMessages();
-            setPassword(event.target.value);
-          }}
-          placeholder={tr("Tối thiểu 8 ký tự", "At least 8 characters")}
-          hint={tr("Nên dùng chữ hoa, chữ thường, số và ký tự đặc biệt.", "Use uppercase, lowercase, numbers and special characters.")}
-          required
-        />
-        <PasswordInput
-          label={tr("Xác nhận mật khẩu", "Confirm password")}
-          autoComplete="new-password"
-          value={confirmPassword}
-          onChange={(event) => {
-            clearMessages();
-            setConfirmPassword(event.target.value);
-          }}
-          placeholder={tr("Nhập lại mật khẩu", "Re-enter password")}
-          required
-        />
-
-        <TermsConsentCheckbox
-          checked={acceptedTerms}
-          onChange={(checked) => {
-            clearMessages();
-            setAcceptedTerms(checked);
-          }}
-        />
-
-        {localError || error ? (
-          <div role="alert" className="rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-sm font-medium text-danger-ink">
-            {localError || error}
+          <div className="mt-5">
+            <TermsConsentCheckbox
+              checked={acceptedTerms}
+              onChange={(checked) => {
+                clearError();
+                setGoogleError(null);
+                setAcceptedTerms(checked);
+              }}
+            />
           </div>
-        ) : null}
+          <Turnstile onToken={setTurnstileToken} resetKey={turnstileResetKey} />
 
-        <Button size="lg" loading={status === "loading"} disabled={!acceptedTerms} type="submit" className="w-full">
-          <UserRoundPlus size={17} aria-hidden /> {tr("Tạo tài khoản", "Create account")} <ArrowRight size={17} aria-hidden />
-        </Button>
+          {googleAvailable && googleClientId && acceptedTerms && turnstileToken ? (
+            <GoogleSignInButton
+              clientId={googleClientId}
+              text="signup_with"
+              onCredential={(credential) => void handleGoogleCredential(credential)}
+              onError={setGoogleError}
+            />
+          ) : (
+            <p className="mt-4 text-sm leading-6 text-ink-soft">
+              {!googleAvailable || !googleClientId
+                ? tr("Đăng ký bằng Google hiện chưa sẵn sàng. Vui lòng thử lại sau.", "Google registration is not available yet. Please try again later.")
+                : tr("Đồng ý điều khoản và hoàn tất xác minh để tiếp tục.", "Accept the terms and complete the security check to continue.")}
+            </p>
+          )}
+        </div>
+
+        {googleError || error ? (
+          <p role="alert" className="rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger-ink">
+            {googleError || error}
+          </p>
+        ) : null}
 
         <div className="flex flex-col items-center justify-between gap-3 border-t border-line pt-5 text-sm sm:flex-row">
           <span className="text-ink-soft">{tr("Đã có tài khoản?", "Already have an account?")}</span>
@@ -162,7 +110,7 @@ export default function RegisterPage() {
             {tr("Đăng nhập", "Sign in")}
           </Link>
         </div>
-      </form>
+      </div>
     </AuthShell>
   );
 }

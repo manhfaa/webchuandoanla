@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { createHmac } from "node:crypto";
+import { isIP } from "node:net";
 
 import { resolveDjangoBaseUrl } from "@/lib/backend-url";
 
@@ -55,6 +57,17 @@ async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> })
 
   if (contentType) headers.set("content-type", contentType);
   if (authorization) headers.set("authorization", authorization);
+  const userAgent = incomingHeaders.get("user-agent");
+  if (userAgent) headers.set("user-agent", userAgent.slice(0, 512));
+
+  // This signs Vercel's observed IP only. Behind Cloudflare it may be a
+  // shared proxy IP, so production registration limits live at Cloudflare.
+  const proxySecret = process.env.REGISTRATION_PROXY_SECRET;
+  const visitorIp = process.env.VERCEL ? incomingHeaders.get("x-vercel-forwarded-for") : null;
+  if (proxySecret && visitorIp && isIP(visitorIp)) {
+    headers.set("x-agromind-client-ip", visitorIp);
+    headers.set("x-agromind-ip-signature", createHmac("sha256", proxySecret).update(visitorIp).digest("hex"));
+  }
 
   const method = req.method.toUpperCase();
   const hasBody = !["GET", "HEAD"].includes(method);

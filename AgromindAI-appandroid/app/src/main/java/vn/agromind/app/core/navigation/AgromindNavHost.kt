@@ -131,10 +131,8 @@ fun AgromindNavHost(
         composable(Route.Register) {
             val context = androidx.compose.ui.platform.LocalContext.current
             RegisterScreen(
-                onRegistered = { /* the session flow above moves the graph */ },
                 onBack = { navController.popBackStack() },
-                termsUrl = config.termsUrl,
-                privacyUrl = config.privacyUrl,
+                registerUrl = "${vn.agromind.app.BuildConfig.WEBSITE_URL}/register",
                 onOpenLink = { url -> context.openExternally(url) },
             )
         }

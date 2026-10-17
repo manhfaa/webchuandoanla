@@ -237,9 +237,15 @@ backend\.venv\Scripts\python.exe backend\manage.py migrate --noinput
 
 Auth:
 
-- `POST /api/auth/register/`
+- `POST /api/auth/google/` với Google ID token, `accepted_terms` và `turnstile_token` khi tạo tài khoản mới. Django xác minh token Google, email đã xác minh và Turnstile trước khi cấp tài khoản.
+- `POST /api/auth/register/` mặc định trả 410; chỉ bật lại đăng ký email nếu đặt `PASSWORD_REGISTRATION_ENABLED=true` và đã cấu hình dịch vụ gửi email thật.
+- `POST /api/auth/verify-email/` và `/api/auth/verify-email/resend/` chỉ phục vụ luồng đăng ký email khi được bật lại.
 - `POST /api/auth/login/`
 - `GET /api/users/me/`
+
+Đăng ký production dùng Google-only; đăng nhập email/mật khẩu tiếp tục phục vụ tài khoản cũ. Cấu hình cùng Google OAuth Web Client ID ở `NEXT_PUBLIC_GOOGLE_CLIENT_ID` trên Vercel và `GOOGLE_CLIENT_ID` trên Django. Tạo Turnstile widget cho hostname trong `FRONTEND_ORIGIN`, đặt site key trên Vercel và secret key chỉ trên VPS. Nếu thiếu secret, Django từ chối tạo tài khoản. Chạy migration `users.0009` trước khi mở đăng ký. Cấu hình Cloudflare WAF giới hạn POST `/api/auth/google/` theo IP thực; khi Vercel đứng sau Cloudflare, IP Vercel chuyển tiếp có thể là IP proxy dùng chung, nên đặt `REGISTRATION_IP_HOURLY_LIMIT=0` để tránh chặn nhầm. Bộ lọc mẫu email/user-agent vẫn hoạt động. Log và bảng quản trị `RegistrationAttempt` ghi các lần đăng ký; cảnh báo email từ Django cần dịch vụ gửi mail thật và `REGISTRATION_ALERT_EMAIL`, hoặc dùng cảnh báo WAF của Cloudflare. `REGISTRATION_PROXY_SECRET` chỉ có ích khi xác nhận được IP Vercel nhìn thấy là IP khách thực; nếu dùng thì đặt cùng giá trị ở Vercel/VPS, không có tiền tố `NEXT_PUBLIC_`.
+
+Android chuyển sang đăng ký bằng Google; cần đặt Google Web Client ID khi build app và kiểm tra luồng xác minh Turnstile trước khi phát hành APK. Backend không miễn kiểm tra Turnstile cho Android.
 
 Diagnoses:
 
@@ -303,7 +309,7 @@ Backend VPS cần các biến chính:
 ```env
 DEBUG=False
 ALLOWED_HOSTS=api.agromind.farm
-FRONTEND_ORIGIN=https://agromind.farm
+FRONTEND_ORIGIN=https://www.agromind.farm
 CORS_ALLOWED_ORIGINS=https://agromind.farm,https://www.agromind.farm
 CSRF_TRUSTED_ORIGINS=https://api.agromind.farm,https://agromind.farm,https://www.agromind.farm
 SUPABASE_DB_URL=postgresql://...
