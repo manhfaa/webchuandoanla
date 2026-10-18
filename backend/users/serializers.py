@@ -45,9 +45,6 @@ def build_tokens_for_user(user):
         raise serializers.ValidationError("Tài khoản cần xác minh email trước khi sử dụng.")
     expire_user_plan(user)
     refresh = RefreshToken.for_user(user)
-    refresh["username"] = user.username
-    refresh["email"] = user.email
-    refresh["plan"] = user.current_plan
 
     return {
         "refresh": str(refresh),

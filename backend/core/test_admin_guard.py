@@ -3,7 +3,7 @@
 from django.core.cache import cache
 from django.test import TestCase, override_settings
 
-from core.admin_guard import IP_LIMIT, TOTAL_LIMIT
+from core.admin_guard import IP_LIMIT
 
 
 class AdminLoginRateLimitTests(TestCase):
@@ -31,10 +31,10 @@ class AdminLoginRateLimitTests(TestCase):
         self.assertIn("Quá nhiều lần đăng nhập", blocked.content.decode())
 
     def test_changing_the_forwarded_ip_does_not_buy_unlimited_tries(self):
-        """Máy chủ gốc còn hở nên header IP giả được — hạn mức tổng phải chặn."""
-        for attempt in range(TOTAL_LIMIT):
+        """Client-supplied Cloudflare headers cannot reset the per-peer limit."""
+        for attempt in range(IP_LIMIT):
             response = self._post(ip=f"198.51.100.{attempt % 254 + 1}")
-            self.assertNotEqual(response.status_code, 429, f"bị chặn sớm ở lần {attempt}")
+            self.assertNotEqual(response.status_code, 429, f"blocked early on attempt {attempt}")
 
         self.assertEqual(self._post(ip="198.51.100.200").status_code, 429)
 

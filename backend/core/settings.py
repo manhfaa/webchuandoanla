@@ -195,10 +195,18 @@ else:
     CORS_ALLOWED_ORIGINS = [frontend_origin]
 
 cors_origin_regexes_raw = os.getenv("CORS_ALLOWED_ORIGIN_REGEXES", "").strip()
-if cors_origin_regexes_raw:
+if cors_origin_regexes_raw and DEBUG:
     CORS_ALLOWED_ORIGIN_REGEXES = [
         regex.strip() for regex in cors_origin_regexes_raw.split(",") if regex.strip()
     ]
+else:
+    # Production requests from Next.js reach Django server-to-server. A broad
+    # *.vercel.app regex grants arbitrary tenants CORS access for no benefit.
+    CORS_ALLOWED_ORIGIN_REGEXES = []
+    if cors_origin_regexes_raw and not DEBUG:
+        logging.getLogger(__name__).warning(
+            "Ignoring CORS_ALLOWED_ORIGIN_REGEXES in production; use explicit CORS_ALLOWED_ORIGINS."
+        )
 
 csrf_trusted_raw = os.getenv("CSRF_TRUSTED_ORIGINS", "").strip()
 if csrf_trusted_raw:

@@ -22,12 +22,24 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import TERMS_VERSION, EmailVerificationToken, PasswordResetToken, RegistrationAttempt
 from .registration_security import _client_ip
+from .throttling import GoogleLoginRateThrottle, LoginIPRateThrottle, PasswordResetRateThrottle
+from core.admin_guard import client_ip as admin_client_ip
 
 PASSWORD = "StrongPass#2026"
 NEW_PASSWORD = "AnotherPass#2026"
 
 
 class RegistrationIpTrustTests(TestCase):
+    def test_spoofed_forwarding_headers_do_not_change_throttle_identity(self):
+        request = SimpleNamespace(META={
+            "REMOTE_ADDR": "198.51.100.2",
+            "HTTP_X_FORWARDED_FOR": "203.0.113.8",
+            "HTTP_CF_CONNECTING_IP": "203.0.113.9",
+        })
+        self.assertEqual(admin_client_ip(request), "198.51.100.2")
+        for throttle in (LoginIPRateThrottle(), GoogleLoginRateThrottle(), PasswordResetRateThrottle()):
+            self.assertIn("198.51.100.2", throttle.get_cache_key(request, None))
+
     @override_settings(REGISTRATION_PROXY_SECRET="shared-test-secret")
     def test_only_signed_proxy_ip_is_trusted(self):
         request = SimpleNamespace(META={"REMOTE_ADDR": "198.51.100.2", "HTTP_X_AGROMIND_CLIENT_IP": "203.0.113.5"})
@@ -99,6 +111,15 @@ class LoginSecurityTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("access", response.data)
         self.assertIn("refresh", response.data)
+
+    def test_jwt_payload_does_not_expose_profile_or_plan(self):
+        response = self.client.post(
+            reverse("login"), {"email": "active@example.com", "password": PASSWORD}, format="json"
+        )
+        refresh = RefreshToken(response.data["refresh"])
+        for token in (refresh, refresh.access_token):
+            for claim in ("email", "username", "plan"):
+                self.assertNotIn(claim, token.payload)
 
     def test_deactivated_user_cannot_log_in(self):
         self.user.is_active = False

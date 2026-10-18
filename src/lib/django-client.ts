@@ -321,10 +321,10 @@ export async function djangoGoogleLogin(payload: { credential: string; acceptedT
 }
 
 /** Blacklists the refresh token so signing out is not merely local state. */
-export async function djangoLogout(refreshToken: string) {
+export async function djangoLogout(refreshToken: string | null) {
   return djangoFetch<{ detail: string }>("/api/auth/logout/", {
     method: "POST",
-    body: JSON.stringify({ refresh: refreshToken }),
+    body: JSON.stringify(refreshToken ? { refresh: refreshToken } : {}),
   });
 }
 
@@ -349,10 +349,10 @@ export async function djangoConfirmPasswordReset(payload: { token: string; newPa
  * Exchange a refresh token for a fresh access token. Refresh rotation is on, so
  * the response may also carry a new refresh token that must replace the stored one.
  */
-export async function djangoRefreshToken(refreshToken: string) {
+export async function djangoRefreshToken(refreshToken: string | null) {
   return djangoFetch<{ access: string; refresh?: string }>("/api/auth/refresh/", {
     method: "POST",
-    body: JSON.stringify({ refresh: refreshToken }),
+    body: JSON.stringify(refreshToken ? { refresh: refreshToken } : {}),
   });
 }
 

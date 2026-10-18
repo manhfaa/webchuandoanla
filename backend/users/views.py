@@ -12,6 +12,7 @@ from .emails import delivery_is_configured, send_password_reset_email, send_veri
 from .models import EmailVerificationToken, PasswordResetToken, UserSetting
 from .registration_security import (
     RegistrationUnavailable,
+    _client_ip,
     finish_registration,
     reserve_registration,
     verify_turnstile,
@@ -52,13 +53,6 @@ RESET_UNAVAILABLE_MESSAGE = (
     "Đặt lại mật khẩu qua email hiện chưa được bật. Nếu bạn còn đăng nhập được, "
     "hãy đổi mật khẩu trong trang Hồ sơ. Nếu không, vui lòng liên hệ quản trị viên để được hỗ trợ."
 )
-
-
-def _client_ip(request):
-    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR")
 
 
 class RegisterAPIView(generics.CreateAPIView):

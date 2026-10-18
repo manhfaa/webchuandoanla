@@ -12,6 +12,7 @@ import {
   djangoRefreshToken,
   djangoRegister,
   djangoUpdateMe,
+  DjangoApiError,
   mapAccountToUserProfile,
   registerAuthTokenBridge,
   type DjangoAccount,
@@ -46,7 +47,7 @@ interface SessionState {
   login: (payload: { email: string; password: string }) => Promise<void>;
   loginWithGoogle: (payload: { credential: string; acceptedTerms?: boolean; turnstileToken?: string }) => Promise<void>;
   register: (payload: { email: string; password: string; acceptedTerms: boolean; turnstileToken: string }) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   clearError: () => void;
   refreshAccessToken: () => Promise<string | null>;
   adoptSession: (tokens: { access: string; refresh: string }) => Promise<void>;
@@ -72,40 +73,15 @@ export const useSessionStore = create<SessionState>()(
       refreshToken: null,
 
       hydrate: async () => {
-        const accessToken = get().accessToken;
-        if (!accessToken) {
-          set({
-            user: null,
-            isAuthenticated: false,
-            initialized: true,
-            status: "idle",
-            error: null,
-            refreshToken: null,
-          });
-          return;
-        }
-
         try {
           set({ status: "loading", error: null });
-          let activeToken = accessToken;
-          try {
-            const user = await djangoMe(activeToken);
-            set({
-              user,
-              isAuthenticated: true,
-              initialized: true,
-              status: "authenticated",
-              error: null,
-            });
+          // Refresh via the HttpOnly cookie. On a one-time upgrade from v6,
+          // refreshAccessToken also exchanges the old persisted token for it.
+          const activeToken = await get().refreshAccessToken();
+          if (!activeToken) {
+            set({ user: null, isAuthenticated: false, initialized: true, status: "idle", error: null });
             return;
-          } catch (meError) {
-            // The 30-minute access token has likely expired. Try the refresh
-            // token before giving up, otherwise the user is signed out mid-session.
-            const renewed = await get().refreshAccessToken();
-            if (!renewed) throw meError;
-            activeToken = renewed;
           }
-
           const user = await djangoMe(activeToken);
           set({
             user,
@@ -137,7 +113,7 @@ export const useSessionStore = create<SessionState>()(
           const user = await djangoMe(tokens.access);
           set({
             accessToken: tokens.access,
-            refreshToken: tokens.refresh,
+            refreshToken: null,
             user,
             isAuthenticated: true,
             initialized: true,
@@ -164,7 +140,7 @@ export const useSessionStore = create<SessionState>()(
           const user = await djangoMe(tokens.access);
           set({
             accessToken: tokens.access,
-            refreshToken: tokens.refresh,
+            refreshToken: null,
             user,
             isAuthenticated: true,
             initialized: true,
@@ -203,11 +179,15 @@ export const useSessionStore = create<SessionState>()(
         }
       },
 
-      logout: () => {
+      logout: async () => {
         const storedRefresh = get().refreshToken;
-        // Clear locally first so the UI never waits on the network, then ask the
-        // server to blacklist the refresh token — it stayed valid for its full
-        // 7-day life when signing out was a client-side state reset.
+        try {
+          await djangoLogout(storedRefresh);
+        } catch (error) {
+          // The proxy clears cookies even when Django rejects the token or is
+          // unavailable. A network failure before reaching the proxy does not.
+          if (!(error instanceof DjangoApiError)) throw error;
+        }
         set({
           user: null,
           isAuthenticated: false,
@@ -217,23 +197,18 @@ export const useSessionStore = create<SessionState>()(
           status: "idle",
           error: null,
         });
-        if (storedRefresh) {
-          void djangoLogout(storedRefresh).catch(() => {
-            // Offline or already invalid: the local session is gone either way.
-          });
-        }
       },
 
       clearError: () => set({ error: null, status: "idle" }),
 
       // Used after a password reset, where the server hands back a token pair
       // for an identity the user has just proven control of by email.
-      adoptSession: async ({ access, refresh }) => {
+      adoptSession: async ({ access }) => {
         set({ status: "loading", error: null });
         const user = await djangoMe(access);
         set({
           accessToken: access,
-          refreshToken: refresh,
+          refreshToken: null,
           user,
           isAuthenticated: true,
           initialized: true,
@@ -246,14 +221,13 @@ export const useSessionStore = create<SessionState>()(
         if (inFlightRefresh) return inFlightRefresh;
 
         const storedRefresh = get().refreshToken;
-        if (!storedRefresh) return null;
 
         inFlightRefresh = (async () => {
           try {
             const refreshed = await djangoRefreshToken(storedRefresh);
             set({
               accessToken: refreshed.access,
-              ...(refreshed.refresh ? { refreshToken: refreshed.refresh } : {}),
+              refreshToken: null,
             });
             return refreshed.access;
           } catch {
@@ -317,13 +291,10 @@ export const useSessionStore = create<SessionState>()(
       name: "leafiq-session",
       // v6 drops the avatar placeholder that used to be persisted as if it were
       // the account's real avatar_url.
-      version: 6,
-      partialize: (state) => ({
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
-      }),
+      version: 7,
+      // The browser stores no credentials or profile. The server-side
+      // HttpOnly cookie restores the session when the page reloads.
+      partialize: () => ({}),
       migrate: (persistedState: unknown) => {
         const state = (persistedState ?? {}) as Partial<SessionState>;
         const user = state.user

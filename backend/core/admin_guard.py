@@ -9,10 +9,9 @@ không đi qua DRF nên không được che.
 
 Hai lớp, cố ý
 -------------
-Giới hạn theo IP chặn kiểu dò thông thường. Nhưng máy chủ gốc hiện vẫn nhận
-kết nối trực tiếp không qua Cloudflare, nên kẻ tấn công có thể **tự đặt** header
-``CF-Connecting-IP`` để mỗi lần thử trông như một IP khác. Vì vậy có thêm một
-hạn mức TỔNG, không phụ thuộc IP, mà việc giả header không lách được.
+Giới hạn theo địa chỉ kết nối hoặc địa chỉ proxy đã ký, tuyệt đối không tin
+``CF-Connecting-IP`` hay ``X-Forwarded-For`` do client gửi. Có thêm hạn mức
+TỔNG để chặn dò mật khẩu phân tán qua nhiều địa chỉ.
 
 Hạn mức tổng là lưới an toàn, không phải hàng rào chính. Hàng rào chính là chặn
 truy cập thẳng vào IP máy chủ.
@@ -35,17 +34,10 @@ WINDOW_SECONDS = 15 * 60
 
 
 def client_ip(request) -> str:
-    """IP đáng tin nhất có thể lấy được.
+    """Use only a proxy-signed address or the actual peer, never client headers."""
+    from users.registration_security import _client_ip
 
-    Ưu tiên header của Cloudflare, rồi X-Forwarded-For, cuối cùng là địa chỉ
-    kết nối. Hai header đầu giả được khi máy chủ gốc còn hở — đó là lý do có
-    thêm hạn mức tổng ở trên.
-    """
-    for header in ("HTTP_CF_CONNECTING_IP", "HTTP_X_FORWARDED_FOR"):
-        value = request.META.get(header, "")
-        if value:
-            return value.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR", "") or "unknown"
+    return _client_ip(request)
 
 
 def _hit(key: str, limit: int) -> bool:

@@ -48,7 +48,7 @@ The AI result is advisory. Never claim 100% accuracy. When disease spreads quick
 Production infrastructure:
 
 - Frontend: Vercel, Next.js.
-- Backend: Nhân Hòa Ubuntu VPS (`103.124.94.97`), with Nginx terminating TLS and proxying to Gunicorn-managed Django.
+- Backend: Nhân Hòa Ubuntu VPS, with Nginx terminating TLS and proxying to Gunicorn-managed Django. Keep the origin IP out of public documentation.
 - Process manager: systemd service `agromind-backend`; this deployment does not use Docker, Coolify or Dokploy.
 - Database: Supabase PostgreSQL through `SUPABASE_DB_URL`.
 - AI inference: Hugging Face Docker Space.

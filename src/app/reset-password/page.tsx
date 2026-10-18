@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { KeyRound } from "lucide-react";
 
@@ -12,6 +13,7 @@ import { useSessionStore } from "@/store/session-store";
 import { useTr } from "@/lib/use-tr";
 
 export default function ResetPasswordPage() {
+  const router = useRouter();
   const tr = useTr();
   const adoptSession = useSessionStore((state) => state.adoptSession);
   // Read from the URL after mount rather than useSearchParams, so the page can
@@ -24,7 +26,12 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setToken(new URLSearchParams(window.location.search).get("token"));
+    const url = new URL(window.location.href);
+    setToken(url.searchParams.get("token"));
+    if (url.searchParams.has("token")) {
+      url.searchParams.delete("token");
+      window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    }
     setTokenChecked(true);
   }, []);
 
@@ -43,7 +50,7 @@ export default function ResetPasswordPage() {
     try {
       const result = await djangoConfirmPasswordReset({ token, newPassword: password });
       await adoptSession({ access: result.access, refresh: result.refresh });
-      window.location.assign("/dashboard");
+      router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : tr("Chưa đặt lại được mật khẩu.", "Could not reset the password."));
       setSaving(false);

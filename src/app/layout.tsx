@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 
-import { BackendWakeup } from "@/components/system/backend-wakeup";
 import { ClarityAnalytics } from "@/components/system/clarity-analytics";
 import { GoogleAnalytics } from "@/components/system/google-analytics";
 import { StructuredData } from "@/components/system/structured-data";
@@ -121,7 +120,6 @@ export default function RootLayout({
           <StructuredData />
           <HtmlLangSync />
           <SkipLink />
-          <BackendWakeup />
           {children}
           <ClarityAnalytics />
           <GoogleAnalytics />

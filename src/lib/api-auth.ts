@@ -1,4 +1,5 @@
 import { resolveDjangoBaseUrl } from "@/lib/backend-url";
+import { backendAuthorization, isSameOriginMutation } from "@/lib/server-session";
 
 const DJANGO_BASE_URL = resolveDjangoBaseUrl(process.env.DJANGO_BASE_URL);
 
@@ -37,7 +38,10 @@ export async function requirePlanFeature(
   /** `en` is optional so a route that has not been given one still compiles. */
   message: { vi: string; en?: string; upgradeTo: string },
 ): Promise<FeatureGateResult> {
-  const authorization = request.headers.get("authorization");
+  if (!isSameOriginMutation(request)) {
+    return { allowed: false, status: 403, body: { error: "Nguồn yêu cầu không hợp lệ." } };
+  }
+  const authorization = backendAuthorization(request);
   if (!authorization || !authorization.startsWith("Bearer ")) {
     return {
       allowed: false,

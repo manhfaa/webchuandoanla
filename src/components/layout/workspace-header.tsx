@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Crown, LogOut, Menu, ScanSearch } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { Badge } from "@/components/ui/badge";
@@ -70,7 +71,14 @@ export function WorkspaceHeader({ pageTitle, pageDescription, mobileNavOpen = fa
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-soft text-xs font-bold text-leaf-strong">{initials}</span>
             <span className="hidden max-w-[140px] truncate text-xs font-semibold text-ink xl:block">{displayName}</span>
           </Link>
-          <button type="button" onClick={() => { logout(); router.push("/login"); }} className="flex h-11 w-11 items-center justify-center rounded-xl text-ink-soft transition hover:bg-danger-soft hover:text-danger-ink" aria-label={tr("Đăng xuất", "Log out")}>
+          <button type="button" onClick={async () => {
+            try {
+              await logout();
+              router.push("/login");
+            } catch {
+              toast.error(tr("Chưa thể đăng xuất. Kiểm tra kết nối rồi thử lại.", "Could not sign out. Check your connection and try again."));
+            }
+          }} className="flex h-11 w-11 items-center justify-center rounded-xl text-ink-soft transition hover:bg-danger-soft hover:text-danger-ink" aria-label={tr("Đăng xuất", "Log out")}>
             <LogOut size={17} aria-hidden />
           </button>
         </div>

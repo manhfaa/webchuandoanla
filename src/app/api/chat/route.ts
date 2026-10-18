@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { resolveDjangoBaseUrl } from "@/lib/backend-url";
+import { backendAuthorization, isSameOriginMutation } from "@/lib/server-session";
 import type { ChatApiRequest } from "@/types";
 
 const DJANGO_BASE_URL = resolveDjangoBaseUrl(process.env.DJANGO_BASE_URL);
@@ -23,7 +24,10 @@ function readPositiveInteger(value: unknown): number | null {
 }
 
 export async function POST(request: Request) {
-  const authorization = request.headers.get("authorization");
+  if (!isSameOriginMutation(request)) {
+    return NextResponse.json({ error: "Nguồn yêu cầu không hợp lệ." }, { status: 403 });
+  }
+  const authorization = backendAuthorization(request);
   if (!authorization?.startsWith("Bearer ")) {
     return NextResponse.json({ error: "Bạn cần đăng nhập để dùng tính năng này." }, { status: 401 });
   }

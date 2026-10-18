@@ -2,6 +2,8 @@ import hashlib
 
 from rest_framework.throttling import SimpleRateThrottle
 
+from .registration_security import _client_ip
+
 
 class LoginEmailRateThrottle(SimpleRateThrottle):
     """Rate-limit sign-in attempts per target account, not per IP address.
@@ -34,7 +36,7 @@ class LoginIPRateThrottle(SimpleRateThrottle):
     rate = "60/min"
 
     def get_cache_key(self, request, view):
-        return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}
+        return self.cache_format % {"scope": self.scope, "ident": _client_ip(request)}
 
 
 class PasswordResetRateThrottle(SimpleRateThrottle):
@@ -44,7 +46,7 @@ class PasswordResetRateThrottle(SimpleRateThrottle):
     rate = "8/hour"
 
     def get_cache_key(self, request, view):
-        return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}
+        return self.cache_format % {"scope": self.scope, "ident": _client_ip(request)}
 
 
 class GoogleLoginRateThrottle(SimpleRateThrottle):
@@ -58,4 +60,4 @@ class GoogleLoginRateThrottle(SimpleRateThrottle):
     scope = "google_login"
 
     def get_cache_key(self, request, view):
-        return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}
+        return self.cache_format % {"scope": self.scope, "ident": _client_ip(request)}

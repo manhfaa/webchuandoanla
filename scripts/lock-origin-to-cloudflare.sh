@@ -4,8 +4,7 @@
 #
 # VÌ SAO CẦN
 # ----------
-# Đo được ngày 2026-08-23:
-#     curl -k -H "Host: api.agromind.farm" https://103.124.94.97/admin/login/  ->  200
+# Một máy chủ gốc không được trả lời khi gọi thẳng IP với SNI api.agromind.farm.
 #     header cf-ray: KHÔNG CÓ
 # Nghĩa là bất kỳ ai biết IP máy chủ đều gọi thẳng vào Django, bỏ qua hoàn toàn
 # Cloudflare. Mọi thứ đã bật trên Cloudflare — chống DDoS, WAF, giới hạn tần
@@ -83,7 +82,7 @@ cat <<'EOF'
 
 ==> KIỂM CHỨNG (chạy từ MÁY KHÁC, không phải máy chủ này)
 
-    curl -k -m 10 -H "Host: api.agromind.farm" https://103.124.94.97/api/health/
+    curl -k -m 10 --resolve api.agromind.farm:443:ORIGIN_IP https://api.agromind.farm/api/health/
 
     Mong đợi: treo rồi timeout, hoặc "Connection refused".
     Nếu vẫn trả 200 thì tường lửa CHƯA ăn — đừng coi là xong.

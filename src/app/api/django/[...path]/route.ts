@@ -3,12 +3,35 @@ import { createHmac } from "node:crypto";
 import { isIP } from "node:net";
 
 import { resolveDjangoBaseUrl } from "@/lib/backend-url";
+import { backendAuthorization, isSameOriginMutation, refreshCookie, sessionCookies } from "@/lib/server-session";
 
 const DJANGO_BASE_URL = resolveDjangoBaseUrl(process.env.DJANGO_BASE_URL);
 const BASE = DJANGO_BASE_URL.endsWith("/") ? DJANGO_BASE_URL : `${DJANGO_BASE_URL}/`;
 const ALLOWED_ORIGIN = new URL(BASE).origin;
 const MAX_PROXY_BODY_BYTES = 12 * 1024 * 1024;
 const UPSTREAM_TIMEOUT_MS = 45_000;
+const TOKEN_PAIR_PATHS = new Set([
+  "api/auth/login/",
+  "api/auth/google/",
+  "api/auth/refresh/",
+  "api/auth/password-reset/confirm/",
+  "api/users/change-password/",
+]);
+
+function setSessionCookie(response: NextResponse, name: string, value: string, maxAge: number, path: string) {
+  response.cookies.set(name, value, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path,
+    maxAge,
+  });
+}
+
+function clearSessionCookies(response: NextResponse) {
+  setSessionCookie(response, sessionCookies.access, "", 0, "/");
+  setSessionCookie(response, sessionCookies.refresh, "", 0, "/");
+}
 
 function buildTargetUrl(req: Request, pathSegments: string[]) {
   const incoming = new URL(req.url);
@@ -16,7 +39,8 @@ function buildTargetUrl(req: Request, pathSegments: string[]) {
   // SSRF guard: `new URL(userPath, base)` silently ignores the base when the
   // path resolves to an absolute or protocol-relative URL (e.g. "http://evil"
   // or "//evil"). Refuse anything that escapes the Django origin.
-  if (target.origin !== ALLOWED_ORIGIN) return null;
+  if (target.origin !== ALLOWED_ORIGIN || !target.pathname.startsWith("/api/")) return null;
+  if (target.pathname.startsWith("/api/payments/webhooks/")) return null;
   // Most Django REST endpoints use trailing slashes; hitting without slash causes redirects.
   if (!target.pathname.endsWith("/")) target.pathname += "/";
   target.search = incoming.search;
@@ -44,7 +68,11 @@ function isTimeoutError(error: unknown): boolean {
 }
 
 async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> }) {
+  if (!isSameOriginMutation(req)) {
+    return NextResponse.json({ error: "Nguồn yêu cầu không hợp lệ." }, { status: 403 });
+  }
   const { path } = await ctx.params;
+  const endpoint = path.join("/").replace(/\/+$/, "") + "/";
   const targetUrl = buildTargetUrl(req, path);
   if (!targetUrl) {
     return NextResponse.json({ error: "Đường dẫn không hợp lệ." }, { status: 400 });
@@ -53,7 +81,7 @@ async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> })
   const headers = new Headers();
   const incomingHeaders = new Headers(req.headers);
   const contentType = incomingHeaders.get("content-type");
-  const authorization = incomingHeaders.get("authorization");
+  const authorization = backendAuthorization(req);
 
   if (contentType) headers.set("content-type", contentType);
   if (authorization) headers.set("authorization", authorization);
@@ -78,9 +106,38 @@ async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> })
 
   let body: ArrayBuffer | undefined;
   if (hasBody) {
-    body = await req.arrayBuffer();
+    const reader = req.body?.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    if (reader) {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > MAX_PROXY_BODY_BYTES) {
+          await reader.cancel();
+          return NextResponse.json({ error: "Dữ liệu gửi lên quá lớn." }, { status: 413 });
+        }
+        chunks.push(value);
+      }
+    }
+    const buffer = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      buffer.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    body = buffer.buffer;
     if (body.byteLength > MAX_PROXY_BODY_BYTES) {
       return NextResponse.json({ error: "Dữ liệu gửi lên quá lớn." }, { status: 413 });
+    }
+  }
+
+  if (method === "POST" && (endpoint === "api/auth/refresh/" || endpoint === "api/auth/logout/")) {
+    const storedRefresh = refreshCookie(req);
+    if (storedRefresh && (!body || body.byteLength === 0 || new TextDecoder().decode(body) === "{}")) {
+      body = new TextEncoder().encode(JSON.stringify({ refresh: storedRefresh })).buffer;
+      headers.set("content-type", "application/json");
     }
   }
 
@@ -98,7 +155,7 @@ async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> })
     // The upstream Django service can be unavailable during a VPS restart or
     // network incident. Answer with a clear message instead of an opaque 500.
     const timedOut = isTimeoutError(error);
-    return NextResponse.json(
+    const failure = NextResponse.json(
       {
         error: timedOut
           ? "Máy chủ phản hồi quá lâu. Vui lòng thử lại sau ít phút."
@@ -106,18 +163,43 @@ async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> })
       },
       { status: timedOut ? 504 : 502 },
     );
+    if (method === "POST" && endpoint === "api/auth/logout/") clearSessionCookies(failure);
+    return failure;
   }
 
   const resHeaders = new Headers(res.headers);
-  resHeaders.delete("set-cookie"); // keep auth purely token-based in frontend
+  resHeaders.delete("set-cookie");
   resHeaders.delete("content-encoding");
   resHeaders.delete("content-length");
   resHeaders.delete("transfer-encoding");
+  resHeaders.set("cache-control", "no-store");
 
-  return new NextResponse(res.body, {
+  if (method === "POST" && endpoint === "api/auth/logout/") {
+    const response = new NextResponse(res.body, { status: res.status, headers: resHeaders });
+    clearSessionCookies(response);
+    return response;
+  }
+
+  if (method === "POST" && res.ok && TOKEN_PAIR_PATHS.has(endpoint)) {
+    const payload = (await res.json()) as Record<string, unknown>;
+    if (typeof payload.access !== "string" || typeof payload.refresh !== "string") {
+      return NextResponse.json({ error: "Phiên đăng nhập không hợp lệ." }, { status: 502 });
+    }
+    const response = NextResponse.json(
+      { ...payload, access: "session", refresh: "" },
+      { status: res.status, headers: resHeaders },
+    );
+    setSessionCookie(response, sessionCookies.access, payload.access, 30 * 60, "/");
+    setSessionCookie(response, sessionCookies.refresh, payload.refresh, 7 * 24 * 60 * 60, "/");
+    return response;
+  }
+
+  const response = new NextResponse(res.body, {
     status: res.status,
     headers: resHeaders,
   });
+  if (method === "POST" && endpoint === "api/auth/refresh/" && !res.ok) clearSessionCookies(response);
+  return response;
 }
 
 export const GET = proxy;

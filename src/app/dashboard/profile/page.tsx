@@ -220,7 +220,7 @@ export default function DashboardProfilePage() {
     try {
       await djangoDeleteAccount({ password: deletePassword, confirmText: deleteConfirmText });
       setDeleteOpen(false);
-      logout();
+      await logout();
       toast.success(tr("Đã xóa tài khoản và toàn bộ dữ liệu liên quan.", "Your account and all related data were deleted."));
       router.replace("/");
     } catch (err) {

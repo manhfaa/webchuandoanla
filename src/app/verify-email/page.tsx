@@ -26,6 +26,9 @@ function VerificationContent() {
   useEffect(() => {
     if (!token || attempted.current) return;
     attempted.current = true;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("token");
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
     void djangoVerifyEmail(token)
       .then((result) => {
         setMessage(result.detail);
