@@ -138,10 +138,9 @@ REGISTRATION_IP_HOURLY_LIMIT = max(0, int(os.getenv("REGISTRATION_IP_HOURLY_LIMI
 
 # --- Outgoing mail (password reset) ---------------------------------------
 # Django's default EMAIL_HOST is "localhost", where nothing is listening, so an
-# unconfigured deployment would attempt a real SMTP connection and fail. Treat
-# "no EMAIL_HOST" as "no provider" and print to the console instead: the reset
-# flow stays exercisable in development, and production surfaces the gap in the
-# startup log rather than silently swallowing every message.
+# unconfigured deployment would attempt a real SMTP connection and fail. In
+# production, discard undeliverable mail rather than writing reset or
+# verification links to service logs. Local development keeps console mail.
 EMAIL_HOST = os.getenv("EMAIL_HOST", "").strip()
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "").strip()
@@ -180,11 +179,14 @@ elif EMAIL_HOST:
             "Đặt BREVO_API_KEY để gửi qua HTTPS."
         )
 else:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    EMAIL_BACKEND = (
+        "django.core.mail.backends.console.EmailBackend"
+        if DEBUG else "django.core.mail.backends.dummy.EmailBackend"
+    )
     if not DEBUG:
         logging.getLogger(__name__).warning(
-            "Chưa cấu hình gửi email: liên kết đặt lại mật khẩu chỉ hiện trong log "
-            "máy chủ, người dùng sẽ không nhận được email."
+            "Chưa cấu hình gửi email: không phát hành liên kết đặt lại mật khẩu "
+            "hoặc ghi nội dung email vào log máy chủ."
         )
 
 # Allow comma-separated origins for staging/prod

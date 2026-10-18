@@ -588,10 +588,9 @@ class PasswordResetTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.dummy.EmailBackend")
 class PasswordResetWithoutSmtpTests(APITestCase):
-    """No SMTP provider is configured yet, and Django's default EMAIL_HOST of
-    'localhost' would raise ConnectionRefusedError. The request must still
-    succeed (the link goes to the server console) instead of returning a 500."""
+    """Without a mail provider, never issue a reset token or log its link."""
 
     def setUp(self):
         cache.clear()
@@ -599,13 +598,14 @@ class PasswordResetWithoutSmtpTests(APITestCase):
             username="offline", email="offline@example.com", password=PASSWORD
         )
 
-    def test_request_succeeds_and_still_issues_a_token(self):
+    def test_request_reports_unavailable_and_does_not_issue_a_token(self):
         response = self.client.post(
             reverse("password-reset"), {"email": "offline@example.com"}, format="json"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(PasswordResetToken.objects.filter(used_at__isnull=True).count(), 1)
+        self.assertFalse(response.data["delivery_enabled"])
+        self.assertEqual(PasswordResetToken.objects.filter(used_at__isnull=True).count(), 0)
 
 
 class PasswordChangeTests(APITestCase):

@@ -11,18 +11,17 @@ VERIFY_SUBJECT = "Xác minh email Agromind AI"
 
 
 CONSOLE_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DUMMY_BACKEND = "django.core.mail.backends.dummy.EmailBackend"
 
 
 def delivery_is_configured() -> bool:
     """Whether a reset link can actually reach a user's inbox.
 
-    With no provider configured the message goes to the server log, which is
-    invisible to the person who asked for it. Telling the caller lets the UI say
-    so instead of promising an email that will never arrive. This is global
-    configuration, identical for every address, so it reveals nothing about
-    whether any particular account exists.
+    Console mail is only for local development; production discards mail if no
+    provider is configured. This is global configuration, so it reveals nothing
+    about whether any particular account exists.
     """
-    return getattr(settings, "EMAIL_BACKEND", CONSOLE_BACKEND) != CONSOLE_BACKEND
+    return getattr(settings, "EMAIL_BACKEND", CONSOLE_BACKEND) not in {CONSOLE_BACKEND, DUMMY_BACKEND}
 
 
 def build_password_reset_url(raw_token: str) -> str:
