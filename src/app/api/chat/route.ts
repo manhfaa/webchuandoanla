@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Nguồn yêu cầu không hợp lệ." }, { status: 403 });
   }
   const authorization = backendAuthorization(request);
-  if (!authorization?.startsWith("Bearer ")) {
+  if (!authorization) {
     return NextResponse.json({ error: "Bạn cần đăng nhập để dùng tính năng này." }, { status: 401 });
   }
 

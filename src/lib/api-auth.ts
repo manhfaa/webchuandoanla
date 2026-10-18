@@ -42,7 +42,7 @@ export async function requirePlanFeature(
     return { allowed: false, status: 403, body: { error: "Nguồn yêu cầu không hợp lệ." } };
   }
   const authorization = backendAuthorization(request);
-  if (!authorization || !authorization.startsWith("Bearer ")) {
+  if (!authorization) {
     return {
       allowed: false,
       status: 401,

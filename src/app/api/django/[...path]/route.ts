@@ -17,6 +17,11 @@ const TOKEN_PAIR_PATHS = new Set([
   "api/auth/password-reset/confirm/",
   "api/users/change-password/",
 ]);
+const WEB_SESSION_PREFIX = "api/auth/web-session/";
+
+function isLegacyJwt(value: string): boolean {
+  return value.split(".").length === 3;
+}
 
 function setSessionCookie(response: NextResponse, name: string, value: string, maxAge: number, path: string) {
   response.cookies.set(name, value, {
@@ -73,6 +78,9 @@ async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> })
   }
   const { path } = await ctx.params;
   const endpoint = path.join("/").replace(/\/+$/, "") + "/";
+  if (endpoint.startsWith(WEB_SESSION_PREFIX)) {
+    return NextResponse.json({ error: "Đường dẫn không hợp lệ." }, { status: 404 });
+  }
   const targetUrl = buildTargetUrl(req, path);
   if (!targetUrl) {
     return NextResponse.json({ error: "Đường dẫn không hợp lệ." }, { status: 400 });
@@ -84,7 +92,9 @@ async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> })
   const authorization = backendAuthorization(req);
 
   if (contentType) headers.set("content-type", contentType);
-  if (authorization) headers.set("authorization", authorization);
+  // Public auth actions must work even when a previous cookie has expired.
+  // Django may authenticate headers before evaluating AllowAny permissions.
+  if (authorization && !endpoint.startsWith("api/auth/")) headers.set("authorization", authorization);
   const userAgent = incomingHeaders.get("user-agent");
   if (userAgent) headers.set("user-agent", userAgent.slice(0, 512));
 
@@ -133,17 +143,21 @@ async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> })
     }
   }
 
-  if (method === "POST" && (endpoint === "api/auth/refresh/" || endpoint === "api/auth/logout/")) {
-    const storedRefresh = refreshCookie(req);
-    if (storedRefresh && (!body || body.byteLength === 0 || new TextDecoder().decode(body) === "{}")) {
-      body = new TextEncoder().encode(JSON.stringify({ refresh: storedRefresh })).buffer;
-      headers.set("content-type", "application/json");
-    }
+  const sessionOperation = method === "POST" && (endpoint === "api/auth/refresh/" || endpoint === "api/auth/logout/");
+  const storedRefresh = sessionOperation ? refreshCookie(req) : null;
+  const opaqueSessionOperation = Boolean(storedRefresh && !isLegacyJwt(storedRefresh));
+  if (sessionOperation && storedRefresh) {
+    // Never trust a caller-supplied refresh body over the HttpOnly cookie.
+    body = new TextEncoder().encode(JSON.stringify({ refresh: storedRefresh })).buffer;
+    headers.set("content-type", "application/json");
   }
+  const upstreamUrl = opaqueSessionOperation
+    ? new URL(`api/auth/web-session/${endpoint === "api/auth/refresh/" ? "refresh" : "logout"}/`, BASE)
+    : targetUrl;
 
   let res: Response;
   try {
-    res = await fetch(targetUrl, {
+    res = await fetch(upstreamUrl, {
       method,
       headers,
       body,
@@ -185,12 +199,32 @@ async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> })
     if (typeof payload.access !== "string" || typeof payload.refresh !== "string") {
       return NextResponse.json({ error: "Phiên đăng nhập không hợp lệ." }, { status: 502 });
     }
+    let pair = { access: payload.access, refresh: payload.refresh };
+    if (!opaqueSessionOperation) {
+      try {
+        const exchanged = await fetch(new URL("api/auth/web-session/exchange/", BASE), {
+          method: "POST",
+          headers: { "content-type": "application/json", authorization: `Bearer ${payload.access}` },
+          body: JSON.stringify({ refresh: payload.refresh }),
+          cache: "no-store",
+          signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+        });
+        if (!exchanged.ok) throw new Error(`Session exchange failed: ${exchanged.status}`);
+        pair = (await exchanged.json()) as typeof pair;
+        if (typeof pair.access !== "string" || typeof pair.refresh !== "string" ||
+            isLegacyJwt(pair.access) || isLegacyJwt(pair.refresh)) {
+          throw new Error("Invalid opaque session response");
+        }
+      } catch {
+        return NextResponse.json({ error: "Chưa tạo được phiên đăng nhập an toàn. Vui lòng thử lại." }, { status: 502 });
+      }
+    }
     const response = NextResponse.json(
       { ...payload, access: "session", refresh: "" },
       { status: res.status, headers: resHeaders },
     );
-    setSessionCookie(response, sessionCookies.access, payload.access, 30 * 60, "/");
-    setSessionCookie(response, sessionCookies.refresh, payload.refresh, 7 * 24 * 60 * 60, "/");
+    setSessionCookie(response, sessionCookies.access, pair.access, 30 * 60, "/");
+    setSessionCookie(response, sessionCookies.refresh, pair.refresh, 7 * 24 * 60 * 60, "/");
     return response;
   }
 

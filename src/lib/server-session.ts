@@ -16,9 +16,9 @@ export function refreshCookie(request: Request): string | null {
 
 export function backendAuthorization(request: Request): string | null {
   const access = accessCookie(request);
-  if (access) return `Bearer ${access}`;
-  const supplied = request.headers.get("authorization");
-  return supplied?.startsWith("Bearer ") && supplied !== "Bearer session" ? supplied : null;
+  if (!access) return null;
+  // Existing JWT cookies migrate on refresh; new browser cookies are opaque.
+  return access.split(".").length === 3 ? `Bearer ${access}` : `Session ${access}`;
 }
 
 export function isSameOriginMutation(request: Request): boolean {
