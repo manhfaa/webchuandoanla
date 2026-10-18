@@ -20,7 +20,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import TERMS_VERSION, EmailVerificationToken, PasswordResetToken, RegistrationAttempt
+from .models import TERMS_VERSION, EmailVerificationToken, PasswordResetToken, RegistrationAttempt, WebSession
 from .registration_security import _client_ip
 from .throttling import GoogleLoginRateThrottle, LoginIPRateThrottle, PasswordResetRateThrottle
 from core.admin_guard import client_ip as admin_client_ip
@@ -918,3 +918,100 @@ class PasswordResetDeliveryGateTests(APITestCase):
             reverse("password-reset"), {"email": "nobody@example.com"}, format="json"
         )
         self.assertEqual(known.data, unknown.data)
+
+
+class WebSessionTests(APITestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="opaque", email="opaque@example.com", password=PASSWORD,
+        )
+
+    def exchange(self):
+        jwt_refresh = RefreshToken.for_user(self.user)
+        response = self.client.post(
+            reverse("web-session-exchange"),
+            {"refresh": str(jwt_refresh)},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {jwt_refresh.access_token}",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        return response.data, str(jwt_refresh)
+
+    def test_tokens_are_opaque_hashed_and_rotate_once(self):
+        pair, jwt_refresh = self.exchange()
+        self.assertNotIn(".", pair["access"])
+        self.assertEqual(len(pair["refresh"]), 43)
+        session = WebSession.objects.get(user=self.user)
+        self.assertNotEqual(session.access_hash, pair["access"])
+        self.assertNotEqual(session.refresh_hash, pair["refresh"])
+        self.assertEqual(
+            self.client.post(reverse("token-refresh"), {"refresh": jwt_refresh}, format="json").status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+        me = self.client.get(reverse("me"), HTTP_AUTHORIZATION=f"Session {pair['access']}")
+        self.assertEqual(me.status_code, status.HTTP_200_OK)
+
+        rotated = self.client.post(reverse("web-session-refresh"), {"refresh": pair["refresh"]}, format="json")
+        self.assertEqual(rotated.status_code, status.HTTP_200_OK)
+        self.assertNotEqual(rotated.data["access"], pair["access"])
+        self.assertEqual(
+            self.client.get(reverse("me"), HTTP_AUTHORIZATION=f"Session {pair['access']}").status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+        self.assertEqual(
+            self.client.post(reverse("web-session-refresh"), {"refresh": pair["refresh"]}, format="json").status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+        self.assertEqual(
+            self.client.post(reverse("web-session-logout"), {"refresh": rotated.data["refresh"]}, format="json").status_code,
+            status.HTTP_200_OK,
+        )
+        self.assertEqual(
+            self.client.get(reverse("me"), HTTP_AUTHORIZATION=f"Session {rotated.data['access']}").status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+    def test_exchange_requires_matching_refresh_owner(self):
+        other = get_user_model().objects.create_user(
+            username="other", email="other@example.com", password=PASSWORD,
+        )
+        own_access = RefreshToken.for_user(self.user).access_token
+        other_refresh = RefreshToken.for_user(other)
+        response = self.client.post(
+            reverse("web-session-exchange"), {"refresh": str(other_refresh)}, format="json",
+            HTTP_AUTHORIZATION=f"Bearer {own_access}",
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertFalse(WebSession.objects.exists())
+
+    def test_jwt_pair_cannot_be_exchanged_twice(self):
+        refresh = RefreshToken.for_user(self.user)
+        access = str(refresh.access_token)
+        first = self.client.post(
+            reverse("web-session-exchange"), {"refresh": str(refresh)}, format="json",
+            HTTP_AUTHORIZATION=f"Bearer {access}",
+        )
+        second = self.client.post(
+            reverse("web-session-exchange"), {"refresh": str(refresh)}, format="json",
+            HTTP_AUTHORIZATION=f"Bearer {access}",
+        )
+        self.assertEqual(first.status_code, status.HTTP_200_OK)
+        self.assertEqual(second.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(WebSession.objects.count(), 1)
+
+    def test_revocation_and_inactive_user(self):
+        from .serializers import revoke_all_refresh_tokens
+
+        pair, _ = self.exchange()
+        revoke_all_refresh_tokens(self.user)
+        self.assertEqual(
+            self.client.get(reverse("me"), HTTP_AUTHORIZATION=f"Session {pair['access']}").status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+        pair, _ = self.exchange()
+        self.user.is_active = False
+        self.user.save(update_fields=["is_active"])
+        self.assertEqual(
+            self.client.post(reverse("web-session-refresh"), {"refresh": pair["refresh"]}, format="json").status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )

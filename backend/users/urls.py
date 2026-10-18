@@ -10,6 +10,7 @@ from .views import (
     PasswordResetRequestAPIView,
     RegisterAPIView,
 )
+from .web_sessions import WebSessionExchangeAPIView, WebSessionRefreshAPIView, WebSessionLogoutAPIView
 
 urlpatterns = [
     path("register/", RegisterAPIView.as_view(), name="register"),
@@ -22,6 +23,9 @@ urlpatterns = [
     path("refresh/", ActiveUserTokenRefreshAPIView.as_view(), name="token-refresh"),
     # Blacklists the refresh token; signing out was previously local-only.
     path("logout/", LogoutAPIView.as_view(), name="logout"),
+    path("web-session/exchange/", WebSessionExchangeAPIView.as_view(), name="web-session-exchange"),
+    path("web-session/refresh/", WebSessionRefreshAPIView.as_view(), name="web-session-refresh"),
+    path("web-session/logout/", WebSessionLogoutAPIView.as_view(), name="web-session-logout"),
     path("password-reset/", PasswordResetRequestAPIView.as_view(), name="password-reset"),
     path("password-reset/confirm/", PasswordResetConfirmAPIView.as_view(), name="password-reset-confirm"),
 ]

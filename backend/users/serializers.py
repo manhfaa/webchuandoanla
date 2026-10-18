@@ -15,7 +15,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from payments.services import expire_user_plan
 
-from .models import PasswordResetToken, UserSetting
+from .models import PasswordResetToken, UserSetting, WebSession
 from .registration_security import finish_registration, reserve_registration, verify_turnstile
 
 User = get_user_model()
@@ -38,6 +38,7 @@ def revoke_all_refresh_tokens(user):
     """
     for outstanding in OutstandingToken.objects.filter(user=user):
         BlacklistedToken.objects.get_or_create(token=outstanding)
+    WebSession.objects.filter(user=user, revoked_at__isnull=True).update(revoked_at=timezone.now())
 
 
 def build_tokens_for_user(user):

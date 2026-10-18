@@ -15,6 +15,8 @@ TERMS_VERSION = "2026-07-25"
 # Short enough that a leaked mailbox is not a standing key to the account.
 PASSWORD_RESET_TOKEN_TTL = timedelta(hours=2)
 EMAIL_VERIFICATION_TOKEN_TTL = timedelta(hours=24)
+WEB_ACCESS_TTL = timedelta(minutes=30)
+WEB_REFRESH_TTL = timedelta(days=7)
 
 
 class User(AbstractUser):
@@ -160,6 +162,47 @@ class RegistrationAttempt(models.Model):
             models.Index(fields=["agent_hash", "created_at"]),
             models.Index(fields=["email_pattern_hash", "created_at"]),
         ]
+
+
+class WebSession(models.Model):
+    """Opaque browser credentials; only digests are persisted in the database."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="web_sessions")
+    access_hash = models.CharField(max_length=64, unique=True)
+    refresh_hash = models.CharField(max_length=64, unique=True)
+    access_expires_at = models.DateTimeField()
+    refresh_expires_at = models.DateTimeField(db_index=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    @staticmethod
+    def hash_token(raw: str) -> str:
+        return hashlib.sha256(raw.encode("ascii")).hexdigest()
+
+    @classmethod
+    def issue(cls, user):
+        now = timezone.now()
+        access, refresh = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
+        cls.objects.create(
+            user=user,
+            access_hash=cls.hash_token(access),
+            refresh_hash=cls.hash_token(refresh),
+            access_expires_at=now + WEB_ACCESS_TTL,
+            refresh_expires_at=now + WEB_REFRESH_TTL,
+        )
+        return {"access": access, "refresh": refresh}
+
+    @classmethod
+    def from_access(cls, raw: str):
+        if not isinstance(raw, str) or len(raw) != 43:
+            return None
+        now = timezone.now()
+        return cls.objects.select_related("user").filter(
+            access_hash=cls.hash_token(raw),
+            access_expires_at__gt=now,
+            refresh_expires_at__gt=now,
+            revoked_at__isnull=True,
+        ).first()
 
 
 class UserSetting(models.Model):
