@@ -33,7 +33,7 @@ def run_housekeeping(*, stdout=None) -> dict[str, int]:
     from engagement.models import UserSubscription
     from payments.models import PaymentOrder
     from payments.services import OPEN_ORDER_STATUSES
-    from users.models import EmailVerificationToken, PasswordResetToken, RegistrationAttempt, WebSession
+    from users.models import AdminLoginAttempt, EmailVerificationToken, PasswordResetToken, RegistrationAttempt, WebSession
 
     now = timezone.now()
     User = get_user_model()
@@ -71,6 +71,9 @@ def run_housekeeping(*, stdout=None) -> dict[str, int]:
     ).delete()[0]
     report["registration_attempts_pruned"] = RegistrationAttempt.objects.filter(
         created_at__lt=now - timedelta(days=30)
+    ).delete()[0]
+    report["admin_login_attempts_pruned"] = AdminLoginAttempt.objects.filter(
+        created_at__lt=now - timedelta(days=7)
     ).delete()[0]
     report["web_sessions_pruned"] = WebSession.objects.filter(refresh_expires_at__lte=now).delete()[0]
 

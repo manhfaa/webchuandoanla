@@ -1,78 +1,84 @@
-"""Giới hạn số lần thử đăng nhập vào trang quản trị Django.
-
-Vì sao cần
-----------
-``/admin/login/`` trả 200 cho bất kỳ ai trên Internet, và Django **không** có
-sẵn cơ chế khoá sau nhiều lần sai. Toàn bộ REST API đã được DRF giới hạn tần
-suất (``login``, ``register``, ``payment_orders``...), nhưng trang quản trị
-không đi qua DRF nên không được che.
-
-Hai lớp, cố ý
--------------
-Giới hạn theo địa chỉ kết nối hoặc địa chỉ proxy đã ký, tuyệt đối không tin
-``CF-Connecting-IP`` hay ``X-Forwarded-For`` do client gửi. Có thêm hạn mức
-TỔNG để chặn dò mật khẩu phân tán qua nhiều địa chỉ.
-
-Hạn mức tổng là lưới an toàn, không phải hàng rào chính. Hàng rào chính là chặn
-truy cập thẳng vào IP máy chủ.
-
-Lưu ý vận hành: cache mặc định của Django là LocMemCache, tính riêng cho từng
-tiến trình Gunicorn. Với N worker thì hạn mức thực tế là N lần con số dưới đây.
-Khi nào gắn Redis thì nó tự siết lại đúng.
-"""
+"""Database-backed throttling for Django admin login attempts."""
 
 from __future__ import annotations
 
-import time
+import logging
+from datetime import timedelta
 
-from django.core.cache import cache
+from django.db import DatabaseError, connection, transaction
 from django.http import HttpResponse
+from django.utils import timezone
+from django.utils.deprecation import MiddlewareMixin
+
+from users.models import AdminLoginAttempt
+from users.registration_security import _digest
+
+logger = logging.getLogger("agromind.security.admin")
 
 IP_LIMIT = 10
-TOTAL_LIMIT = 60
+ACCOUNT_LIMIT = 30
 WINDOW_SECONDS = 15 * 60
 
 
 def client_ip(request) -> str:
-    """Use only a proxy-signed address or the actual peer, never client headers."""
-    from users.registration_security import _client_ip
-
-    return _client_ip(request)
+    """Nginx sets REMOTE_ADDR from trusted Cloudflare peers for the admin host."""
+    return str(request.META.get("REMOTE_ADDR", "unknown"))
 
 
-def _hit(key: str, limit: int) -> bool:
-    """Đếm một lượt. True nghĩa là đã vượt hạn mức."""
-    bucket = int(time.time()) // WINDOW_SECONDS
-    full_key = f"adminguard:{key}:{bucket}"
-    try:
-        added = cache.add(full_key, 1, WINDOW_SECONDS + 60)
-        count = 1 if added else cache.incr(full_key)
-    except ValueError:
-        # Khoá vừa hết hạn giữa add và incr; coi như lượt đầu của cửa sổ mới.
-        cache.set(full_key, 1, WINDOW_SECONDS + 60)
-        count = 1
-    return count > limit
+def _reserve_attempt(request) -> tuple[AdminLoginAttempt | None, str | None]:
+    ip_hash = _digest(client_ip(request))
+    username = request.POST.get("username", "")
+    if not isinstance(username, str):
+        username = ""
+    account_hash = _digest(username.strip().casefold()[:150])
+    now = timezone.now()
+
+    with transaction.atomic():
+        if connection.vendor == "postgresql":
+            # Serialize checks across Gunicorn workers without a Redis dependency.
+            lock_ids = sorted({
+                int.from_bytes(bytes.fromhex(value[:16]), "big", signed=True)
+                for value in (ip_hash, account_hash)
+            })
+            with connection.cursor() as cursor:
+                for lock_id in lock_ids:
+                    cursor.execute("SELECT pg_advisory_xact_lock(%s)", [lock_id])
+
+        recent = AdminLoginAttempt.objects.filter(created_at__gte=now - timedelta(seconds=WINDOW_SECONDS))
+        if recent.filter(ip_hash=ip_hash).count() >= IP_LIMIT:
+            return None, "ip"
+        if recent.filter(account_hash=account_hash).count() >= ACCOUNT_LIMIT:
+            return None, "account"
+        return AdminLoginAttempt.objects.create(ip_hash=ip_hash, account_hash=account_hash), None
 
 
-class AdminLoginRateLimitMiddleware:
-    """Chặn POST dò mật khẩu vào trang đăng nhập quản trị."""
+class AdminLoginRateLimitMiddleware(MiddlewareMixin):
+    """Reject excess admin POSTs after CSRF validation, before password check."""
 
-    def __init__(self, get_response):
-        self.get_response = get_response
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        from django.conf import settings
 
-    def __call__(self, request):
-        if request.method == "POST" and request.path.rstrip("/").endswith("/login"):
-            from django.conf import settings
+        admin_prefix = f"/{settings.DJANGO_ADMIN_PATH.strip('/')}/"
+        if request.method != "POST" or request.path != f"{admin_prefix}login/":
+            return None
 
-            admin_prefix = f"/{getattr(settings, 'DJANGO_ADMIN_PATH', 'admin/').strip('/')}/"
-            if request.path.startswith(admin_prefix):
-                over_ip = _hit(f"ip:{client_ip(request)}", IP_LIMIT)
-                over_total = _hit("total", TOTAL_LIMIT)
-                if over_ip or over_total:
-                    return HttpResponse(
-                        "Quá nhiều lần đăng nhập. Vui lòng thử lại sau ít phút.",
-                        status=429,
-                        content_type="text/plain; charset=utf-8",
-                    )
+        try:
+            attempt, blocked_by = _reserve_attempt(request)
+        except DatabaseError:
+            logger.exception("Admin login throttle database unavailable")
+            return HttpResponse("Đăng nhập quản trị tạm thời không khả dụng.", status=503)
 
-        return self.get_response(request)
+        if blocked_by:
+            logger.warning("Admin login blocked dimension=%s ip_hash=%s", blocked_by, _digest(client_ip(request))[:12])
+            response = HttpResponse("Quá nhiều lần đăng nhập. Vui lòng thử lại sau ít phút.", status=429)
+            response["Retry-After"] = str(WINDOW_SECONDS)
+            return response
+
+        request.admin_login_attempt_id = attempt.pk
+        return None
+
+    def process_response(self, request, response):
+        attempt_id = getattr(request, "admin_login_attempt_id", None)
+        if attempt_id and getattr(request.user, "is_authenticated", False) and request.user.is_staff:
+            AdminLoginAttempt.objects.filter(pk=attempt_id).delete()
+        return response

@@ -66,6 +66,20 @@ class User(AbstractUser):
         self.terms_version = version
 
 
+class AdminLoginAttempt(models.Model):
+    """Only keyed fingerprints are stored for cross-worker login throttling."""
+
+    ip_hash = models.CharField(max_length=64)
+    account_hash = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ip_hash", "created_at"], name="admin_ip_time_idx"),
+            models.Index(fields=["account_hash", "created_at"], name="admin_account_time_idx"),
+        ]
+
+
 class PasswordResetToken(models.Model):
     """One-time token behind the forgot-password flow.
 

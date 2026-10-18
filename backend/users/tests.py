@@ -48,6 +48,7 @@ class RegistrationIpTrustTests(TestCase):
             b"shared-test-secret", b"203.0.113.5", hashlib.sha256
         ).hexdigest()
         self.assertEqual(_client_ip(request), "203.0.113.5")
+        self.assertEqual(admin_client_ip(request), "198.51.100.2")
 
 
 class ProvisionAdminCommandTests(TestCase):

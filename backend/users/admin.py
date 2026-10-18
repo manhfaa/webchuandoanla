@@ -8,6 +8,18 @@ class UserAdmin(admin.ModelAdmin):
     list_display = ("id", "username", "email", "email_verified_at", "current_plan", "is_active", "updated_at")
     search_fields = ("username", "email", "full_name", "phone")
 
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_active and request.user.is_superuser
+
+    def has_add_permission(self, request):
+        return request.user.is_active and request.user.is_superuser
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_active and request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_active and request.user.is_superuser
+
 
 @admin.register(UserSetting)
 class UserSettingAdmin(admin.ModelAdmin):
