@@ -1,7 +1,9 @@
 import importlib
+from unittest import mock
 
 from django.apps import apps as global_apps
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.urls import reverse
 from django.utils import timezone
 from diagnoses.models import Diagnosis
@@ -11,6 +13,7 @@ from rest_framework.test import APIClient, APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import ChatConversation, ChatMessage, ExpertConsultation, ServicePlan
+from .throttling import PlanCatalogueRateThrottle
 
 User = get_user_model()
 
@@ -163,7 +166,49 @@ class ServicePlanCatalogueTests(APITestCase):
     """
 
     def setUp(self):
+        cache.clear()
         self.user = User.objects.create_user(username="cat", email="cat@example.com", password="CatPass#2026")
+
+    def test_public_catalogue_exposes_only_pricing_fields(self):
+        plan = ServicePlan.objects.get(slug="grow")
+        plan.metadata = {**plan.metadata, "internal_note": "private"}
+        plan.save(update_fields=["metadata"])
+
+        response = self.client.get(reverse("plan-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        row = next(row for row in response.data if row["slug"] == "grow")
+        self.assertNotIn("internal_note", row["metadata"])
+        self.assertNotIn("created_at", row)
+        self.assertNotIn("updated_at", row)
+        self.assertEqual(row["price_monthly"], str(plan.price_monthly))
+        self.assertIn("s-maxage=60", response["Cache-Control"])
+
+    def test_catalogue_rejects_queries_and_writes(self):
+        url = reverse("plan-list")
+        self.assertEqual(self.client.get(url + "?utm_source=x").status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.client.post(url, {"slug": "fake"}).status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_catalogue_limits_bursts_without_trusting_forwarded_ip(self):
+        with mock.patch.object(PlanCatalogueRateThrottle, "rate", "2/minute", create=True):
+            url = reverse("plan-list")
+            for spoofed_ip in ("192.0.2.1", "192.0.2.2"):
+                response = self.client.get(url, HTTP_X_FORWARDED_FOR=spoofed_ip)
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+            blocked = self.client.get(url, HTTP_X_FORWARDED_FOR="192.0.2.3")
+        self.assertEqual(blocked.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertIn("Retry-After", blocked)
+
+    def test_admin_plan_change_invalidates_worker_cache(self):
+        url = reverse("plan-list")
+        self.client.get(url)
+        plan = ServicePlan.objects.get(slug="grow")
+        plan.price_monthly = 12000
+        plan.save(update_fields=["price_monthly"])
+
+        response = self.client.get(url)
+        grow = next(row for row in response.data if row["slug"] == "grow")
+        self.assertEqual(grow["price_monthly"], "12000.00")
 
     def test_plans_endpoint_publishes_the_crop_plan_quota(self):
         response = self.client.get(reverse("plan-list"))

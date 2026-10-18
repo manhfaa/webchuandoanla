@@ -28,6 +28,22 @@ class ServicePlanSerializer(serializers.ModelSerializer):
         return max(1, int(getattr(settings, "SEPAY_SUBSCRIPTION_DAYS", 30)))
 
 
+class PublicServicePlanSerializer(ServicePlanSerializer):
+    metadata = serializers.SerializerMethodField()
+    PUBLIC_METADATA_KEYS = frozenset(("daily_diagnoses", "history_days", "chat_daily", "crop_plans", "reports"))
+
+    class Meta(ServicePlanSerializer.Meta):
+        fields = (
+            "id", "slug", "name", "description", "price_monthly", "currency",
+            "yolo_enabled", "cnn_enabled", "rag_enabled", "expert_chat_enabled",
+            "max_diagnoses_per_month", "metadata", "is_active", "subscription_days",
+        )
+
+    def get_metadata(self, plan):
+        metadata = plan.metadata if isinstance(plan.metadata, dict) else {}
+        return {key: metadata[key] for key in self.PUBLIC_METADATA_KEYS if key in metadata}
+
+
 class UserSubscriptionSerializer(serializers.ModelSerializer):
     plan = ServicePlanSerializer(read_only=True)
     plan_id = serializers.PrimaryKeyRelatedField(

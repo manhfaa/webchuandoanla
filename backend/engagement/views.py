@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import generics, permissions, serializers as drf_serializers, status
@@ -21,11 +22,12 @@ from payments.entitlements import (
 from .models import ChatConversation, ChatMessage, ExpertConsultation, ServicePlan, UserSubscription
 from aiproviders import deepseek
 from .services import chat as chat_service
+from .throttling import PlanCatalogueRateThrottle
 from .serializers import (
     ChatConversationSerializer,
     ChatMessageSerializer,
     ExpertConsultationSerializer,
-    ServicePlanSerializer,
+    PublicServicePlanSerializer,
     UserSubscriptionSerializer,
 )
 
@@ -136,8 +138,25 @@ def _require_expert_chat(user):
 
 class ServicePlanListAPIView(generics.ListAPIView):
     queryset = ServicePlan.objects.filter(is_active=True)
-    serializer_class = ServicePlanSerializer
+    serializer_class = PublicServicePlanSerializer
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+    throttle_classes = [PlanCatalogueRateThrottle]
+
+    def list(self, request, *args, **kwargs):
+        if request.query_params:
+            return Response({"detail": "Tham số truy vấn không hợp lệ."}, status=status.HTTP_400_BAD_REQUEST)
+
+        days = max(1, int(getattr(settings, "SEPAY_SUBSCRIPTION_DAYS", 30)))
+        cache_key = f"public-service-plans-v1-{days}"
+        rows = cache.get(cache_key)
+        if rows is None:
+            rows = self.get_serializer(self.get_queryset(), many=True).data
+            cache.set(cache_key, rows, timeout=30)
+
+        response = Response(rows)
+        response["Cache-Control"] = "public, max-age=0, s-maxage=60"
+        return response
 
 
 class UserSubscriptionListCreateAPIView(generics.ListAPIView):

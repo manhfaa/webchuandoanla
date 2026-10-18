@@ -140,7 +140,7 @@ async function apiFetch<T>(path: string, accessToken?: string | null, init?: Req
   const response = await fetch(`/api/django/${path.replace(/^\//, "").replace(/\/+$/, "")}`, {
     ...init,
     headers,
-    cache: "no-store",
+    cache: init?.cache ?? "no-store",
   });
 
   if (!response.ok) {
@@ -156,7 +156,7 @@ async function apiFetch<T>(path: string, accessToken?: string | null, init?: Req
 
 /** The catalogue is public, so the pricing page can render it before sign-in. */
 export function fetchServicePlans() {
-  return apiFetch<ServicePlanDto[]>("/api/engagement/plans", null);
+  return apiFetch<ServicePlanDto[]>("/api/engagement/plans", null, { cache: "default" });
 }
 
 export function fetchSubscriptionSummary(accessToken?: string | null) {

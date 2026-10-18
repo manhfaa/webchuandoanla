@@ -78,6 +78,10 @@ async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> })
   }
   const { path } = await ctx.params;
   const endpoint = path.join("/").replace(/\/+$/, "") + "/";
+  const isPublicPlanCatalogue = endpoint === "api/engagement/plans/";
+  if (isPublicPlanCatalogue && new URL(req.url).search) {
+    return NextResponse.json({ detail: "Tham số truy vấn không hợp lệ." }, { status: 400 });
+  }
   if (endpoint.startsWith(WEB_SESSION_PREFIX)) {
     return NextResponse.json({ error: "Đường dẫn không hợp lệ." }, { status: 404 });
   }
@@ -94,7 +98,9 @@ async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> })
   if (contentType) headers.set("content-type", contentType);
   // Public auth actions must work even when a previous cookie has expired.
   // Django may authenticate headers before evaluating AllowAny permissions.
-  if (authorization && !endpoint.startsWith("api/auth/")) headers.set("authorization", authorization);
+  if (authorization && !endpoint.startsWith("api/auth/") && !isPublicPlanCatalogue) {
+    headers.set("authorization", authorization);
+  }
   const userAgent = incomingHeaders.get("user-agent");
   if (userAgent) headers.set("user-agent", userAgent.slice(0, 512));
 
@@ -186,7 +192,14 @@ async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> })
   resHeaders.delete("content-encoding");
   resHeaders.delete("content-length");
   resHeaders.delete("transfer-encoding");
-  resHeaders.set("cache-control", "no-store");
+  if (method === "GET" && isPublicPlanCatalogue && res.status === 200) {
+    // The catalogue is identical for every visitor. Do not forward a user
+    // session or vary this response on cookies, headers, or query parameters.
+    resHeaders.delete("vary");
+    resHeaders.set("cache-control", "public, max-age=0, s-maxage=60");
+  } else {
+    resHeaders.set("cache-control", "no-store");
+  }
 
   if (method === "POST" && endpoint === "api/auth/logout/") {
     const response = new NextResponse(res.body, { status: res.status, headers: resHeaders });

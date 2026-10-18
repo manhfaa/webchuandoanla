@@ -225,6 +225,7 @@ REST_FRAMEWORK = {
         "users.authentication.ExpiringJWTAuthentication",
     ],
     "DEFAULT_THROTTLE_RATES": {
+        "plan_catalogue": "120/minute",
         "payment_orders": "30/hour",
         "payment_status": "120/minute",
         "login": "10/minute",
