@@ -12,17 +12,13 @@ from django.utils.deprecation import MiddlewareMixin
 
 from users.models import AdminLoginAttempt
 from users.registration_security import _digest
+from .client_address import client_ip
 
 logger = logging.getLogger("agromind.security.admin")
 
 IP_LIMIT = 10
 ACCOUNT_LIMIT = 30
 WINDOW_SECONDS = 15 * 60
-
-
-def client_ip(request) -> str:
-    """Nginx sets REMOTE_ADDR from trusted Cloudflare peers for the admin host."""
-    return str(request.META.get("REMOTE_ADDR", "unknown"))
 
 
 def _reserve_attempt(request) -> tuple[AdminLoginAttempt | None, str | None]:

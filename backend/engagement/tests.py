@@ -199,6 +199,23 @@ class ServicePlanCatalogueTests(APITestCase):
         self.assertEqual(blocked.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
         self.assertIn("Retry-After", blocked)
 
+    def test_unix_socket_requests_use_nginx_verified_real_ip(self):
+        with mock.patch.object(PlanCatalogueRateThrottle, "rate", "2/minute", create=True):
+            url = reverse("plan-list")
+            for _ in range(2):
+                self.assertEqual(
+                    self.client.get(url, REMOTE_ADDR="", HTTP_X_REAL_IP="192.0.2.1").status_code,
+                    status.HTTP_200_OK,
+                )
+            self.assertEqual(
+                self.client.get(url, REMOTE_ADDR="", HTTP_X_REAL_IP="192.0.2.1").status_code,
+                status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+            self.assertEqual(
+                self.client.get(url, REMOTE_ADDR="", HTTP_X_REAL_IP="192.0.2.2").status_code,
+                status.HTTP_200_OK,
+            )
+
     def test_admin_plan_change_invalidates_worker_cache(self):
         url = reverse("plan-list")
         self.client.get(url)

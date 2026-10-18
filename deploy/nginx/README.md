@@ -45,6 +45,13 @@ one worker invalidate that worker immediately; other workers and the CDN may
 continue showing the previous price for up to their TTL. Checkout always uses
 the current server-side plan price.
 
+Gunicorn uses a Unix socket, where `REMOTE_ADDR` is empty. Nginx must overwrite
+`X-Real-IP` with its restored Cloudflare visitor IP, and the Gunicorn socket
+must be restricted to Nginx's user/group; Django uses this header only when the
+peer address is empty. The VPS systemd service uses Gunicorn `--umask 0o117`
+to create a `660` socket owned by `www-data:www-data`. Do not expose the socket
+to other local users.
+
 To cap uncached direct requests, install `plan-catalogue-limit.conf` in Nginx's
 `http` context and include `plan-catalogue-server.inc` in the
 `api.agromind.farm` server block. Ensure the server's API location inherits

@@ -8,11 +8,19 @@ from django.db import DatabaseError
 from django.test import Client, RequestFactory, TestCase, override_settings
 
 from core.admin_guard import ACCOUNT_LIMIT, IP_LIMIT, AdminLoginRateLimitMiddleware
+from core.client_address import client_ip
 from users.models import AdminLoginAttempt
 
 
 class AdminLoginRateLimitTests(TestCase):
     URL = "/admin/login/"
+
+    def test_unix_socket_real_ip_is_used_only_without_a_peer_address(self):
+        factory = RequestFactory()
+        proxied = factory.get(self.URL, REMOTE_ADDR="", HTTP_X_REAL_IP="192.0.2.1")
+        direct = factory.get(self.URL, REMOTE_ADDR="203.0.113.7", HTTP_X_REAL_IP="192.0.2.1")
+        self.assertEqual(client_ip(proxied), "192.0.2.1")
+        self.assertEqual(client_ip(direct), "203.0.113.7")
 
     def _post(self, ip="203.0.113.7", username="admin", password="sai"):
         return self.client.post(
