@@ -22,6 +22,7 @@ import { createDiagnosisRecord, fetchDiagnosisUsage } from "@/lib/diagnoses-clie
 import { compressImage } from "@/lib/image-compression";
 import { createPreviewDataUrl, detectLeafInImage, type LeafDetectionResult } from "@/lib/leaf-detector";
 import { addOfflineDiagnosis, clearOfflineDiagnosis, getOfflineQueue } from "@/lib/offline-queue";
+import { recoveryFeatureEnabled } from "@/lib/recovery-feature";
 import { cn, formatConfidence } from "@/lib/utils";
 import { useEntitlements } from "@/lib/use-entitlements";
 import { useTr } from "@/lib/use-tr";
@@ -519,6 +520,7 @@ export default function DashboardDiagnosisPage() {
   const [status, setStatus] = useState<DiagnosisStatus>("idle");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<DiagnosisRecord | null>(null);
+  const [recoveryCaseId, setRecoveryCaseId] = useState<number | null>(null);
   const [pendingCnnReview, setPendingCnnReview] = useState<PendingCnnReview | null>(null);
   const [symptomText, setSymptomText] = useState("");
   const [researchError, setResearchError] = useState<string | null>(null);
@@ -543,6 +545,11 @@ export default function DashboardDiagnosisPage() {
   const syncingOfflineRef = useRef(false);
   const online = useOnlineStatus();
   const voice = useVoiceInput({ onTranscript: (value) => setVoiceNote(value) });
+
+  useEffect(() => {
+    const id = Number(new URLSearchParams(window.location.search).get("recovery"));
+    if (Number.isSafeInteger(id) && id > 0) setRecoveryCaseId(id);
+  }, []);
 
   const { reportUsage, quota } = useEntitlements();
   const currentPlan = user?.currentPlan ?? "seed";
@@ -1389,6 +1396,11 @@ export default function DashboardDiagnosisPage() {
         {selectedRecord ? (
           <Link href="/dashboard/chat" className={cn(buttonVariants({ variant: "secondary" }), "w-full sm:w-auto")}>
             <MessageSquareText size={16} aria-hidden /> {tr("Hỏi thêm", "Ask a follow-up")}
+          </Link>
+        ) : null}
+        {recoveryFeatureEnabled && selectedRecord && recoveryCaseId && /^\d+$/.test(selectedRecord.id) ? (
+          <Link href={`/dashboard/recovery?case=${recoveryCaseId}&diagnosis=${selectedRecord.id}`} className={cn(buttonVariants({ variant: "secondary" }), "w-full sm:w-auto")}>
+            {tr("Gắn ảnh vào hộ chiếu", "Add photo to passport")}
           </Link>
         ) : null}
         {selectedRecord ? (

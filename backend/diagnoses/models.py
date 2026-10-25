@@ -112,3 +112,46 @@ class ClientRequest(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user_id}::{self.scope}::{self.client_request_id}"
+
+
+class RecoveryCase(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="recovery_cases"
+    )
+    baseline_diagnosis = models.OneToOneField(
+        Diagnosis, null=True, blank=True, on_delete=models.SET_NULL, related_name="baseline_recovery_cases"
+    )
+    plot = models.ForeignKey(
+        "farmops.FarmPlot", null=True, blank=True, on_delete=models.SET_NULL, related_name="recovery_cases"
+    )
+    title = models.CharField(max_length=160)
+    plant_name = models.CharField(max_length=120, blank=True, default="")
+    next_check_date = models.DateField()
+    is_closed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+        indexes = [models.Index(fields=["user", "is_closed", "next_check_date"])]
+
+
+class RecoveryCheckIn(models.Model):
+    class Condition(models.TextChoices):
+        IMPROVING = "improving", "Improving"
+        UNCHANGED = "unchanged", "Unchanged"
+        WORSENING = "worsening", "Worsening"
+        UNCERTAIN = "uncertain", "Uncertain"
+
+    case = models.ForeignKey(RecoveryCase, on_delete=models.CASCADE, related_name="check_ins")
+    diagnosis = models.OneToOneField(
+        Diagnosis, null=True, blank=True, on_delete=models.SET_NULL, related_name="recovery_check_in"
+    )
+    condition = models.CharField(max_length=20, choices=Condition.choices)
+    affected_leaves = models.PositiveSmallIntegerField(null=True, blank=True)
+    note = models.CharField(max_length=500, blank=True, default="")
+    action_taken = models.CharField(max_length=500, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]

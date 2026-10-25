@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { Archive, Bookmark, Leaf, RefreshCcw, Volume2 } from "lucide-react";
+import { Archive, Bookmark, HeartPulse, Leaf, RefreshCcw, Volume2 } from "lucide-react";
 
 import { ActionRecommendations } from "@/components/diagnosis/action-recommendations";
 import { DiagnosisResultCard, displayDiseaseName, displayPlantName, englishPlantName } from "@/components/diagnosis/result-card";
@@ -17,6 +17,7 @@ import { useTextToSpeech } from "@/hooks/use-text-to-speech";
 import { djangoClassifyLeafImage, type DjangoCnnResponse } from "@/lib/django-client";
 import { diagnosisPayloadFromRecord, fetchDiagnosisRecord, updateDiagnosisRecord } from "@/lib/diagnoses-client";
 import { fetchInputLibrary, type AgriculturalInput } from "@/lib/farmops-client";
+import { recoveryFeatureEnabled } from "@/lib/recovery-feature";
 import { withViFallback } from "@/lib/crop-plan-labels";
 import { useTr } from "@/lib/use-tr";
 import { toUserFacingText } from "@/lib/user-facing-copy";
@@ -200,6 +201,7 @@ export default function ResultDetailPage() {
                 tts.speak(`${record.plant}. ${record.disease}. ${toUserFacingText(record.note)}. ${actionText}`);
               }}><Volume2 size={16} aria-hidden /> {tts.speaking ? tr("Đang đọc", "Reading") : tr("Đọc kết quả", "Read result")}</Button>
               <Link href="/dashboard/diagnosis" className={buttonVariants({ variant: "secondary" })}><RefreshCcw size={16} aria-hidden /> {tr("Kiểm tra ảnh khác", "Check another image")}</Link>
+              {recoveryFeatureEnabled && record.classificationReady && /^\d+$/.test(record.id) ? <Link href={`/dashboard/recovery?diagnosis=${record.id}`} className={buttonVariants({ variant: "secondary" })}><HeartPulse size={16} aria-hidden /> {tr("Theo dõi phục hồi", "Track recovery")}</Link> : null}
             </div>
           </div>
         </div>

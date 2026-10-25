@@ -8,6 +8,7 @@ from .views import (
     DiagnosisResearchSymptomsAPIView,
     DiagnosisUsageAPIView,
 )
+from .recovery import RecoveryCaseDetailAPIView, RecoveryCaseListCreateAPIView, RecoveryCheckInCreateAPIView
 
 urlpatterns = [
     path("", DiagnosisListCreateAPIView.as_view(), name="diagnosis-list-create"),
@@ -21,5 +22,8 @@ urlpatterns = [
         name="diagnosis-research-symptoms",
     ),
     path("usage/", DiagnosisUsageAPIView.as_view(), name="diagnosis-usage"),
+    path("recovery/", RecoveryCaseListCreateAPIView.as_view(), name="recovery-case-list-create"),
+    path("recovery/<int:pk>/", RecoveryCaseDetailAPIView.as_view(), name="recovery-case-detail"),
+    path("recovery/<int:pk>/check-ins/", RecoveryCheckInCreateAPIView.as_view(), name="recovery-check-in-create"),
     path("<int:pk>/", DiagnosisDetailAPIView.as_view(), name="diagnosis-detail"),
 ]

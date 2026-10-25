@@ -1,3 +1,5 @@
+import { recoveryFeatureEnabled } from "@/lib/recovery-feature";
+
 export const landingNavItems = [
   { label: "Quy trình", labelEn: "Process", href: "#quy-trinh" },
   { label: "Tính năng", labelEn: "Features", href: "#tinh-nang" },
@@ -13,6 +15,7 @@ export const dashboardNavGroups = [
       { label: "Tổng quan", labelEn: "Overview", href: "/dashboard" },
       { label: "Kiểm tra ảnh", labelEn: "Leaf check", href: "/dashboard/diagnosis" },
       { label: "Lịch sử", labelEn: "History", href: "/dashboard/history" },
+      ...(recoveryFeatureEnabled ? [{ label: "Hộ chiếu phục hồi", labelEn: "Recovery passport", href: "/dashboard/recovery" }] : []),
     ],
   },
   {
