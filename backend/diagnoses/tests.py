@@ -1,7 +1,9 @@
 from datetime import timedelta
+from io import StringIO
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.db import connection
 from django.test import SimpleTestCase
 from django.test.utils import CaptureQueriesContext
@@ -470,6 +472,50 @@ class DiagnosisHistoryRetentionTests(DiagnosisPlanTestCase):
 
         detail = self.client.get(f"/api/diagnoses/{row.pk}/")
         self.assertEqual(detail.data["image_data_url"], image_data_url)
+
+    def test_history_list_does_not_fetch_original_image_for_saved_thumbnails(self):
+        row = self.make_diagnosis(
+            image_data_url=VALID_PNG_DATA_URL,
+            thumbnail_url="data:image/jpeg;base64,THUMB",
+            rag_payload={"large": "payload"},
+        )
+        Diagnosis.objects.filter(user=self.user).exclude(pk=row.pk).update(
+            thumbnail_url="data:image/jpeg;base64,THUMB"
+        )
+
+        with CaptureQueriesContext(connection) as queries:
+            response = self.client.get("/api/diagnoses/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["results"][0]["id"], row.pk)
+        history_sql = [
+            query["sql"] for query in queries.captured_queries
+            if 'FROM "diagnoses_diagnosis"' in query["sql"]
+        ]
+        self.assertTrue(history_sql)
+        for sql in history_sql:
+            self.assertNotIn('"image_data_url"', sql)
+            self.assertNotIn('"rag_payload"', sql)
+
+    def test_backfill_thumbnails_keeps_legacy_history_fast(self):
+        legacy = self.make_diagnosis(image_data_url=VALID_PNG_DATA_URL)
+        remote = self.make_diagnosis(image_url="https://example.com/leaf.jpg")
+        missing = self.make_diagnosis()
+
+        output = StringIO()
+        call_command("backfill_diagnosis_thumbnails", batch_size=1, stdout=output)
+
+        legacy.refresh_from_db()
+        remote.refresh_from_db()
+        missing.refresh_from_db()
+        self.assertTrue(legacy.thumbnail_url.startswith("data:image/jpeg;base64,"))
+        self.assertEqual(remote.thumbnail_url, remote.image_url)
+        self.assertEqual(missing.thumbnail_url, "")
+        self.assertIn("Updated 2 thumbnails;", output.getvalue())
+
+        output = StringIO()
+        call_command("backfill_diagnosis_thumbnails", batch_size=1, stdout=output)
+        self.assertIn("Updated 0 thumbnails;", output.getvalue())
 
     def test_history_list_honours_bounded_limit_and_offset(self):
         second = self.make_diagnosis(title="Second")

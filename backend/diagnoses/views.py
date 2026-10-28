@@ -42,6 +42,21 @@ class DiagnosisListCreateAPIView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         queryset = Diagnosis.objects.filter(user=self.request.user)
+        if self.request.method == "GET":
+            # History only needs summary fields. Keep the original image and
+            # research payloads out of the common list query; legacy rows
+            # without a thumbnail can still load their image on demand.
+            queryset = queryset.defer(
+                "image_data_url",
+                "yolo_payload",
+                "cnn_payload",
+                "symptom_input",
+                "user_question",
+                "recommendations",
+                "action_plan",
+                "rag_summary",
+                "rag_payload",
+            )
         # Retention trims what the list shows and nothing else: the rows stay in
         # the database, DiagnosisDetailAPIView still opens them by id, and
         # /api/diagnoses/usage/ reports how many are being held back so the user
