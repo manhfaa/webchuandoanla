@@ -32,7 +32,7 @@ export function Logo({
         width={44}
         height={44}
         unoptimized
-        className="h-11 w-11 shrink-0 rounded-lg object-cover"
+        className="h-11 w-11 shrink-0 rounded-lg object-contain"
       />
       <span className={cn("flex min-w-0 flex-col", compact && "lg:sr-only")}>
         <span

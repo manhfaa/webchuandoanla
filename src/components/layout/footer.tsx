@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import { brand, DEVELOPER } from "@/constants/brand";
 import { landingNavItems } from "@/constants/navigation";
+import { CONTACT_EMAIL } from "@/data/legal-content";
 import { useTr } from "@/lib/use-tr";
 
 import { Logo } from "./logo";
@@ -26,10 +27,8 @@ const linkClass = "inline-flex min-h-9 items-center text-sm text-on-forest-muted
 
 /**
  * Footer on DIEPTEK ink (#14291A) with #B9C7BC text, as the brand sheet lays
- * it out. The company is credited with its lime mark — the navy original is
- * unreadable on ink — and nothing more: no address, phone or registration
- * number has been supplied, and a footer that invents them is worse than one
- * that stays quiet.
+ * it out. Credit the development team without inventing a registered company
+ * address or legal status that has not been supplied.
  */
 export function Footer() {
   const tr = useTr();
@@ -37,19 +36,19 @@ export function Footer() {
   return (
     <footer className="bg-forest px-4 pb-8 pt-14 text-on-forest-muted sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <div className="grid gap-10 lg:grid-cols-[1.5fr_repeat(3,minmax(0,0.6fr))] lg:gap-8">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_repeat(4,minmax(0,0.6fr))] lg:gap-8">
           <div>
             <Logo dark />
             <p className="mt-5 max-w-sm text-sm leading-7">{tr(brand.description, brand.descriptionEn)}</p>
-            <p className="mt-6 flex items-center gap-3 text-sm font-semibold text-on-forest">
-              <Image src="/logos/dieptek-mark-lime.png" alt={`${DEVELOPER} logo`} width={28} height={28} className="h-7 w-7 shrink-0" />
-              {tr(`Agromind AI được phát triển bởi team ${DEVELOPER}.`, `Agromind AI is developed by the ${DEVELOPER} team.`)}
+            <p className="mt-6 flex items-center gap-3 text-sm font-semibold leading-6 text-on-forest">
+              <Image src="/logos/dieptek-mark-lime.png" alt={`${DEVELOPER} logo`} width={44} height={44} className="h-11 w-11 shrink-0 object-contain" />
+              <span>{tr(`Agromind AI được phát triển bởi nhóm ${DEVELOPER}.`, `Agromind AI is developed by the ${DEVELOPER} team.`)}</span>
             </p>
           </div>
 
           <Column heading={tr("Sản phẩm", "Product")}>
             {landingNavItems.map((item) => (
-              <a key={item.href} href={item.href} className={linkClass}>
+              <a key={item.href} href={`/${item.href}`} className={linkClass}>
                 {tr(item.label, item.labelEn)}
               </a>
             ))}
@@ -70,6 +69,12 @@ export function Footer() {
             <Link href="/benh-cay" className={linkClass}>{tr("Bệnh cây trồng", "Plant diseases")}</Link>
             <Link href="/terms" className={linkClass}>{tr("Điều khoản sử dụng", "Terms of Service")}</Link>
             <Link href="/privacy" className={linkClass}>{tr("Chính sách quyền riêng tư", "Privacy Policy")}</Link>
+          </Column>
+
+          <Column heading={tr("Hỗ trợ", "Support")}>
+            <Link href="/support" className={linkClass}>{tr("Liên hệ & hỗ trợ", "Contact & support")}</Link>
+            <a href={`mailto:${CONTACT_EMAIL}`} className={`${linkClass} break-all`}>{CONTACT_EMAIL}</a>
+            <p className="mt-2 text-xs leading-5">{tr("Dự kiến phản hồi trong 1–3 ngày làm việc.", "Expected reply within 1–3 business days.")}</p>
           </Column>
         </div>
 

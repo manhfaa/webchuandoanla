@@ -36,13 +36,13 @@ export function Navbar() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-line bg-[color-mix(in_srgb,var(--surface)_94%,transparent)] backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
-        <Logo showTagline={false} />
+        <Logo showTagline={false} className="shrink-0" />
 
         <nav className="hidden items-center gap-7 lg:flex" aria-label={tr("Điều hướng trang", "Site navigation")}>
           {landingNavItems.map((item) => (
             <a
               key={item.href}
-              href={item.href}
+              href={`/${item.href}`}
               className="relative py-1 text-sm font-medium text-ink-soft transition hover:text-ink after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:scale-x-0 after:bg-accent after:transition-transform after:duration-180 hover:after:scale-x-100"
             >
               {tr(item.label, item.labelEn)}
@@ -61,8 +61,8 @@ export function Navbar() {
           </Link>
         </div>
 
-        <div className="flex items-center gap-1.5 lg:hidden">
-          <LanguageToggle />
+        <div className="flex shrink-0 items-center gap-1.5 lg:hidden">
+          <LanguageToggle className="max-[379px]:hidden" />
           <Button
             variant="ghost"
             size="iconSm"
@@ -80,10 +80,14 @@ export function Navbar() {
       {open ? (
         <div id="mobile-navigation" className="border-t border-line bg-surface px-4 py-3 sm:px-6 lg:hidden">
           <div className="mx-auto flex max-w-7xl flex-col">
+            <div className="flex items-center justify-between border-b border-line py-2 min-[380px]:hidden">
+              <span className="text-sm font-medium text-ink-soft">{tr("Ngôn ngữ", "Language")}</span>
+              <LanguageToggle />
+            </div>
             {landingNavItems.map((item) => (
               <a
                 key={item.href}
-                href={item.href}
+                href={`/${item.href}`}
                 className="border-b border-line py-3.5 text-sm font-medium text-ink transition hover:text-leaf-strong"
                 onClick={() => setOpen(false)}
               >

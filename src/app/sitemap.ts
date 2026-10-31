@@ -25,6 +25,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE}/login`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE}/terms`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
     { url: `${SITE}/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${SITE}/support`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
 
     // The disease pages. These are the ones with a real chance of ranking: a
     // grower searching "bệnh đốm vi khuẩn cà chua" is describing a problem this

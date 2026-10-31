@@ -61,7 +61,7 @@ export function useGoogleSignInAvailability() {
     };
   }, [clientId]);
 
-  return { clientId, available: Boolean(clientId) && serverReady === true };
+  return { clientId, available: Boolean(clientId) && serverReady === true, checking: Boolean(clientId) && serverReady === null };
 }
 
 interface GoogleSignInButtonProps {

@@ -21,7 +21,7 @@ export default function RegisterPage() {
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
-  const { clientId: googleClientId, available: googleAvailable } = useGoogleSignInAvailability();
+  const { clientId: googleClientId, available: googleAvailable, checking: googleChecking } = useGoogleSignInAvailability();
 
   useEffect(() => {
     if (isAuthenticated) router.replace("/dashboard");
@@ -90,8 +90,10 @@ export default function RegisterPage() {
               onError={setGoogleError}
             />
           ) : (
-            <p className="mt-4 text-sm leading-6 text-ink-soft">
-              {!googleAvailable || !googleClientId
+            <p role={googleChecking ? "status" : undefined} className="mt-4 text-sm leading-6 text-ink-soft">
+              {googleChecking
+                ? tr("Đang kiểm tra kết nối Google...", "Checking Google sign-in...")
+                : !googleAvailable || !googleClientId
                 ? tr("Đăng ký bằng Google hiện chưa sẵn sàng. Vui lòng thử lại sau.", "Google registration is not available yet. Please try again later.")
                 : tr("Đồng ý điều khoản và hoàn tất xác minh để tiếp tục.", "Accept the terms and complete the security check to continue.")}
             </p>
