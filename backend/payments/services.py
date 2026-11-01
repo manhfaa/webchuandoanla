@@ -43,7 +43,9 @@ def ping_reason(payload):
     order at all. Anything that references an order stays a 400 so a genuine
     parsing problem cannot hide behind a green tick.
     """
-    if _extract_payment_code(payload):
+    from developer_api.topups import extract_topup_code
+
+    if _extract_payment_code(payload) or extract_topup_code(payload):
         return ""
     if not str(payload.get("id") or "").strip():
         return "no_transaction_id"
@@ -526,6 +528,14 @@ def process_sepay_payload(payload):
         payment.processed_at = now
         payment.save(update_fields=["status", "processed_at", "updated_at"])
         return {"result": "account_mismatch", "payment": payment, "order": None}
+
+    from developer_api.topups import extract_topup_code, settle_verified_payment
+
+    topup_code = extract_topup_code(payload)
+    if topup_code:
+        topup_result = settle_verified_payment(payment=payment, code=topup_code, now=now)
+        if topup_result is not None:
+            return {"result": f"api_topup_{topup_result}", "payment": payment, "order": None}
 
     order = None
     if payment_code:

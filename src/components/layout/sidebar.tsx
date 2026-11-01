@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, CalendarDays, CloudSun, CreditCard, HeartPulse, History, LayoutDashboard, MessageSquareText, ScanSearch, Sprout, UserRound, X } from "lucide-react";
+import { BookOpen, CalendarDays, CloudSun, CreditCard, HeartPulse, History, KeyRound, LayoutDashboard, MessageSquareText, ScanSearch, Sprout, UserRound, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Logo } from "@/components/layout/logo";
@@ -22,6 +22,7 @@ const iconByHref = {
   "/dashboard/chat": MessageSquareText,
   "/dashboard/input-library": BookOpen,
   "/dashboard/pricing": CreditCard,
+  "/dashboard/developer": KeyRound,
   "/dashboard/profile": UserRound,
 };
 

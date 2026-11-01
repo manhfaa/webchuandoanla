@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "payments",
     "crop_plans",
     "farmops",
+    "developer_api",
 ]
 
 MIDDLEWARE = [
@@ -103,6 +104,12 @@ else:
     }
 
 AUTH_USER_MODEL = "users.User"
+
+# Opt-in only; the paid inference and payment paths are not ready for launch.
+DEVELOPER_API_ENABLED = os.getenv("DEVELOPER_API_ENABLED", "false").lower() == "true"
+DEVELOPER_TOPUP_ENABLED = os.getenv("DEVELOPER_TOPUP_ENABLED", "false").lower() == "true"
+DEVELOPER_INFERENCE_ENABLED = os.getenv("DEVELOPER_INFERENCE_ENABLED", "false").lower() == "true"
+DEVELOPER_LIVE_ENABLED = os.getenv("DEVELOPER_LIVE_ENABLED", "false").lower() == "true"
 
 AUTH_PASSWORD_VALIDATORS = [
     {

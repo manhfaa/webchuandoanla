@@ -17,6 +17,8 @@ a scheduled run leaves evidence rather than silence.
 """
 
 from django.core.management import call_command
+from django.conf import settings
+from django.db import connection
 from datetime import timedelta
 
 from django.utils import timezone
@@ -94,6 +96,11 @@ def run_housekeeping(*, stdout=None) -> dict[str, int]:
     #    table of the lot; past its TTL the client has stopped retrying and the
     #    row protects nothing.
     report["client_requests_pruned"] = idempotency.prune(now)
+
+    if getattr(settings, "DEVELOPER_INFERENCE_ENABLED", False) and connection.vendor == "postgresql":
+        from developer_api.wallets import release_stale_reservations
+
+        report["developer_reservations_released"] = release_stale_reservations(now=now)
 
     if stdout is not None:
         for key, value in report.items():
