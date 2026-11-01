@@ -1,0 +1,12 @@
+[Unit]
+Description=Release stale Agromind developer API reservations
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/srv/agromind/backend
+EnvironmentFile=/srv/agromind/backend/.env
+ExecStart=/srv/agromind/venv/bin/python manage.py release_stale_api_reservations
+NoNewPrivileges=true

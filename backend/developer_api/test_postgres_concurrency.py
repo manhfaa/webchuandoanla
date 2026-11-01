@@ -23,6 +23,23 @@ class WalletConcurrencyTests(TransactionTestCase):
         self.wallet = ApiWallet.objects.create(organization=org, environment="live")
         credit_wallet(self.wallet.pk, 500, "concurrency-funding")
 
+    def test_billing_tables_have_rls_enabled(self):
+        table_names = [
+            "developer_api_developerorganization", "developer_api_developerapikey", "developer_api_apiwallet",
+            "developer_api_apiusage", "developer_api_apiledgerentry", "developer_api_apitopuporder",
+            "developer_api_apitopuptransfer", "developer_api_apitopupreconciliation",
+        ]
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT rolname FROM pg_roles WHERE rolname IN ('anon', 'authenticated')")
+            roles = [row[0] for row in cursor.fetchall()]
+            for table in table_names:
+                cursor.execute("SELECT relrowsecurity FROM pg_class WHERE oid = %s::regclass", [table])
+                self.assertTrue(cursor.fetchone()[0], table)
+                for role in roles:
+                    for privilege in ("SELECT", "INSERT", "UPDATE", "DELETE"):
+                        cursor.execute("SELECT has_table_privilege(%s, %s, %s)", [role, table, privilege])
+                        self.assertFalse(cursor.fetchone()[0], f"{role} has {privilege} on {table}")
+
     def test_parallel_requests_cannot_overspend(self):
         barrier = Barrier(10)
 
