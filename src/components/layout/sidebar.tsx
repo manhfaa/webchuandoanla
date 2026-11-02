@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { Logo } from "@/components/layout/logo";
 import { dashboardNavGroups } from "@/constants/navigation";
 import { useLanguageStore } from "@/store/language-store";
+import { useSessionStore } from "@/store/session-store";
 import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
 
@@ -30,8 +31,20 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
   const pathname = usePathname();
   const language = useLanguageStore((state) => state.language);
   const tr = useTr();
+  const accessToken = useSessionStore((state) => state.accessToken);
+  const [developerAccessToken, setDeveloperAccessToken] = useState<string | null>(null);
   const [desktop, setDesktop] = useState(false);
   const hiddenFromAssistiveTech = !desktop && !mobileOpen;
+
+  useEffect(() => {
+    if (!accessToken) return;
+    const controller = new AbortController();
+    fetch("/api/django/api/developer/config/", {
+      headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store", signal: controller.signal,
+    }).then((response) => { if (!controller.signal.aborted) setDeveloperAccessToken(response.ok ? accessToken : null); })
+      .catch(() => { if (!controller.signal.aborted) setDeveloperAccessToken(null); });
+    return () => controller.abort();
+  }, [accessToken]);
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)");
@@ -83,7 +96,7 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
             <div key={group.group}>
               <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-soft">{language === "en" ? group.groupEn : group.group}</p>
               <div className="space-y-1">
-                {group.items.map((item) => {
+                {[...group.items, ...(group.group === "Tài khoản" && accessToken && developerAccessToken === accessToken ? [{ label: "API nhà phát triển", labelEn: "Developer API", href: "/dashboard/developer" }] : [])].map((item) => {
                   const Icon = iconByHref[item.href as keyof typeof iconByHref] ?? Sprout;
                   const active = item.href === "/dashboard" ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`);
                   return (

@@ -40,7 +40,6 @@ export const dashboardNavGroups = [
     groupEn: "Account",
     items: [
       { label: "Gói dịch vụ", labelEn: "Plans", href: "/dashboard/pricing" },
-      ...(process.env.NEXT_PUBLIC_DEVELOPER_API_ENABLED === "true" ? [{ label: "API nhà phát triển", labelEn: "Developer API", href: "/dashboard/developer" }] : []),
       { label: "Hồ sơ", labelEn: "Profile", href: "/dashboard/profile" },
     ],
   },
