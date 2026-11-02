@@ -10,6 +10,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from payments.services import PaymentConfigurationError, build_qr_url, ensure_payment_configuration
+from .access import can_access_preview
 from .inference import PRICE_VND
 from .models import ApiTopUpOrder, ApiWallet, DeveloperAPIKey, DeveloperOrganization
 from .topups import MAX_TOPUP_VND, MIN_TOPUP_VND, create_topup_order
@@ -36,7 +37,7 @@ class DeveloperView(APIView):
         if not getattr(settings, "DEVELOPER_API_ENABLED", False):
             raise Http404
         super().initial(request, *args, **kwargs)
-        if getattr(settings, "DEVELOPER_STAFF_ONLY", False) and not request.user.is_staff:
+        if getattr(settings, "DEVELOPER_STAFF_ONLY", False) and not can_access_preview(request.user):
             raise Http404
 
     def organization(self, request, organization_id):
@@ -45,7 +46,7 @@ class DeveloperView(APIView):
 
 class DeveloperConfigView(DeveloperView):
     def get(self, request):
-        live = bool(getattr(settings, "DEVELOPER_LIVE_ENABLED", False) and getattr(settings, "DEVELOPER_INFERENCE_ENABLED", False))
+        live = bool(getattr(settings, "DEVELOPER_LIVE_ENABLED", False) and getattr(settings, "DEVELOPER_INFERENCE_ENABLED", False) and (not getattr(settings, "DEVELOPER_STAFF_ONLY", False) or request.user.is_staff))
         response = Response({
             "staff_preview": bool(getattr(settings, "DEVELOPER_STAFF_ONLY", False)),
             "live_enabled": live,
@@ -72,7 +73,7 @@ class OrganizationView(DeveloperView):
         if DeveloperOrganization.objects.filter(owner=request.user, active=True).count() >= 5:
             return Response({"detail": "Organization limit reached."}, status=status.HTTP_400_BAD_REQUEST)
         org = DeveloperOrganization.objects.create(owner=request.user, **serializer.validated_data)
-        if getattr(settings, "DEVELOPER_STAFF_ONLY", False) and request.user.is_staff:
+        if getattr(settings, "DEVELOPER_STAFF_ONLY", False) and can_access_preview(request.user):
             wallet = ApiWallet.objects.create(organization=org, environment=DeveloperAPIKey.Environment.TEST)
             credit_wallet(wallet.pk, 1000, f"staff-sandbox:{org.pk}")
         return Response({"id": org.pk, "name": org.name}, status=status.HTTP_201_CREATED)
@@ -88,6 +89,8 @@ class KeyListCreateView(DeveloperView):
         serializer = KeyCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         environment = serializer.validated_data["environment"]
+        if environment == DeveloperAPIKey.Environment.LIVE and getattr(settings, "DEVELOPER_STAFF_ONLY", False) and not request.user.is_staff:
+            return Response({"detail": "Live API is not available."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         if environment == DeveloperAPIKey.Environment.LIVE and not getattr(settings, "DEVELOPER_LIVE_ENABLED", False):
             return Response({"detail": "Live API is not available."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         org = get_object_or_404(DeveloperOrganization.objects.select_for_update(), pk=organization_id, owner=request.user, active=True)
@@ -187,6 +190,8 @@ class TopUpCreateView(TopUpView):
     def post(self, request, organization_id):
         serializer = TopUpAmountSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        if getattr(settings, "DEVELOPER_STAFF_ONLY", False) and not request.user.is_staff:
+            return Response({"detail": "Live API is not available."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         if not (getattr(settings, "DEVELOPER_LIVE_ENABLED", False) and getattr(settings, "DEVELOPER_INFERENCE_ENABLED", False)):
             return Response({"detail": "Live API is not available."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         if connection.vendor != "postgresql":

@@ -133,6 +133,16 @@ class DeveloperTestInferenceTests(APITestCase):
         self.wallet.refresh_from_db()
         self.assertEqual(self.wallet.available_vnd, 1000)
 
+    @override_settings(DEVELOPER_STAFF_ONLY=True, DEVELOPER_LIVE_ENABLED=True)
+    @patch("developer_api.inference.classify_and_enrich", return_value={"plant_name": "Tomato"})
+    def test_allowlisted_preview_user_can_only_use_test_key(self, classify):
+        with self.settings(DEVELOPER_PREVIEW_USER_IDS=str(self.org.owner_id)):
+            self.assertEqual(self.client.post(self.url, {"image": self.image()}, format="multipart").status_code, 200)
+            _, live_token = DeveloperAPIKey.issue(organization=self.org, name="Live", environment="live")
+            self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {live_token}", HTTP_IDEMPOTENCY_KEY="live-request")
+            self.assertEqual(self.client.post("/api/developer/v1/diagnoses/", {"image": self.image()}, format="multipart").status_code, 503)
+        self.assertEqual(classify.call_count, 1)
+
 
 class WalletTests(TestCase):
     def setUp(self):
@@ -274,6 +284,21 @@ class DeveloperManagementTests(APITestCase):
         wallet = ApiWallet.objects.get(organization_id=response.data["id"])
         self.assertEqual((wallet.environment, wallet.available_vnd), ("test", 1000))
         self.assertFalse(ApiWallet.objects.filter(organization_id=response.data["id"], environment="live").exists())
+
+    @override_settings(DEVELOPER_STAFF_ONLY=True, DEVELOPER_INFERENCE_ENABLED=True, DEVELOPER_LIVE_ENABLED=True, DEVELOPER_TOPUP_ENABLED=True)
+    def test_allowlisted_nonstaff_has_preview_but_not_live_access(self):
+        self.client.force_authenticate(user=self.owner)
+        with self.settings(DEVELOPER_PREVIEW_USER_IDS=str(self.owner.pk)):
+            config = self.client.get("/api/developer/config/")
+            self.assertEqual(config.status_code, 200)
+            self.assertFalse(config.data["live_enabled"])
+            self.assertFalse(config.data["topup_enabled"])
+            created = self.client.post("/api/developer/organizations/", {"name": "Preview"}, format="json")
+            self.assertEqual(created.status_code, 201)
+            self.assertEqual(ApiWallet.objects.get(organization_id=created.data["id"]).available_vnd, 1000)
+            self.assertEqual(self.client.post(self.url, {"name": "Live", "environment": "live"}, format="json").status_code, 503)
+            topups = f"/api/developer/organizations/{self.org.pk}/topups/"
+            self.assertEqual(self.client.post(topups, {"amount_vnd": 2000}, format="json").status_code, 503)
 
     def test_another_user_cannot_list_create_or_revoke(self):
         key, _ = DeveloperAPIKey.issue(organization=self.org, name="test", environment="test")

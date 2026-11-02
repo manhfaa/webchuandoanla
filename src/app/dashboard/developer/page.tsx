@@ -84,7 +84,7 @@ export default function DeveloperPage() {
   return (
     <div className="space-y-6 pb-10">
       <header><p className="text-sm font-semibold uppercase tracking-wider text-leaf">Dành cho nhà phát triển</p><h1 className="mt-2 text-3xl font-bold text-ink">Agromind AI API</h1><p className="mt-2 text-ink-muted">Quản lý khóa, số dư và lịch sử sử dụng tại một nơi.</p></header>
-      {config?.staff_preview && <Card variant="soft"><strong>Bản thử dành cho quản trị viên.</strong> Số dư thử nghiệm không phải tiền thật; nạp tiền và khóa thực tế chỉ hoạt động khi được bật riêng.</Card>}
+      {config?.staff_preview && <Card variant="soft"><strong>Bản thử giới hạn.</strong> Số dư thử nghiệm không phải tiền thật; nạp tiền và khóa thực tế chỉ hoạt động khi được bật riêng.</Card>}
       {error && <div role="alert" className="rounded-lg border border-danger bg-surface p-4 text-danger">{error}</div>}
       {!organization ? <Card className="space-y-4"><h2 className="text-xl font-bold">Tạo không gian API</h2><label className="block">Tên tổ chức<input className="mt-2 block w-full rounded-lg border border-line bg-surface p-3" value={name} onChange={(e) => setName(e.target.value)} maxLength={150} /></label><Button disabled={busy || !name.trim()} onClick={() => void action(async () => { await request("organizations/", accessToken, "POST", { name }); await refreshOrganizations(); })}>Tạo không gian</Button></Card> : <>
         {organizations.length > 1 && <label className="block">Tổ chức <select className="rounded-lg border border-line bg-surface p-2" value={organization} onChange={(e) => setOrganization(Number(e.target.value))}>{organizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}</select></label>}
