@@ -44,9 +44,9 @@ def reserve(wallet_id, key, idempotency_key, request_hash, amount_vnd):
     wallet = ApiWallet.objects.select_for_update().get(pk=wallet_id)
     if wallet.organization_id != key.organization_id or wallet.environment != key.environment:
         raise ValueError("Key and wallet do not match")
-    organization = DeveloperOrganization.objects.select_for_update().get(pk=wallet.organization_id)
+    organization = DeveloperOrganization.objects.select_for_update(of=("self",)).select_related("owner").get(pk=wallet.organization_id)
     key = DeveloperAPIKey.objects.select_for_update().get(pk=key.pk, organization=organization)
-    if not organization.active or key.revoked_at or (key.expires_at and key.expires_at <= timezone.now()):
+    if not organization.active or not organization.owner.is_active or key.revoked_at or (key.expires_at and key.expires_at <= timezone.now()):
         raise ValueError("Key or organization is inactive")
     existing = ApiUsage.objects.filter(wallet=wallet, idempotency_key=idempotency_key).first()
     if existing:

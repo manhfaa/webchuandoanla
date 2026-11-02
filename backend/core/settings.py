@@ -110,6 +110,7 @@ DEVELOPER_API_ENABLED = os.getenv("DEVELOPER_API_ENABLED", "false").lower() == "
 DEVELOPER_TOPUP_ENABLED = os.getenv("DEVELOPER_TOPUP_ENABLED", "false").lower() == "true"
 DEVELOPER_INFERENCE_ENABLED = os.getenv("DEVELOPER_INFERENCE_ENABLED", "false").lower() == "true"
 DEVELOPER_LIVE_ENABLED = os.getenv("DEVELOPER_LIVE_ENABLED", "false").lower() == "true"
+DEVELOPER_STAFF_ONLY = os.getenv("DEVELOPER_STAFF_ONLY", "false").lower() == "true"
 
 AUTH_PASSWORD_VALIDATORS = [
     {

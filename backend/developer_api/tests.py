@@ -40,6 +40,16 @@ class DeveloperKeyTests(TestCase):
         key.save(update_fields=["expires_at"])
         self.assertIsNone(DeveloperAPIKey.authenticate_token(token))
 
+    def test_inactive_owner_cannot_use_key(self):
+        key, token = DeveloperAPIKey.issue(organization=self.org, name="Test", environment="test")
+        self.org.owner.is_active = False
+        self.org.owner.save(update_fields=["is_active"])
+        self.assertIsNone(DeveloperAPIKey.authenticate_token(token))
+        wallet = ApiWallet.objects.create(organization=self.org, environment="test")
+        credit_wallet(wallet.pk, 200, "inactive-owner-credit")
+        with self.assertRaises(ValueError):
+            reserve(wallet.pk, key, "request", "a" * 64, 200)
+
     def test_invalid_tokens_and_environments_are_rejected(self):
         for token in (None, "", "abc", "sk_agm_live_x_é", "a" * 257):
             self.assertIsNone(DeveloperAPIKey.authenticate_token(token))
@@ -116,6 +126,12 @@ class DeveloperTestInferenceTests(APITestCase):
     @override_settings(DEVELOPER_INFERENCE_ENABLED=False)
     def test_disabled_by_default(self):
         self.assertEqual(self.client.post(self.url, {"image": self.image()}, format="multipart").status_code, 404)
+
+    @override_settings(DEVELOPER_STAFF_ONLY=True)
+    def test_preview_rejects_keys_owned_by_non_staff(self):
+        self.assertEqual(self.client.post(self.url, {"image": self.image()}, format="multipart").status_code, 401)
+        self.wallet.refresh_from_db()
+        self.assertEqual(self.wallet.available_vnd, 1000)
 
 
 class WalletTests(TestCase):
@@ -240,6 +256,24 @@ class DeveloperManagementTests(APITestCase):
             response = self.client.post(self.url, body, format="json")
         self.assertEqual(response.status_code, 201)
         self.assertTrue(response.data["secret"].startswith("sk_agm_live_"))
+
+    @override_settings(DEVELOPER_STAFF_ONLY=True)
+    def test_staff_preview_is_private_and_only_seeds_test_wallet(self):
+        self.client.force_authenticate(user=self.owner)
+        self.assertEqual(self.client.get("/api/developer/organizations/").status_code, 404)
+        self.assertEqual(self.client.get("/api/developer/config/").status_code, 404)
+        self.owner.is_staff = True
+        self.owner.save(update_fields=["is_staff"])
+        config = self.client.get("/api/developer/config/")
+        self.assertTrue(config.data["staff_preview"])
+        self.assertFalse(config.data["live_enabled"])
+        self.assertFalse(config.data["topup_enabled"])
+        self.assertEqual(config["Cache-Control"], "no-store")
+        response = self.client.post("/api/developer/organizations/", {"name": "Preview"}, format="json")
+        self.assertEqual(response.status_code, 201)
+        wallet = ApiWallet.objects.get(organization_id=response.data["id"])
+        self.assertEqual((wallet.environment, wallet.available_vnd), ("test", 1000))
+        self.assertFalse(ApiWallet.objects.filter(organization_id=response.data["id"], environment="live").exists())
 
     def test_another_user_cannot_list_create_or_revoke(self):
         key, _ = DeveloperAPIKey.issue(organization=self.org, name="test", environment="test")

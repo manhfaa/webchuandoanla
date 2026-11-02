@@ -42,6 +42,8 @@ class InferenceView(APIView):
         key = DeveloperAPIKey.authenticate_token(token) if separator and scheme.lower() == "bearer" else None
         if key is None:
             return Response({"detail": "Invalid API key."}, status=status.HTTP_401_UNAUTHORIZED)
+        if getattr(settings, "DEVELOPER_STAFF_ONLY", False) and not key.organization.owner.is_staff:
+            return Response({"detail": "Invalid API key."}, status=status.HTTP_401_UNAUTHORIZED)
         if self.test_only and key.environment != DeveloperAPIKey.Environment.TEST:
             return Response({"detail": "Invalid test API key."}, status=status.HTTP_401_UNAUTHORIZED)
         if key.environment == DeveloperAPIKey.Environment.LIVE and not getattr(settings, "DEVELOPER_LIVE_ENABLED", False):

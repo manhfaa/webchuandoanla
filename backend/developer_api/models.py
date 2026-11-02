@@ -54,10 +54,10 @@ class DeveloperAPIKey(models.Model):
         if len(parts) != 5 or parts[0:2] != ["sk", "agm"] or parts[2] not in cls.Environment.values:
             return None
         prefix = "_".join(parts[:4])
-        key = cls.objects.select_related("organization").filter(prefix=prefix).first()
+        key = cls.objects.select_related("organization__owner").filter(prefix=prefix).first()
         if key is None or not hmac.compare_digest(key.secret_hash, hashlib.sha256(token.encode("ascii")).hexdigest()):
             return None
-        if key.revoked_at or not key.organization.active or (key.expires_at and key.expires_at <= timezone.now()):
+        if key.revoked_at or not key.organization.active or not key.organization.owner.is_active or (key.expires_at and key.expires_at <= timezone.now()):
             return None
         return key
 

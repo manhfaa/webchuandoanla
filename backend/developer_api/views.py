@@ -10,8 +10,10 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from payments.services import PaymentConfigurationError, build_qr_url, ensure_payment_configuration
+from .inference import PRICE_VND
 from .models import ApiTopUpOrder, ApiWallet, DeveloperAPIKey, DeveloperOrganization
 from .topups import MAX_TOPUP_VND, MIN_TOPUP_VND, create_topup_order
+from .wallets import credit_wallet
 
 
 class NameSerializer(serializers.Serializer):
@@ -33,10 +35,28 @@ class DeveloperView(APIView):
     def initial(self, request, *args, **kwargs):
         if not getattr(settings, "DEVELOPER_API_ENABLED", False):
             raise Http404
-        return super().initial(request, *args, **kwargs)
+        super().initial(request, *args, **kwargs)
+        if getattr(settings, "DEVELOPER_STAFF_ONLY", False) and not request.user.is_staff:
+            raise Http404
 
     def organization(self, request, organization_id):
         return get_object_or_404(DeveloperOrganization, pk=organization_id, owner=request.user, active=True)
+
+
+class DeveloperConfigView(DeveloperView):
+    def get(self, request):
+        live = bool(getattr(settings, "DEVELOPER_LIVE_ENABLED", False) and getattr(settings, "DEVELOPER_INFERENCE_ENABLED", False))
+        response = Response({
+            "staff_preview": bool(getattr(settings, "DEVELOPER_STAFF_ONLY", False)),
+            "live_enabled": live,
+            "topup_enabled": live and bool(getattr(settings, "DEVELOPER_TOPUP_ENABLED", False)),
+            "inference_enabled": bool(getattr(settings, "DEVELOPER_INFERENCE_ENABLED", False)),
+            "price_vnd": PRICE_VND,
+            "topup_min_vnd": MIN_TOPUP_VND,
+            "topup_max_vnd": MAX_TOPUP_VND,
+        })
+        response["Cache-Control"] = "no-store"
+        return response
 
 
 class OrganizationView(DeveloperView):
@@ -52,6 +72,9 @@ class OrganizationView(DeveloperView):
         if DeveloperOrganization.objects.filter(owner=request.user, active=True).count() >= 5:
             return Response({"detail": "Organization limit reached."}, status=status.HTTP_400_BAD_REQUEST)
         org = DeveloperOrganization.objects.create(owner=request.user, **serializer.validated_data)
+        if getattr(settings, "DEVELOPER_STAFF_ONLY", False) and request.user.is_staff:
+            wallet = ApiWallet.objects.create(organization=org, environment=DeveloperAPIKey.Environment.TEST)
+            credit_wallet(wallet.pk, 1000, f"staff-sandbox:{org.pk}")
         return Response({"id": org.pk, "name": org.name}, status=status.HTTP_201_CREATED)
 
 

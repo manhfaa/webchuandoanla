@@ -1,9 +1,10 @@
 from django.urls import path
 
 from .inference import InferenceView, TestInferenceView
-from .views import KeyListCreateView, KeyRevokeView, OrganizationView, TopUpCreateView, TopUpDetailView, WalletLedgerView, WalletView
+from .views import DeveloperConfigView, KeyListCreateView, KeyRevokeView, OrganizationView, TopUpCreateView, TopUpDetailView, WalletLedgerView, WalletView
 
 urlpatterns = [
+    path("config/", DeveloperConfigView.as_view(), name="developer-config"),
     path("test/diagnoses/", TestInferenceView.as_view(), name="developer-test-inference"),
     path("v1/diagnoses/", InferenceView.as_view(), name="developer-inference"),
     path("organizations/", OrganizationView.as_view(), name="developer-organizations"),
