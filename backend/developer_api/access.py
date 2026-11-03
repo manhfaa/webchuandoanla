@@ -8,3 +8,10 @@ def can_access_preview(user):
         return False
     permitted_ids = {value.strip() for value in getattr(settings, "DEVELOPER_PREVIEW_USER_IDS", "").split(",") if value.strip().isdigit()}
     return bool(user.is_staff or str(user.pk) in permitted_ids)
+
+
+def can_access_live_preview(user):
+    if not can_access_preview(user):
+        return False
+    permitted_ids = {value.strip() for value in getattr(settings, "DEVELOPER_LIVE_PREVIEW_USER_IDS", "").split(",") if value.strip().isdigit()}
+    return bool(user.is_staff or str(user.pk) in permitted_ids)

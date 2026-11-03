@@ -10,7 +10,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from payments.services import PaymentConfigurationError, build_qr_url, ensure_payment_configuration
-from .access import can_access_preview
+from .access import can_access_live_preview, can_access_preview
 from .inference import PRICE_VND
 from .models import ApiTopUpOrder, ApiWallet, DeveloperAPIKey, DeveloperOrganization
 from .topups import MAX_TOPUP_VND, MIN_TOPUP_VND, create_topup_order
@@ -46,7 +46,7 @@ class DeveloperView(APIView):
 
 class DeveloperConfigView(DeveloperView):
     def get(self, request):
-        live = bool(getattr(settings, "DEVELOPER_LIVE_ENABLED", False) and getattr(settings, "DEVELOPER_INFERENCE_ENABLED", False) and (not getattr(settings, "DEVELOPER_STAFF_ONLY", False) or request.user.is_staff))
+        live = bool(getattr(settings, "DEVELOPER_LIVE_ENABLED", False) and getattr(settings, "DEVELOPER_INFERENCE_ENABLED", False) and (not getattr(settings, "DEVELOPER_STAFF_ONLY", False) or can_access_live_preview(request.user)))
         response = Response({
             "staff_preview": bool(getattr(settings, "DEVELOPER_STAFF_ONLY", False)),
             "live_enabled": live,
@@ -89,7 +89,7 @@ class KeyListCreateView(DeveloperView):
         serializer = KeyCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         environment = serializer.validated_data["environment"]
-        if environment == DeveloperAPIKey.Environment.LIVE and getattr(settings, "DEVELOPER_STAFF_ONLY", False) and not request.user.is_staff:
+        if environment == DeveloperAPIKey.Environment.LIVE and getattr(settings, "DEVELOPER_STAFF_ONLY", False) and not can_access_live_preview(request.user):
             return Response({"detail": "Live API is not available."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         if environment == DeveloperAPIKey.Environment.LIVE and not getattr(settings, "DEVELOPER_LIVE_ENABLED", False):
             return Response({"detail": "Live API is not available."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -190,7 +190,7 @@ class TopUpCreateView(TopUpView):
     def post(self, request, organization_id):
         serializer = TopUpAmountSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        if getattr(settings, "DEVELOPER_STAFF_ONLY", False) and not request.user.is_staff:
+        if getattr(settings, "DEVELOPER_STAFF_ONLY", False) and not can_access_live_preview(request.user):
             return Response({"detail": "Live API is not available."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         if not (getattr(settings, "DEVELOPER_LIVE_ENABLED", False) and getattr(settings, "DEVELOPER_INFERENCE_ENABLED", False)):
             return Response({"detail": "Live API is not available."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)

@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 
 from diagnoses.services.image_intake import ImageTooLarge, UnsupportedImage, validate
 from diagnoses.views import classify_and_enrich
-from .access import can_access_preview
+from .access import can_access_live_preview, can_access_preview
 from .models import ApiUsage, ApiWallet, DeveloperAPIKey
 from .wallets import ConcurrencyLimit, IdempotencyConflict, InsufficientBalance, finish, reserve
 
@@ -45,7 +45,7 @@ class InferenceView(APIView):
             return Response({"detail": "Invalid API key."}, status=status.HTTP_401_UNAUTHORIZED)
         if getattr(settings, "DEVELOPER_STAFF_ONLY", False) and not can_access_preview(key.organization.owner):
             return Response({"detail": "Invalid API key."}, status=status.HTTP_401_UNAUTHORIZED)
-        if getattr(settings, "DEVELOPER_STAFF_ONLY", False) and key.environment == DeveloperAPIKey.Environment.LIVE and not key.organization.owner.is_staff:
+        if getattr(settings, "DEVELOPER_STAFF_ONLY", False) and key.environment == DeveloperAPIKey.Environment.LIVE and not can_access_live_preview(key.organization.owner):
             return Response({"detail": "Live API is not available."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         if self.test_only and key.environment != DeveloperAPIKey.Environment.TEST:
             return Response({"detail": "Invalid test API key."}, status=status.HTTP_401_UNAUTHORIZED)

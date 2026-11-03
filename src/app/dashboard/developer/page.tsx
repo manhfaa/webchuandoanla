@@ -118,11 +118,11 @@ function DeveloperWorkspace() {
         <div aria-hidden className="pointer-events-none absolute right-8 top-8 hidden h-52 w-52 rotate-45 rounded-[45%_0_45%_0] border border-white/10 sm:block" />
         <div className="relative flex flex-wrap items-end justify-between gap-6">
           <div className="max-w-2xl"><p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-200"><Leaf size={15} /> Agromind for developers</p><h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Đưa hiểu biết về cây trồng<br className="hidden sm:block" /> vào sản phẩm của bạn.</h1><p className="mt-3 max-w-xl text-sm leading-6 text-emerald-100 sm:text-base">Một không gian để quản lý khóa, theo dõi sử dụng và kết nối API nhận diện lá cây.</p></div>
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold"><span className="h-2 w-2 rounded-full bg-emerald-300" />{config?.staff_preview ? "Bản thử giới hạn" : config?.live_enabled ? "API đang hoạt động" : "Đang chuẩn bị"}</span>
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold"><span className="h-2 w-2 rounded-full bg-emerald-300" />{config?.live_enabled ? "API thực tế đang hoạt động" : config?.staff_preview ? "Truy cập giới hạn" : "Đang chuẩn bị"}</span>
         </div>
       </header>
 
-      {config?.staff_preview && <div className="flex gap-3 rounded-2xl border border-line bg-surface-soft px-5 py-4 text-sm leading-6 text-ink"><FlaskConical className="mt-0.5 shrink-0 text-leaf-strong" size={19} /><p><strong>Bạn đang ở bản thử giới hạn.</strong> Số dư thử nghiệm không phải tiền thật.{!config.live_enabled && " Nạp tiền và khóa thực tế chưa được mở cho tài khoản này."}</p></div>}
+      {config?.staff_preview && <div className="flex gap-3 rounded-2xl border border-line bg-surface-soft px-5 py-4 text-sm leading-6 text-ink"><FlaskConical className="mt-0.5 shrink-0 text-leaf-strong" size={19} /><p><strong>{config.live_enabled ? "Tài khoản này đã được mở thanh toán thật." : "Tài khoản này có quyền truy cập giới hạn."}</strong> Số dư thử nghiệm không phải tiền thật và tách biệt với ví thực tế.{!config.live_enabled && " Nạp tiền và khóa thực tế chưa được mở cho tài khoản này."}</p></div>}
       {error && <div role="alert" className="rounded-2xl border border-danger bg-surface p-4 text-sm text-danger">{error}</div>}
 
       {!organization ? (
