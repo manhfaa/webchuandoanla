@@ -125,6 +125,18 @@ class PaymentFlowTests(APITestCase):
         )
         return response
 
+    def test_webhook_does_not_store_unexpected_provider_fields(self):
+        order, _ = self.create_order()
+        response = self.signed_webhook(
+            order, "audit-1", 39000,
+            senderName="Private payer name", arbitraryMetadata={"secret": "do not store"},
+        )
+        self.assertEqual(response.data["result"], "paid")
+        stored = Payment.objects.get(sepay_transaction_id="audit-1").raw_payload
+        self.assertNotIn("senderName", stored)
+        self.assertNotIn("arbitraryMetadata", stored)
+        self.assertEqual(stored["referenceCode"], "REFaudit-1")
+
     def test_create_order_persists_random_payment_code(self):
         order, response = self.create_order()
 

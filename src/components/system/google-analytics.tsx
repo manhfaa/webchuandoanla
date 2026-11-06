@@ -1,10 +1,12 @@
+"use client";
+
 import Script from "next/script";
 
 /**
- * Google Analytics 4, alongside Microsoft Clarity.
+ * Google Analytics 4, mounted only after a separate analytics choice.
  *
- * Unlike the Clarity project id, the GA Measurement ID is NOT baked in as a
- * default. A wrong id here would not fail loudly — it would quietly ship this
+ * The GA Measurement ID is NOT baked in as a default. A wrong id here would
+ * not fail loudly — it would quietly ship this
  * site's traffic into somebody else's property — so the tag simply does not
  * render until NEXT_PUBLIC_GA_MEASUREMENT_ID is set. Absent id means no
  * analytics, which is the safe direction to fail.
@@ -12,8 +14,8 @@ import Script from "next/script";
  * The id is public (it ships in the client tag), so NEXT_PUBLIC_ is correct
  * here; it is an identifier, not a secret.
  *
- * Production builds only, matching ClarityAnalytics, so local dev and Vercel
- * previews never pollute the reporting.
+ * Production builds only, so local dev and Vercel previews never pollute
+ * the reporting.
  *
  * Where to find the id: Google Analytics → Admin → Data Streams → your web
  * stream → "Measurement ID", formatted G-XXXXXXXXXX.
@@ -42,24 +44,17 @@ export function GoogleAnalytics() {
         to Google would put an account-takeover credential into GA page-path
         reports, readable by every property viewer and exportable to BigQuery.
 
-        Only `token` is stripped, not the whole query, so campaign attribution
-        parameters such as ?src= still reach GA.
+        Do not transmit any query parameters or fragments. They can contain
+        one-time tokens or user-provided content on routes other than reset.
       */}
       <Script id="ga4-init" strategy="afterInteractive">
         {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-(function(){
-  var loc = window.location.href;
-  try {
-    var url = new URL(loc);
-    if (url.searchParams.has('token')) {
-      url.searchParams.delete('token');
-      loc = url.toString();
-    }
-  } catch (e) {}
-  gtag('config', '${GA_MEASUREMENT_ID}', { page_location: loc });
-})();`}
+gtag('config', '${GA_MEASUREMENT_ID}', {
+  page_location: window.location.origin + window.location.pathname,
+  page_referrer: ''
+});`}
       </Script>
     </>
   );

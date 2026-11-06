@@ -103,7 +103,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate_accepted_terms(self, value):
         if not value:
             raise serializers.ValidationError(
-                "Bạn cần đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư để tạo tài khoản."
+                "Bạn cần đồng ý với Điều khoản sử dụng và xác nhận đã đọc Chính sách quyền riêng tư để tạo tài khoản."
             )
         return value
 
@@ -269,7 +269,7 @@ class GoogleLoginSerializer(serializers.Serializer):
                     {
                         "accepted_terms": (
                             "Đây là lần đầu bạn dùng Google cho Agromind AI. Vui lòng đồng ý "
-                            "Điều khoản sử dụng và Chính sách quyền riêng tư để tạo tài khoản."
+                            "Điều khoản sử dụng và xác nhận đã đọc Chính sách quyền riêng tư để tạo tài khoản."
                         )
                     }
                 )

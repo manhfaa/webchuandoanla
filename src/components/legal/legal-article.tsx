@@ -11,7 +11,7 @@ import { useTr } from "@/lib/use-tr";
 import { cn } from "@/lib/utils";
 
 /**
- * Điều khoản có 18 mục, Quyền riêng tư có 12. Trước đây trang chỉ có đúng một
+ * Điều khoản và Quyền riêng tư là các tài liệu dài. Trước đây trang chỉ có đúng một
  * liên kết "Về trang chủ" ở đầu và không có gì khác: đọc xong là người dùng bị
  * bỏ lại ở cuối một văn bản dài, không có đường quay lại, cũng không có cách
  * nào sang tài liệu còn lại ngoài việc quay về trang đăng ký bấm liên kết kia.
@@ -87,7 +87,7 @@ export function LegalArticle({ doc }: { doc: LegalDoc }) {
       <p className="mt-3 text-sm font-medium text-ink-soft">{pick(LEGAL_UPDATED)}</p>
       <p className="mt-6 text-base leading-8 text-ink-soft">{pick(doc.intro)}</p>
 
-      {/* Đóng sẵn. Mở sẵn thì 18 mục đẩy phần nội dung xuống quá nửa màn hình
+      {/* Đóng sẵn. Mở sẵn thì mục lục đẩy phần nội dung xuống quá nửa màn hình
           điện thoại trước khi người đọc chạm tới mục 1. */}
       <details className="group mt-8 overflow-hidden rounded-[var(--r-lg)] border border-line bg-surface-soft">
         <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-5 py-3.5 text-sm font-bold text-ink [&::-webkit-details-marker]:hidden">
@@ -157,8 +157,8 @@ export function LegalArticle({ doc }: { doc: LegalDoc }) {
         </h2>
         <p className="mt-2 text-sm leading-7 text-ink-soft">
           {tr(
-            `Bạn có thể quay lại hoàn tất đăng ký, hoặc đọc tiếp ${pick(other.full).toLowerCase()} — ô đồng ý khi đăng ký áp dụng cho cả hai tài liệu.`,
-            `You can go back and finish signing up, or read the ${pick(other.full).toLowerCase()} — the consent box at registration covers both documents.`,
+            `Bạn có thể quay lại hoàn tất đăng ký, hoặc đọc tiếp ${pick(other.full).toLowerCase()} — khi đăng ký bạn đồng ý với Điều khoản và xác nhận đã đọc Chính sách quyền riêng tư.`,
+            `You can go back and finish signing up, or read the ${pick(other.full).toLowerCase()} — registration asks you to accept the Terms and acknowledge the Privacy Policy.`,
           )}
         </p>
 

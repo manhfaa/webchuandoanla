@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 
-import { ClarityAnalytics } from "@/components/system/clarity-analytics";
-import { GoogleAnalytics } from "@/components/system/google-analytics";
+import { AnalyticsConsent } from "@/components/system/analytics-consent";
 import { StructuredData } from "@/components/system/structured-data";
 import { brand } from "@/constants/brand";
 import { HtmlLangSync } from "@/components/layout/html-lang-sync";
@@ -121,8 +120,7 @@ export default function RootLayout({
           <HtmlLangSync />
           <SkipLink />
           {children}
-          <ClarityAnalytics />
-          <GoogleAnalytics />
+          <AnalyticsConsent />
         </ThemeProvider>
       </body>
     </html>

@@ -10,7 +10,7 @@ from django.utils import timezone
 # Bumped whenever the terms/privacy documents change materially, so an existing
 # consent record can be told apart from consent to the current wording. Keep in
 # step with LEGAL_UPDATED in src/data/legal-content.ts.
-TERMS_VERSION = "2026-07-25"
+TERMS_VERSION = "2026-11-06"
 
 # Short enough that a leaked mailbox is not a standing key to the account.
 PASSWORD_RESET_TOKEN_TTL = timedelta(hours=2)

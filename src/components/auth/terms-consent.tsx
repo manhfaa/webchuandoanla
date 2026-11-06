@@ -51,9 +51,9 @@ export function TermsConsentCheckbox({ checked, onChange, required = true }: Ter
         required={required}
       />
       <span id={textId} className="text-xs leading-6 text-ink-soft sm:text-sm">
-        {tr("Tôi đã đọc và đồng ý với ", "I have read and agree to the ")}
+        {tr("Tôi đồng ý với ", "I agree to the ")}
         {legalLink("/terms", tr("Điều khoản sử dụng", "Terms of Service"))}
-        {tr(" và ", " and ")}
+        {tr(" và đã đọc ", " and have read the ")}
         {legalLink("/privacy", tr("Chính sách quyền riêng tư", "Privacy Policy"))}
         {tr(
           ". Tôi hiểu kết quả từ Agromind AI chỉ mang tính tham khảo, không thay thế ý kiến chuyên gia nông nghiệp.",

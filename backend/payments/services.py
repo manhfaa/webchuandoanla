@@ -492,6 +492,13 @@ def process_sepay_payload(payload):
     payment_code = _extract_payment_code(payload)
     now = timezone.now()
 
+    # Keep only reconciliation fields, never an open-ended provider payload.
+    audit_fields = (
+        "id", "gateway", "transactionDate", "accountNumber", "subAccount",
+        "code", "content", "description", "transferType", "transferAmount", "referenceCode",
+    )
+    audit_payload = {field: str(payload[field])[:500] for field in audit_fields if payload.get(field) is not None}
+
     payment, created = Payment.objects.get_or_create(
         sepay_transaction_id=transaction_id,
         defaults={
@@ -502,7 +509,7 @@ def process_sepay_payload(payload):
             "account_number": account_number,
             "transfer_type": transfer_type,
             "reference_number": str(payload.get("referenceCode") or ""),
-            "raw_payload": payload,
+            "raw_payload": audit_payload,
         },
     )
     if not created:

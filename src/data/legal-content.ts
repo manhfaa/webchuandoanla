@@ -3,7 +3,7 @@
 // dùng chính thức. Cập nhật CONTACT_EMAIL bằng email liên hệ thật của bạn.
 
 export const CONTACT_EMAIL = "phamduccmanhh@gmail.com";
-export const LEGAL_UPDATED = { vi: "Cập nhật lần cuối: 25/07/2026", en: "Last updated: July 25, 2026" };
+export const LEGAL_UPDATED = { vi: "Cập nhật lần cuối: 06/11/2026", en: "Last updated: November 6, 2026" };
 
 type Bi = { vi: string; en: string };
 type BiList = { vi: string[]; en: string[] };
@@ -23,8 +23,8 @@ export interface LegalDoc {
 export const termsDoc: LegalDoc = {
   title: { vi: "Điều khoản sử dụng", en: "Terms of Service" },
   intro: {
-    vi: "Chào mừng bạn đến với Agromind AI. Các Điều khoản sử dụng này (“Điều khoản”) điều chỉnh việc bạn truy cập và sử dụng website, ứng dụng và các dịch vụ của Agromind AI (“Dịch vụ”). Bằng việc tạo tài khoản hoặc sử dụng Dịch vụ, bạn xác nhận đã đọc, hiểu và đồng ý bị ràng buộc bởi các Điều khoản này cùng Chính sách quyền riêng tư. Nếu bạn không đồng ý, vui lòng không sử dụng Dịch vụ.",
-    en: "Welcome to Agromind AI. These Terms of Service (“Terms”) govern your access to and use of the Agromind AI website, application and services (the “Service”). By creating an account or using the Service, you confirm that you have read, understood and agree to be bound by these Terms and the Privacy Policy. If you do not agree, please do not use the Service.",
+    vi: "Chào mừng bạn đến với Agromind AI. Các Điều khoản sử dụng này (“Điều khoản”) điều chỉnh việc bạn truy cập và sử dụng website, ứng dụng và các dịch vụ của Agromind AI (“Dịch vụ”). Bằng việc tạo tài khoản hoặc sử dụng Dịch vụ, bạn xác nhận đã đọc và chấp nhận Điều khoản. Chính sách quyền riêng tư giải thích cách xử lý dữ liệu; lựa chọn phân tích không thiết yếu được hỏi riêng. Nếu không đồng ý với Điều khoản, vui lòng không sử dụng Dịch vụ.",
+    en: "Welcome to Agromind AI. These Terms of Service (“Terms”) govern your access to and use of the Agromind AI website, application and services (the “Service”). By creating an account or using the Service, you confirm that you have read and accepted these Terms. The Privacy Policy explains data processing; optional analytics is requested separately. If you do not agree to the Terms, please do not use the Service.",
   },
   sections: [
     {
@@ -80,8 +80,8 @@ export const termsDoc: LegalDoc = {
     {
       heading: { vi: "5. Bản chất tham khảo của kết quả AI (quan trọng)", en: "5. AI Results are advisory only (important)" },
       body: {
-        vi: "Kết quả AI chỉ mang tính hỗ trợ và tham khảo, KHÔNG phải chẩn đoán chính thức và KHÔNG thay thế ý kiến của chuyên gia nông nghiệp, bảo vệ thực vật hoặc thú y. Chúng tôi không bảo đảm độ chính xác tuyệt đối. Bạn tự chịu trách nhiệm với mọi quyết định canh tác, bao gồm việc dùng thuốc bảo vệ thực vật, phân bón hay xử lý cây trồng. Khi bệnh lây lan nhanh, thiệt hại lớn hoặc cần dùng thuốc, hãy hỏi ý kiến chuyên gia địa phương và tuân thủ quy định pháp luật về vật tư nông nghiệp.",
-        en: "AI Results are supportive and for reference only. They are NOT an official diagnosis and do NOT replace the advice of an agronomist, plant-protection or veterinary professional. We do not guarantee absolute accuracy. You are solely responsible for all farming decisions, including the use of pesticides, fertilizers or plant treatments. When a disease spreads quickly, causes major damage, or pesticides are involved, consult a local expert and comply with laws on agricultural inputs.",
+        vi: "Kết quả AI chỉ mang tính hỗ trợ và tham khảo, KHÔNG phải chẩn đoán chính thức và KHÔNG thay thế ý kiến của chuyên gia nông nghiệp hoặc bảo vệ thực vật. Chúng tôi không bảo đảm độ chính xác tuyệt đối. Bạn cần kiểm tra thực tế và cân nhắc khi quyết định canh tác, nhất là việc dùng thuốc bảo vệ thực vật, phân bón hay xử lý cây trồng. Khi bệnh lây lan nhanh, thiệt hại lớn hoặc cần dùng thuốc, hãy hỏi ý kiến chuyên gia địa phương và tuân thủ quy định pháp luật về vật tư nông nghiệp. Nội dung này không loại trừ trách nhiệm của chúng tôi theo pháp luật.",
+        en: "AI Results are supportive and for reference only. They are NOT an official diagnosis and do NOT replace the advice of an agronomist or plant-protection professional. We do not guarantee absolute accuracy. Check the actual conditions and exercise care when making farming decisions, especially about pesticides, fertilizers or plant treatments. When a disease spreads quickly, causes major damage, or pesticides are involved, consult a local expert and comply with laws on agricultural inputs. This notice does not exclude our responsibilities under applicable law.",
       },
     },
     {
@@ -92,14 +92,14 @@ export const termsDoc: LegalDoc = {
           "Không tải lên nội dung vi phạm pháp luật, xâm phạm quyền của người khác hoặc chứa mã độc.",
           "Không cố gắng dò quét, can thiệp, làm quá tải hệ thống hoặc truy cập trái phép.",
           "Không dùng công cụ tự động để lạm dụng các tính năng AI nhằm gây tốn kém tài nguyên.",
-          "Không sao chép, bán lại hoặc khai thác thương mại Dịch vụ khi chưa được phép.",
+          "Không sao chép hoặc bán lại Dịch vụ trái phép. Khách hàng có khóa API hợp lệ được tích hợp API vào sản phẩm của mình theo mục 19; việc này không cấp quyền bán lại mã nguồn, mô hình hoặc thương hiệu Agromind AI.",
         ],
         en: [
           "Use the Service only for lawful purposes and in accordance with these Terms.",
           "Do not upload content that is illegal, infringes others' rights or contains malware.",
           "Do not attempt to scan, interfere with, overload the system or gain unauthorized access.",
           "Do not use automated tools to abuse the AI features and drive up resource costs.",
-          "Do not copy, resell or commercially exploit the Service without permission.",
+          "Do not copy or resell the Service without permission. Customers with a valid API key may integrate the API into their products under section 19; this does not grant a right to resell Agromind AI source code, models or branding.",
         ],
       },
     },
@@ -118,7 +118,7 @@ export const termsDoc: LegalDoc = {
           "Thanh toán được xử lý qua chuyển khoản ngân hàng thông qua đối tác SePay. Gói chỉ được kích hoạt sau khi hệ thống xác nhận nhận đủ tiền với đúng nội dung chuyển khoản.",
           "Gói KHÔNG tự động gia hạn; khi hết thời hạn bạn cần chủ động thanh toán lại nếu muốn tiếp tục.",
           "Chuyển khoản thiếu, thừa, sai nội dung hoặc quá hạn có thể cần đối soát thủ công và làm chậm kích hoạt.",
-          "Do đặc thù dịch vụ số kích hoạt ngay, các khoản đã thanh toán thường không được hoàn lại, trừ trường hợp lỗi kỹ thuật từ phía chúng tôi khiến bạn không sử dụng được gói. Yêu cầu hỗ trợ vui lòng gửi trong 7 ngày.",
+          "Nếu gói không được kích hoạt hoặc không thể sử dụng đúng như đã công bố do lỗi của chúng tôi, vui lòng liên hệ hỗ trợ để được khắc phục hoặc xem xét hoàn khoản thanh toán phù hợp. Các trường hợp khác được xem xét theo tình trạng sử dụng và quy định pháp luật; thời hạn liên hệ khuyến nghị 7 ngày không hạn chế quyền khiếu nại theo luật.",
           "Giá và quyền lợi từng gói có thể thay đổi; thay đổi không áp dụng hồi tố cho chu kỳ đã thanh toán.",
         ],
         en: [
@@ -126,7 +126,7 @@ export const termsDoc: LegalDoc = {
           "Payments are processed by bank transfer through our partner SePay. A plan is activated only after the system confirms the correct amount has been received with the correct transfer content.",
           "Plans do NOT auto-renew; when the term ends you must actively pay again to continue.",
           "Underpaid, overpaid, mislabeled or late transfers may require manual reconciliation and delay activation.",
-          "Because this is a digital service activated immediately, paid amounts are generally non-refundable, except where a technical fault on our side prevents you from using the plan. Support requests should be sent within 7 days.",
+          "If a plan is not activated or cannot be used as advertised due to our fault, contact support for a remedy or an appropriate refund review. Other cases are reviewed based on usage and applicable law; the suggested 7-day contact period does not limit statutory complaint rights.",
           "Prices and plan benefits may change; changes do not apply retroactively to an already-paid cycle.",
         ],
       },
@@ -141,15 +141,15 @@ export const termsDoc: LegalDoc = {
     {
       heading: { vi: "10. Dịch vụ bên thứ ba", en: "10. Third-party services" },
       body: {
-        vi: "Dịch vụ tích hợp một số nền tảng bên thứ ba, ví dụ: DeepSeek và Tavily (xử lý và tìm nguồn cho phần đối chiếu triệu chứng), Hugging Face (chạy mô hình nhận diện ảnh), Google (đăng nhập), Microsoft Clarity (phân tích trải nghiệm), SePay (thanh toán), Supabase, Vercel và hạ tầng VPS Nhân Hòa. Việc sử dụng các dịch vụ này có thể chịu điều khoản riêng của bên thứ ba. Chúng tôi không chịu trách nhiệm cho hoạt động của các bên thứ ba nằm ngoài kiểm soát của mình.",
-        en: "The Service integrates several third-party platforms, e.g. DeepSeek and Tavily (processing and sourcing for symptom cross-checking), Hugging Face (running the image recognition model), Google (sign-in), Microsoft Clarity (experience analytics), SePay (payments), Supabase, Vercel and Nhân Hòa VPS infrastructure. Use of these may be subject to the third parties' own terms. We are not responsible for the actions of third parties beyond our control.",
+        vi: "Dịch vụ tích hợp các nền tảng bên thứ ba như DeepSeek, Tavily, Hugging Face, Google, SePay, Supabase, Vercel và hạ tầng VPS Nhân Hòa. Google Analytics chỉ được tải nếu bạn chọn đồng ý phân tích. Một số dịch vụ có thể chịu điều khoản riêng của nhà cung cấp. Chúng tôi tiếp nhận và xử lý khiếu nại về Dịch vụ do mình cung cấp, kể cả khi có sử dụng nhà cung cấp bên thứ ba, theo trách nhiệm pháp luật áp dụng.",
+        en: "The Service integrates third-party platforms such as DeepSeek, Tavily, Hugging Face, Google, SePay, Supabase, Vercel and Nhân Hòa VPS infrastructure. Google Analytics is loaded only if you opt in to analytics. Some services may also be subject to provider terms. We receive and address complaints about the Service we provide, including where third-party providers are involved, in accordance with applicable law.",
       },
     },
     {
       heading: { vi: "11. Quyền riêng tư", en: "11. Privacy" },
       body: {
-        vi: "Việc thu thập và xử lý dữ liệu cá nhân được mô tả trong Chính sách quyền riêng tư của chúng tôi. Bằng việc sử dụng Dịch vụ, bạn đồng ý với các thực hành nêu trong chính sách đó.",
-        en: "Our collection and processing of personal data is described in our Privacy Policy. By using the Service, you consent to the practices described there.",
+        vi: "Việc thu thập và xử lý dữ liệu cá nhân được mô tả trong Chính sách quyền riêng tư. Việc sử dụng Dịch vụ không đồng nghĩa với đồng ý cho mọi mục đích xử lý dữ liệu; các mục đích cần sự đồng ý riêng sẽ được hỏi riêng.",
+        en: "Our collection and processing of personal data is described in the Privacy Policy. Use of the Service does not mean consent to every processing purpose; purposes requiring separate consent are requested separately.",
       },
     },
     {
@@ -162,8 +162,8 @@ export const termsDoc: LegalDoc = {
     {
       heading: { vi: "13. Giới hạn trách nhiệm", en: "13. Limitation of liability" },
       body: {
-        vi: "Trong phạm vi pháp luật cho phép, Agromind AI không chịu trách nhiệm cho các thiệt hại gián tiếp, ngẫu nhiên hoặc hậu quả, bao gồm thiệt hại mùa màng, mất lợi nhuận hay mất dữ liệu, phát sinh từ việc sử dụng hoặc không thể sử dụng Dịch vụ hay từ việc dựa vào Kết quả AI. Tổng trách nhiệm của chúng tôi, nếu có, không vượt quá số tiền bạn đã thanh toán cho Dịch vụ trong 3 tháng gần nhất.",
-        en: "To the extent permitted by law, Agromind AI is not liable for indirect, incidental or consequential damages, including crop loss, lost profits or lost data, arising from your use of or inability to use the Service, or from reliance on AI Results. Our total liability, if any, will not exceed the amount you paid for the Service in the preceding 3 months.",
+        vi: "Kết quả AI có giới hạn và cần được đối chiếu với tình trạng cây thực tế trước khi áp dụng. Mức trách nhiệm đối với lỗi cung cấp Dịch vụ, mất dữ liệu, thiệt hại hoặc khiếu nại được xác định theo hợp đồng và pháp luật áp dụng; Điều khoản này không loại trừ hoặc giới hạn trách nhiệm mà pháp luật không cho phép loại trừ hoặc giới hạn.",
+        en: "AI Results have limitations and should be checked against actual plant conditions before action is taken. Responsibility for Service faults, data loss, damage or complaints is determined by the agreement and applicable law; these Terms do not exclude or limit liability where doing so is prohibited by law.",
       },
     },
     {
@@ -201,6 +201,25 @@ export const termsDoc: LegalDoc = {
         en: `For questions about these Terms, please contact: ${CONTACT_EMAIL}.`,
       },
     },
+    {
+      heading: { vi: "19. API dành cho nhà phát triển và số dư", en: "19. Developer API and wallet balance" },
+      list: {
+        vi: [
+          "Khách hàng được cấp khóa API hợp lệ có thể tích hợp chức năng nhận diện vào sản phẩm của mình. Khóa chỉ được dùng từ máy chủ của khách hàng, không được công khai trong ứng dụng hoặc mã phía trình duyệt; khách hàng cần thông báo ngay nếu khóa bị lộ để thu hồi.",
+          "API thực tế hiện tính 200đ cho mỗi yêu cầu nhận diện hoàn thành; yêu cầu thất bại do hệ thống không bị tính phí. Mức giá và trạng thái khả dụng được hiển thị trong giao diện nhà phát triển trước khi nạp hoặc sử dụng; thay đổi giá không áp dụng hồi tố cho lượt đã tính phí.",
+          "Số tiền nạp thực tế cho mỗi lệnh từ 2.000đ đến 100.000.000đ. Số dư chỉ được cộng khi giao dịch đúng số tiền và nội dung đã được xác nhận; chuyển thiếu, thừa, sai nội dung hoặc quá hạn cần đối soát. Ví thử nghiệm không có giá trị tiền thật.",
+          "Số dư là khoản trả trước để sử dụng API, không phải tiền gửi ngân hàng và không phát sinh lãi. Khi ngừng dùng API hoặc có giao dịch sai, hãy liên hệ hỗ trợ để được đối soát và xem xét hoàn số dư chưa sử dụng theo thỏa thuận và pháp luật; chúng tôi không tự ý coi số dư chưa sử dụng là hết hạn.",
+          "Mỗi yêu cầu cần mã Idempotency-Key riêng. Gửi lại cùng mã và cùng ảnh không bị tính phí thêm; sử dụng cùng mã cho ảnh khác bị từ chối. Chi tiết giao dịch và số dư được hiển thị trong lịch sử ví để khách hàng kiểm tra và khiếu nại.",
+        ],
+        en: [
+          "Customers with a valid API key may integrate recognition into their products. Keys must be used from the customer's server, not exposed in an app or browser code; report a compromised key promptly for revocation.",
+          "The live API currently charges VND 200 for each completed recognition request; a request that fails because of our system is not charged. Current price and availability are displayed in the developer interface before top-up or use; price changes do not apply retroactively to completed charges.",
+          "Each live top-up must be between VND 2,000 and VND 100,000,000. Credit is added only after a transfer with the correct amount and reference is confirmed; underpaid, overpaid, incorrect or late transfers require reconciliation. Test wallet credit has no cash value.",
+          "Wallet credit is a prepayment for API use, not a bank deposit, and earns no interest. If you stop using the API or a payment is incorrect, contact support for reconciliation and review of unused credit under the agreement and applicable law; unused credit is not arbitrarily treated as expired.",
+          "Each request requires an Idempotency-Key. Retrying the same image with the same key does not incur an additional charge; reusing the key for a different image is rejected. Transactions and balance are shown in wallet history for review and disputes.",
+        ],
+      },
+    },
   ],
 };
 
@@ -214,8 +233,8 @@ export const privacyDoc: LegalDoc = {
     {
       heading: { vi: "1. Phạm vi áp dụng", en: "1. Scope" },
       body: {
-        vi: "Chính sách áp dụng cho website, ứng dụng và các dịch vụ liên quan của Agromind AI. Bằng việc tạo tài khoản và đánh dấu đồng ý, bạn xác nhận đã đọc và đồng ý với chính sách này.",
-        en: "This policy applies to the Agromind AI website, application and related services. By creating an account and checking the consent box, you confirm you have read and agree to this policy.",
+        vi: "Chính sách áp dụng cho website, ứng dụng và các dịch vụ liên quan của Agromind AI. Khi tạo tài khoản, bạn xác nhận đã đọc chính sách này; lựa chọn phân tích không thiết yếu được hỏi riêng và không phải điều kiện để tạo tài khoản.",
+        en: "This policy applies to the Agromind AI website, application and related services. On registration you confirm you have read this policy; optional analytics is requested separately and is not a condition of creating an account.",
       },
     },
     {
@@ -225,8 +244,8 @@ export const privacyDoc: LegalDoc = {
           "Thông tin tài khoản: email, mật khẩu (được băm), tên hiển thị, ảnh đại diện (nếu có).",
           "Nội dung chẩn đoán: ảnh lá bạn tải lên, mô tả triệu chứng, kết quả, ghi chú và lịch sử kiểm tra.",
           "Vị trí vườn: tọa độ hoặc địa chỉ bạn nhập để xem thời tiết và lập kế hoạch (chỉ khi bạn cung cấp).",
-          "Thông tin thanh toán: mã đơn, nội dung và trạng thái chuyển khoản xử lý qua SePay. Chúng tôi KHÔNG lưu số thẻ hay thông tin ngân hàng đầy đủ của bạn.",
-          "Dữ liệu phân tích trải nghiệm: qua Microsoft Clarity, gồm thao tác, heatmap và có thể có ghi lại phiên (session recording) để cải thiện giao diện.",
+          "Thông tin thanh toán: mã đơn, nội dung, số tiền, trạng thái và dữ liệu giao dịch do SePay gửi để đối soát; bản ghi có thể gồm tên ngân hàng, số tài khoản, mã tham chiếu và nội dung chuyển khoản. Chúng tôi không yêu cầu số thẻ thanh toán trên website.",
+          "Dữ liệu phân tích trải nghiệm: Google Analytics chỉ được tải sau khi bạn đồng ý riêng; Microsoft Clarity hiện không được tải trên website.",
           "Dữ liệu đăng nhập Google (nếu bạn dùng): địa chỉ email và thông tin hồ sơ cơ bản do Google cung cấp.",
           "Dữ liệu kỹ thuật: loại thiết bị, trình duyệt, địa chỉ IP và nhật ký truy cập cơ bản.",
         ],
@@ -234,8 +253,8 @@ export const privacyDoc: LegalDoc = {
           "Account information: email, password (hashed), display name, avatar (if any).",
           "Diagnosis content: leaf images you upload, symptom descriptions, results, notes and check history.",
           "Garden location: coordinates or an address you enter for weather and planning (only when you provide it).",
-          "Payment information: order code, transfer content and status processed through SePay. We do NOT store your card number or full bank details.",
-          "Experience analytics: via Microsoft Clarity, including interactions, heatmaps and possibly session recordings to improve the interface.",
+          "Payment information: order code, transfer content, amount, status and transaction data received from SePay for reconciliation; the record may include bank name, account number, reference and transfer description. We do not request payment-card numbers on the website.",
+          "Experience analytics: Google Analytics loads only after your separate opt-in; Microsoft Clarity is currently not loaded on the website.",
           "Google sign-in data (if used): the email address and basic profile information provided by Google.",
           "Technical data: device type, browser, IP address and basic access logs.",
         ],
@@ -263,22 +282,22 @@ export const privacyDoc: LegalDoc = {
     {
       heading: { vi: "4. Cơ sở xử lý", en: "4. Basis for processing" },
       body: {
-        vi: "Chúng tôi xử lý dữ liệu dựa trên sự đồng ý của bạn khi đăng ký, để thực hiện hợp đồng cung cấp Dịch vụ, và cho các lợi ích hợp pháp như bảo mật và cải thiện sản phẩm. Bạn có thể rút lại sự đồng ý bằng cách ngừng sử dụng và yêu cầu xóa dữ liệu.",
-        en: "We process data based on your consent at registration, to perform the contract of providing the Service, and for legitimate interests such as security and product improvement. You may withdraw consent by stopping use and requesting deletion.",
+        vi: "Chúng tôi xử lý dữ liệu cần thiết để cung cấp Dịch vụ, quản lý tài khoản, thanh toán và bảo mật theo căn cứ pháp luật phù hợp với từng mục đích. Phân tích trải nghiệm không thiết yếu chỉ được bật khi bạn chọn đồng ý riêng. Bạn có thể từ chối hoặc rút lựa chọn phân tích trong Cài đặt riêng tư mà vẫn tiếp tục dùng Dịch vụ; với các yêu cầu về dữ liệu khác, vui lòng liên hệ email ở mục 12.",
+        en: "We process data needed to provide the Service, manage accounts, payments and security under the applicable legal basis for each purpose. Non-essential experience analytics is enabled only with a separate opt-in. You can decline or withdraw analytics in Privacy settings and keep using the Service; for other data requests, contact the email in section 12.",
       },
     },
     {
       heading: { vi: "5. Chia sẻ với bên thứ ba", en: "5. Sharing with third parties" },
       body: {
-        vi: "Chúng tôi không bán dữ liệu cá nhân của bạn. Chúng tôi chỉ chia sẻ dữ liệu cần thiết với các nhà cung cấp giúp vận hành Dịch vụ: Hugging Face (chạy mô hình nhận diện ảnh), DeepSeek và Tavily (xử lý và tìm nguồn cho phần đối chiếu triệu chứng), Google (đăng nhập), SePay (thanh toán), Microsoft Clarity (phân tích trải nghiệm), Supabase (cơ sở dữ liệu), Vercel và hạ tầng VPS Nhân Hòa. Một số nhà cung cấp có thể đặt máy chủ ngoài Việt Nam.",
-        en: "We do not sell your personal data. We share only the data necessary with providers that help operate the Service: Hugging Face (running the image recognition model), DeepSeek and Tavily (processing and sourcing for symptom cross-checking), Google (sign-in), SePay (payments), Microsoft Clarity (experience analytics), Supabase (database), Vercel and Nhân Hòa VPS infrastructure. Some providers may host servers outside Vietnam.",
+        vi: "Chúng tôi không bán dữ liệu cá nhân của bạn. Dữ liệu cần thiết có thể được xử lý bởi Hugging Face (nhận diện ảnh), DeepSeek và Tavily (đối chiếu triệu chứng), Google (đăng nhập; phân tích nếu bạn đồng ý), SePay (thanh toán), Supabase (cơ sở dữ liệu), Vercel và VPS Nhân Hòa (hạ tầng). Tùy nhà cung cấp và khu vực máy chủ, dữ liệu có thể được xử lý ngoài Việt Nam; vui lòng liên hệ mục 12 để hỏi về dữ liệu cụ thể của bạn.",
+        en: "We do not sell your personal data. Necessary data may be processed by Hugging Face (image recognition), DeepSeek and Tavily (symptom cross-checking), Google (sign-in; analytics if you opt in), SePay (payments), Supabase (database), Vercel and Nhân Hòa VPS (infrastructure). Depending on provider and server region, data may be processed outside Vietnam; contact us under section 12 about your specific data.",
       },
     },
     {
       heading: { vi: "6. Cookie và công nghệ theo dõi", en: "6. Cookies and tracking" },
       body: {
-        vi: "Chúng tôi dùng bộ nhớ trình duyệt để ghi nhớ phiên đăng nhập, ngôn ngữ và giao diện. Microsoft Clarity dùng cookie và mã theo dõi để tạo heatmap và có thể ghi lại phiên tương tác (ẩn phần lớn nội dung nhạy cảm) nhằm cải thiện trải nghiệm. Bạn có thể chặn cookie qua trình duyệt, tuy nhiên một số tính năng có thể không hoạt động đầy đủ.",
-        en: "We use browser storage to remember your login session, language and theme. Microsoft Clarity uses cookies and tracking code to build heatmaps and may record interaction sessions (masking most sensitive content) to improve the experience. You can block cookies in your browser, though some features may not work fully.",
+        vi: "Chúng tôi dùng bộ nhớ trình duyệt cho phiên đăng nhập, ngôn ngữ, giao diện và để lưu lựa chọn phân tích của bạn. Google Analytics chỉ được tải sau khi bạn chọn Đồng ý phân tích; từ chối không ảnh hưởng các chức năng chính. Bạn có thể đổi lựa chọn qua nút Cài đặt riêng tư trên website. Khi rút đồng ý, trang sẽ tải lại để ngừng mã phân tích đã chạy trong phiên hiện tại; dữ liệu đã thu trước đó được xử lý theo quy định pháp luật và chính sách lưu của nhà cung cấp.",
+        en: "We use browser storage for login sessions, language, theme and your analytics choice. Google Analytics loads only after you choose Allow analytics; declining does not affect core features. You can change your choice using Privacy settings on the website. Withdrawing consent reloads the page to stop analytics code already running in the current session; previously collected data is handled under applicable law and provider retention rules.",
       },
     },
     {
@@ -302,13 +321,13 @@ export const privacyDoc: LegalDoc = {
           "Truy cập và xem dữ liệu cá nhân của bạn trong ứng dụng.",
           "Chỉnh sửa thông tin hồ sơ.",
           "Yêu cầu xóa tài khoản và dữ liệu cá nhân liên quan.",
-          "Rút lại sự đồng ý cho việc xử lý dữ liệu (có thể ảnh hưởng khả năng dùng Dịch vụ).",
+          "Rút lại lựa chọn phân tích bất cứ lúc nào mà không ảnh hưởng đến việc sử dụng Dịch vụ; gửi yêu cầu về các hoạt động xử lý dữ liệu khác qua email ở mục 12.",
         ],
         en: [
           "Access and view your personal data in the app.",
           "Edit your profile information.",
           "Request deletion of your account and related personal data.",
-          "Withdraw consent for data processing (this may affect your ability to use the Service).",
+          "Withdraw optional analytics at any time without affecting use of the Service; email us under section 12 about other data-processing requests.",
         ],
       },
     },
