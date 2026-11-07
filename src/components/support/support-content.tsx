@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, Clock3, Mail, ShieldCheck } from "lucide-react";
 
 import { DEVELOPER } from "@/constants/brand";
+import { TEAM_LEAD } from "@/constants/leadership";
 import { CONTACT_EMAIL } from "@/data/legal-content";
 import { useTr } from "@/lib/use-tr";
 
@@ -67,6 +68,12 @@ export function SupportContent() {
                 "Agromind AI is developed and operated by the DIEPTEK team. The team receives account, payment and product support requests at the email shown here.",
               )}
             </p>
+            <p className="mt-3 text-sm leading-7 text-ink-soft">
+              {tr(`${TEAM_LEAD} là trưởng nhóm phát triển và phụ trách kỹ thuật Agromind AI.`, `${TEAM_LEAD} leads development and technical direction for Agromind AI.`)}
+            </p>
+            <Link href="/about" className="mt-3 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-leaf-strong underline underline-offset-4 hover:text-leaf">
+              {tr("Tìm hiểu về nhóm", "Learn about the team")} <ArrowUpRight size={16} aria-hidden />
+            </Link>
           </section>
 
           <section className="rounded-2xl border border-line bg-surface p-6 sm:p-8">
