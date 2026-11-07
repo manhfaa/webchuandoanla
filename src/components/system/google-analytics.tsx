@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Script from "next/script";
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 
 /**
  * Google Analytics 4, mounted only after a separate analytics choice.
@@ -31,17 +31,33 @@ type AnalyticsWindow = Window & {
 
 export function GoogleAnalytics() {
   const pathname = usePathname();
-  const [ready, setReady] = useState(false);
+  const initialized = useRef(false);
 
   useEffect(() => {
-    if (!ready || !GA_MEASUREMENT_ID || !pathname) return;
+    if (process.env.NODE_ENV !== "production" || !GA_MEASUREMENT_ID || !pathname) return;
 
     const analyticsWindow = window as AnalyticsWindow;
+    const safePathname = pathname.replace(/^\/trace\/[^/]+/, "/trace/[token]");
+    if (!initialized.current) {
+      analyticsWindow.dataLayer ??= [];
+      analyticsWindow.gtag = function () {
+        analyticsWindow.dataLayer?.push(arguments);
+      };
+      analyticsWindow.gtag("js", new Date());
+      // The GA4 stream has enhanced measurement disabled to prevent raw history URLs.
+      analyticsWindow.gtag("config", GA_MEASUREMENT_ID, {
+        send_page_view: false,
+        page_location: window.location.origin + safePathname,
+        page_referrer: "",
+      });
+      initialized.current = true;
+    }
+
     analyticsWindow.gtag?.("event", "page_view", {
-      page_location: window.location.origin + pathname,
+      page_location: window.location.origin + safePathname,
       page_referrer: "",
     });
-  }, [pathname, ready]);
+  }, [pathname]);
 
   if (process.env.NODE_ENV !== "production" || !GA_MEASUREMENT_ID) return null;
 
@@ -50,21 +66,6 @@ export function GoogleAnalytics() {
       id="ga4-loader"
       strategy="afterInteractive"
       src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-      onReady={() => {
-        const analyticsWindow = window as AnalyticsWindow;
-        analyticsWindow.dataLayer ??= [];
-        analyticsWindow.gtag = function () {
-          analyticsWindow.dataLayer?.push(arguments);
-        };
-        analyticsWindow.gtag("js", new Date());
-        // GA4 enhanced measurement is off for this stream. Track only sanitized paths.
-        analyticsWindow.gtag("config", GA_MEASUREMENT_ID, {
-          send_page_view: false,
-          page_location: window.location.origin + window.location.pathname,
-          page_referrer: "",
-        });
-        setReady(true);
-      }}
     />
   );
 }
