@@ -4,6 +4,18 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes about-enter {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.about-enter { animation: about-enter 720ms var(--ease-out) both; }
+.about-enter-delay { animation-delay: 120ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .about-enter { animation: none; }
+}
+
 @layer base {
   :root {
     --font-be-vietnam: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;

@@ -11,14 +11,14 @@ import { serializeJsonLd } from "@/lib/json-ld";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.agromind.farm";
 
 export const metadata: Metadata = {
-  title: `Về Agromind AI | ${TEAM_LEAD}, trưởng nhóm phát triển`,
-  description: `${TEAM_LEAD} là trưởng nhóm phát triển Agromind AI của ${DEVELOPER}, phụ trách chung và định hướng kỹ thuật. Xem thành tích được FPT Schools công bố.`,
+  title: `${TEAM_LEAD} | Trưởng nhóm Green Green và Agromind AI`,
+  description: `${TEAM_LEAD} là trưởng nhóm Green Green, hiện phụ trách kỹ thuật Agromind AI. Cùng DermAI đạt Giải Ba khoa học kỹ thuật quốc gia; dẫn dắt Green Green vô địch The NextX 2026.`,
   alternates: { canonical: "/about" },
   openGraph: {
-    title: `Về Agromind AI | ${TEAM_LEAD}`,
-    description: `${TEAM_LEAD} là trưởng nhóm phát triển Agromind AI của ${DEVELOPER}.`,
+    title: `${TEAM_LEAD} | Trưởng nhóm Green Green và Agromind AI`,
+    description: `${TEAM_LEAD} dẫn dắt Green Green tại The NextX 2026 và phụ trách kỹ thuật Agromind AI.`,
     url: "/about",
-    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "Agromind AI" }],
+    images: [{ url: "/about/pham-duc-manh.jpg", width: 1600, height: 1067, alt: "Phạm Đức Mạnh giới thiệu Agromind AI" }],
   },
 };
 
@@ -38,7 +38,9 @@ export default function AboutPage() {
         "@type": "Person",
         "@id": `${SITE_URL}/about#team-lead`,
         name: TEAM_LEAD,
-        jobTitle: "Trưởng nhóm phát triển, phụ trách kỹ thuật Agromind AI",
+        jobTitle: "Trưởng nhóm Green Green; trưởng nhóm phát triển và phụ trách kỹ thuật Agromind AI",
+        image: `${SITE_URL}/about/pham-duc-manh.jpg`,
+        description: `${TEAM_LEAD} dẫn dắt Green Green tại The NextX 2026 và hiện phụ trách chung, định hướng kỹ thuật Agromind AI.`,
         memberOf: { "@type": "Organization", name: DEVELOPER },
         subjectOf: [
           { "@type": "Article", url: ACHIEVEMENT_SOURCES.nationalScience },
