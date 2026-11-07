@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { brand, DEVELOPER } from "@/constants/brand";
+import { TEAM_LEAD } from "@/constants/leadership";
 import { landingNavItems } from "@/constants/navigation";
 import { CONTACT_EMAIL } from "@/data/legal-content";
 import { useTr } from "@/lib/use-tr";
@@ -42,7 +43,7 @@ export function Footer() {
             <p className="mt-5 max-w-sm text-sm leading-7">{tr(brand.description, brand.descriptionEn)}</p>
             <p className="mt-6 flex items-center gap-3 text-sm font-semibold leading-6 text-on-forest">
               <Image src="/logos/dieptek-mark-lime.png" alt={`${DEVELOPER} logo`} width={44} height={44} className="h-11 w-11 shrink-0 object-contain" />
-              <span>{tr(`Agromind AI được phát triển bởi nhóm ${DEVELOPER}.`, `Agromind AI is developed by the ${DEVELOPER} team.`)}</span>
+              <span>{tr(`Agromind AI do ${TEAM_LEAD} sáng lập, cùng nhóm ${DEVELOPER} phát triển.`, `Agromind AI was founded by ${TEAM_LEAD} and developed with the ${DEVELOPER} team.`)}</span>
             </p>
           </div>
 

@@ -28,13 +28,13 @@ export function AboutContent() {
                 {TEAM_LEAD}
               </h1>
               <p className="mt-8 max-w-xl text-[clamp(1.1rem,1.8vw,1.45rem)] font-semibold leading-snug text-on-forest">
-                {tr("Trưởng nhóm Green Green. Người dẫn dắt Agromind AI.", "Green Green team lead. The person leading Agromind AI.")}
+                {tr("Người sáng lập Agromind AI. Trưởng nhóm Green Green.", "Founder of Agromind AI. Green Green team lead.")}
               </p>
             </div>
             <p className="max-w-lg border-l-2 border-[#8CCF75] pl-5 text-sm leading-7 text-on-forest-muted sm:text-base">
               {tr(
-                `Phạm Đức Mạnh là trưởng nhóm Green Green tại The NextX 2026; hiện phụ trách chung và định hướng kỹ thuật cho Agromind AI do ${DEVELOPER} phát triển.`,
-                `Phạm Đức Mạnh led Green Green at The NextX 2026 and now oversees Agromind AI's overall and technical direction with ${DEVELOPER}.`,
+                `Phạm Đức Mạnh sáng lập Agromind AI, là trưởng nhóm Green Green tại The NextX 2026 và hiện phụ trách chung, định hướng kỹ thuật cho sản phẩm do ${DEVELOPER} phát triển.`,
+                `Phạm Đức Mạnh founded Agromind AI, led Green Green at The NextX 2026, and now oversees the product's overall and technical direction with ${DEVELOPER}.`,
               )}
             </p>
           </div>
@@ -117,6 +117,26 @@ export function AboutContent() {
             />
           </div>
         </article>
+
+        <section className="mt-20 border-t border-line pt-10 sm:mt-28 sm:pt-14" aria-labelledby="about-questions">
+          <h2 id="about-questions" className="max-w-2xl font-display text-[clamp(2rem,3.5vw,3.3rem)] font-bold leading-[1.12] tracking-[-0.04em] text-ink">
+            {tr("Về người đứng sau Agromind AI", "About the person behind Agromind AI")}
+          </h2>
+          <dl className="mt-8 divide-y divide-line sm:mt-10">
+            <div className="grid gap-2 py-6 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:gap-10">
+              <dt className="font-semibold text-ink">{tr("Ai là người sáng lập Agromind AI?", "Who founded Agromind AI?")}</dt>
+              <dd className="leading-7 text-ink-soft">{tr(`${TEAM_LEAD} là người sáng lập Agromind AI, phụ trách định hướng chung của sản phẩm.`, `${TEAM_LEAD} founded Agromind AI and leads the product's overall direction.`)}</dd>
+            </div>
+            <div className="grid gap-2 py-6 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:gap-10">
+              <dt className="font-semibold text-ink">{tr("Ai là trưởng nhóm Green Green?", "Who led Green Green?")}</dt>
+              <dd className="leading-7 text-ink-soft">{tr(`${TEAM_LEAD} là trưởng nhóm Green Green tại The NextX 2026. Đội sau đó đổi tên thành ${DEVELOPER}.`, `${TEAM_LEAD} led Green Green at The NextX 2026. The team later became ${DEVELOPER}.`)}</dd>
+            </div>
+            <div className="grid gap-2 py-6 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:gap-10">
+              <dt className="font-semibold text-ink">{tr("Ai phụ trách kỹ thuật Agromind AI?", "Who leads Agromind AI's technical work?")}</dt>
+              <dd className="leading-7 text-ink-soft">{tr(`${TEAM_LEAD} phụ trách định hướng và các quyết định kỹ thuật của Agromind AI cùng nhóm ${DEVELOPER}.`, `${TEAM_LEAD} leads Agromind AI's technical direction and decisions with the ${DEVELOPER} team.`)}</dd>
+            </div>
+          </dl>
+        </section>
       </section>
     </div>
   );

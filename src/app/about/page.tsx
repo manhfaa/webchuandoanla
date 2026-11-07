@@ -11,12 +11,12 @@ import { serializeJsonLd } from "@/lib/json-ld";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.agromind.farm";
 
 export const metadata: Metadata = {
-  title: `${TEAM_LEAD} | Trưởng nhóm Green Green và Agromind AI`,
-  description: `${TEAM_LEAD} là trưởng nhóm Green Green, hiện phụ trách kỹ thuật Agromind AI. Cùng DermAI đạt Giải Ba khoa học kỹ thuật quốc gia; dẫn dắt Green Green vô địch The NextX 2026.`,
+  title: `${TEAM_LEAD} | Người sáng lập Agromind AI, trưởng nhóm Green Green`,
+  description: `${TEAM_LEAD} sáng lập Agromind AI, là trưởng nhóm Green Green và phụ trách kỹ thuật sản phẩm. Cùng DermAI đạt Giải Ba khoa học kỹ thuật quốc gia; dẫn dắt Green Green vô địch The NextX 2026.`,
   alternates: { canonical: "/about" },
   openGraph: {
-    title: `${TEAM_LEAD} | Trưởng nhóm Green Green và Agromind AI`,
-    description: `${TEAM_LEAD} dẫn dắt Green Green tại The NextX 2026 và phụ trách kỹ thuật Agromind AI.`,
+    title: `${TEAM_LEAD} | Người sáng lập Agromind AI`,
+    description: `${TEAM_LEAD} sáng lập Agromind AI, dẫn dắt Green Green tại The NextX 2026 và phụ trách kỹ thuật sản phẩm.`,
     url: "/about",
     images: [{ url: "/about/pham-duc-manh.jpg", width: 1600, height: 1067, alt: "Phạm Đức Mạnh giới thiệu Agromind AI" }],
   },
@@ -38,9 +38,9 @@ export default function AboutPage() {
         "@type": "Person",
         "@id": `${SITE_URL}/about#team-lead`,
         name: TEAM_LEAD,
-        jobTitle: "Trưởng nhóm Green Green; trưởng nhóm phát triển và phụ trách kỹ thuật Agromind AI",
+        jobTitle: "Người sáng lập Agromind AI; trưởng nhóm Green Green; phụ trách kỹ thuật",
         image: `${SITE_URL}/about/pham-duc-manh.jpg`,
-        description: `${TEAM_LEAD} dẫn dắt Green Green tại The NextX 2026 và hiện phụ trách chung, định hướng kỹ thuật Agromind AI.`,
+        description: `${TEAM_LEAD} sáng lập Agromind AI, dẫn dắt Green Green tại The NextX 2026 và phụ trách chung, định hướng kỹ thuật sản phẩm.`,
         memberOf: { "@type": "Organization", name: DEVELOPER },
         subjectOf: [
           { "@type": "Article", url: ACHIEVEMENT_SOURCES.nationalScience },

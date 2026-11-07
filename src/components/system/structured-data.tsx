@@ -1,4 +1,5 @@
 import { brand } from "@/constants/brand";
+import { TEAM_LEAD } from "@/constants/leadership";
 import { serializeJsonLd } from "@/lib/json-ld";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.agromind.farm";
@@ -25,6 +26,7 @@ export function StructuredData() {
         logo: `${SITE_URL}/logos/agromind_app_icon_512.png`,
         description: brand.mission,
         areaServed: { "@type": "Country", name: "Việt Nam" },
+        founder: { "@id": `${SITE_URL}/about#team-lead` },
       },
       {
         "@type": "WebSite",
@@ -44,6 +46,7 @@ export function StructuredData() {
         description: brand.description,
         url: SITE_URL,
         inLanguage: "vi-VN",
+        creator: { "@id": `${SITE_URL}/about#team-lead` },
         featureList: [
           "Kiểm tra ảnh lá và nhận diện dấu hiệu bệnh",
           "Đối chiếu triệu chứng với nguồn tham khảo",
@@ -57,6 +60,14 @@ export function StructuredData() {
           { "@type": "Offer", name: "Bloom", price: "39000", priceCurrency: "VND" },
           { "@type": "Offer", name: "Elite", price: "99000", priceCurrency: "VND" },
         ],
+      },
+      {
+        "@type": "Person",
+        "@id": `${SITE_URL}/about#team-lead`,
+        name: TEAM_LEAD,
+        url: `${SITE_URL}/about`,
+        image: `${SITE_URL}/about/pham-duc-manh.jpg`,
+        jobTitle: "Người sáng lập Agromind AI, trưởng nhóm Green Green và phụ trách kỹ thuật",
       },
     ],
   };
