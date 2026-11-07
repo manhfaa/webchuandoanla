@@ -6,6 +6,8 @@ import { GoogleAnalytics } from "@/components/system/google-analytics";
 import { useTr } from "@/lib/use-tr";
 
 const STORAGE_KEY = "agromind-analytics-consent-v1";
+const DISMISSED_KEY = "agromind-privacy-shortcut-dismissed-v1";
+export const OPEN_ANALYTICS_SETTINGS_EVENT = "agromind:open-analytics-settings";
 type Choice = "accepted" | "rejected" | null;
 
 export function AnalyticsConsent() {
@@ -13,16 +15,34 @@ export function AnalyticsConsent() {
   const [choice, setChoice] = useState<Choice>(null);
   const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
+  const [shortcutDismissed, setShortcutDismissed] = useState(false);
 
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") as { choice?: string } | null;
       if (saved?.choice === "accepted" || saved?.choice === "rejected") setChoice(saved.choice);
+      setShortcutDismissed(localStorage.getItem(DISMISSED_KEY) === "true");
     } catch {
       // Invalid or unavailable storage must never enable analytics.
     }
     setReady(true);
   }, []);
+
+  useEffect(() => {
+    const openSettings = () => setOpen(true);
+    window.addEventListener(OPEN_ANALYTICS_SETTINGS_EVENT, openSettings);
+    return () => window.removeEventListener(OPEN_ANALYTICS_SETTINGS_EVENT, openSettings);
+  }, []);
+
+  function openFromShortcut() {
+    setShortcutDismissed(true);
+    try {
+      localStorage.setItem(DISMISSED_KEY, "true");
+    } catch {
+      // Settings remain available in the footer if storage is unavailable.
+    }
+    setOpen(true);
+  }
 
   function choose(next: Exclude<Choice, null>) {
     const wasEnabled = choice === "accepted";
@@ -43,10 +63,10 @@ export function AnalyticsConsent() {
   return (
     <>
       {ready && choice === "accepted" ? <GoogleAnalytics /> : null}
-      {ready && choice !== null && !open ? (
+      {ready && choice !== null && !open && !shortcutDismissed ? (
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={openFromShortcut}
           className="fixed bottom-3 left-3 z-[90] min-h-11 rounded-full border border-line bg-surface px-4 text-xs font-semibold text-ink shadow-lg hover:bg-surface-soft"
         >
           {tr("Cài đặt riêng tư", "Privacy settings")}

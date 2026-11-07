@@ -5,9 +5,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { brand, DEVELOPER } from "@/constants/brand";
-import { TEAM_LEAD } from "@/constants/leadership";
+import { OPEN_ANALYTICS_SETTINGS_EVENT } from "@/components/system/analytics-consent";
 import { landingNavItems } from "@/constants/navigation";
-import { CONTACT_EMAIL } from "@/data/legal-content";
 import { useTr } from "@/lib/use-tr";
 
 import { Logo } from "./logo";
@@ -43,7 +42,7 @@ export function Footer() {
             <p className="mt-5 max-w-sm text-sm leading-7">{tr(brand.description, brand.descriptionEn)}</p>
             <p className="mt-6 flex items-center gap-3 text-sm font-semibold leading-6 text-on-forest">
               <Image src="/logos/dieptek-mark-lime.png" alt={`${DEVELOPER} logo`} width={44} height={44} className="h-11 w-11 shrink-0 object-contain" />
-              <span>{tr(`Agromind AI do ${TEAM_LEAD} sáng lập, cùng nhóm ${DEVELOPER} phát triển.`, `Agromind AI was founded by ${TEAM_LEAD} and developed with the ${DEVELOPER} team.`)}</span>
+              <span>{tr(`Agromind AI do nhóm ${DEVELOPER} phát triển.`, `Agromind AI is developed by the ${DEVELOPER} team.`)}</span>
             </p>
           </div>
 
@@ -71,11 +70,13 @@ export function Footer() {
             <Link href="/benh-cay" className={linkClass}>{tr("Bệnh cây trồng", "Plant diseases")}</Link>
             <Link href="/terms" className={linkClass}>{tr("Điều khoản sử dụng", "Terms of Service")}</Link>
             <Link href="/privacy" className={linkClass}>{tr("Chính sách quyền riêng tư", "Privacy Policy")}</Link>
+            <button type="button" onClick={() => window.dispatchEvent(new Event(OPEN_ANALYTICS_SETTINGS_EVENT))} className={`${linkClass} text-left`}>
+              {tr("Cài đặt riêng tư", "Privacy settings")}
+            </button>
           </Column>
 
           <Column heading={tr("Hỗ trợ", "Support")}>
             <Link href="/support" className={linkClass}>{tr("Liên hệ & hỗ trợ", "Contact & support")}</Link>
-            <a href={`mailto:${CONTACT_EMAIL}`} className={`${linkClass} break-all`}>{CONTACT_EMAIL}</a>
             <p className="mt-2 text-xs leading-5">{tr("Dự kiến phản hồi trong 1–3 ngày làm việc.", "Expected reply within 1–3 business days.")}</p>
           </Column>
         </div>
