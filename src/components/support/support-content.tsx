@@ -71,8 +71,8 @@ export function SupportContent() {
             <p className="mt-3 text-sm leading-7 text-ink-soft">
               {tr(`${TEAM_LEAD} là người sáng lập, trưởng nhóm phát triển và phụ trách kỹ thuật Agromind AI.`, `${TEAM_LEAD} founded Agromind AI and leads its development and technical direction.`)}
             </p>
-            <Link href="/about" className="mt-3 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-leaf-strong underline underline-offset-4 hover:text-leaf">
-              {tr("Tìm hiểu về nhóm", "Learn about the team")} <ArrowUpRight size={16} aria-hidden />
+            <Link href="/about#team-lead" className="mt-3 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-leaf-strong underline underline-offset-4 hover:text-leaf">
+              {tr("Tìm hiểu về người sáng lập và nhóm", "Learn about the founder and team")} <ArrowUpRight size={16} aria-hidden />
             </Link>
           </section>
 

@@ -20,7 +20,7 @@ export function AboutContent() {
           <ArrowLeft size={16} aria-hidden /> {tr("Về trang chủ", "Back to home")}
         </Link>
 
-        <header className="about-enter relative mt-6 grid overflow-hidden rounded-[24px] bg-forest text-on-forest lg:min-h-[610px] lg:grid-cols-[1fr_0.94fr] lg:rounded-[32px]">
+        <header id="team-lead" className="about-enter relative mt-6 grid scroll-mt-24 overflow-hidden rounded-[24px] bg-forest text-on-forest lg:min-h-[610px] lg:grid-cols-[1fr_0.94fr] lg:rounded-[32px]">
           <div className="relative z-10 flex flex-col justify-between gap-12 px-7 py-10 sm:px-12 sm:py-14 lg:px-16 lg:py-16">
             <div>
               <p className="text-sm font-semibold tracking-[0.08em] text-[#B9DDB0]">Agromind AI / {DEVELOPER}</p>
@@ -28,7 +28,7 @@ export function AboutContent() {
                 {TEAM_LEAD}
               </h1>
               <p className="mt-8 max-w-xl text-[clamp(1.1rem,1.8vw,1.45rem)] font-semibold leading-snug text-on-forest">
-                {tr("Người sáng lập Agromind AI. Trưởng nhóm Green Green.", "Founder of Agromind AI. Green Green team lead.")}
+                {tr("Người sáng lập Agromind AI. Trưởng nhóm DIEPTEK (trước là Green Green).", "Founder of Agromind AI. DIEPTEK team lead (formerly Green Green).")}
               </p>
             </div>
             <p className="max-w-lg border-l-2 border-[#8CCF75] pl-5 text-sm leading-7 text-on-forest-muted sm:text-base">
@@ -130,6 +130,10 @@ export function AboutContent() {
             <div className="grid gap-2 py-6 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:gap-10">
               <dt className="font-semibold text-ink">{tr("Ai là trưởng nhóm Green Green?", "Who led Green Green?")}</dt>
               <dd className="leading-7 text-ink-soft">{tr(`${TEAM_LEAD} là trưởng nhóm Green Green tại The NextX 2026. Đội sau đó đổi tên thành ${DEVELOPER}.`, `${TEAM_LEAD} led Green Green at The NextX 2026. The team later became ${DEVELOPER}.`)}</dd>
+            </div>
+            <div id="dieptek" className="grid scroll-mt-24 gap-2 py-6 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:gap-10">
+              <dt className="font-semibold text-ink">{tr("Ai dẫn dắt nhóm DIEPTEK phát triển Agromind AI?", "Who leads the DIEPTEK team developing Agromind AI?")}</dt>
+              <dd className="leading-7 text-ink-soft">{tr(`${TEAM_LEAD} là trưởng nhóm ${DEVELOPER} (trước là Green Green) và phụ trách định hướng chung cùng kỹ thuật của Agromind AI tại agromind.farm.`, `${TEAM_LEAD} leads ${DEVELOPER} (formerly Green Green) and oversees Agromind AI's overall and technical direction at agromind.farm.`)}</dd>
             </div>
             <div className="grid gap-2 py-6 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:gap-10">
               <dt className="font-semibold text-ink">{tr("Ai phụ trách kỹ thuật Agromind AI?", "Who leads Agromind AI's technical work?")}</dt>
