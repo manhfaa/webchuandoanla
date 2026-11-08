@@ -24,11 +24,8 @@ export function generateStaticParams() {
 }
 
 /**
- * Tiêu đề nhồi được nhiều tên bệnh nhất trong giới hạn Google hiển thị.
- *
- * Google cắt tiêu đề quanh 60 ký tự. Hậu tố thương hiệu chiếm 14, nên phần còn
- * lại được dùng để liệt kê tên bệnh — mỗi tên là một truy vấn riêng mà trang có
- * thể xếp hạng, thay vì một câu chung chung không ai gõ.
+ * Giữ tiêu đề gọn, nêu tên cây và vài bệnh có trên trang. Đây là giới hạn biên
+ * tập để dễ đọc trên điện thoại, không phải giới hạn ký tự cố định của Google.
  */
 const TITLE_SUFFIX = " | Agromind AI";
 const TITLE_BUDGET = 60;

@@ -63,6 +63,7 @@ export function Footer() {
           </Column>
 
           <Column heading={tr("Tài liệu", "Resources")}>
+            <Link href="/huong-dan" className={linkClass}>{tr("Hướng dẫn chụp ảnh lá", "Leaf photo guide")}</Link>
             <Link href="/about" className={linkClass}>{tr("Về Agromind AI", "About Agromind AI")}</Link>
             {/* Google found the disease pages through the sitemap alone and
                 reported no referring page — a link here is how both a crawler
