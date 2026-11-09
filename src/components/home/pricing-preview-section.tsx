@@ -148,10 +148,10 @@ export function PricingPreviewSection({ standalone = false }: { standalone?: boo
           {tr("Toàn bộ giới hạn và quyền lợi nằm trong bảng so sánh chi tiết.", "Every limit and benefit is in the detailed comparison table.")}
         </p>
         <Link
-          href="/login?next=/dashboard/pricing"
+          href={standalone ? "/login?next=/dashboard/pricing" : "/bang-gia"}
           className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-ink underline decoration-line-strong decoration-1 underline-offset-[6px] transition hover:decoration-leaf"
         >
-          {tr("So sánh các gói", "Compare plans")}
+          {standalone ? tr("Đăng nhập để chọn gói", "Log in to choose a plan") : tr("So sánh các gói", "Compare plans")}
           <ArrowRight size={16} aria-hidden />
         </Link>
       </Reveal>

@@ -1,6 +1,7 @@
 "use client";
 
-import { TriangleAlert } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, TriangleAlert } from "lucide-react";
 
 import { SectionShell } from "@/components/layout/section-shell";
 import { Reveal } from "@/components/ui/reveal";
@@ -82,6 +83,12 @@ export function MissionSection() {
           </p>
         </Reveal>
       </div>
+      <Reveal className="mt-6 flex justify-end border-t border-line pt-5">
+        <Link href="/cam-nang" className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-leaf-strong underline underline-offset-4 hover:text-ink">
+          {tr("Đọc cẩm nang nhận biết bệnh lá", "Read the leaf health guides")}
+          <ArrowRight size={16} aria-hidden />
+        </Link>
+      </Reveal>
     </SectionShell>
   );
 }

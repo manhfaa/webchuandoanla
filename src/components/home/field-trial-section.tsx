@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import Image from "next/image";
-import { MapPin } from "lucide-react";
+import { ArrowRight, MapPin } from "lucide-react";
 
 import { SectionShell } from "@/components/layout/section-shell";
 import { Reveal } from "@/components/ui/reveal";
@@ -147,6 +148,12 @@ export function FieldTrialSection() {
             "Results show all five possibilities with their confidence, never reduced to one certain answer.",
           )}
         </p>
+      </Reveal>
+      <Reveal className="mt-5 flex justify-end">
+        <Link href="/about" className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-leaf-strong underline underline-offset-4 hover:text-ink">
+          {tr("Về Agromind AI", "About Agromind AI")}
+          <ArrowRight size={16} aria-hidden />
+        </Link>
       </Reveal>
     </SectionShell>
   );

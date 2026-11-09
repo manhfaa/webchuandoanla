@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
-import { Play, RotateCcw } from "lucide-react";
+import { ArrowRight, Play, RotateCcw } from "lucide-react";
 import Link from "next/link";
 
 import { SectionShell } from "@/components/layout/section-shell";
@@ -221,6 +221,12 @@ export function DemoVideoSection() {
             </span>
           </figcaption>
         </figure>
+      </Reveal>
+      <Reveal className="mt-6 flex justify-end border-t border-line pt-5">
+        <Link href="/quy-trinh" className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-leaf-strong underline underline-offset-4 hover:text-ink">
+          {tr("Xem chi tiết quy trình kiểm tra ảnh lá", "Explore the leaf-check process")}
+          <ArrowRight size={16} aria-hidden />
+        </Link>
       </Reveal>
     </SectionShell>
   );

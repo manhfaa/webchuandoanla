@@ -124,6 +124,12 @@ export function FeaturesSection() {
           </ol>
         </div>
       </div>
+      <Reveal className="mt-6 flex justify-end border-t border-line pt-5">
+        <Link href="/tinh-nang" className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-leaf-strong underline underline-offset-4 hover:text-ink">
+          {tr("Xem tất cả tính năng", "Explore all features")}
+          <ArrowUpRight size={16} aria-hidden />
+        </Link>
+      </Reveal>
     </SectionShell>
   );
 }

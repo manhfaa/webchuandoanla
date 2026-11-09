@@ -33,6 +33,7 @@ export function StructuredData() {
         "@id": `${SITE_URL}/#website`,
         url: SITE_URL,
         name: brand.name,
+        alternateName: "AgromindAI",
         description: brand.description,
         publisher: { "@id": `${SITE_URL}/#organization` },
         inLanguage: "vi-VN",
