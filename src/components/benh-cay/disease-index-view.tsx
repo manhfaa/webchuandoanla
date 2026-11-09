@@ -6,6 +6,7 @@ import { AlertTriangle, ArrowRight, Camera } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { CROP_DISEASES, CROPS_WITH_PAGES, plantImageFor } from "@/data/crop-diseases";
+import { FIELD_GUIDES } from "@/data/field-guides";
 import { diseaseAnchors } from "@/lib/disease-slug";
 import { useLanguageStore } from "@/store/language-store";
 import { useTr } from "@/lib/use-tr";
@@ -84,6 +85,16 @@ export function DiseaseIndexView() {
             ))}
           </ul>
         </nav>
+
+        <section className="mt-8 rounded-[var(--r-lg)] border border-line bg-surface-raised p-5 sm:p-6">
+          <h2 className="font-display text-xl font-bold text-ink">{tr("Cẩm nang quan sát thực địa", "Field observation guides")}</h2>
+          <p className="mt-2 text-sm leading-7 text-ink-soft">{tr("Bài viết có ảnh thật, dấu hiệu dễ nhầm và nguồn khuyến nông để bạn đối chiếu thêm.", "Articles with real photos, common lookalikes and extension sources for further checking.")}</p>
+          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+            {FIELD_GUIDES.map((guide) => (
+              <li key={guide.slug}><Link href={`/cam-nang/${guide.slug}`} className="flex min-h-11 items-center justify-between gap-3 rounded-[var(--r-md)] border border-line bg-surface-soft px-4 py-2 text-sm font-semibold leading-6 text-ink hover:border-line-strong"><span>{tr(guide.title.vi, guide.title.en)}</span><ArrowRight size={16} className="shrink-0" aria-hidden /></Link></li>
+            ))}
+          </ul>
+        </section>
 
         <ul className="mt-8 grid gap-4 sm:grid-cols-2">
           {CROP_DISEASES.map((crop) => {

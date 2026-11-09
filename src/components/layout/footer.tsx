@@ -82,6 +82,7 @@ export function Footer() {
                 reported no referring page — a link here is how both a crawler
                 and a visitor learn the pages matter. */}
             <Link href="/benh-cay" className={linkClass}>{tr("Bệnh cây trồng", "Plant diseases")}</Link>
+            <Link href="/cam-nang" className={linkClass}>{tr("Cẩm nang bệnh lá", "Leaf health guides")}</Link>
             <Link href="/terms" className={linkClass}>{tr("Điều khoản sử dụng", "Terms of Service")}</Link>
             <Link href="/privacy" className={linkClass}>{tr("Chính sách quyền riêng tư", "Privacy Policy")}</Link>
             <button type="button" onClick={() => window.dispatchEvent(new Event(OPEN_ANALYTICS_SETTINGS_EVENT))} className={`${linkClass} text-left`}>

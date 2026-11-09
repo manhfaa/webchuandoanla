@@ -12,6 +12,11 @@ import { LanguageToggle } from "@/components/layout/language-toggle";
 
 import { Logo } from "./logo";
 
+const navbarItems = [
+  { label: "Trang chủ", labelEn: "Home", href: "/" },
+  ...landingNavItems,
+];
+
 /**
  * Full-width bar with a hairline under it. The previous floating pill with a
  * glowing gradient rule was the single strongest "generated" tell on the page;
@@ -38,8 +43,8 @@ export function Navbar() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
         <Logo showTagline={false} className="shrink-0" />
 
-        <nav className="hidden items-center gap-7 lg:flex" aria-label={tr("Điều hướng trang", "Site navigation")}>
-          {landingNavItems.map((item) => (
+        <nav className="hidden items-center gap-4 lg:flex xl:gap-7" aria-label={tr("Điều hướng trang", "Site navigation")}>
+          {navbarItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -84,7 +89,7 @@ export function Navbar() {
               <span className="text-sm font-medium text-ink-soft">{tr("Ngôn ngữ", "Language")}</span>
               <LanguageToggle />
             </div>
-            {landingNavItems.map((item) => (
+            {navbarItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { CROPS_WITH_PAGES } from "@/data/crop-diseases";
+import { FIELD_GUIDES } from "@/data/field-guides";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://www.agromind.farm";
 
@@ -17,31 +18,30 @@ const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://www.agromind.farm";
  *  - /dashboard/*: behind authentication, nothing for a crawler to read.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
-
+  // Omit lastModified until editorial changes are tracked per page. A build
+  // timestamp would claim unchanged content was updated on every deployment.
   return [
-    { url: `${SITE}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
-    { url: `${SITE}/register`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${SITE}/login`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${SITE}/terms`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${SITE}/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${SITE}/support`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
-    { url: `${SITE}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${SITE}/huong-dan`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${SITE}/quy-trinh`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${SITE}/tinh-nang`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${SITE}/bang-gia`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${SITE}/` },
+    { url: `${SITE}/register` },
+    { url: `${SITE}/login` },
+    { url: `${SITE}/terms` },
+    { url: `${SITE}/privacy` },
+    { url: `${SITE}/support` },
+    { url: `${SITE}/about` },
+    { url: `${SITE}/huong-dan` },
+    { url: `${SITE}/quy-trinh` },
+    { url: `${SITE}/tinh-nang` },
+    { url: `${SITE}/bang-gia` },
 
     // The disease pages. These are the ones with a real chance of ranking: a
     // grower searching "bệnh đốm vi khuẩn cà chua" is describing a problem this
     // product solves, and the phrase has a fraction of the competition that
     // "chẩn đoán bệnh cây" does.
-    { url: `${SITE}/benh-cay`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${SITE}/benh-cay` },
     ...CROPS_WITH_PAGES.map((crop) => ({
       url: `${SITE}/benh-cay/${crop.slug}`,
-      lastModified: now,
-      changeFrequency: "monthly" as const,
-      priority: 0.7,
     })),
+    { url: `${SITE}/cam-nang` },
+    ...FIELD_GUIDES.map((guide) => ({ url: `${SITE}/cam-nang/${guide.slug}` })),
   ];
 }

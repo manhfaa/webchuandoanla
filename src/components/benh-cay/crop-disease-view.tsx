@@ -12,6 +12,7 @@ import {
   plantInsightFor,
   type CropWithDiseases,
 } from "@/data/crop-diseases";
+import { FIELD_GUIDES } from "@/data/field-guides";
 import { guidanceForDiseaseText, normalizeDiseaseText } from "@/lib/disease-guidance";
 import { diseaseAnchors } from "@/lib/disease-slug";
 import { useLanguageStore } from "@/store/language-store";
@@ -85,6 +86,7 @@ export function CropDiseaseView({ crop }: { crop: CropWithDiseases }) {
   // kết đã chia sẻ và mọi URL trong JSON-LD sẽ trỏ vào hư không.
   const anchors = diseaseAnchors(crop.diseases.map((disease) => disease.name));
   const otherCrops = CROPS_WITH_PAGES.filter((entry) => entry.slug !== crop.slug);
+  const relatedGuides = FIELD_GUIDES.filter((guide) => guide.cropSlug === crop.slug);
 
   return (
     <main id="main-content" className="px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
@@ -214,6 +216,17 @@ export function CropDiseaseView({ crop }: { crop: CropWithDiseases }) {
             );
           })}
         </div>
+
+        {relatedGuides.length ? (
+          <nav aria-label={tr("Hướng dẫn quan sát chi tiết", "Detailed observation guides")} className="mt-8 rounded-[var(--r-lg)] border border-line bg-surface-soft p-5 sm:p-6">
+            <h2 className="font-display text-xl font-bold text-ink">{tr("Đọc sâu hơn về dấu hiệu trên lá", "Read more about leaf signs")}</h2>
+            <ul className="mt-3 space-y-2">
+              {relatedGuides.map((guide) => (
+                <li key={guide.slug}><Link href={`/cam-nang/${guide.slug}`} className="inline-flex min-h-11 items-center text-sm font-semibold text-leaf-strong underline underline-offset-4">{tr(guide.title.vi, guide.title.en)}</Link></li>
+              ))}
+            </ul>
+          </nav>
+        ) : null}
 
         {/* Trước đây mỗi trang cây là một ngõ cụt: chỉ có đường về /benh-cay và
             /register. Bộ thu thập của Google đi vào một trang rồi phải quay ra
