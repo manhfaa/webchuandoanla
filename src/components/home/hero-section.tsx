@@ -43,7 +43,7 @@ export function HeroSection({ campaign }: { campaign?: PricingPlan | null }) {
             <span>{tr("Trợ lý sức khỏe cây trồng", "Plant health assistant")}</span>
             <span className="hidden h-1 w-1 bg-current opacity-50 sm:block" aria-hidden />
             <span className="inline-flex items-center gap-1.5">
-              <Image src="/logos/dieptek-mark.png" alt="" width={18} height={18} className="h-[18px] w-[18px]" />
+              <Image src="/logos/dieptek-mark-transparent.png" alt="" width={22} height={22} className="h-[22px] w-[22px] shrink-0 object-contain" />
               {tr(`Phát triển bởi team ${DEVELOPER}`, `Developed by the ${DEVELOPER} team`)}
             </span>
           </p>

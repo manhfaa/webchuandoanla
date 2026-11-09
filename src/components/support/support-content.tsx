@@ -56,7 +56,7 @@ export function SupportContent() {
         <div className="space-y-5">
           <section className="rounded-2xl border border-line bg-surface-soft p-6 sm:p-8">
             <div className="flex items-center gap-4">
-              <Image src="/logos/dieptek-mark.png" alt={`${DEVELOPER} logo`} width={64} height={64} className="h-16 w-16 shrink-0 object-contain" />
+              <Image src="/logos/dieptek-mark-transparent.png" alt={`${DEVELOPER} logo`} width={64} height={64} className="h-16 w-16 shrink-0 object-contain" />
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.14em] text-leaf-strong">{tr("Đầu mối hỗ trợ", "Support contact")}</p>
                 <h2 className="mt-1 font-display text-2xl font-bold text-ink">{DEVELOPER}</h2>

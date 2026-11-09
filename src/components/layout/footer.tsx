@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -38,10 +37,24 @@ export function Footer() {
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_repeat(4,minmax(0,0.6fr))] lg:gap-8">
           <div>
-            <Logo dark />
+            <Logo dark iconSrc="/logos/agromind-footer-static.png" />
             <p className="mt-5 max-w-sm text-sm leading-7">{tr(brand.description, brand.descriptionEn)}</p>
             <p className="mt-6 flex items-center gap-3 text-sm font-semibold leading-6 text-on-forest">
-              <Image src="/logos/dieptek-mark-lime.png" alt={`${DEVELOPER} logo`} width={44} height={44} className="h-11 w-11 shrink-0 object-contain" />
+              <span
+                role="img"
+                aria-label={`${DEVELOPER} logo`}
+                className="h-12 w-12 shrink-0 bg-[var(--accent)]"
+                style={{
+                  maskImage: "url('/logos/dieptek-mark-transparent.png')",
+                  WebkitMaskImage: "url('/logos/dieptek-mark-transparent.png')",
+                  maskPosition: "center",
+                  WebkitMaskPosition: "center",
+                  maskRepeat: "no-repeat",
+                  WebkitMaskRepeat: "no-repeat",
+                  maskSize: "contain",
+                  WebkitMaskSize: "contain",
+                }}
+              />
               <span>{tr(`Agromind AI do nhóm ${DEVELOPER} phát triển.`, `Agromind AI is developed by the ${DEVELOPER} team.`)}</span>
             </p>
           </div>

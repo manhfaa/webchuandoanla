@@ -11,6 +11,7 @@ export function Logo({
   dark = false,
   compact = false,
   showTagline = true,
+  iconSrc = "/logos/agromind_app_icon_animated_128.gif",
   className,
 }: {
   href?: string;
@@ -18,6 +19,7 @@ export function Logo({
   /** Thu gọn chữ ở breakpoint lg (dùng cùng sidebar thu gọn). */
   compact?: boolean;
   showTagline?: boolean;
+  iconSrc?: string;
   className?: string;
 }) {
   const tr = useTr();
@@ -27,11 +29,11 @@ export function Logo({
       className={cn("inline-flex min-w-0 items-center gap-2 sm:gap-3", compact && "lg:gap-2", className)}
     >
       <Image
-        src="/logos/agromind_app_icon_animated_128.gif"
+        src={iconSrc}
         alt="Agromind AI logo"
         width={44}
         height={44}
-        unoptimized
+        unoptimized={iconSrc.endsWith(".gif")}
         className="h-11 w-11 shrink-0 rounded-lg object-contain"
       />
       <span className={cn("flex min-w-0 flex-col", compact && "lg:sr-only")}>
