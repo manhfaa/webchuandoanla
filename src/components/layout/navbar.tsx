@@ -40,13 +40,13 @@ export function Navbar() {
 
         <nav className="hidden items-center gap-7 lg:flex" aria-label={tr("Điều hướng trang", "Site navigation")}>
           {landingNavItems.map((item) => (
-            <a
+            <Link
               key={item.href}
-              href={`/${item.href}`}
+              href={item.href}
               className="relative py-1 text-sm font-medium text-ink-soft transition hover:text-ink after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:scale-x-0 after:bg-accent after:transition-transform after:duration-180 hover:after:scale-x-100"
             >
               {tr(item.label, item.labelEn)}
-            </a>
+            </Link>
           ))}
         </nav>
 
@@ -85,14 +85,14 @@ export function Navbar() {
               <LanguageToggle />
             </div>
             {landingNavItems.map((item) => (
-              <a
+              <Link
                 key={item.href}
-                href={`/${item.href}`}
+                href={item.href}
                 className="border-b border-line py-3.5 text-sm font-medium text-ink transition hover:text-leaf-strong"
                 onClick={() => setOpen(false)}
               >
                 {tr(item.label, item.labelEn)}
-              </a>
+              </Link>
             ))}
 
             <Link

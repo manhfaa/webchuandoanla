@@ -33,7 +33,7 @@ function Price({ value, featured = false }: { value: string; featured?: boolean 
  * concentric decorative circles beside three smaller cards is how a template
  * does it.
  */
-export function PricingPreviewSection() {
+export function PricingPreviewSection({ standalone = false }: { standalone?: boolean }) {
   const tr = useTr();
   const [catalogue, setCatalogue] = useState<ServicePlanDto[] | null>(null);
 
@@ -58,7 +58,7 @@ export function PricingPreviewSection() {
   return (
     <SectionShell
       id="goi-dich-vu"
-      number="07"
+      number={standalone ? "01" : "07"}
       eyebrow={tr("Bảng giá", "Pricing")}
       title={tr("Bắt đầu vừa đủ. Nâng cấp khi khu vườn cần nhiều hơn", "Start with just enough. Upgrade when your garden needs more")}
       description={tr("Giới hạn sử dụng và quyền lợi được trình bày rõ trước khi bạn lựa chọn.", "Usage limits and benefits are shown clearly before you choose.")}

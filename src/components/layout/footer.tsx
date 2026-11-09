@@ -61,9 +61,9 @@ export function Footer() {
 
           <Column heading={tr("Sản phẩm", "Product")}>
             {landingNavItems.map((item) => (
-              <a key={item.href} href={`/${item.href}`} className={linkClass}>
+              <Link key={item.href} href={item.href} className={linkClass}>
                 {tr(item.label, item.labelEn)}
-              </a>
+              </Link>
             ))}
             <Link href="/login?next=/dashboard/diagnosis" className={linkClass}>
               {tr("Kiểm tra ảnh lá", "Check a leaf")}
