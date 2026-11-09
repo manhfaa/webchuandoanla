@@ -76,6 +76,59 @@ export function GuideView() {
           ))}
         </ol>
 
+        <section className="mt-12 border-t border-line pt-8" aria-labelledby="guide-questions">
+          <h2 id="guide-questions" className="font-display text-2xl font-extrabold tracking-[-0.03em] text-ink">
+            {tr("Câu hỏi thường gặp khi kiểm tra bệnh lá cây", "Common questions about checking leaf disease")}
+          </h2>
+          <div className="mt-6 grid gap-6 sm:grid-cols-2">
+            <div>
+              <h3 className="font-display text-lg font-bold text-ink">
+                {tr("Ứng dụng đoán bệnh lá cây từ ảnh có cho kết quả chắc chắn không?", "Can an app identify leaf disease from a photo with certainty?")}
+              </h3>
+              <p className="mt-2 text-sm leading-7 text-ink-soft">
+                {tr(
+                  "Không. Agromind AI đưa ra các khả năng để bạn đối chiếu với triệu chứng ngoài vườn. Ảnh lá không thể thay thế việc kiểm tra trực tiếp hoặc ý kiến chuyên gia.",
+                  "No. Agromind AI suggests possibilities to compare with symptoms in the garden. A photo cannot replace an in-person check or expert advice.",
+                )}
+              </p>
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-bold text-ink">
+                {tr("Dùng điện thoại nhận diện bệnh lá cây thế nào?", "How do I check a leaf with my phone?")}
+              </h3>
+              <p className="mt-2 text-sm leading-7 text-ink-soft">
+                {tr(
+                  "Chụp rõ một chiếc lá, tải ảnh lên Agromind AI, rồi xem các khả năng và mức độ tin cậy. Ghi thêm dấu hiệu quan sát được và chụp lại sau vài ngày nếu cần.",
+                  "Take a clear photo of one leaf, upload it to Agromind AI, and review the possibilities and confidence scores. Add what you observed and retake the photo after a few days if needed.",
+                )}
+              </p>
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-bold text-ink">
+                {tr("Lá cây bị vàng hoặc đốm có chắc là bệnh không?", "Do yellow or spotted leaves always mean disease?")}
+              </h3>
+              <p className="mt-2 text-sm leading-7 text-ink-soft">
+                {tr(
+                  "Không nhất thiết. Nước tưới, dinh dưỡng, thời tiết và sâu bệnh có thể tạo dấu hiệu tương tự. Hãy xem thêm các lá khác, điều kiện vườn và mức độ lan rộng trước khi xử lý.",
+                  "Not necessarily. Watering, nutrients, weather and pests can create similar signs. Check other leaves, garden conditions and whether the signs are spreading before acting.",
+                )}
+              </p>
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-bold text-ink">
+                {tr("Agromind AI hỗ trợ kiểm tra những cây nào?", "Which crops can Agromind AI check?")}
+              </h3>
+              <p className="mt-2 text-sm leading-7 text-ink-soft">
+                {tr("Phạm vi hỗ trợ phụ thuộc vào dữ liệu của mô hình. Xem ", "Support depends on the model's data. See the ")}
+                <Link href="/benh-cay" className="font-semibold text-leaf-strong underline underline-offset-4">
+                  {tr("danh sách cây và bệnh đang hỗ trợ", "current crop and disease list")}
+                </Link>
+                {tr(" trước khi tải ảnh.", " before uploading a photo.")}
+              </p>
+            </div>
+          </div>
+        </section>
+
         <section className="mt-10 rounded-[var(--r-lg)] border border-line bg-surface-soft p-6 sm:p-8">
           <h2 className="font-display text-xl font-bold text-ink">
             {tr("Nếu hệ thống báo ảnh chưa đạt", "If the photo is not accepted")}

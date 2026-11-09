@@ -19,21 +19,9 @@ const beVietnamPro = Be_Vietnam_Pro({
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.agromind.farm";
 
-// Written for the search box, not for the page.
-//
-// The visible copy on the landing page is deliberate and stays as it is —
-// "Nhìn dấu hiệu trên lá. Hành động trước khi bệnh lan rộng." reads well to
-// somebody already here. But nobody types that into Google. Of sixteen phrases
-// a Vietnamese grower actually searches, thirteen appeared nowhere on the page
-// and none were in the H1.
-//
-// The title and description are the one place that can carry those words
-// without touching the design copy, because they are what Google displays in a
-// result rather than what a visitor reads on the page. brand.description is
-// left alone: it also renders in the footer.
-const PAGE_TITLE = "Chẩn đoán bệnh cây trồng từ ảnh lá | Agromind AI";
+const PAGE_TITLE = "Agromind AI | Ứng dụng kiểm tra bệnh lá cây từ ảnh";
 const PAGE_DESCRIPTION =
-  "Chụp ảnh lá để nhận diện dấu hiệu sâu bệnh trên 21 loại cây trồng, xem mức độ nặng và biết nên làm gì tiếp theo. Trợ lý nông nghiệp tiếng Việt, có gói miễn phí.";
+  "Agromind AI giúp kiểm tra dấu hiệu bệnh lá cây bằng ảnh, đối chiếu triệu chứng và theo dõi chăm sóc vườn. Ứng dụng nông nghiệp tiếng Việt có gói miễn phí.";
 
 export const metadata: Metadata = {
   // Without this, every relative URL Next.js resolves for Open Graph and

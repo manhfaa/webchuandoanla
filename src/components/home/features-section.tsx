@@ -70,7 +70,7 @@ export function FeaturesSection() {
       number="03"
       eyebrow={tr("Tính năng", "Features")}
       title={tr("Một không gian để quan sát, theo dõi và chăm sóc cây", "One space to observe, track and care for your plants")}
-      description={tr("Agromind gom ảnh lá, điều kiện vườn và việc cần làm vào cùng một hành trình dễ theo dõi.", "Agromind brings leaf photos, garden conditions and to-dos into one easy-to-follow journey.")}
+      description={tr("Agromind AI, gọi ngắn là Agromind, giúp kiểm tra bệnh lá cây từ ảnh và theo dõi điều kiện vườn, việc chăm sóc trong một hành trình.", "Agromind AI helps check leaf disease signs from photos and brings garden conditions and care tasks into one journey.")}
       className="bg-surface"
     >
       <div className="grid gap-10 lg:grid-cols-12 lg:gap-8">
